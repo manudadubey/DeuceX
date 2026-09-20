@@ -2,6 +2,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 
 export type { Database, Json, Tables, TablesInsert, TablesUpdate } from './database.types';
+export { createApproval, type ApprovalActionType } from './approvals';
+export type { CreateApprovalInput, CreatedApproval } from './approvals';
 
 // Two clients, deliberately: the anon-scoped client respects row-level
 // security and is what every player-facing request uses; the service-role

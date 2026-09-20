@@ -415,3 +415,117 @@ to Public profile and Settings and now has a working Sign out button, and a seco
 the same three links behind a popover is not something this step's acceptance checks ask for;
 notification content, the walkthrough, and the coach-share flow itself (PRD-04/PRD-12, not
 built); `apps/admin`'s shell (out of scope, a later step).
+
+## Step 0.6 · The approval gate and audit, before any agent exists — 21 September 2026
+
+Acceptance checks restated before starting: (1) a test shows an action called without a valid
+approval throws; (2) a test shows the lint rule fails a build that imports Stripe elsewhere;
+(3) a duplicate enqueue is a no-op; (4) a paused agent's job is marked `skipped_paused`.
+
+Migration (`packages/db/migrations/20260920134427_step_0_6_approval_gate.sql`) resolves the
+question step 0.2 flagged and left open: TECH-ARCHITECTURE.md section 3 talks about verifying
+an "unconsumed" approval, but `approvals` has no such column. Rather than add one, this adds a
+separate append-only `approval_consumptions` table (`approval_id` as its primary key,
+`player_id`, `agent_run_id`, `payload_hash`, `consumed_at`). `approvals` already has no UPDATE
+grant for any role, deliberately, matching `agent_runs` and `admin_actions` (step 0.2); a
+`consumed` column would need exactly that grant to ever get flipped, which would have punched
+a hole in an invariant step 0.2 went out of its way to establish. The separate table's primary
+key is also what makes "verify unconsumed, then consume" one atomic `INSERT` instead of a
+check-then-act race between two concurrent callers — an `insert ... on conflict do nothing`-
+shaped operation rather than a select followed by an update. Also added: `agent_schedules`
+(`player_id`, `agent_name`, `paused`, `prompt_overrides jsonb`, primary key on the pair — a
+missing row means not paused, no overrides) and `provider_switches` (append-only,
+`provider`/`state`/`changed_by`/`reason`/`changed_at`, a provider with no row is implicitly
+"on"). Both are named in TECH-ARCHITECTURE.md section 3 (`.paused`, `.prompt_overrides jsonb`)
+and 2.4 (provider_switches' own field list) but neither had a full type spec anywhere, because
+the admin kill switches (PRD-13 AD-15/16) and Elite's Agent Studio that would manage them
+don't exist yet; both are defined here with exactly the fields already named, so the queue's
+pickup check has something real to read, following the same "build the table before the
+feature that populates it" precedent step 0.2 set for `agent_runs`/`approvals` themselves.
+
+Supabase branching turned out to need the project's Pro plan, which this project isn't on, so
+a branch couldn't be created to apply and verify the migration in isolation first. Asked the
+owner how to proceed; decided to apply directly to the production project, the same one-time
+exception step 0.2 made, on the same reasoning (three new, purely additive tables, no existing
+data touched, nothing risky about the DDL itself). Verified with `get_advisors`: no new
+security findings beyond the expected "RLS enabled, no policy" INFO note on
+`provider_switches` (intentional — locked to the service role only until the admin console
+exists). Regenerated `packages/db/src/database.types.ts` from the live schema afterwards, as
+per the established pattern.
+
+Built `packages/actions`: `gate.ts`'s `runGatedAction()` is the gate itself — loads the
+approval (scoped to the calling player, so a wrong or foreign `approvalId` fails identically
+to a missing one rather than leaking which is which), checks the action type and a
+`hashApprovalPayload` (new, in `packages/shared`, a canonical-JSON SHA-256 so key order never
+changes the hash) match, atomically claims it via the `approval_consumptions` insert, and only
+then runs the caller's side-effect function — claiming before the side effect, not after, so a
+vendor-call failure leaves the approval spent rather than risking a double vendor call if the
+claim step were to fail after a successful one. `record-run.ts`'s `recordRun()` wraps a model
+call, timing it and writing exactly one `agent_runs` row either way, mapping a thrown
+`AgentValidationError` to `failed_validation` and anything else to `failed_infra`, with cost
+looked up from `pricing.ts`'s small model-to-price table (illustrative starting figures, flagged
+in its own comment to be checked against the vendor's current published rate, in the same
+spirit as TECH-ARCHITECTURE.md section 5's own hedging about unverified numbers). Both `gate.ts`
+and `record-run.ts` are built against a small hand-rolled DB interface (`ApprovalGateDb`,
+`AgentRunsDb`) rather than requiring a live `SupabaseClient` directly, specifically so their
+tests can inject an in-memory fake instead of needing a database connection — `gate.test.ts`
+and `record-run.test.ts` are real, unskipped, and cover every branch (missing approval, wrong
+player, wrong action type, payload mismatch, already consumed, success, and a second call
+after a successful one) without touching Postgres at all. The real, Postgres-backed
+implementations (`SupabaseApprovalGateDb`, `SupabaseAgentRunsDb`) exist and typecheck but are
+unexercised beyond that — their correctness follows from the migration's own constraints.
+
+The queue (`packages/actions/src/queue/`): `idempotency-key.ts` builds the
+`agent_name:player_id:scheduled_window` string used as pg-boss's `singletonKey`;
+`pickup-guard.ts`'s `evaluatePickup()` is the pure pause/provider-switch decision (both map to
+the same `skipped_paused` outcome, per TECH-ARCHITECTURE.md section 3's own wording);
+`retry-schedule.ts` gives the exact 5/20/60 minute backoff the build plan specifies, which
+needed its own scheduling rather than pg-boss's built-in `retryBackoff` (exponential doubling
+only, can't hit that exact sequence) — `queue.ts`'s worker catches a failure, computes the next
+delay, and re-sends the job itself via `sendAfter` rather than relying on pg-boss's own retry
+counter. All three of those pure pieces have real, unskipped tests. `queue.ts` itself
+(`createBoss`, `enqueueAgentRun`, `registerAgentWorker`) is real, working pg-boss integration
+code, added as a new dependency of `packages/actions`; `queue.integration.test.ts` proves the
+duplicate-enqueue-is-a-no-op and paused-job-is-skipped acceptance checks directly against a
+real pg-boss/Postgres instance, gated on `SUPABASE_DB_URL` exactly like
+`packages/db/src/rls.integration.test.ts` already is, and skipped here and in CI for the same
+reason: neither has the database password. No agent calls this queue yet (there are no agents
+until Phase 1), so nothing here runs continuously anywhere.
+
+The lint rule (`eslint.config.mjs`) already existed from the scaffold (step 0.1) and already
+exempted `packages/actions`; added `ics` to the restricted list alongside `stripe` and
+`resend` (CLAUDE.md names it as gated too) — "the entry client" is still unnamed since no
+vendor or package has been chosen for it yet, flagged here rather than guessed at. Added
+`lint-rule.test.ts`, which runs the real root ESLint flat config programmatically (via the
+`eslint` Node API, `lintText` with a virtual `filePath`) against a fixture import of each of
+the three module names, parametrized, both inside and outside `packages/actions` — a real,
+executable proof of acceptance check 2, not just a manual `pnpm lint` run that could silently
+stop proving anything if the config's `files:` scoping ever drifted.
+
+The Confirm component (`packages/ui`, already built in step 0.4) needed no code changes — it
+already takes an arbitrary `actions` slot. "Wired" here means the plumbing a future Confirm
+usage is expected to call now exists and is tested: `createApproval()` (new, in
+`packages/db`) inserts an `approvals` row through the *player's own* anon-scoped client, so
+`approvals_insert_own`'s RLS policy is the real authorization, not the function; and
+`confirmApproval()` (new, in `apps/web/lib/approvals`) is the browser-side wrapper a real
+`Confirm`'s primary button will call. Deliberately did not wire this into the kitchen sink's
+existing decorative Confirm demo (`docs/BUILD-LOG.md` step 0.4): kitchen sink is often run
+locally against the real production Supabase project (as this session's own step 0.5 QA did),
+and `approvals` is an append-only audit table — writing real demo rows into it every time
+someone opens `/kitchen-sink` would pollute a genuinely audit-critical table for no product
+reason. The mechanism is built and tested; the first real screen to use it is Phase 1's job.
+
+Verified: `pnpm typecheck`, `pnpm lint`, `pnpm format`, `pnpm test` all green across every
+package (74 tests passing, 7 skipped without a live database connection — 5 pre-existing RLS
+integration tests plus the 2 new queue integration tests, all skipped for the identical,
+documented reason); `pnpm --filter @procircuit/web build` still succeeds (no new routes; this
+step has no UI surface of its own). `pnpm exec playwright test` still passes all 11 tests
+(unaffected, as expected).
+
+Skipped, deliberately: actually running a worker anywhere (no agent exists to schedule yet);
+`admin_users`/the admin console's own grants on `provider_switches`/`agent_schedules` (PRD-13,
+a later phase — the queue reads both via the service role, which doesn't need them); a
+player-facing UI for `agent_schedules.paused` (Agent Studio, Elite, not built); wiring
+`confirmApproval` into any real screen (no agent has a proposal to confirm yet). Question
+raised and resolved with the owner: Supabase branching needs the Pro plan; owner chose to
+apply the migration directly to production rather than upgrade or leave it unapplied.

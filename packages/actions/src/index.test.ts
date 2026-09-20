@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { PLACEHOLDER } from './index';
+import { ApprovalNotFoundError, calculateCost, evaluatePickup, runGatedAction } from './index';
 
-describe('actions package', () => {
-  it('exists as a package boundary, pending the approval gate (step 0.6)', () => {
-    expect(PLACEHOLDER).toBe('procircuit-actions');
+describe('actions package public surface', () => {
+  it('exports the gate, recordRun, pricing and queue building blocks', () => {
+    expect(typeof runGatedAction).toBe('function');
+    expect(typeof calculateCost).toBe('function');
+    expect(typeof evaluatePickup).toBe('function');
+    expect(new ApprovalNotFoundError('x').name).toBe('ApprovalNotFoundError');
   });
 });

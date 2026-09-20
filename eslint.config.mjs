@@ -33,6 +33,11 @@ export default tseslint.config(
               message:
                 'Only packages/actions may import Resend. Route side effects through the actions module.',
             },
+            {
+              name: 'ics',
+              message:
+                'Only packages/actions may import ics. Route side effects through the actions module.',
+            },
           ],
         },
       ],

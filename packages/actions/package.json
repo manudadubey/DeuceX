@@ -10,7 +10,14 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "eslint": "^9.39.5",
     "typescript": "^5.6.3",
     "vitest": "^2.1.4"
+  },
+  "dependencies": {
+    "@procircuit/db": "workspace:*",
+    "@procircuit/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.116.0",
+    "pg-boss": "^12.33.2"
   }
 }
