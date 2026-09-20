@@ -1,0 +1,1507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{height:100%}</style>
+</head>
+<body>
+<title>ProCircuit Margin</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');
+
+/* ── Tokens (shadcn Vega preset b3REZz9P6, Neutral base, Lime charts) ── */
+:root{
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --background:#ffffff;
+  --foreground:oklch(0.145 0 0);
+  --card:#ffffff;
+  --card-foreground:oklch(0.145 0 0);
+  --primary:oklch(0.205 0 0);
+  --primary-foreground:oklch(0.985 0 0);
+  --secondary:oklch(0.97 0 0);
+  --secondary-foreground:oklch(0.205 0 0);
+  --muted:oklch(0.97 0 0);
+  --muted-foreground:oklch(0.556 0 0);
+  --border:oklch(0.922 0 0);
+  --input:oklch(0.922 0 0);
+  --ring:oklch(0.708 0 0);
+  --surface:#f8f8f8;
+  --field:oklch(0 0 0 / 3%);
+
+  --chart-1:oklch(0.768 0.233 130.85);
+  --chart-2:oklch(0.648 0.2 131.684);
+  --chart-3:oklch(0.532 0.157 131.589);
+  --chart-4:oklch(0.453 0.124 130.933);
+  --chart-5:oklch(0.392 0.104 130.5);
+  --chart-grid:oklch(0 0 0 / 6%);
+
+  --ok:oklch(0.627 0.194 149.214);
+  --ok-bg:oklch(0.627 0.194 149.214 / 12%);
+  --warn:oklch(0.666 0.179 58.318);
+  --warn-bg:oklch(0.666 0.179 58.318 / 12%);
+  --danger:oklch(0.577 0.245 27.325);
+  --danger-bg:oklch(0.577 0.245 27.325 / 12%);
+
+  /* Court surface tones, kept close to neutral so the lime palette stays the accent. */
+  --court-sky:oklch(0.93 0.004 250);
+  --court-out:oklch(0.80 0.012 235);
+  --court-in:oklch(0.72 0.022 230);
+  --court-fence:oklch(0.84 0.008 245);
+  --court-line:oklch(0.99 0 0);
+
+  --shadow-card: 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.05);
+  --ease: cubic-bezier(.2,.8,.2,1);
+  --ease-chart: cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --background:oklch(0.145 0 0);
+    --foreground:oklch(0.985 0 0);
+    --card:oklch(0.205 0 0);
+    --card-foreground:oklch(0.985 0 0);
+    --primary:oklch(0.922 0 0);
+    --primary-foreground:oklch(0.205 0 0);
+    --secondary:oklch(0.269 0 0);
+    --secondary-foreground:oklch(0.985 0 0);
+    --muted:oklch(0.269 0 0);
+    --muted-foreground:oklch(0.708 0 0);
+    --border:oklch(1 0 0 / 10%);
+    --input:oklch(1 0 0 / 15%);
+    --ring:oklch(0.556 0 0);
+    --surface:oklch(0.175 0 0);
+    --field:oklch(1 0 0 / 4.5%);
+    --chart-1:oklch(0.897 0.196 126.665);
+    --chart-2:oklch(0.768 0.233 130.85);
+    --chart-3:oklch(0.648 0.2 131.684);
+    --chart-4:oklch(0.532 0.157 131.589);
+    --chart-5:oklch(0.453 0.124 130.933);
+    --chart-grid:oklch(1 0 0 / 8%);
+    --court-sky:oklch(0.22 0.006 250);
+    --court-out:oklch(0.33 0.014 235);
+    --court-in:oklch(0.40 0.026 230);
+    --court-fence:oklch(0.27 0.008 245);
+    --court-line:oklch(0.93 0 0);
+    --shadow-card: 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  --background:oklch(0.145 0 0);
+  --foreground:oklch(0.985 0 0);
+  --card:oklch(0.205 0 0);
+  --card-foreground:oklch(0.985 0 0);
+  --primary:oklch(0.922 0 0);
+  --primary-foreground:oklch(0.205 0 0);
+  --secondary:oklch(0.269 0 0);
+  --secondary-foreground:oklch(0.985 0 0);
+  --muted:oklch(0.269 0 0);
+  --muted-foreground:oklch(0.708 0 0);
+  --border:oklch(1 0 0 / 10%);
+  --input:oklch(1 0 0 / 15%);
+  --ring:oklch(0.556 0 0);
+  --surface:oklch(0.175 0 0);
+  --field:oklch(1 0 0 / 4.5%);
+  --chart-1:oklch(0.897 0.196 126.665);
+  --chart-2:oklch(0.768 0.233 130.85);
+  --chart-3:oklch(0.648 0.2 131.684);
+  --chart-4:oklch(0.532 0.157 131.589);
+  --chart-5:oklch(0.453 0.124 130.933);
+  --chart-grid:oklch(1 0 0 / 8%);
+  --court-sky:oklch(0.22 0.006 250);
+  --court-out:oklch(0.33 0.014 235);
+  --court-in:oklch(0.40 0.026 230);
+  --court-fence:oklch(0.27 0.008 245);
+  --court-line:oklch(0.93 0 0);
+  --shadow-card: 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.25);
+}
+
+/* ── Base ── */
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{
+  margin:0;
+  background:var(--background);
+  color:var(--foreground);
+  font-family:'Geist','Geist Fallback',system-ui,-apple-system,'Segoe UI',sans-serif;
+  font-size:14px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  transition:background-color .2s var(--ease), color .2s var(--ease);
+}
+.mono{font-family:'Geist Mono','SFMono-Regular',ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0;font-weight:500;letter-spacing:-0.01em;text-wrap:balance}
+p{margin:0}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px;border-radius:var(--radius-sm)}
+
+.app{min-height:100%;display:flex;flex-direction:column}
+
+/* ── Top bar ── */
+.top{
+  position:sticky;top:env(safe-area-inset-top, 0px);z-index:30;
+  display:flex;align-items:center;gap:12px;
+  height:56px;padding:0 16px;
+  background:color-mix(in oklab, var(--background) 82%, transparent);
+  backdrop-filter:saturate(180%) blur(14px);
+  -webkit-backdrop-filter:saturate(180%) blur(14px);
+  box-shadow:inset 0 -1px 0 var(--border);
+}
+.brand{display:flex;align-items:center;gap:8px;font-size:14px;min-width:0}
+.brand .bm{width:22px;height:22px;border-radius:7px;background:var(--foreground);color:var(--background);
+  display:grid;place-items:center;font-size:11px;font-weight:600;flex:none}
+.brand .sep{color:var(--muted-foreground)}
+.brand strong{font-weight:500}
+.brand .bt{color:var(--muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topr{margin-left:auto;display:flex;gap:4px}
+
+.icon{
+  width:36px;height:36px;min-width:36px;display:grid;place-items:center;
+  background:transparent;border:0;border-radius:var(--radius-md);cursor:pointer;
+  color:var(--muted-foreground);transition:background-color .15s var(--ease), color .15s var(--ease), transform .12s var(--ease);
+}
+.icon:hover{background:var(--secondary);color:var(--foreground)}
+.icon:active{transform:scale(.94)}
+.icon svg{width:17px;height:17px}
+
+/* ── Layout ── */
+.wrap{width:100%;max-width:980px;margin:0 auto;padding-inline:16px;padding-block:24px 64px;
+  display:flex;flex-direction:column;gap:20px}
+
+.phead{display:flex;flex-direction:column;gap:8px}
+.phead h1{font-size:26px;letter-spacing:-0.02em}
+.phead .sub{color:var(--muted-foreground);max-width:60ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+
+/* ── Chip / badge ── */
+.chip{
+  display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;
+  border-radius:999px;background:var(--secondary);color:var(--secondary-foreground);
+  font-size:12px;white-space:nowrap
+}
+.chip.lime{background:color-mix(in oklab, var(--chart-1) 16%, transparent);color:var(--chart-2)}
+.chip .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.85}
+.badge{
+  display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;
+  font-size:12px;background:var(--secondary);color:var(--secondary-foreground)
+}
+.badge.ok{background:var(--ok-bg);color:var(--ok)}
+.badge.warn{background:var(--warn-bg);color:var(--warn)}
+.badge.danger{background:var(--danger-bg);color:var(--danger)}
+.badge.lime{background:color-mix(in oklab, var(--chart-1) 16%, transparent);color:var(--chart-2)}
+
+/* ── Player strip ── */
+.player{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-lg);
+  background:var(--secondary);color:var(--secondary-foreground)}
+.player .av{width:32px;height:32px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:var(--background);color:var(--foreground);font-size:12px;font-weight:500;
+  box-shadow:0 0 0 1px var(--border)}
+.player .pn{font-weight:500;line-height:1.25}
+.player .pm{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted-foreground);line-height:1.25}
+.player .badge{margin-left:auto}
+.fl{width:15px;height:10px;border-radius:2px;flex:none;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.18)}
+
+/* ── Card ── */
+.card{background:var(--card);color:var(--card-foreground);border-radius:var(--radius-xl);
+  box-shadow:var(--shadow-card);padding-block:24px;display:flex;flex-direction:column;gap:16px}
+.card > *{padding-inline:24px}
+.card .full{padding-inline:0}
+.ch{display:flex;flex-direction:column;gap:4px}
+.ch .row{display:flex;align-items:flex-start;gap:12px}
+.ch h2{font-size:16px}
+.ch p{font-size:13.5px;color:var(--muted-foreground);max-width:62ch}
+.ch .badge{margin-left:auto;flex:none}
+
+/* ── Button ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  height:36px;padding:0 15px;border-radius:var(--radius-md);border:1px solid transparent;
+  font-size:13.5px;font-weight:500;cursor:pointer;white-space:nowrap;
+  background:var(--primary);color:var(--primary-foreground);
+  transition:transform .12s var(--ease), opacity .15s var(--ease), background-color .15s var(--ease)
+}
+.btn:hover{opacity:.9}
+.btn:active{transform:scale(.98)}
+.btn svg{width:15px;height:15px}
+.btn.outline{background:var(--field);border-color:var(--input);color:var(--foreground)}
+.btn.outline:hover{background:var(--secondary);opacity:1}
+.btn.ghost{background:transparent;color:var(--muted-foreground)}
+.btn.ghost:hover{background:var(--secondary);color:var(--foreground);opacity:1}
+.btn.lg{height:44px;padding:0 20px;font-size:14.5px}
+.btn.sm{height:32px;padding:0 12px;font-size:13px}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+
+/* ── Item / switch ── */
+.item{background:color-mix(in oklab, var(--secondary) 50%, transparent);border-radius:var(--radius-md);padding:14px 16px}
+.srow{display:flex;align-items:center;gap:14px}
+.srow .st{min-width:0}
+.srow .st b{display:block;font-weight:500}
+.srow .st span{display:block;font-size:12.5px;color:var(--muted-foreground)}
+.sw{margin-left:auto;flex:none;position:relative;width:38px;height:22px;min-height:22px;border-radius:999px;
+  background:var(--input);border:0;cursor:pointer;transition:background-color .18s var(--ease)}
+.sw::before{content:"";position:absolute;inset:-9px -4px;border-radius:999px}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+  background:var(--background);box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .18s var(--ease)}
+.sw[aria-checked="true"]{background:var(--primary)}
+.sw[aria-checked="true"]::after{transform:translateX(16px);background:var(--primary-foreground)}
+
+/* ── Mode chooser ── */
+.modes{display:flex;flex-direction:column;gap:8px}
+.mode{
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;
+  text-align:left;width:100%;cursor:pointer;
+  background:color-mix(in oklab, var(--secondary) 50%, transparent);
+  border:1px solid transparent;border-radius:var(--radius-md);padding:14px 16px;
+  transition:border-color .15s var(--ease), background-color .15s var(--ease), transform .12s var(--ease)
+}
+.mode:active{transform:scale(.995)}
+.mode[aria-pressed="true"]{border-color:var(--chart-2);background:color-mix(in oklab, var(--chart-1) 9%, transparent)}
+.mode .mk{grid-column:1;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;
+  background:var(--background);box-shadow:0 0 0 1px var(--border);color:var(--muted-foreground)}
+.mode[aria-pressed="true"] .mk{color:var(--chart-2)}
+.mode .mk svg{width:16px;height:16px}
+.mode .mb{grid-column:2;min-width:0}
+.mode .mb b{display:block;font-weight:500}
+.mode .mb span{display:block;font-size:12.5px;color:var(--muted-foreground)}
+.mode .mt{grid-column:3;font-size:12.5px;color:var(--muted-foreground);text-align:right;flex:none}
+.mode .mt b{display:block;font-weight:500;color:var(--foreground);font-size:13.5px}
+
+/* ── Key value grid ── */
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.kv .k{background:color-mix(in oklab, var(--secondary) 50%, transparent);border-radius:var(--radius-md);padding:12px 14px}
+.kv .k dt{font-size:12px;color:var(--muted-foreground);margin:0 0 4px}
+.kv .k dd{margin:0;font-size:20px;font-weight:500;letter-spacing:-0.02em}
+.kv .k dd small{font-size:12.5px;font-weight:400;color:var(--muted-foreground);letter-spacing:0}
+
+/* ── Notes list ── */
+.notes{display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:var(--muted-foreground)}
+.notes div{display:flex;gap:10px;align-items:flex-start}
+.notes .b{width:5px;height:5px;border-radius:50%;background:var(--muted-foreground);opacity:.55;margin-top:8px;flex:none}
+
+/* ── Toggle group (Baseline .tg) ── */
+.tg{display:inline-flex;background:var(--secondary);border:1px solid var(--input);
+  border-radius:var(--radius-md);overflow:hidden;flex:none;max-width:100%}
+.tg button{height:36px;min-width:52px;padding:0 13px;border:0;background:transparent;cursor:pointer;
+  font-size:13px;font-weight:500;color:var(--muted-foreground);white-space:nowrap;
+  transition:background-color .15s var(--ease), color .15s var(--ease)}
+.tg button + button{box-shadow:inset 1px 0 0 var(--input)}
+.tg button[aria-pressed="true"]{background:var(--background);color:var(--foreground)}
+
+.setrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.setrow .sl{min-width:0;flex:1}
+.setrow .sl b{display:block;font-weight:500}
+.setrow .sl span{display:block;font-size:12.5px;color:var(--muted-foreground)}
+
+/* ── Session overlay ── */
+.sess{
+  position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;
+  background:var(--background);
+  padding-top:env(safe-area-inset-top, 0px);padding-bottom:env(safe-area-inset-bottom, 0px);
+  animation:fade .25s var(--ease)
+}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sess .shd{display:flex;align-items:center;gap:10px;height:56px;padding:0 10px 0 16px;flex:none}
+.sess .shd .sname{font-weight:500;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sess .shd .badge{flex:none;white-space:nowrap}
+.sess .shd .sright{margin-left:auto;display:flex;align-items:center;gap:6px}
+.sess .sbody{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;
+  padding:4px 16px 18px;max-width:760px;width:100%;margin:0 auto}
+
+/* ── Court ── */
+/* The scene is naturally wide and shallow: the two baselines are only about 14
+   degrees apart vertically while the near court spans nearly 50 degrees across.
+   A tall box forces a long focal length and a telephoto view, so the box is
+   kept close to 4:3 and the focal length comes from its width. */
+.court{position:relative;flex:1 1 auto;width:100%;aspect-ratio:4/3;max-height:min(54vh,380px);
+  border-radius:var(--radius-xl);overflow:hidden;
+  background:var(--surface);box-shadow:0 0 0 1px var(--border)}
+.court canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cue{position:absolute;left:0;right:0;top:12px;text-align:center;pointer-events:none;
+  transition:opacity .15s var(--ease)}
+.cue b{display:inline-flex;align-items:center;height:28px;padding:0 13px;border-radius:999px;
+  background:color-mix(in oklab, var(--background) 86%, transparent);
+  font-size:13.5px;font-weight:500;letter-spacing:.01em;
+  box-shadow:0 0 0 1px var(--border)}
+.cue.big b{height:auto;padding:10px 20px;font-size:30px;font-variant-numeric:tabular-nums;letter-spacing:-0.02em}
+.cue.hit b{background:var(--ok-bg);color:var(--ok);box-shadow:0 0 0 1px color-mix(in oklab, var(--ok) 35%, transparent)}
+.cue.miss b{background:var(--danger-bg);color:var(--danger);box-shadow:0 0 0 1px color-mix(in oklab, var(--danger) 35%, transparent)}
+
+/* ── Call pad ── */
+.callpad{display:grid;grid-template-columns:1fr 1fr;gap:10px;
+  flex:1 1 auto;min-height:80px;max-height:260px}
+.callbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  min-height:80px;border-radius:var(--radius-xl);border:1px solid var(--input);background:var(--field);
+  color:var(--foreground);font-size:19px;font-weight:500;letter-spacing:.02em;cursor:pointer;
+  transition:transform .1s var(--ease), background-color .15s var(--ease), border-color .15s var(--ease), opacity .15s var(--ease)}
+.callbtn:active{transform:scale(.985)}
+.callbtn small{font-size:11.5px;font-weight:400;color:var(--muted-foreground);letter-spacing:0}
+.callbtn[disabled]{opacity:.4;pointer-events:none}
+.callbtn.armed.in{border-color:color-mix(in oklab, var(--chart-2) 60%, transparent)}
+.callbtn.armed.out{border-color:color-mix(in oklab, var(--warn) 60%, transparent)}
+
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.dotrow{display:flex;gap:4px;align-items:center;flex-wrap:wrap;flex:none;min-height:9px}
+.dotrow i{width:9px;height:9px;border-radius:50%;background:var(--input);flex:none}
+.dotrow i.hit{background:var(--chart-1)}
+.dotrow i.miss{background:var(--danger);opacity:.8}
+.dotrow span{font-size:12px;color:var(--muted-foreground);margin-left:6px}
+
+.sfoot{display:flex;gap:8px;align-items:center;flex:none;flex-wrap:wrap;margin-top:auto;
+  padding-top:10px;background:var(--background);font-size:12.5px;color:var(--muted-foreground)}
+.sfoot .proto{margin-left:auto}
+
+/* ── Summary ── */
+.sum{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:14px;padding-bottom:8px}
+.bighead{display:flex;align-items:center;gap:18px}
+.ring{width:96px;height:96px;flex:none}
+.bighead .bt b{display:block;font-size:30px;font-weight:500;letter-spacing:-0.025em;line-height:1.1}
+.bighead .bt span{display:block;font-size:13px;color:var(--muted-foreground);margin-top:3px;max-width:34ch}
+
+/* ── Bias bar ── */
+.bias{display:flex;flex-direction:column;gap:8px}
+.biasbar{display:flex;height:34px;border-radius:var(--radius-md);overflow:hidden;background:var(--input)}
+.biasbar i{display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:500;
+  color:var(--primary-foreground);min-width:0;overflow:hidden;white-space:nowrap}
+.biasbar i.fo{background:var(--chart-3)}
+.biasbar i.fi{background:var(--warn)}
+.biaslab{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted-foreground);gap:12px}
+
+.chartbox{position:relative;width:100%}
+.chartbox svg{display:block;width:100%;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted-foreground)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+
+/* ── History list ── */
+.hl{display:flex;flex-direction:column}
+.hrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;
+  padding:11px 0;box-shadow:inset 0 -1px 0 var(--border)}
+.hrow:last-child{box-shadow:none}
+.hrow .hm{grid-column:1;min-width:0}
+.hrow .hm b{display:block;font-weight:500;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hrow .hm span{display:block;font-size:12px;color:var(--muted-foreground)}
+.hrow .hc{grid-column:2;text-align:right;font-size:14px;font-weight:500}
+.hrow .hd{grid-column:3;text-align:right;font-size:12.5px;color:var(--muted-foreground);width:64px}
+
+/* ── Toast ── */
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom, 0px));transform:translate(-50%,14px);
+  z-index:80;background:var(--primary);color:var(--primary-foreground);border-radius:999px;
+  padding:9px 16px;font-size:13px;opacity:0;pointer-events:none;
+  transition:opacity .22s var(--ease), transform .22s var(--ease);max-width:calc(100vw - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ── Responsive ── */
+@media (max-width:620px){
+  .phead h1{font-size:22px}
+  .card{padding-block:20px}
+  .card > *{padding-inline:18px}
+  .bighead{gap:14px}
+  .ring{width:80px;height:80px}
+  .bighead .bt b{font-size:26px}
+  .mode{grid-template-columns:auto minmax(0,1fr);row-gap:6px}
+  .mode .mt{grid-column:2;text-align:left}
+  .mode .mt b{display:inline;font-size:12.5px;color:var(--muted-foreground);font-weight:400}
+  .mode .mt b:not(:last-child)::after{content:' \00b7 '}
+  .icon,.btn{min-height:44px}
+  .icon{height:44px;width:44px}
+  .btn{height:44px}
+  .btn.sm{height:38px}
+  .tg button{height:44px}
+  .sw{height:28px;width:48px;min-height:0}
+  .sw::after{width:24px;height:24px}
+  .sw[aria-checked="true"]::after{transform:translateX(20px)}
+  .callbtn{min-height:72px;font-size:18px}
+}
+
+/* ── Motion and contrast ── */
+/* Baseline v1.1: stop movement, keep opacity and colour fades at 150ms.
+   The ball's flight is the content of this drill, so it is not removed here.
+   The honest accommodation is the speed control, offered in the settings card. */
+@media (prefers-reduced-motion: reduce){
+  .btn:active,.icon:active,.mode:active,.callbtn:active{transform:none}
+  .sess{animation:none}
+  .toast{transition:opacity .15s linear;transform:translate(-50%,0)}
+  .toast.on{transform:translate(-50%,0)}
+  .court,.mode,.item,.card,.icon,.btn,.sw,.callbtn,.tg button{
+    transition-property:opacity, box-shadow, background-color, color, border-color;
+    transition-duration:.15s;transition-timing-function:linear}
+  .sw::after{transition:none}
+}
+@media (prefers-reduced-transparency: reduce){
+  .top{background:var(--background);backdrop-filter:none;-webkit-backdrop-filter:none}
+  .cue b{background:var(--background)}
+}
+@media (max-height:560px){
+  .sess .shd{height:48px}
+  .sess .sbody{gap:8px;padding-bottom:10px}
+  .court{max-height:46vh}
+  .callbtn{min-height:58px;font-size:17px}
+  .callbtn small{display:none}
+  .cue{top:8px}
+}
+@media (prefers-contrast: more){
+  .card{box-shadow:0 0 0 1px var(--foreground)}
+  .item,.mode,.kv .k{box-shadow:0 0 0 1px var(--foreground)}
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="f-AUT" viewBox="0 0 3 2"><rect width="3" height="2" fill="#ED2939"/><rect y=".667" width="3" height=".666" fill="#fff"/></symbol>
+</svg>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <span class="bm">PC</span>
+      <span class="bt">ProCircuit <span class="sep">/</span> <strong>Mindset Coach</strong></span>
+    </div>
+    <div class="topr">
+      <button class="icon" id="themeBtn" title="Theme" aria-label="Switch theme"></button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="phead">
+      <h1>Margin</h1>
+      <p class="sub">A ball comes at you and disappears before it lands. You call it. Over a set of balls it shows you something nobody has ever measured for you: which way you lean when you are not sure.</p>
+      <div class="chips">
+        <span class="chip lime" id="lineChip"><span class="dot"></span>Your line: 21 cm</span>
+        <span class="chip" id="leanChip">You lean: calls it out</span>
+        <span class="chip">Prototype</span>
+      </div>
+    </div>
+
+    <div class="player">
+      <span class="av">AD</span>
+      <div>
+        <div class="pn">Arya Dubey</div>
+        <div class="pm"><svg class="fl"><use href="#f-AUT"></use></svg> ATP 487 · Stage 2 Emerging</div>
+      </div>
+      <span class="badge">Prototype</span>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="row"><h2>Start a set</h2></div>
+        <p>Every ball is cut off before the bounce. You are not being asked what you saw, you are being asked what you would have done.</p></div>
+      <div class="modes" id="modes"></div>
+      <div class="actions">
+        <button class="btn lg" id="startBtn">Start</button>
+        <button class="btn outline lg" id="howBtn">How to read it</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="row"><h2>The court</h2></div>
+        <p>Two of these change how hard the drill is. Both of them are real conditions you will play in.</p></div>
+      <div class="item">
+        <div class="setrow">
+          <div class="sl"><b>Light</b><span id="lightNote">Sun throws a shadow that tells you where the ball is. Overcast takes that away.</span></div>
+          <div class="tg" id="lightTg" role="group" aria-label="Light">
+            <button data-light="sun" aria-pressed="true">Sun</button>
+            <button data-light="flat" aria-pressed="false">Overcast</button>
+          </div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="setrow">
+          <div class="sl"><b>Speed</b><span>Slower is a legitimate way in, and the only honest answer if you have reduced motion turned on.</span></div>
+          <div class="tg" id="speedTg" role="group" aria-label="Speed">
+            <button data-speed="0.6" aria-pressed="false">0.6&times;</button>
+            <button data-speed="0.8" aria-pressed="false">0.8&times;</button>
+            <button data-speed="1" aria-pressed="true">Full</button>
+          </div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="srow">
+          <div class="st"><b>Draw the ball at its true size</b><span id="scaleNote">Off. The ball is drawn larger than the geometry gives, because at true size it is about three pixels wide when it vanishes. Turning this on is honest and very hard.</span></div>
+          <button class="sw" id="scaleSw" role="switch" aria-checked="false" aria-label="Draw the ball at its true size"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="row"><h2>Last sets</h2><span class="badge" id="histBadge">Sample data</span></div></div>
+      <div class="hl" id="hist"></div>
+      <div class="actions">
+        <button class="btn ghost sm" id="resetBtn">Reset to the sample data</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="row"><h2>When to use it</h2><span class="badge lime">Before you play</span></div></div>
+      <div class="notes">
+        <div><i class="b"></i><span>Six to ten minutes is the ceiling, not the target. One set is about two minutes. Two sets is plenty and a third is working against you.</span></div>
+        <div><i class="b"></i><span>Finish twenty to thirty minutes before the first ball. The last ten minutes before you walk on should have no screen in them at all.</span></div>
+        <div><i class="b"></i><span>Phone away before you walk on court. Players may not receive information through an electronic device during a match, and this is not worth a conversation with a supervisor.</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="row"><h2>What Margin does not do</h2><span class="badge warn">Read this</span></div></div>
+      <div class="notes">
+        <div><i class="b"></i><span>It does not claim to make you win more. Cutting the picture off early and making players predict what happens next has a good research record for anticipation, including on court and not only on a screen. This particular drill, on a phone, has not been tested against anything.</span></div>
+        <div><i class="b"></i><span>That research is mostly about reading an opponent's body before they hit. Reading the flight of the ball after they hit is a near neighbour, not the same thing.</span></div>
+        <div><i class="b"></i><span>A screen has one eye, not two, so the depth you use here is not the depth you use on court. The whole court is also squeezed into a much smaller angle than it fills in front of you.</span></div>
+        <div><i class="b"></i><span>The camera sits behind and above where you actually stand. From your real eye position the baseline at your feet does not fit on a phone at all, so this view is a compromise and the drill is a judgment exercise, not a copy of what you see.</span></div>
+        <div><i class="b"></i><span>Your calls stay on your phone. There is no score sent anywhere, and nothing here tells you whether you are ready to play.</span></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ── Session ── -->
+<div class="sess" id="sess" hidden role="dialog" aria-modal="true" aria-labelledby="sTitle" tabindex="-1">
+  <div class="shd">
+    <span class="sname" id="sTitle">Sharpen</span>
+    <span class="badge" id="sCount">Ball 1 of 20</span>
+    <div class="sright">
+      <button class="icon" id="sClose" aria-label="Close"></button>
+    </div>
+  </div>
+  <div class="sbody" id="sBody">
+    <div class="court" id="courtWrap">
+      <canvas id="cv"></canvas>
+      <div class="cue" id="cue" aria-hidden="true"><b>Ready</b></div>
+    </div>
+    <p class="sr" id="live" role="status" aria-live="assertive"></p>
+    <div class="dotrow" id="dotrow"></div>
+    <div class="callpad">
+      <button class="callbtn in" id="btnIn" disabled>IN<small>inside the baseline</small></button>
+      <button class="callbtn out" id="btnOut" disabled>OUT<small>past the baseline</small></button>
+    </div>
+    <div class="sfoot">
+      <span id="sHint">Keys: I for in, O for out</span>
+      <span class="proto" id="sMode">Sun · Full speed</span>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ───────────── Seeded randomness ───────────── */
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+var _rnd = Math.random;
+function withSeed(seed, fn){
+  var prev = _rnd; _rnd = mulberry32(seed);
+  try { return fn(); } finally { _rnd = prev; }
+}
+function rnd(){ return _rnd(); }
+function rrange(a,b){ return a + (b-a)*rnd(); }
+function pick(arr){ return arr[Math.floor(rnd()*arr.length)|0]; }
+
+/* ───────────── Court constants (metres) ───────────── */
+var NEAR_BL = 0, FAR_BL = 23.77, NET_Z = 11.885;
+var SVC_NEAR = 5.485, SVC_FAR = 18.285;
+var HALF_S = 4.115, HALF_D = 5.485, POST = 6.40;
+var NET_C = 0.914, NET_P = 1.07;
+var BALL_R = 0.0335;
+
+/* ───────────── Flight model ─────────────
+   Drag plus Magnus. Verified against real values: rally topspin leaves at about
+   110 km/h, crosses the net around 2.3 m, lands a metre inside the baseline
+   after roughly one second, and arrives at about 70 km/h.
+   Net-crossing height moves only 14 cm across a 1.6 m spread of landing depth,
+   so nothing visible before the cut-off gives the answer away. */
+var M = 0.057, AREA = Math.PI*BALL_R*BALL_R, RHO = 1.21, CD = 0.55, G = 9.81;
+var KD = 0.5*RHO*CD*AREA/M;
+
+var ARCH = [
+  { n:'Loopy topspin', deg:16, rpm:3200, y0:0.95, z0:24.6, spin: 1 },
+  { n:'Rally topspin', deg:13, rpm:2500, y0:0.95, z0:24.3, spin: 1 },
+  { n:'Flat drive',    deg:7,  rpm:1400, y0:1.05, z0:24.0, spin: 1 },
+  { n:'Slice',         deg:6,  rpm:1800, y0:0.80, z0:24.2, spin:-1 }
+];
+
+function integrate(p, dt, keep){
+  var th = p.deg*Math.PI/180, ph = (p.xdeg||0)*Math.PI/180;
+  var w = p.rpm*2*Math.PI/60;
+  var x = p.x0||0, y = p.y0, z = p.z0;
+  var vx = p.v0*Math.cos(th)*Math.sin(ph);
+  var vy = p.v0*Math.sin(th);
+  var vz = -p.v0*Math.cos(th)*Math.cos(ph);
+  var t = 0, path = keep ? [] : null, guard = 0;
+  var axis = -p.spin;                       // spin axis along -x for topspin
+  while(y > BALL_R && t < 4 && guard++ < 20000){
+    var sp = Math.sqrt(vx*vx + vy*vy + vz*vz);
+    var S = BALL_R*w/sp;
+    var CL = Math.min(0.33, 0.6*S);
+    var KM = 0.5*RHO*CL*AREA/M;
+    var ux = vx/sp, uy = vy/sp, uz = vz/sp;
+    // omega_hat (axis,0,0) cross v_hat
+    var mx = 0, my = -axis*uz, mz = axis*uy;
+    var d = KD*sp, q = KM*sp*sp;
+    vx += (-d*vx + q*mx)*dt;
+    vy += (-d*vy + q*my - G)*dt;
+    vz += (-d*vz + q*mz)*dt;
+    x += vx*dt; y += vy*dt; z += vz*dt; t += dt;
+    if(path) path.push(x, y, z);
+  }
+  return { t:t, x:x, y:y, z:z, path:path, dt:dt, speed:Math.sqrt(vx*vx+vy*vy+vz*vz) };
+}
+
+/* Solve launch speed and lateral angle so the ball lands at (targetX, targetZ). */
+function solveShot(a, targetZ, targetX){
+  var base = { deg:a.deg, rpm:a.rpm, y0:a.y0, z0:a.z0, x0:0, spin:a.spin, xdeg:0, v0:30 };
+  var dt = 0.002;
+  for(var round = 0; round < 3; round++){
+    // lateral
+    var lo = -12, hi = 12;
+    for(var i = 0; i < 9; i++){
+      var mid = (lo+hi)/2;
+      base.xdeg = mid;
+      var r = integrate(base, dt, false);
+      if(r.x < targetX) lo = mid; else hi = mid;
+    }
+    base.xdeg = (lo+hi)/2;
+    // speed (faster lands further, which is a smaller z)
+    var slo = 14, shi = 52;
+    for(var j = 0; j < 22; j++){
+      var sm = (slo+shi)/2;
+      base.v0 = sm;
+      var r2 = integrate(base, dt, false);
+      if(r2.z > targetZ) slo = sm; else shi = sm;
+    }
+    base.v0 = (slo+shi)/2;
+  }
+  var full = integrate(base, 0.001, true);
+  return { arch:a.n, params:base, t:full.t, land:{ x:full.x, z:full.z },
+           path:full.path, dt:full.dt, endSpeed:full.speed };
+}
+
+/* ───────────── Modes ───────────── */
+var MODES = [
+  { id:'calibrate', n:'Calibrate', balls:12, occ:300, spread:1.20, bias:1.35,
+    d:'Wide range, a long look. Finds which way you lean.', meta:'12 balls · 300 ms' },
+  { id:'sharpen', n:'Sharpen', balls:20, occ:220, spread:0.55, bias:1.60,
+    d:'The one to use before you play. Most balls sit near the line.', meta:'20 balls · 220 ms' },
+  { id:'edge', n:'Edge', balls:16, occ:150, spread:0.32, bias:1.70,
+    d:'Cut very early and almost everything is a close call.', meta:'16 balls · 150 ms' }
+];
+var LIGHT = { sun:'Sun', flat:'Overcast' };
+
+/* ───────────── State ───────────── */
+var S = {
+  mode: MODES[1],
+  light: 'sun',
+  speed: 1,
+  trueSize: false,
+  open: false,
+  phase: 'idle',        // idle | ready | flight | await | feedback | done
+  shots: [],
+  results: [],
+  idx: 0,
+  t0: 0,
+  occT: 0,
+  hist: []
+};
+var RM = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+var el = {};
+['themeBtn','modes','startBtn','howBtn','lightTg','speedTg','scaleSw','scaleNote','lightNote',
+ 'hist','histBadge','resetBtn','sess','sTitle','sCount','sClose','sBody','courtWrap','cv',
+ 'cue','live','dotrow','btnIn','btnOut','sHint','sMode','toast','lineChip','leanChip'].forEach(function(id){
+  el[id] = document.getElementById(id);
+});
+
+/* ───────────── Icons ───────────── */
+var ICON = {
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  close:'<path d="M18 6 6 18M6 6l12 12"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>',
+  gauge:'<path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M13.4 10.6 19 5"/><path d="M4 20a9 9 0 1 1 16 0"/>',
+  bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>'
+};
+function svg(path, w){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||1.7)+
+         '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+path+'</svg>';
+}
+var MODE_ICON = { calibrate:ICON.target, sharpen:ICON.gauge, edge:ICON.bolt };
+
+/* ───────────── Theme ───────────── */
+function currentTheme(){
+  var f = document.documentElement.getAttribute('data-theme');
+  if(f) return f;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+function paintTheme(){
+  el.themeBtn.innerHTML = svg(currentTheme() === 'dark' ? ICON.sun : ICON.moon);
+  COL = null;
+}
+el.themeBtn.addEventListener('click', function(){
+  document.documentElement.setAttribute('data-theme', currentTheme() === 'dark' ? 'light' : 'dark');
+  paintTheme();
+  draw();
+});
+el.sClose.innerHTML = svg(ICON.close);
+
+/* ───────────── Colours from tokens ───────────── */
+var COL = null;
+function colours(){
+  if(COL) return COL;
+  var cs = getComputedStyle(document.documentElement);
+  function v(n){ return cs.getPropertyValue(n).trim(); }
+  COL = {
+    sky:v('--court-sky'), out:v('--court-out'), inn:v('--court-in'),
+    fence:v('--court-fence'), line:v('--court-line'),
+    ball:v('--chart-1'), ballDark:v('--chart-4'), mark:v('--chart-2'),
+    danger:v('--danger'), ok:v('--ok'), warn:v('--warn'),
+    fg:v('--foreground'), muted:v('--muted-foreground'), border:v('--border')
+  };
+  return COL;
+}
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(){
+  COL = null; paintTheme(); draw();
+});
+
+/* ───────────── Camera ─────────────
+   Chosen by search: the true receiving eye position (1.2 m behind the baseline,
+   1.6 m up) puts the near baseline at two and a half screen heights, so it cannot
+   be used. This sits further back and higher, which is the compromise named in
+   the notes on the page. */
+var CAM = { z:-6.5, y:2.10, pitch:12*Math.PI/180, hfov:34*Math.PI/180, nearAt:0.74 };
+var SUN = (function(){
+  var elv = 55*Math.PI/180, az = 30*Math.PI/180;
+  return { x:Math.cos(elv)*Math.sin(az), y:-Math.sin(elv), z:Math.cos(elv)*Math.cos(az) };
+})();
+
+var VP = { w:0, h:0, f:0, cx:0, cy:0, dpr:1 };
+function sizeCanvas(){
+  var r = el.courtWrap.getBoundingClientRect();
+  var dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  VP.w = Math.max(1, Math.round(r.width));
+  VP.h = Math.max(1, Math.round(r.height));
+  VP.dpr = dpr;
+  el.cv.width = Math.round(VP.w*dpr);
+  el.cv.height = Math.round(VP.h*dpr);
+  // Focal length comes from the width so the horizontal field stays fixed at 34
+  // degrees whatever shape the box ends up. The vertical centre is then chosen
+  // to pin the near baseline, the line actually being judged, at 74% of height.
+  VP.f = (VP.w/2)/Math.tan(CAM.hfov/2);
+  VP.cx = VP.w/2;
+  var c = Math.cos(CAM.pitch), s = Math.sin(CAM.pitch);
+  var dy = -CAM.y, dz = NEAR_BL - CAM.z;
+  var aNear = (dy*c + dz*s)/(-dy*s + dz*c);
+  VP.cy = CAM.nearAt*VP.h + VP.f*aNear;
+}
+function project(x, y, z){
+  var dx = x, dy = y - CAM.y, dz = z - CAM.z;
+  var c = Math.cos(CAM.pitch), s = Math.sin(CAM.pitch);
+  var yc = dy*c + dz*s;
+  var zc = -dy*s + dz*c;
+  if(zc < 0.2) return null;
+  return { x:VP.cx + VP.f*dx/zc, y:VP.cy - VP.f*yc/zc, d:zc };
+}
+
+/* ───────────── Court drawing ───────────── */
+function quad(ctx, pts){
+  var p = [];
+  for(var i = 0; i < pts.length; i++){
+    var q = project(pts[i][0], pts[i][1], pts[i][2]);
+    if(!q) return false;
+    p.push(q);
+  }
+  ctx.beginPath();
+  ctx.moveTo(p[0].x, p[0].y);
+  for(var j = 1; j < p.length; j++) ctx.lineTo(p[j].x, p[j].y);
+  ctx.closePath();
+  ctx.fill();
+  return true;
+}
+function lineStrip(ctx, x1, z1, x2, z2, w){
+  // A court line drawn as a ground quad so its width shrinks correctly with distance.
+  var h = (w || 0.05)/2;
+  var dx = x2-x1, dz = z2-z1, L = Math.hypot(dx,dz) || 1;
+  var nx = -dz/L*h, nz = dx/L*h;
+  quad(ctx, [[x1+nx,0,z1+nz],[x2+nx,0,z2+nz],[x2-nx,0,z2-nz],[x1-nx,0,z1-nz]]);
+}
+function drawCourt(ctx){
+  var C = colours();
+  ctx.fillStyle = C.sky;
+  ctx.fillRect(0, 0, VP.w, VP.h);
+
+  // Ground plane. The near edge has to stay in front of the camera or the
+  // projection fails and the whole quad is dropped.
+  ctx.fillStyle = C.out;
+  quad(ctx, [[-20,0,CAM.z+1],[20,0,CAM.z+1],[20,0,FAR_BL+9],[-20,0,FAR_BL+9]]);
+
+  // Back fence behind the far baseline. Without it the ball spends its first
+  // half against flat sky with nothing to judge it against.
+  ctx.fillStyle = C.fence;
+  quad(ctx, [[-20,0,FAR_BL+5],[20,0,FAR_BL+5],[20,3.2,FAR_BL+5],[-20,3.2,FAR_BL+5]]);
+
+  // Playing surface inside the doubles lines.
+  ctx.fillStyle = C.inn;
+  quad(ctx, [[-HALF_D,0,NEAR_BL],[HALF_D,0,NEAR_BL],[HALF_D,0,FAR_BL],[-HALF_D,0,FAR_BL]]);
+
+  // Lines.
+  ctx.fillStyle = C.line;
+  lineStrip(ctx, -HALF_D, NEAR_BL, HALF_D, NEAR_BL, 0.05);
+  lineStrip(ctx, -HALF_D, FAR_BL, HALF_D, FAR_BL, 0.05);
+  lineStrip(ctx, -HALF_D, NEAR_BL, -HALF_D, FAR_BL, 0.05);
+  lineStrip(ctx,  HALF_D, NEAR_BL,  HALF_D, FAR_BL, 0.05);
+  lineStrip(ctx, -HALF_S, NEAR_BL, -HALF_S, FAR_BL, 0.05);
+  lineStrip(ctx,  HALF_S, NEAR_BL,  HALF_S, FAR_BL, 0.05);
+  lineStrip(ctx, -HALF_S, SVC_NEAR, HALF_S, SVC_NEAR, 0.05);
+  lineStrip(ctx, -HALF_S, SVC_FAR,  HALF_S, SVC_FAR,  0.05);
+  lineStrip(ctx, 0, SVC_NEAR, 0, SVC_FAR, 0.05);
+  lineStrip(ctx, 0, NEAR_BL, 0, NEAR_BL+0.10, 0.05);
+  lineStrip(ctx, 0, FAR_BL-0.10, 0, FAR_BL, 0.05);
+
+  drawNet(ctx);
+}
+function netH(x){
+  var a = Math.min(Math.abs(x), POST)/POST;
+  return NET_C + (NET_P-NET_C)*a*a;
+}
+function drawNet(ctx){
+  var C = colours();
+  var N = 40, top = [], bot = [];
+  for(var i = 0; i <= N; i++){
+    var x = -POST + (2*POST)*(i/N);
+    var pt = project(x, netH(x), NET_Z), pb = project(x, 0, NET_Z);
+    if(!pt || !pb) return;
+    top.push(pt); bot.push(pb);
+  }
+  ctx.beginPath();
+  ctx.moveTo(top[0].x, top[0].y);
+  for(var j = 1; j <= N; j++) ctx.lineTo(top[j].x, top[j].y);
+  for(var k = N; k >= 0; k--) ctx.lineTo(bot[k].x, bot[k].y);
+  ctx.closePath();
+  ctx.fillStyle = C.fg;
+  ctx.globalAlpha = 0.16;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Mesh hint.
+  ctx.strokeStyle = C.fg;
+  ctx.globalAlpha = 0.10;
+  ctx.lineWidth = 1;
+  for(var m = 0; m <= N; m += 2){
+    ctx.beginPath();
+    ctx.moveTo(top[m].x, top[m].y);
+    ctx.lineTo(bot[m].x, bot[m].y);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // Tape.
+  ctx.strokeStyle = C.line;
+  ctx.lineWidth = Math.max(1.5, VP.f*0.055/ (project(0,NET_C,NET_Z)||{d:20}).d);
+  ctx.beginPath();
+  ctx.moveTo(top[0].x, top[0].y);
+  for(var n = 1; n <= N; n++) ctx.lineTo(top[n].x, top[n].y);
+  ctx.stroke();
+
+  // Posts.
+  ctx.strokeStyle = C.fg;
+  ctx.globalAlpha = 0.5;
+  [-POST, POST].forEach(function(px){
+    var a = project(px, 0, NET_Z), b = project(px, NET_P, NET_Z);
+    if(!a || !b) return;
+    ctx.lineWidth = Math.max(2, VP.f*0.08/a.d);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  });
+  ctx.globalAlpha = 1;
+}
+
+function shadowOf(x, y, z){
+  if(S.light !== 'sun') return null;
+  var t = y/(-SUN.y);
+  return { x:x + SUN.x*t, z:z + SUN.z*t };
+}
+function drawBall(ctx, x, y, z){
+  var C = colours();
+  var scale = S.trueSize ? 1 : 2.2;
+  var sh = shadowOf(x, y, z);
+  if(sh){
+    var ps = project(sh.x, 0.004, sh.z);
+    if(ps){
+      var rs = Math.max(1, VP.f*BALL_R*scale/ps.d);
+      ctx.save();
+      ctx.globalAlpha = 0.28;
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.ellipse(ps.x, ps.y, rs*1.35, rs*0.5, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+  var p = project(x, y, z);
+  if(!p) return;
+  var r = Math.max(1.6, VP.f*BALL_R*scale/p.d);
+  var g = ctx.createRadialGradient(p.x - r*0.35, p.y - r*0.35, r*0.1, p.x, p.y, r);
+  g.addColorStop(0, C.ball);
+  g.addColorStop(1, C.ballDark);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, r, 0, Math.PI*2);
+  ctx.fill();
+}
+function drawGhost(ctx, shot, fromT){
+  var C = colours();
+  ctx.save();
+  ctx.strokeStyle = C.muted;
+  ctx.globalAlpha = 0.5;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  var started = false;
+  var n = shot.path.length/3;
+  for(var i = 0; i < n; i++){
+    if(i*shot.dt < fromT) continue;
+    var p = project(shot.path[i*3], shot.path[i*3+1], shot.path[i*3+2]);
+    if(!p) continue;
+    if(!started){ ctx.moveTo(p.x, p.y); started = true; } else ctx.lineTo(p.x, p.y);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+function drawMark(ctx, shot){
+  var C = colours();
+  var inside = shot.land.z >= 0;
+  var p = project(shot.land.x, 0.005, shot.land.z);
+  if(!p) return;
+  var r = Math.max(4, VP.f*0.09/p.d);
+  ctx.save();
+  ctx.fillStyle = inside ? C.mark : C.danger;
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.ellipse(p.x, p.y, r*1.5, r*0.62, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = inside ? C.mark : C.danger;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(p.x, p.y, r*2.5, r*1.05, 0, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function draw(){
+  if(!el.cv || !VP.w) return;
+  var ctx = el.cv.getContext('2d');
+  ctx.setTransform(VP.dpr, 0, 0, VP.dpr, 0, 0);
+  ctx.clearRect(0, 0, VP.w, VP.h);
+  drawCourt(ctx);
+
+  var shot = S.shots[S.idx];
+  if(!shot) return;
+
+  if(S.phase === 'flight' || S.phase === 'await'){
+    var t = (performance.now() - S.t0)/1000*S.speed;
+    if(t < S.occT){
+      var i = Math.min(Math.floor(t/shot.dt), shot.path.length/3 - 1);
+      drawBall(ctx, shot.path[i*3], shot.path[i*3+1], shot.path[i*3+2]);
+    }
+  } else if(S.phase === 'feedback'){
+    drawGhost(ctx, shot, S.occT);
+    drawMark(ctx, shot);
+  }
+}
+
+/* ───────────── Session flow ───────────── */
+var raf = 0;
+function loop(){
+  draw();
+  if(S.open) raf = requestAnimationFrame(loop);
+}
+
+function buildShots(mode, seed){
+  return withSeed(seed, function(){
+    var out = [];
+    for(var i = 0; i < mode.balls; i++){
+      var u = Math.pow(rnd(), mode.bias);
+      var sign = rnd() < 0.5 ? 1 : -1;
+      var margin = sign*u*mode.spread;          // positive lands inside
+      // The visible half-width at the near baseline is about 2.1 m at this
+      // framing, so landings are kept inside that or the mark falls off frame.
+      var tx = rrange(-1.7, 1.7);
+      out.push(solveShot(pick(ARCH), margin, tx));
+    }
+    return out;
+  });
+}
+
+function setCue(text, cls, say){
+  el.cue.hidden = false;
+  el.cue.className = 'cue' + (cls ? ' ' + cls : '');
+  el.cue.querySelector('b').textContent = text;
+  if(say && el.live) el.live.textContent = text;
+}
+function hideCue(){ el.cue.hidden = true; }
+
+function renderDots(){
+  var h = '';
+  for(var i = 0; i < S.mode.balls; i++){
+    var r = S.results[i];
+    h += '<i class="' + (r ? (r.correct ? 'hit' : 'miss') : '') + '"></i>';
+  }
+  var right = S.results.filter(function(r){ return r.correct; }).length;
+  h += '<span>' + right + ' of ' + S.results.length + '</span>';
+  el.dotrow.innerHTML = h;
+}
+
+function armCall(on){
+  el.btnIn.disabled = !on;
+  el.btnOut.disabled = !on;
+  el.btnIn.classList.toggle('armed', on);
+  el.btnOut.classList.toggle('armed', on);
+}
+
+function nextBall(){
+  if(S.idx >= S.mode.balls){ finish(); return; }
+  var shot = S.shots[S.idx];
+  S.occT = Math.max(0.05, shot.t - S.mode.occ/1000);
+  S.phase = 'ready';
+  armCall(false);
+  el.sCount.textContent = 'Ball ' + (S.idx+1) + ' of ' + S.mode.balls;
+  var n = 2;
+  setCue(String(n), 'big');
+  var tick = setInterval(function(){
+    n--;
+    if(!S.open){ clearInterval(tick); return; }
+    if(n > 0){ setCue(String(n), 'big'); return; }
+    clearInterval(tick);
+    hideCue();
+    S.phase = 'flight';
+    S.t0 = performance.now();
+    var occMs = S.occT/S.speed*1000;
+    setTimeout(function(){
+      if(!S.open || S.phase !== 'flight') return;
+      S.phase = 'await';
+      S.awaitT0 = performance.now();
+      armCall(true);
+      setCue('Call it', '', true);
+    }, occMs);
+  }, 620);
+}
+
+function answer(callIn){
+  if(S.phase !== 'await') return;
+  var shot = S.shots[S.idx];
+  var truth = shot.land.z >= 0;                  // true means it landed in
+  var correct = (callIn === truth);
+  var cm = Math.abs(shot.land.z)*100;
+  S.results.push({
+    margin: shot.land.z, truth: truth, call: callIn, correct: correct,
+    rt: Math.round(performance.now() - S.awaitT0), arch: shot.arch
+  });
+  S.phase = 'feedback';
+  armCall(false);
+  renderDots();
+  var word = truth ? 'In by ' : 'Out by ';
+  setCue((correct ? 'Yes · ' : 'No · ') + word + cm.toFixed(0) + ' cm',
+         correct ? 'hit' : 'miss', true);
+  setTimeout(function(){
+    if(!S.open) return;
+    S.idx++;
+    nextBall();
+  }, 1500);
+}
+
+el.btnIn.addEventListener('click', function(){ answer(true); });
+el.btnOut.addEventListener('click', function(){ answer(false); });
+
+/* ───────────── Stats ───────────── */
+function stats(res){
+  var n = res.length;
+  var right = res.filter(function(r){ return r.correct; }).length;
+  var wrong = res.filter(function(r){ return !r.correct; });
+  var falseOut = wrong.filter(function(r){ return r.truth === true && r.call === false; }).length;
+  var falseIn  = wrong.filter(function(r){ return r.truth === false && r.call === true; }).length;
+  var rts = res.map(function(r){ return r.rt; }).sort(function(a,b){ return a-b; });
+  var medRt = rts.length ? rts[Math.floor(rts.length/2)] : 0;
+
+  // Accuracy by distance from the line, in 15 cm bands.
+  var bands = [], BW = 0.15, NB = 6;
+  for(var i = 0; i < NB; i++) bands.push({ lo:i*BW, hi:(i+1)*BW, n:0, right:0 });
+  res.forEach(function(r){
+    var a = Math.abs(r.margin);
+    var k = Math.min(NB-1, Math.floor(a/BW));
+    bands[k].n++; if(r.correct) bands[k].right++;
+  });
+
+  // "Your line": the distance from the line at which the player reaches 75 per cent.
+  var line = null;
+  for(var j = 0; j < NB; j++){
+    if(bands[j].n >= 4 && bands[j].right/bands[j].n >= 0.75){ line = bands[j].hi; break; }
+  }
+  return {
+    n:n, right:right, acc: n ? right/n*100 : 0, wrong:wrong.length,
+    falseOut:falseOut, falseIn:falseIn, medRt:medRt, bands:bands, line:line
+  };
+}
+
+function leanWord(st){
+  if(st.wrong < 3) return { w:'Not enough wrong calls yet', s:0 };
+  var d = st.falseOut - st.falseIn;
+  if(Math.abs(d) <= 1) return { w:'No clear lean', s:0 };
+  return d > 0 ? { w:'You call good balls out', s:1 } : { w:'You play balls that were gone', s:-1 };
+}
+
+/* ───────────── Summary ───────────── */
+function ringSvg(pct){
+  var r = 42, c = 2*Math.PI*r;
+  var on = c*Math.max(0, Math.min(1, pct/100));
+  return '<svg class="ring" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<circle cx="50" cy="50" r="'+r+'" fill="none" stroke="var(--input)" stroke-width="8"/>' +
+    '<circle cx="50" cy="50" r="'+r+'" fill="none" stroke="var(--chart-1)" stroke-width="8" ' +
+      'stroke-linecap="round" stroke-dasharray="'+on+' '+c+'" transform="rotate(-90 50 50)"/></svg>';
+}
+function bandChart(bands){
+  var W = 320, H = 132, PL = 30, PB = 26, PT = 8;
+  var iw = W-PL-6, ih = H-PB-PT;
+  var bw = iw/bands.length;
+  var s = '<svg viewBox="0 0 '+W+' '+H+'" role="img" ' +
+          'aria-label="Accuracy by how close the ball landed to the line">';
+  [0,50,100].forEach(function(v){
+    var y = PT+ih-(v/100)*ih;
+    s += '<line x1="'+PL+'" y1="'+y+'" x2="'+(W-6)+'" y2="'+y+'" stroke="var(--chart-grid)" stroke-width="1"/>';
+    s += '<text x="'+(PL-5)+'" y="'+(y+3.5)+'" font-size="9" fill="var(--muted-foreground)" text-anchor="end">'+v+'</text>';
+  });
+  bands.forEach(function(b, i){
+    var x = PL + i*bw + bw*0.18, w = bw*0.64;
+    if(b.n === 0){
+      s += '<rect x="'+x+'" y="'+(PT+ih-3)+'" width="'+w+'" height="3" fill="var(--input)" rx="1.5"/>';
+    } else {
+      var p = b.right/b.n, h = Math.max(3, p*ih), y = PT+ih-h;
+      var col = i < 2 ? 'var(--chart-3)' : 'var(--chart-1)';
+      var thin = b.n < 3;
+      s += '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+col+'" rx="2"'+
+           (thin ? ' opacity="0.3"' : '')+'/>';
+      s += '<text x="'+(x+w/2)+'" y="'+(y-3)+'" font-size="9" fill="var(--muted-foreground)" text-anchor="middle">'+b.n+'</text>';
+    }
+    s += '<text x="'+(x+w/2)+'" y="'+(H-14)+'" font-size="8.5" fill="var(--muted-foreground)" text-anchor="middle">'+
+         Math.round(b.lo*100)+'</text>';
+  });
+  s += '<text x="'+(PL+iw/2)+'" y="'+(H-3)+'" font-size="9" fill="var(--muted-foreground)" text-anchor="middle">'+
+       'centimetres from the line</text>';
+  s += '</svg>';
+  return s;
+}
+
+function finish(){
+  S.phase = 'done';
+  var st = stats(S.results);
+  var lean = leanWord(st);
+  var totalBad = st.falseOut + st.falseIn;
+  var foPct = totalBad ? Math.round(st.falseOut/totalBad*100) : 0;
+
+  var biasBlock = '';
+  if(totalBad >= 3){
+    var fow = st.falseOut/totalBad*100, fiw = 100-fow;
+    biasBlock =
+      '<div class="card"><div class="ch"><div class="row"><h2>Which way you lean</h2>' +
+        '<span class="badge ' + (Math.abs(foPct-50) >= 20 ? 'warn' : '') + '">' +
+        (Math.abs(foPct-50) >= 20 ? 'Worth knowing' : 'Fairly even') + '</span></div>' +
+        '<p>Of the ' + totalBad + ' you got wrong, this is how they split. At Wimbledon, when players called a close ball wrongly, it was an in ball called out about five times out of six.</p></div>' +
+      '<div class="bias">' +
+        '<div class="biasbar">' +
+          (fow > 0 ? '<i class="fo" style="flex:' + fow + '">' + (fow > 22 ? st.falseOut + ' called out' : st.falseOut) + '</i>' : '') +
+          (fiw > 0 ? '<i class="fi" style="flex:' + fiw + '">' + (fiw > 22 ? st.falseIn + ' played on' : st.falseIn) + '</i>' : '') +
+        '</div>' +
+        '<div class="biaslab"><span>Good balls you called out</span><span>Gone balls you played</span></div>' +
+      '</div></div>';
+  }
+
+  el.sBody.innerHTML =
+    '<div class="sum">' +
+      '<div class="bighead">' + ringSvg(st.acc) +
+        '<div class="bt"><b>' + Math.round(st.acc) + '%</b>' +
+        '<span>' + st.right + ' of ' + st.n + ' called right, median ' + st.medRt + ' ms to decide.</span></div>' +
+      '</div>' +
+
+      '<dl class="kv">' +
+        '<div class="k"><dt>Your line</dt><dd>' +
+          (st.line !== null ? Math.round(st.line*100) + '<small> cm</small>' : '&mdash;') + '</dd></div>' +
+        '<div class="k"><dt>Balls near the line</dt><dd>' +
+          (st.bands[0].n + st.bands[1].n) + '<small> under 30 cm</small></dd></div>' +
+        '<div class="k"><dt>Decision time</dt><dd>' + st.medRt + '<small> ms</small></dd></div>' +
+      '</dl>' +
+
+      '<div class="card"><div class="ch"><div class="row"><h2>Where you stop being sure</h2></div>' +
+        '<p>' + (st.line !== null
+          ? 'Past about ' + Math.round(st.line*100) + ' cm from the line you are reliable. Inside that you are guessing, and everybody is. The number to watch is whether it comes down over a season.'
+          : 'Not enough balls landed far enough from the line to place this yet. Calibrate gives it a wider spread to work with.') +
+        '</p></div>' +
+        '<div class="chartbox full" style="aspect-ratio:320/132">' + bandChart(st.bands) + '</div>' +
+        '<div class="legend"><span><i style="background:var(--chart-3)"></i>Close to the line</span>' +
+        '<span><i style="background:var(--chart-1)"></i>Clear of it</span>' +
+        '<span><i style="background:var(--chart-1);opacity:.3"></i>Under three balls, do not read it</span></div>' +
+      '</div>' +
+
+      biasBlock +
+
+      '<div class="card"><div class="ch"><div class="row"><h2>Before you read too much into this</h2></div>' +
+        '<p>' + st.n + ' balls is a small number. One set tells you roughly where you sit. A lean is worth acting on once it holds across three or four sets, not after one.</p></div></div>' +
+    '</div>' +
+    '<div class="sfoot" style="padding-top:2px">' +
+      '<button class="btn" id="sSave">Save the set</button>' +
+      '<button class="btn outline" id="sAgain">Go again</button>' +
+      '<span class="proto">' + S.mode.n + ' · ' + LIGHT[S.light] + '</span>' +
+    '</div>';
+
+  document.getElementById('sSave').addEventListener('click', function(){
+    S.hist.unshift({
+      when: Date.now(), mode: S.mode.n, n: st.n, acc: Math.round(st.acc),
+      line: st.line, falseOut: st.falseOut, falseIn: st.falseIn, light: S.light
+    });
+    saveHist();
+    renderHist();
+    renderChips();
+    closeSession();
+    toast('Set saved');
+  });
+  document.getElementById('sAgain').addEventListener('click', function(){
+    startSession(S.mode);
+  });
+  el.sCount.textContent = 'Done';
+}
+
+/* ───────────── Overlay plumbing ───────────── */
+var lastFocus = null;
+function trapFocus(e){
+  if(e.key !== 'Tab') return;
+  var f = el.sess.querySelectorAll('button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if(!f.length) return;
+  var first = f[0], last = f[f.length-1];
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+}
+function onKey(e){
+  if(!S.open) return;
+  if(e.key === 'Escape'){ e.preventDefault(); closeSession(); return; }
+  trapFocus(e);
+  if(S.phase !== 'await') return;
+  var k = e.key.toLowerCase();
+  if(k === 'i' || e.key === 'ArrowLeft'){ e.preventDefault(); answer(true); }
+  else if(k === 'o' || e.key === 'ArrowRight'){ e.preventDefault(); answer(false); }
+}
+
+var BODY_HTML = null;
+function startSession(mode){
+  S.mode = mode;
+  S.results = [];
+  S.idx = 0;
+  S.phase = 'ready';
+  if(BODY_HTML === null) BODY_HTML = el.sBody.innerHTML;
+  el.sBody.innerHTML = BODY_HTML;
+  rebind();
+
+  el.sTitle.textContent = mode.n;
+  el.sMode.textContent = LIGHT[S.light] + ' · ' + (S.speed === 1 ? 'Full speed' : S.speed + '× speed');
+  el.sess.hidden = false;
+  if(!S.open){ lastFocus = document.activeElement; }
+  S.open = true;
+  document.body.style.overflow = 'hidden';
+  document.addEventListener('keydown', onKey);
+
+  requestAnimationFrame(function(){
+    sizeCanvas();
+    renderDots();
+    setCue('Building the set', '');
+    // Solving is a few milliseconds a ball; let the frame paint first.
+    setTimeout(function(){
+      if(!S.open) return;
+      S.shots = buildShots(mode, (mode.id.charCodeAt(0)*7919 + Date.now()%100000)|0);
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(loop);
+      nextBall();
+    }, 30);
+  });
+  el.sess.focus();
+}
+function rebind(){
+  el.courtWrap = document.getElementById('courtWrap');
+  el.cv = document.getElementById('cv');
+  el.cue = document.getElementById('cue');
+  el.live = document.getElementById('live');
+  el.dotrow = document.getElementById('dotrow');
+  el.btnIn = document.getElementById('btnIn');
+  el.btnOut = document.getElementById('btnOut');
+  el.sMode = document.getElementById('sMode');
+  if(el.btnIn) el.btnIn.addEventListener('click', function(){ answer(true); });
+  if(el.btnOut) el.btnOut.addEventListener('click', function(){ answer(false); });
+}
+function closeSession(){
+  S.open = false;
+  S.phase = 'idle';
+  cancelAnimationFrame(raf);
+  el.sess.hidden = true;
+  document.body.style.overflow = '';
+  document.removeEventListener('keydown', onKey);
+  if(lastFocus && lastFocus.focus) lastFocus.focus();
+}
+el.sClose.addEventListener('click', closeSession);
+
+/* ───────────── History ───────────── */
+var KEY = 'pc.margin.v1';
+var HIST_SEED = [];
+function seedHist(){
+  return withSeed(20260919, function(){
+    var out = [], now = Date.now(), day = 86400000;
+    var names = ['Sharpen','Sharpen','Calibrate','Sharpen','Edge','Sharpen','Calibrate','Sharpen','Sharpen','Edge','Sharpen','Calibrate'];
+    for(var i = 0; i < names.length; i++){
+      var base = 70 + i*0.9;
+      var acc = Math.round(Math.max(58, Math.min(92, base + rrange(-7, 7))));
+      var bad = Math.max(2, Math.round((100-acc)/100 * (names[i] === 'Sharpen' ? 20 : names[i] === 'Edge' ? 16 : 12)));
+      var fo = Math.round(bad*rrange(0.58, 0.86));
+      out.push({
+        when: now - (i*2 + 1)*day,
+        mode: names[i],
+        n: names[i] === 'Sharpen' ? 20 : names[i] === 'Edge' ? 16 : 12,
+        acc: acc,
+        line: Math.round(rrange(0.15, 0.45)*100)/100,
+        falseOut: fo, falseIn: bad - fo,
+        light: rnd() < 0.7 ? 'sun' : 'flat'
+      });
+    }
+    return out;
+  });
+}
+function loadHist(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(raw){ S.hist = JSON.parse(raw); el.histBadge.textContent = 'Your sets'; return; }
+  }catch(e){}
+  S.hist = HIST_SEED.slice();
+  el.histBadge.textContent = 'Sample data';
+}
+function saveHist(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S.hist.slice(0, 40))); el.histBadge.textContent = 'Your sets'; }catch(e){}
+}
+function ago(ts){
+  var d = Math.round((Date.now()-ts)/86400000);
+  if(d <= 0) return 'Today';
+  if(d === 1) return 'Yesterday';
+  if(d < 7) return d + ' days ago';
+  return Math.round(d/7) + ' wk ago';
+}
+function renderHist(){
+  el.hist.innerHTML = S.hist.slice(0, 8).map(function(h){
+    var bad = h.falseOut + h.falseIn;
+    var lean = bad >= 3 ? (h.falseOut > h.falseIn ? 'leaned out' : h.falseIn > h.falseOut ? 'leaned in' : 'even') : 'even';
+    return '<div class="hrow"><div class="hm"><b>' + h.mode + ' · ' + h.n + ' balls</b>' +
+      '<span>' + LIGHT[h.light] + ' · ' + lean +
+      (h.line != null ? ' · line ' + Math.round(h.line*100) + ' cm' : '') + '</span></div>' +
+      '<div class="hc">' + h.acc + '%</div><div class="hd">' + ago(h.when) + '</div></div>';
+  }).join('');
+}
+function renderChips(){
+  var withLine = S.hist.filter(function(h){ return h.line != null; });
+  if(withLine.length){
+    var avg = withLine.slice(0, 5).reduce(function(a, h){ return a + h.line; }, 0)/Math.min(5, withLine.length);
+    el.lineChip.innerHTML = '<span class="dot"></span>Your line: ' + Math.round(avg*100) + ' cm';
+  }
+  var fo = 0, fi = 0;
+  S.hist.slice(0, 5).forEach(function(h){ fo += h.falseOut||0; fi += h.falseIn||0; });
+  var tot = fo + fi;
+  el.leanChip.textContent = tot < 5 ? 'Lean: not enough data'
+    : Math.abs(fo-fi)/tot < 0.15 ? 'Lean: fairly even'
+    : fo > fi ? 'You lean: calls it out' : 'You lean: plays it on';
+}
+el.resetBtn.addEventListener('click', function(){
+  try{ localStorage.removeItem(KEY); }catch(e){}
+  S.hist = HIST_SEED.slice();
+  el.histBadge.textContent = 'Sample data';
+  renderHist(); renderChips();
+  toast('Back to the sample data');
+});
+
+/* ───────────── Settings ───────────── */
+function renderModes(){
+  el.modes.innerHTML = MODES.map(function(m){
+    return '<button class="mode" data-mode="' + m.id + '" aria-pressed="' + (m.id === S.mode.id) + '">' +
+      '<span class="mk">' + svg(MODE_ICON[m.id]) + '</span>' +
+      '<span class="mb"><b>' + m.n + '</b><span>' + m.d + '</span></span>' +
+      '<span class="mt"><b>' + m.meta + '</b></span></button>';
+  }).join('');
+  Array.prototype.forEach.call(el.modes.querySelectorAll('.mode'), function(b){
+    b.addEventListener('click', function(){
+      S.mode = MODES.filter(function(m){ return m.id === b.dataset.mode; })[0];
+      renderModes();
+    });
+  });
+}
+function tgBind(root, key, cast){
+  Array.prototype.forEach.call(root.querySelectorAll('button'), function(b){
+    b.addEventListener('click', function(){
+      S[key] = cast ? cast(b.dataset[key]) : b.dataset[key];
+      Array.prototype.forEach.call(root.querySelectorAll('button'), function(o){
+        o.setAttribute('aria-pressed', String(o === b));
+      });
+      if(key === 'light'){
+        el.lightNote.textContent = S.light === 'sun'
+          ? 'Sun throws a shadow that tells you where the ball is. Overcast takes that away.'
+          : 'No shadow. This is indoors, or a grey day, and it is genuinely harder.';
+      }
+      COL = null;
+      draw();
+    });
+  });
+}
+tgBind(el.lightTg, 'light');
+tgBind(el.speedTg, 'speed', parseFloat);
+
+el.scaleSw.addEventListener('click', function(){
+  S.trueSize = el.scaleSw.getAttribute('aria-checked') !== 'true';
+  el.scaleSw.setAttribute('aria-checked', String(S.trueSize));
+  el.scaleNote.textContent = S.trueSize
+    ? 'On. About three pixels wide at the moment it vanishes. This is what the geometry actually gives, and it is still not what your eye gets on a court.'
+    : 'Off. The ball is drawn larger than the geometry gives, because at true size it is about three pixels wide when it vanishes. Turning this on is honest and very hard.';
+  draw();
+});
+
+el.startBtn.addEventListener('click', function(){ startSession(S.mode); });
+el.howBtn.addEventListener('click', function(){
+  toast('Watch the ball, not the buttons. Call it the moment it vanishes.');
+});
+
+var toastT = 0;
+function toast(msg){
+  el.toast.textContent = msg;
+  el.toast.classList.add('on');
+  clearTimeout(toastT);
+  toastT = setTimeout(function(){ el.toast.classList.remove('on'); }, 2600);
+}
+
+window.addEventListener('resize', function(){
+  if(S.open){ sizeCanvas(); draw(); }
+});
+
+/* ───────────── Boot ───────────── */
+paintTheme();
+renderModes();
+HIST_SEED = seedHist();
+loadHist();
+renderHist();
+renderChips();
+if(RM.matches){
+  S.speed = 0.6;
+  Array.prototype.forEach.call(el.speedTg.querySelectorAll('button'), function(b){
+    b.setAttribute('aria-pressed', String(b.dataset.speed === '0.6'));
+  });
+}
+})();
+</script>
+
+</body>
+</html>

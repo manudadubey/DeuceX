@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{height:100%}</style>
+</head>
+<body>
+<title>ProCircuit Hold</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');
+
+/* ── Tokens (shadcn Vega preset b3REZz9P6, Neutral base, Lime charts) ── */
+:root{
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --background:#ffffff;
+  --foreground:oklch(0.145 0 0);
+  --card:#ffffff;
+  --card-foreground:oklch(0.145 0 0);
+  --primary:oklch(0.205 0 0);
+  --primary-foreground:oklch(0.985 0 0);
+  --secondary:oklch(0.97 0 0);
+  --secondary-foreground:oklch(0.205 0 0);
+  --muted:oklch(0.97 0 0);
+  --muted-foreground:oklch(0.556 0 0);
+  --border:oklch(0.922 0 0);
+  --input:oklch(0.922 0 0);
+  --ring:oklch(0.708 0 0);
+  --surface:#f8f8f8;
+  --field:oklch(0 0 0 / 3%);
+
+  --chart-1:oklch(0.768 0.233 130.85);
+  --chart-2:oklch(0.648 0.2 131.684);
+  --chart-3:oklch(0.532 0.157 131.589);
+  --chart-4:oklch(0.453 0.124 130.933);
+  --chart-5:oklch(0.392 0.104 130.5);
+  --chart-grid:oklch(0 0 0 / 6%);
+
+  --ok:oklch(0.627 0.194 149.214);
+  --ok-bg:oklch(0.627 0.194 149.214 / 12%);
+  --warn:oklch(0.666 0.179 58.318);
+  --warn-bg:oklch(0.666 0.179 58.318 / 12%);
+  --danger:oklch(0.577 0.245 27.325);
+  --danger-bg:oklch(0.577 0.245 27.325 / 12%);
+
+  --vol-bg:oklch(0.955 0.002 250);
+  --vol-edge:oklch(0.60 0.01 250);
+  --ball:oklch(0.30 0.01 250);
+
+  --shadow-card: 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.05);
+  --ease: cubic-bezier(.2,.8,.2,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --background:oklch(0.145 0 0);
+    --foreground:oklch(0.985 0 0);
+    --card:oklch(0.205 0 0);
+    --card-foreground:oklch(0.985 0 0);
+    --primary:oklch(0.922 0 0);
+    --primary-foreground:oklch(0.205 0 0);
+    --secondary:oklch(0.269 0 0);
+    --secondary-foreground:oklch(0.985 0 0);
+    --muted:oklch(0.269 0 0);
+    --muted-foreground:oklch(0.708 0 0);
+    --border:oklch(1 0 0 / 10%);
+    --input:oklch(1 0 0 / 15%);
+    --ring:oklch(0.556 0 0);
+    --surface:oklch(0.175 0 0);
+    --field:oklch(1 0 0 / 4.5%);
+    --chart-1:oklch(0.897 0.196 126.665);
+    --chart-2:oklch(0.768 0.233 130.85);
+    --chart-3:oklch(0.648 0.2 131.684);
+    --chart-4:oklch(0.532 0.157 131.589);
+    --chart-5:oklch(0.453 0.124 130.933);
+    --chart-grid:oklch(1 0 0 / 8%);
+    --vol-bg:oklch(0.165 0.002 250);
+    --vol-edge:oklch(0.45 0.01 250);
+    --ball:oklch(0.90 0.005 250);
+    --shadow-card: 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  --background:oklch(0.145 0 0);
+  --foreground:oklch(0.985 0 0);
+  --card:oklch(0.205 0 0);
+  --card-foreground:oklch(0.985 0 0);
+  --primary:oklch(0.922 0 0);
+  --primary-foreground:oklch(0.205 0 0);
+  --secondary:oklch(0.269 0 0);
+  --secondary-foreground:oklch(0.985 0 0);
+  --muted:oklch(0.269 0 0);
+  --muted-foreground:oklch(0.708 0 0);
+  --border:oklch(1 0 0 / 10%);
+  --input:oklch(1 0 0 / 15%);
+  --ring:oklch(0.556 0 0);
+  --surface:oklch(0.175 0 0);
+  --field:oklch(1 0 0 / 4.5%);
+  --chart-1:oklch(0.897 0.196 126.665);
+  --chart-2:oklch(0.768 0.233 130.85);
+  --chart-3:oklch(0.648 0.2 131.684);
+  --chart-4:oklch(0.532 0.157 131.589);
+  --chart-5:oklch(0.453 0.124 130.933);
+  --chart-grid:oklch(1 0 0 / 8%);
+  --vol-bg:oklch(0.165 0.002 250);
+  --vol-edge:oklch(0.45 0.01 250);
+  --ball:oklch(0.90 0.005 250);
+  --shadow-card: 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.25);
+}
+
+/* ── Base ── */
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{
+  margin:0;background:var(--background);color:var(--foreground);
+  font-family:'Geist','Geist Fallback',system-ui,-apple-system,'Segoe UI',sans-serif;
+  font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  transition:background-color .2s var(--ease), color .2s var(--ease);
+}
+.mono{font-family:'Geist Mono','SFMono-Regular',ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0;font-weight:500;letter-spacing:-0.01em;text-wrap:balance}
+p{margin:0}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px;border-radius:var(--radius-sm)}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+.app{min-height:100%;display:flex;flex-direction:column}
+
+/* ── Top bar ── */
+.top{position:sticky;top:env(safe-area-inset-top, 0px);z-index:30;
+  display:flex;align-items:center;gap:12px;height:56px;padding:0 16px;
+  background:color-mix(in oklab, var(--background) 82%, transparent);
+  backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);
+  box-shadow:inset 0 -1px 0 var(--border)}
+.brand{display:flex;align-items:center;gap:8px;font-size:14px;min-width:0}
+.brand .bm{width:22px;height:22px;border-radius:7px;background:var(--foreground);color:var(--background);
+  display:grid;place-items:center;font-size:11px;font-weight:600;flex:none}
+.brand .sep{color:var(--muted-foreground)}
+.brand strong{font-weight:500}
+.brand .bt{color:var(--muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topr{margin-left:auto;display:flex;gap:4px}
+.icon{width:36px;height:36px;min-width:36px;display:grid;place-items:center;
+  background:transparent;border:0;border-radius:var(--radius-md);cursor:pointer;color:var(--muted-foreground);
+  transition:background-color .15s var(--ease), color .15s var(--ease), transform .12s var(--ease)}
+.icon:hover{background:var(--secondary);color:var(--foreground)}
+.icon:active{transform:scale(.94)}
+.icon svg{width:17px;height:17px}
+
+/* ── Layout ── */
+.wrap{width:100%;max-width:980px;margin:0 auto;padding-inline:16px;padding-block:24px 64px;
+  display:flex;flex-direction:column;gap:20px}
+.phead{display:flex;flex-direction:column;gap:8px}
+.phead h1{font-size:26px;letter-spacing:-0.02em}
+.phead .sub{color:var(--muted-foreground);max-width:60ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;
+  background:var(--secondary);color:var(--secondary-foreground);font-size:12px;white-space:nowrap}
+.chip.lime{background:color-mix(in oklab, var(--chart-1) 16%, transparent);color:var(--chart-2)}
+.chip .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.85}
+.badge{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;
+  font-size:12px;background:var(--secondary);color:var(--secondary-foreground)}
+.badge.ok{background:var(--ok-bg);color:var(--ok)}
+.badge.warn{background:var(--warn-bg);color:var(--warn)}
+.badge.lime{background:color-mix(in oklab, var(--chart-1) 16%, transparent);color:var(--chart-2)}
+
+.player{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-lg);
+  background:var(--secondary);color:var(--secondary-foreground)}
+.player .av{width:32px;height:32px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:var(--background);color:var(--foreground);font-size:12px;font-weight:500;
+  box-shadow:0 0 0 1px var(--border)}
+.player .pn{font-weight:500;line-height:1.25}
+.player .pm{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted-foreground);line-height:1.25}
+.player .badge{margin-left:auto}
+.fl{width:15px;height:10px;border-radius:2px;flex:none;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.18)}
+
+/* ── Card ── */
+.card{background:var(--card);color:var(--card-foreground);border-radius:var(--radius-xl);
+  box-shadow:var(--shadow-card);padding-block:24px;display:flex;flex-direction:column;gap:16px}
+.card > *{padding-inline:24px}
+.card .full{padding-inline:0}
+.ch{display:flex;flex-direction:column;gap:4px}
+.ch .row{display:flex;align-items:flex-start;gap:12px}
+.ch h2{font-size:16px}
+.ch p{font-size:13.5px;color:var(--muted-foreground);max-width:62ch}
+.ch .badge{margin-left:auto;flex:none}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  height:36px;padding:0 15px;border-radius:var(--radius-md);border:1px solid transparent;
+  font-size:13.5px;font-weight:500;cursor:pointer;white-space:nowrap;
+  background:var(--primary);color:var(--primary-foreground);
+  transition:transform .12s var(--ease), opacity .15s var(--ease), background-color .15s var(--ease)}
+.btn:hover{opacity:.9}
+.btn:active{transform:scale(.98)}
+.btn svg{width:15px;height:15px}
+.btn.outline{background:var(--field);border-color:var(--input);color:var(--foreground)}
+.btn.outline:hover{background:var(--secondary);opacity:1}
+.btn.ghost{background:transparent;color:var(--muted-foreground)}
+.btn.ghost:hover{background:var(--secondary);color:var(--foreground);opacity:1}
+.btn.lg{height:44px;padding:0 20px;font-size:14.5px}
+.btn.sm{height:32px;padding:0 12px;font-size:13px}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+
+.item{background:color-mix(in oklab, var(--secondary) 50%, transparent);border-radius:var(--radius-md);padding:14px 16px}
+.srow{display:flex;align-items:center;gap:14px}
+.srow .st{min-width:0}
+.srow .st b{display:block;font-weight:500}
+.srow .st span{display:block;font-size:12.5px;color:var(--muted-foreground)}
+.sw{margin-left:auto;flex:none;position:relative;width:38px;height:22px;min-height:22px;border-radius:999px;
+  background:var(--input);border:0;cursor:pointer;transition:background-color .18s var(--ease)}
+.sw::before{content:"";position:absolute;inset:-9px -4px;border-radius:999px}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+  background:var(--background);box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .18s var(--ease)}
+.sw[aria-checked="true"]{background:var(--primary)}
+.sw[aria-checked="true"]::after{transform:translateX(16px);background:var(--primary-foreground)}
+
+.modes{display:flex;flex-direction:column;gap:8px}
+.mode{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;
+  text-align:left;width:100%;cursor:pointer;
+  background:color-mix(in oklab, var(--secondary) 50%, transparent);
+  border:1px solid transparent;border-radius:var(--radius-md);padding:14px 16px;
+  transition:border-color .15s var(--ease), background-color .15s var(--ease), transform .12s var(--ease)}
+.mode:active{transform:scale(.995)}
+.mode[aria-pressed="true"]{border-color:var(--chart-2);background:color-mix(in oklab, var(--chart-1) 9%, transparent)}
+.mode .mk{grid-column:1;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;
+  background:var(--background);box-shadow:0 0 0 1px var(--border);color:var(--muted-foreground)}
+.mode[aria-pressed="true"] .mk{color:var(--chart-2)}
+.mode .mk svg{width:16px;height:16px}
+.mode .mb{grid-column:2;min-width:0}
+.mode .mb b{display:block;font-weight:500}
+.mode .mb span{display:block;font-size:12.5px;color:var(--muted-foreground)}
+.mode .mt{grid-column:3;font-size:12.5px;color:var(--muted-foreground);text-align:right;flex:none}
+.mode .mt b{display:block;font-weight:500;color:var(--foreground);font-size:13.5px}
+
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.kv .k{background:color-mix(in oklab, var(--secondary) 50%, transparent);border-radius:var(--radius-md);padding:12px 14px}
+.kv .k dt{font-size:12px;color:var(--muted-foreground);margin:0 0 4px}
+.kv .k dd{margin:0;font-size:20px;font-weight:500;letter-spacing:-0.02em}
+.kv .k dd small{font-size:12.5px;font-weight:400;color:var(--muted-foreground);letter-spacing:0}
+
+.notes{display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:var(--muted-foreground)}
+.notes div{display:flex;gap:10px;align-items:flex-start}
+.notes .b{width:5px;height:5px;border-radius:50%;background:var(--muted-foreground);opacity:.55;margin-top:8px;flex:none}
+
+/* ── Session ── */
+.sess{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;background:var(--background);
+  padding-top:env(safe-area-inset-top, 0px);padding-bottom:env(safe-area-inset-bottom, 0px);
+  animation:fade .25s var(--ease)}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sess .shd{display:flex;align-items:center;gap:10px;height:56px;padding:0 10px 0 16px;flex:none}
+.sess .shd .sname{font-weight:500;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sess .shd .badge{flex:none;white-space:nowrap}
+.sess .shd .sright{margin-left:auto;display:flex;align-items:center;gap:6px}
+.sess .sbody{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;
+  padding:4px 16px 18px;max-width:720px;width:100%;margin:0 auto}
+
+.vol{position:relative;flex:1 1 auto;width:100%;aspect-ratio:1/1.1;max-height:min(56vh,440px);
+  border-radius:var(--radius-xl);overflow:hidden;background:var(--vol-bg);box-shadow:0 0 0 1px var(--border);
+  touch-action:manipulation}
+.vol canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cue{flex:none;display:flex;align-items:center;justify-content:center;min-height:30px;
+  margin-top:auto;pointer-events:none;transition:opacity .15s var(--ease)}
+.cue.off{opacity:0}
+.cue b{display:inline-flex;align-items:center;height:28px;padding:0 13px;border-radius:999px;
+  background:color-mix(in oklab, var(--background) 88%, transparent);
+  font-size:13.5px;font-weight:500;box-shadow:0 0 0 1px var(--border)}
+.cue.big b{height:auto;padding:9px 18px;font-size:26px;font-variant-numeric:tabular-nums;letter-spacing:-0.02em}
+.cue.hit b{background:var(--ok-bg);color:var(--ok);box-shadow:0 0 0 1px color-mix(in oklab, var(--ok) 35%, transparent)}
+.cue.miss b{background:var(--danger-bg);color:var(--danger);box-shadow:0 0 0 1px color-mix(in oklab, var(--danger) 35%, transparent)}
+.cue.lime b{background:color-mix(in oklab, var(--chart-1) 18%, transparent);color:var(--chart-2);
+  box-shadow:0 0 0 1px color-mix(in oklab, var(--chart-2) 35%, transparent)}
+
+.speedbar{display:flex;align-items:center;gap:10px;flex:none;font-size:12.5px;color:var(--muted-foreground)}
+.speedbar .track{flex:1;height:5px;border-radius:999px;background:var(--input);overflow:hidden;min-width:0}
+.speedbar .track i{display:block;height:100%;background:var(--chart-1);border-radius:999px;transition:width .3s var(--ease)}
+.speedbar .val{font-variant-numeric:tabular-nums;font-weight:500;color:var(--foreground)}
+
+.dotrow{display:flex;gap:4px;align-items:center;flex-wrap:wrap;flex:none;min-height:9px}
+.dotrow i{width:9px;height:9px;border-radius:50%;background:var(--input);flex:none}
+.dotrow i.hit{background:var(--chart-1)}
+.dotrow i.miss{background:var(--danger);opacity:.8}
+.dotrow span{font-size:12px;color:var(--muted-foreground);margin-left:6px}
+
+.sfoot{display:flex;gap:8px;align-items:center;flex:none;flex-wrap:wrap;
+  padding-top:10px;background:var(--background);font-size:12.5px;color:var(--muted-foreground)}
+.sfoot .proto{margin-left:auto}
+
+/* ── Summary ── */
+.sum{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:14px;padding-bottom:8px}
+.bighead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.bighead b{font-size:46px;font-weight:500;letter-spacing:-0.03em;line-height:1;font-variant-numeric:tabular-nums}
+.bighead span{font-size:13.5px;color:var(--muted-foreground);max-width:38ch}
+.chartbox{position:relative;width:100%}
+.chartbox svg{display:block;width:100%;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted-foreground)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+
+.hl{display:flex;flex-direction:column}
+.hrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;
+  padding:11px 0;box-shadow:inset 0 -1px 0 var(--border)}
+.hrow:last-child{box-shadow:none}
+.hrow .hm{grid-column:1;min-width:0}
+.hrow .hm b{display:block;font-weight:500;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hrow .hm span{display:block;font-size:12px;color:var(--muted-foreground)}
+.hrow .hc{grid-column:2;text-align:right;font-size:14px;font-weight:500;font-variant-numeric:tabular-nums}
+.hrow .hd{grid-column:3;text-align:right;font-size:12.5px;color:var(--muted-foreground);width:64px}
+
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom, 0px));transform:translate(-50%,14px);
+  z-index:80;background:var(--primary);color:var(--primary-foreground);border-radius:999px;
+  padding:9px 16px;font-size:13px;opacity:0;pointer-events:none;
+  transition:opacity .22s var(--ease), transform .22s var(--ease);max-width:calc(100vw - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ── Responsive ── */
+@media (max-width:620px){
+  .phead h1{font-size:22px}
+  .card{padding-block:20px}
+  .card > *{padding-inline:18px}
+  .bighead b{font-size:38px}
+  .mode{grid-template-columns:auto minmax(0,1fr);row-gap:6px}
+  .mode .mt{grid-column:2;text-align:left}
+  .mode .mt b{display:inline;font-size:12.5px;color:var(--muted-foreground);font-weight:400}
+  .mode .mt b:not(:last-child)::after{content:' \00b7 '}
+  .icon,.btn{min-height:44px}
+  .icon{height:44px;width:44px}
+  .btn{height:44px}
+  .btn.sm{height:38px}
+  .sw{height:28px;width:48px;min-height:0}
+  .sw::after{width:24px;height:24px}
+  .sw[aria-checked="true"]::after{transform:translateX(20px)}
+}
+/* Motion: the spheres moving is the whole task, so it is not removed here. The
+   honest accommodation is a slower starting speed and no decorative pulsing. */
+@media (prefers-reduced-motion: reduce){
+  .btn:active,.icon:active,.mode:active{transform:none}
+  .sess{animation:none}
+  .toast{transition:opacity .15s linear;transform:translate(-50%,0)}
+  .toast.on{transform:translate(-50%,0)}
+  .vol,.mode,.item,.card,.icon,.btn,.sw{
+    transition-property:opacity, box-shadow, background-color, color, border-color;
+    transition-duration:.15s;transition-timing-function:linear}
+  .sw::after,.speedbar .track i{transition:none}
+}
+@media (prefers-reduced-transparency: reduce){
+  .top{background:var(--background);backdrop-filter:none;-webkit-backdrop-filter:none}
+  .cue b{background:var(--background)}
+}
+@media (max-height:560px){
+  .sess .shd{height:48px}
+  .sess .sbody{gap:8px;padding-bottom:10px}
+  .vol{max-height:52vh}
+  .cue{top:8px}
+}
+@media (prefers-contrast: more){
+  .card{box-shadow:0 0 0 1px var(--foreground)}
+  .item,.mode,.kv .k{box-shadow:0 0 0 1px var(--foreground)}
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="f-AUT" viewBox="0 0 3 2"><rect width="3" height="2" fill="#ED2939"/><rect y=".667" width="3" height=".666" fill="#fff"/></symbol>
+</svg>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <span class="bm">PC</span>
+      <span class="bt">ProCircuit <span class="sep">/</span> <strong>Mindset Coach</strong></span>
+    </div>
+    <div class="topr">
+      <button class="icon" id="themeBtn" title="Theme" aria-label="Switch theme"></button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="phead">
+      <h1>Hold</h1>
+      <p class="sub">Four balls light up, then they stop being special and everything moves. Your job is to still know which four they were. It gets faster until you cannot, and that speed is the number.</p>
+      <div class="chips">
+        <span class="chip lime" id="spdChip"><span class="dot"></span>Your speed: 148</span>
+        <span class="chip" id="loadChip">4 of 8</span>
+        <span class="chip">Primer</span>
+      </div>
+    </div>
+
+    <div class="player">
+      <span class="av">AD</span>
+      <div>
+        <div class="pn">Arya Dubey</div>
+        <div class="pm"><svg class="fl"><use href="#f-AUT"></use></svg> ATP 487 · Stage 2 Emerging</div>
+      </div>
+      <span class="badge">Prototype</span>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="row"><h2>Start a run</h2></div>
+        <p>The speed follows you. Get a trial right and the next one is faster, miss one and it slows down. After a dozen trials it settles around the edge of what you can hold.</p></div>
+      <div class="modes" id="modes"></div>
+      <div class="actions">
+        <button class="btn lg" id="startBtn">Start</button>
+        <button class="btn outline lg" id="howBtn">How it works</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="row"><h2>Settings</h2></div></div>
+      <div class="item">
+        <div class="srow">
+          <div class="st"><b>Show the box</b><span id="boxNote">On. The wireframe gives you a frame of reference for depth. Turning it off is harder and closer to the original.</span></div>
+          <button class="sw" id="boxSw" role="switch" aria-checked="true" aria-label="Show the box"></button>
+        </div>
+      </div>
+      <div class="item">
+        <div class="srow">
+          <div class="st"><b>Start from my last speed</b><span id="warmNote">On. Saves a third of the run finding your range again. Off starts everyone at the same place.</span></div>
+          <button class="sw" id="warmSw" role="switch" aria-checked="true" aria-label="Start from my last speed"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="row"><h2>Last runs</h2><span class="badge" id="histBadge">Sample data</span></div></div>
+      <div class="hl" id="hist"></div>
+      <div class="actions">
+        <button class="btn ghost sm" id="resetBtn">Reset to the sample data</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="row"><h2>When to use it</h2><span class="badge lime">Before you play</span></div></div>
+      <div class="notes">
+        <div><i class="b"></i><span>One run, once. The Primer is about three and a half minutes and that is the point. Doing three runs back to back is how you arrive tired rather than switched on.</span></div>
+        <div><i class="b"></i><span>Finish twenty to thirty minutes before the first ball, and keep the last ten minutes before you walk on screen free.</span></div>
+        <div><i class="b"></i><span>Phone away before you walk on court. Players may not receive information through an electronic device during a match.</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="row"><h2>What Hold does not do</h2><span class="badge warn">Read this</span></div></div>
+      <div class="notes">
+        <div><i class="b"></i><span>This is a known task. It is called multiple object tracking, and in three dimensions it is the paradigm behind the commercial trackers a lot of clubs already own.</span></div>
+        <div><i class="b"></i><span>Here is the honest part. People reliably get better at this task. The evidence that getting better at it makes you better at your sport is contested, and the reviews that go looking for it tend to find small studies without proper control groups. We are not going to tell you otherwise.</span></div>
+        <div><i class="b"></i><span>So it sits here as a primer and nothing else. The claim is that it switches your attention on in the minutes before you play, not that it changes how you play in six weeks. If your speed number climbs, the most likely explanation is that you got better at this, not at tennis.</span></div>
+        <div><i class="b"></i><span>The original is viewed through 3D glasses and your two eyes do real work. A phone has one flat screen, so depth here comes from size, overlap and shading only.</span></div>
+        <div><i class="b"></i><span>Nothing is sent anywhere, and no part of this tells you whether you are ready to play.</span></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="sess" id="sess" hidden role="dialog" aria-modal="true" aria-labelledby="sTitle" tabindex="-1">
+  <div class="shd">
+    <span class="sname" id="sTitle">Primer</span>
+    <span class="badge" id="sCount">Trial 1 of 12</span>
+    <div class="sright"><button class="icon" id="sClose" aria-label="Close"></button></div>
+  </div>
+  <div class="sbody" id="sBody">
+    <div class="cue" id="cue" aria-hidden="true"><b>Ready</b></div>
+    <div class="vol" id="volWrap">
+      <canvas id="cv"></canvas>
+    </div>
+    <p class="sr" id="live" role="status" aria-live="assertive"></p>
+    <div class="speedbar">
+      <span>Speed</span>
+      <span class="track"><i id="spdBar" style="width:30%"></i></span>
+      <span class="val" id="spdVal">92</span>
+    </div>
+    <div class="dotrow" id="dotrow"></div>
+    <div class="sfoot">
+      <span id="sHint">Tap the ones you tracked</span>
+      <span class="proto" id="sMode">4 of 8</span>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ───────────── Seeded randomness ───────────── */
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+var _rnd = Math.random;
+function withSeed(seed, fn){
+  var prev = _rnd; _rnd = mulberry32(seed);
+  try { return fn(); } finally { _rnd = prev; }
+}
+function rnd(){ return _rnd(); }
+function rrange(a,b){ return a + (b-a)*rnd(); }
+
+/* ───────────── Volume ─────────────
+   A 2.4 metre cube, its centre four metres from the eye.
+   Depth is carried by size, overlap and shading, since a phone has no
+   stereo disparity to give away. */
+var VOL = { d:4.0, lx:2.4, ly:2.4, lz:2.4, r:0.115 };
+var BALLS_MIN_SEP = 2.5;              // in radii, when the trial is laid out
+
+/* ───────────── Staircase ─────────────
+   One up, one down, on a log scale, so it settles where the player is right
+   about half the time. Coarse steps until the range is found, then fine ones.
+   Checked against a synthetic observer: a twelve trial run lands within about
+   eight per cent of a known threshold, a twenty trial run within six. */
+var STEP_COARSE = 1.34, STEP_FINE = 1.12, COARSE_REVERSALS = 2;
+var SPEED_MIN = 0.25, SPEED_MAX = 6.0, SPEED_START = 0.90;
+
+var MODES = [
+  { id:'primer', n:'Primer',    trials:12, targets:4, balls:8,  track:8,
+    d:'The one to use before you play. About three and a half minutes.', meta:'12 trials · 4 of 8' },
+  { id:'full',   n:'Full read', trials:20, targets:4, balls:8,  track:8,
+    d:'More trials, a tighter number. Use it when you want a real baseline.', meta:'20 trials · 4 of 8' },
+  { id:'heavy',  n:'Heavy',     trials:16, targets:5, balls:10, track:9,
+    d:'Five to hold among ten, and a second longer. Considerably harder.', meta:'16 trials · 5 of 10' }
+];
+
+/* ───────────── State ───────────── */
+var S = {
+  mode: MODES[0], open:false, phase:'idle', showBox:true, warmStart:true,
+  trial:0, speed:SPEED_START, dir:0, reversals:[], trace:[], results:[],
+  spheres:[], selected:[], phaseT0:0, lastT:0, hist:[]
+};
+var RM = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+var el = {};
+['themeBtn','modes','startBtn','howBtn','boxSw','boxNote','warmSw','warmNote','hist','histBadge',
+ 'resetBtn','sess','sTitle','sCount','sClose','sBody','volWrap','cv','cue','live','dotrow',
+ 'spdBar','spdVal','sHint','sMode','toast','spdChip','loadChip'].forEach(function(id){
+  el[id] = document.getElementById(id);
+});
+
+/* ───────────── Icons ───────────── */
+var ICON = {
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  close:'<path d="M18 6 6 18M6 6l12 12"/>',
+  eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  gauge:'<path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M13.4 10.6 19 5"/><path d="M4 20a9 9 0 1 1 16 0"/>',
+  layers:'<path d="m12 2 9 5-9 5-9-5 9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>'
+};
+function svg(p, w){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||1.7)+
+         '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+}
+var MODE_ICON = { primer:ICON.eye, full:ICON.gauge, heavy:ICON.layers };
+
+/* ───────────── Theme ───────────── */
+var COL = null;
+function currentTheme(){
+  var f = document.documentElement.getAttribute('data-theme');
+  return f || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+}
+function paintTheme(){
+  el.themeBtn.innerHTML = svg(currentTheme() === 'dark' ? ICON.sun : ICON.moon);
+  COL = null;
+}
+el.themeBtn.addEventListener('click', function(){
+  document.documentElement.setAttribute('data-theme', currentTheme() === 'dark' ? 'light' : 'dark');
+  paintTheme(); draw();
+});
+el.sClose.innerHTML = svg(ICON.close);
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(){
+  COL = null; paintTheme(); draw();
+});
+function colours(){
+  if(COL) return COL;
+  var cs = getComputedStyle(document.documentElement);
+  function v(n){ return cs.getPropertyValue(n).trim(); }
+  COL = { bg:v('--vol-bg'), edge:v('--vol-edge'), ball:v('--ball'),
+          lime:v('--chart-1'), lime2:v('--chart-2'), ok:v('--ok'),
+          danger:v('--danger'), fg:v('--foreground'), muted:v('--muted-foreground'),
+          bgPage:v('--background') };
+  return COL;
+}
+
+/* ───────────── Projection ───────────── */
+var VP = { w:0, h:0, f:0, cx:0, cy:0, dpr:1 };
+function sizeCanvas(){
+  var r = el.volWrap.getBoundingClientRect();
+  var dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  VP.w = Math.max(1, Math.round(r.width));
+  VP.h = Math.max(1, Math.round(r.height));
+  VP.dpr = dpr;
+  el.cv.width = Math.round(VP.w*dpr);
+  el.cv.height = Math.round(VP.h*dpr);
+  // Fit the near face of the box in both directions, with an eight per cent margin.
+  var near = VOL.d - VOL.lz/2;
+  var fH = 0.92*(VP.w/2)*near/(VOL.lx/2);
+  var fV = 0.92*(VP.h/2)*near/(VOL.ly/2);
+  VP.f = Math.min(fH, fV);
+  VP.cx = VP.w/2;
+  VP.cy = VP.h/2;
+}
+function proj(x, y, z){
+  if(z < 0.3) return null;
+  return { x:VP.cx + VP.f*x/z, y:VP.cy - VP.f*y/z, r:VP.f*VOL.r/z, d:z };
+}
+
+/* ───────────── Trial setup ───────────── */
+function layout(mode){
+  var hx = VOL.lx/2 - VOL.r, hy = VOL.ly/2 - VOL.r, hz = VOL.lz/2 - VOL.r;
+  var out = [], guard = 0;
+  while(out.length < mode.balls && guard++ < 4000){
+    var p = { x:rrange(-hx,hx), y:rrange(-hy,hy), z:VOL.d + rrange(-hz,hz) };
+    var ok = true;
+    for(var i = 0; i < out.length; i++){
+      var q = out[i];
+      var dd = Math.hypot(p.x-q.x, p.y-q.y, p.z-q.z);
+      if(dd < BALLS_MIN_SEP*2*VOL.r){ ok = false; break; }
+    }
+    if(!ok) continue;
+    // Random direction on the unit sphere.
+    var u = rrange(-1,1), th = rrange(0, Math.PI*2), s = Math.sqrt(1-u*u);
+    p.vx = s*Math.cos(th); p.vy = s*Math.sin(th); p.vz = u;
+    p.target = false; p.id = out.length + 1;
+    out.push(p);
+  }
+  // Pick the targets.
+  var idx = out.map(function(_,i){ return i; });
+  for(var k = idx.length-1; k > 0; k--){
+    var j = Math.floor(rnd()*(k+1));
+    var t = idx[k]; idx[k] = idx[j]; idx[j] = t;
+  }
+  for(var m = 0; m < mode.targets; m++) out[idx[m]].target = true;
+  return out;
+}
+
+function step(dt){
+  var sp = S.spheres, v = S.speed, R = VOL.r;
+  var hx = VOL.lx/2 - R, hy = VOL.ly/2 - R, hz = VOL.lz/2 - R;
+  var i, j, p;
+  for(i = 0; i < sp.length; i++){
+    p = sp[i];
+    p.x += p.vx*v*dt; p.y += p.vy*v*dt; p.z += p.vz*v*dt;
+    if(p.x < -hx){ p.x = -hx; p.vx = Math.abs(p.vx); }
+    if(p.x >  hx){ p.x =  hx; p.vx = -Math.abs(p.vx); }
+    if(p.y < -hy){ p.y = -hy; p.vy = Math.abs(p.vy); }
+    if(p.y >  hy){ p.y =  hy; p.vy = -Math.abs(p.vy); }
+    if(p.z < VOL.d-hz){ p.z = VOL.d-hz; p.vz = Math.abs(p.vz); }
+    if(p.z > VOL.d+hz){ p.z = VOL.d+hz; p.vz = -Math.abs(p.vz); }
+  }
+  // Equal mass elastic collisions, then speeds are renormalised so that speed
+  // stays the single controlled variable of the staircase.
+  for(i = 0; i < sp.length; i++){
+    for(j = i+1; j < sp.length; j++){
+      var a = sp[i], b = sp[j];
+      var dx = b.x-a.x, dy = b.y-a.y, dz = b.z-a.z;
+      var d = Math.sqrt(dx*dx + dy*dy + dz*dz);
+      if(d <= 0.0001 || d >= 2*R) continue;
+      var nx = dx/d, ny = dy/d, nz = dz/d;
+      var an = a.vx*nx + a.vy*ny + a.vz*nz;
+      var bn = b.vx*nx + b.vy*ny + b.vz*nz;
+      if(an - bn <= 0) continue;                 // already separating
+      var t2 = an - bn;
+      a.vx -= t2*nx; a.vy -= t2*ny; a.vz -= t2*nz;
+      b.vx += t2*nx; b.vy += t2*ny; b.vz += t2*nz;
+      var push = (2*R - d)/2 + 0.0005;
+      a.x -= nx*push; a.y -= ny*push; a.z -= nz*push;
+      b.x += nx*push; b.y += ny*push; b.z += nz*push;
+    }
+  }
+  for(i = 0; i < sp.length; i++){
+    p = sp[i];
+    var m = Math.hypot(p.vx, p.vy, p.vz) || 1;
+    p.vx /= m; p.vy /= m; p.vz /= m;
+  }
+}
+
+/* ───────────── Drawing ───────────── */
+function boxCorners(){
+  var hx = VOL.lx/2, hy = VOL.ly/2, hz = VOL.lz/2, d = VOL.d;
+  return [
+    [-hx,-hy,d-hz],[hx,-hy,d-hz],[hx,hy,d-hz],[-hx,hy,d-hz],
+    [-hx,-hy,d+hz],[hx,-hy,d+hz],[hx,hy,d+hz],[-hx,hy,d+hz]
+  ];
+}
+var BOX_EDGES_FAR  = [[4,5],[5,6],[6,7],[7,4]];
+var BOX_EDGES_SIDE = [[0,4],[1,5],[2,6],[3,7]];
+var BOX_EDGES_NEAR = [[0,1],[1,2],[2,3],[3,0]];
+function drawEdges(ctx, pts, edges, alpha){
+  var C = colours();
+  ctx.strokeStyle = C.edge; ctx.globalAlpha = alpha; ctx.lineWidth = 1;
+  ctx.beginPath();
+  edges.forEach(function(e){
+    var a = pts[e[0]], b = pts[e[1]];
+    if(!a || !b) return;
+    ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+  });
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+function drawSphere(ctx, p, opts){
+  var C = colours();
+  var q = proj(p.x, p.y, p.z);
+  if(!q) return;
+  var r = q.r*(opts.scale || 1);
+  var near = VOL.d - VOL.lz/2, far = VOL.d + VOL.lz/2;
+  var depth = (q.d - near)/(far - near);                 // 0 near, 1 far
+  var alpha = 1 - 0.42*Math.max(0, Math.min(1, depth));
+
+  var fill = opts.fill || C.ball;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  var g = ctx.createRadialGradient(q.x - r*0.35, q.y - r*0.38, r*0.08, q.x, q.y, r);
+  g.addColorStop(0, opts.hi || fill);
+  g.addColorStop(1, fill);
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  if(opts.ring){
+    ctx.save();
+    ctx.strokeStyle = opts.ring;
+    ctx.lineWidth = Math.max(2, r*0.22);
+    if(opts.dashed) ctx.setLineDash([Math.max(3, r*0.5), Math.max(3, r*0.4)]);
+    ctx.beginPath(); ctx.arc(q.x, q.y, r + ctx.lineWidth*0.9, 0, Math.PI*2); ctx.stroke();
+    ctx.restore();
+  }
+  if(opts.label){
+    ctx.save();
+    ctx.fillStyle = opts.labelCol || C.bg;
+    ctx.font = '600 ' + Math.max(9, Math.round(r*0.95)) + 'px Geist, system-ui, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(opts.label, q.x, q.y + 0.5);
+    ctx.restore();
+  }
+}
+function draw(){
+  if(!el.cv || !VP.w) return;
+  var C = colours();
+  var ctx = el.cv.getContext('2d');
+  ctx.setTransform(VP.dpr, 0, 0, VP.dpr, 0, 0);
+  ctx.clearRect(0, 0, VP.w, VP.h);
+  ctx.fillStyle = C.bg;
+  ctx.fillRect(0, 0, VP.w, VP.h);
+
+  var pts = boxCorners().map(function(c){ return proj(c[0], c[1], c[2]); });
+  if(S.showBox){
+    drawEdges(ctx, pts, BOX_EDGES_FAR, 0.30);
+    drawEdges(ctx, pts, BOX_EDGES_SIDE, 0.22);
+  }
+
+  var order = S.spheres.slice().sort(function(a,b){ return b.z - a.z; });  // far first
+  var showTargets = S.phase === 'highlight';
+  var reveal = S.phase === 'feedback';
+  var picking = S.phase === 'identify' || S.phase === 'feedback';
+  var pulse = 1;
+  if(showTargets && !RM.matches){
+    var e = (performance.now() - S.phaseT0)/1000;
+    pulse = 1 + 0.10*Math.sin(e*7);
+  }
+
+  order.forEach(function(p){
+    var o = { scale: picking ? 1.35 : 1 };
+    if(showTargets && p.target){
+      o.fill = C.lime2; o.hi = C.lime; o.ring = C.lime2; o.scale = pulse;
+    }
+    if(picking){
+      o.label = String(p.id);
+      o.labelCol = C.bg;
+      if(S.selected.indexOf(p.id) >= 0){ o.fill = C.lime2; o.hi = C.lime; o.ring = C.lime2; }
+    }
+    if(reveal){
+      var chosen = S.selected.indexOf(p.id) >= 0;
+      if(p.target && chosen){ o.ring = C.ok; o.fill = C.lime2; o.hi = C.lime; }
+      else if(p.target && !chosen){ o.ring = C.ok; o.dashed = true; }
+      else if(!p.target && chosen){ o.ring = C.danger; o.fill = C.danger; o.hi = C.danger; }
+      else { o.ring = null; }
+    }
+    drawSphere(ctx, p, o);
+  });
+
+  if(S.showBox) drawEdges(ctx, pts, BOX_EDGES_NEAR, 0.34);
+}
+
+/* ───────────── Session flow ───────────── */
+var raf = 0;
+function loop(now){
+  if(!S.open) return;
+  var dt = S.lastT ? Math.min(0.033, (now - S.lastT)/1000) : 0;
+  S.lastT = now;
+  var e = (now - S.phaseT0)/1000;
+
+  if(S.phase === 'place' && e > 0.9) setPhase('highlight');
+  else if(S.phase === 'highlight' && e > 2.0) setPhase('settle');
+  else if(S.phase === 'settle' && e > 0.6) setPhase('track');
+  else if(S.phase === 'track'){
+    step(dt);
+    if(e > S.mode.track) setPhase('identify');
+  }
+  draw();
+  raf = requestAnimationFrame(loop);
+}
+function setCue(text, cls, say){
+  el.cue.className = 'cue' + (cls ? ' ' + cls : '');
+  el.cue.querySelector('b').textContent = text;
+  if(say && el.live) el.live.textContent = text;
+}
+function setPhase(ph){
+  S.phase = ph;
+  S.phaseT0 = performance.now();
+  if(ph === 'place'){ setCue('Watch', ''); }
+  else if(ph === 'highlight'){ setCue('These ' + S.mode.targets, 'lime', true); }
+  else if(ph === 'settle'){ setCue('Hold them', ''); }
+  else if(ph === 'track'){ el.cue.className = 'cue off'; }
+  else if(ph === 'identify'){
+    S.selected = [];
+    setCue('Pick ' + S.mode.targets, '', true);
+    el.sHint.textContent = 'Tap the ones you tracked';
+  }
+}
+function speedScore(v){ return Math.round(v*100); }
+function paintSpeed(){
+  var frac = (Math.log(S.speed) - Math.log(SPEED_MIN))/(Math.log(SPEED_MAX) - Math.log(SPEED_MIN));
+  el.spdBar.style.width = Math.round(Math.max(2, Math.min(100, frac*100))) + '%';
+  el.spdVal.textContent = speedScore(S.speed);
+}
+function renderDots(){
+  var h = '';
+  for(var i = 0; i < S.mode.trials; i++){
+    var r = S.results[i];
+    h += '<i class="' + (r ? (r.correct ? 'hit' : 'miss') : '') + '"></i>';
+  }
+  var right = S.results.filter(function(r){ return r.correct; }).length;
+  h += '<span>' + right + ' of ' + S.results.length + '</span>';
+  el.dotrow.innerHTML = h;
+}
+function nextTrial(){
+  if(S.trial >= S.mode.trials){ finish(); return; }
+  S.spheres = layout(S.mode);
+  S.selected = [];
+  el.sCount.textContent = 'Trial ' + (S.trial+1) + ' of ' + S.mode.trials;
+  paintSpeed();
+  setPhase('place');
+}
+function pick(id){
+  if(S.phase !== 'identify') return;
+  var i = S.selected.indexOf(id);
+  if(i >= 0){ S.selected.splice(i, 1); }
+  else if(S.selected.length < S.mode.targets){ S.selected.push(id); }
+  draw();
+  if(S.selected.length === S.mode.targets) setTimeout(judge, 220);
+}
+function judge(){
+  if(S.phase !== 'identify') return;
+  var hits = S.spheres.filter(function(p){
+    return p.target && S.selected.indexOf(p.id) >= 0;
+  }).length;
+  var correct = hits === S.mode.targets;
+  S.results.push({ speed:S.speed, hits:hits, of:S.mode.targets, correct:correct });
+  S.trace.push({ speed:S.speed, correct:correct, reversal:false });
+
+  var nd = correct ? 1 : -1;
+  if(S.dir !== 0 && nd !== S.dir){
+    S.reversals.push(S.speed);
+    S.trace[S.trace.length-1].reversal = true;
+  }
+  S.dir = nd;
+  var stepF = S.reversals.length < COARSE_REVERSALS ? STEP_COARSE : STEP_FINE;
+  S.speed = Math.max(SPEED_MIN, Math.min(SPEED_MAX, correct ? S.speed*stepF : S.speed/stepF));
+
+  S.phase = 'feedback';
+  S.phaseT0 = performance.now();
+  renderDots();
+  setCue(correct ? 'All ' + S.mode.targets : hits + ' of ' + S.mode.targets,
+         correct ? 'hit' : 'miss', true);
+  el.sHint.textContent = 'Tap the ones you tracked';
+  draw();
+  setTimeout(function(){
+    if(!S.open) return;
+    S.trial++;
+    paintSpeed();
+    nextTrial();
+  }, 1900);
+}
+
+/* Pointer picking: nearest sphere centre within a generous radius. */
+function hitTest(cx, cy){
+  var best = null, bestD = 1e9;
+  S.spheres.forEach(function(p){
+    var q = proj(p.x, p.y, p.z);
+    if(!q) return;
+    var d = Math.hypot(q.x - cx, q.y - cy);
+    var reach = Math.max(22, q.r*1.35*1.8);
+    if(d < reach && d < bestD){ bestD = d; best = p; }
+  });
+  return best;
+}
+function onCanvasPointer(ev){
+  if(S.phase !== 'identify') return;
+  var r = el.cv.getBoundingClientRect();
+  var p = hitTest(ev.clientX - r.left, ev.clientY - r.top);
+  if(p) pick(p.id);
+}
+
+/* ───────────── Threshold ───────────── */
+function threshold(){
+  var use;
+  if(S.reversals.length >= 4) use = S.reversals.slice(2);
+  else use = S.trace.slice(-6).map(function(t){ return t.speed; });
+  if(!use.length) return S.speed;
+  var s = use.reduce(function(a, x){ return a + Math.log(x); }, 0)/use.length;
+  return Math.exp(s);
+}
+function stats(){
+  var n = S.results.length;
+  var full = S.results.filter(function(r){ return r.correct; }).length;
+  var hits = S.results.reduce(function(a, r){ return a + r.hits; }, 0);
+  var of = S.results.reduce(function(a, r){ return a + r.of; }, 0);
+  return { n:n, full:full, acc: n ? full/n*100 : 0,
+           partial: of ? hits/of*100 : 0, thr:threshold(),
+           reversals:S.reversals.length };
+}
+
+/* ───────────── Staircase chart ───────────── */
+function traceChart(trace, thr){
+  var W = 320, H = 150, PL = 34, PB = 24, PT = 10;
+  var iw = W-PL-8, ih = H-PB-PT;
+  var speeds = trace.map(function(t){ return t.speed; }).concat([thr]);
+  var lo = Math.min.apply(null, speeds)*0.85, hi = Math.max.apply(null, speeds)*1.15;
+  function X(i){ return PL + (trace.length <= 1 ? iw/2 : iw*i/(trace.length-1)); }
+  function Y(v){
+    var f = (Math.log(v)-Math.log(lo))/(Math.log(hi)-Math.log(lo));
+    return PT + ih - f*ih;
+  }
+  var s = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Speed on each trial, with the settled threshold">';
+  [lo, Math.sqrt(lo*hi), hi].forEach(function(v){
+    s += '<line x1="'+PL+'" y1="'+Y(v)+'" x2="'+(W-8)+'" y2="'+Y(v)+'" stroke="var(--chart-grid)" stroke-width="1"/>';
+    s += '<text x="'+(PL-5)+'" y="'+(Y(v)+3.5)+'" font-size="9" fill="var(--muted-foreground)" text-anchor="end">'+speedScore(v)+'</text>';
+  });
+  s += '<line x1="'+PL+'" y1="'+Y(thr)+'" x2="'+(W-8)+'" y2="'+Y(thr)+
+       '" stroke="var(--chart-2)" stroke-width="1.5" stroke-dasharray="4 3"/>';
+  var dpath = trace.map(function(t, i){ return (i?'L':'M')+X(i)+' '+Y(t.speed); }).join(' ');
+  s += '<path d="'+dpath+'" fill="none" stroke="var(--chart-4)" stroke-width="1.5" stroke-linejoin="round"/>';
+  trace.forEach(function(t, i){
+    var col = t.correct ? 'var(--chart-1)' : 'var(--danger)';
+    s += '<circle cx="'+X(i)+'" cy="'+Y(t.speed)+'" r="'+(t.reversal?3.6:2.4)+'" fill="'+col+'"'+
+         (t.reversal?' stroke="var(--chart-2)" stroke-width="1.4"':'')+'/>';
+  });
+  s += '<text x="'+(PL+iw/2)+'" y="'+(H-3)+'" font-size="9" fill="var(--muted-foreground)" text-anchor="middle">trial</text>';
+  s += '</svg>';
+  return s;
+}
+
+/* ───────────── Summary ───────────── */
+function finish(){
+  S.phase = 'done';
+  cancelAnimationFrame(raf);
+  var st = stats();
+  var score = speedScore(st.thr);
+  var prev = S.hist.length ? S.hist[0].score : null;
+  var band = st.n >= 20 ? 6.5 : 8;
+  var delta = prev != null ? Math.round((score - prev)/prev*100) : null;
+
+  el.sBody.innerHTML =
+    '<div class="sum">' +
+      '<div class="bighead"><b>' + score + '</b>' +
+        '<span>the speed you held ' + S.mode.targets + ' of ' + S.mode.balls +
+        ' at, about half the time.</span></div>' +
+
+      '<dl class="kv">' +
+        '<div class="k"><dt>Trials fully right</dt><dd>' + st.full + '<small> of ' + st.n + '</small></dd></div>' +
+        '<div class="k"><dt>Balls found</dt><dd>' + Math.round(st.partial) + '<small>%</small></dd></div>' +
+        '<div class="k"><dt>Turning points</dt><dd>' + st.reversals + '</dd></div>' +
+      '</dl>' +
+
+      '<div class="card"><div class="ch"><div class="row"><h2>How it settled</h2></div>' +
+        '<p>Speed goes up when you get a trial right and down when you miss, so it walks towards the edge of what you can hold. The dashed line is where it settled.</p></div>' +
+        '<div class="chartbox full" style="aspect-ratio:320/150">' + traceChart(S.trace, st.thr) + '</div>' +
+        '<div class="legend"><span><i style="background:var(--chart-1)"></i>All ' + S.mode.targets + ' right</span>' +
+        '<span><i style="background:var(--danger)"></i>Missed at least one</span>' +
+        '<span><i style="background:var(--chart-2)"></i>Turning point</span></div>' +
+      '</div>' +
+
+      '<div class="card"><div class="ch"><div class="row"><h2>Before you read too much into this</h2>' +
+        '<span class="badge warn">Read this</span></div>' +
+        '<p>A ' + st.n + ' trial run puts this number within roughly ' + band + ' per cent of where you actually sit, so a change smaller than about ' +
+        Math.round(band*1.5) + ' per cent between two runs is noise, not news. ' +
+        (delta != null
+          ? 'This one is ' + (delta >= 0 ? 'up ' : 'down ') + Math.abs(delta) + ' per cent on your last, which ' +
+            (Math.abs(delta) < band*1.5 ? 'is inside that band.' : 'is outside it, for whatever that is worth.')
+          : 'There is nothing to compare it with yet.') +
+        ' And getting better at this is getting better at this. It is not evidence about your tennis.</p></div></div>' +
+    '</div>' +
+    '<div class="sfoot" style="padding-top:2px;margin-top:auto">' +
+      '<button class="btn" id="sSave">Save the run</button>' +
+      '<button class="btn outline" id="sAgain">Go again</button>' +
+      '<span class="proto">' + S.mode.n + ' · ' + S.mode.targets + ' of ' + S.mode.balls + '</span>' +
+    '</div>';
+
+  document.getElementById('sSave').addEventListener('click', function(){
+    S.hist.unshift({ when:Date.now(), mode:S.mode.n, score:score, trials:st.n,
+                     full:st.full, partial:Math.round(st.partial),
+                     targets:S.mode.targets, balls:S.mode.balls });
+    saveHist(); renderHist(); renderChips(); closeSession(); toast('Run saved');
+  });
+  document.getElementById('sAgain').addEventListener('click', function(){ startSession(S.mode); });
+  el.sCount.textContent = 'Done';
+}
+
+/* ───────────── Overlay plumbing ───────────── */
+var lastFocus = null, BODY_HTML = null;
+function trapFocus(e){
+  if(e.key !== 'Tab') return;
+  var f = el.sess.querySelectorAll('button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if(!f.length) return;
+  var first = f[0], last = f[f.length-1];
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+}
+function onKey(e){
+  if(!S.open) return;
+  if(e.key === 'Escape'){ e.preventDefault(); closeSession(); return; }
+  trapFocus(e);
+  if(S.phase !== 'identify') return;
+  if(/^[0-9]$/.test(e.key)){
+    e.preventDefault();
+    var id = e.key === '0' ? 10 : parseInt(e.key, 10);
+    if(id <= S.mode.balls) pick(id);
+  }
+}
+function rebind(){
+  el.volWrap = document.getElementById('volWrap');
+  el.cv = document.getElementById('cv');
+  el.cue = document.getElementById('cue');
+  el.live = document.getElementById('live');
+  el.dotrow = document.getElementById('dotrow');
+  el.spdBar = document.getElementById('spdBar');
+  el.spdVal = document.getElementById('spdVal');
+  el.sHint = document.getElementById('sHint');
+  el.sMode = document.getElementById('sMode');
+  if(el.cv) el.cv.addEventListener('pointerdown', onCanvasPointer);
+}
+function startSession(mode){
+  S.mode = mode;
+  S.trial = 0; S.dir = 0; S.reversals = []; S.trace = []; S.results = [];
+  S.selected = []; S.lastT = 0;
+  var warm = S.warmStart && S.hist.length ? S.hist[0].score/100 : SPEED_START;
+  S.speed = Math.max(SPEED_MIN, Math.min(SPEED_MAX, warm));
+  if(RM.matches) S.speed = Math.min(S.speed, SPEED_START*0.75);
+
+  if(BODY_HTML === null) BODY_HTML = el.sBody.innerHTML;
+  el.sBody.innerHTML = BODY_HTML;
+  rebind();
+
+  el.sTitle.textContent = mode.n;
+  el.sMode.textContent = mode.targets + ' of ' + mode.balls;
+  el.sess.hidden = false;
+  if(!S.open) lastFocus = document.activeElement;
+  S.open = true;
+  document.body.style.overflow = 'hidden';
+  document.addEventListener('keydown', onKey);
+
+  requestAnimationFrame(function(){
+    sizeCanvas();
+    renderDots();
+    nextTrial();
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(loop);
+  });
+  el.sess.focus();
+}
+function closeSession(){
+  S.open = false; S.phase = 'idle';
+  cancelAnimationFrame(raf);
+  el.sess.hidden = true;
+  document.body.style.overflow = '';
+  document.removeEventListener('keydown', onKey);
+  if(lastFocus && lastFocus.focus) lastFocus.focus();
+}
+el.sClose.addEventListener('click', closeSession);
+if(el.cv) el.cv.addEventListener('pointerdown', onCanvasPointer);
+
+/* ───────────── History ───────────── */
+var KEY = 'pc.hold.v1';
+var HIST_SEED = [];
+function seedHist(){
+  return withSeed(20260919, function(){
+    var out = [], now = Date.now(), day = 86400000;
+    var names = ['Primer','Primer','Full read','Primer','Heavy','Primer','Primer','Full read','Primer','Heavy'];
+    for(var i = 0; i < names.length; i++){
+      var heavy = names[i] === 'Heavy';
+      var base = (heavy ? 96 : 150) - i*1.6;
+      out.push({
+        when: now - (i*2 + 1)*day, mode: names[i],
+        score: Math.round(base + rrange(-11, 11)),
+        trials: names[i] === 'Full read' ? 20 : heavy ? 16 : 12,
+        full: Math.round(rrange(5, 9)),
+        partial: Math.round(rrange(72, 88)),
+        targets: heavy ? 5 : 4, balls: heavy ? 10 : 8
+      });
+    }
+    return out;
+  });
+}
+function loadHist(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(raw){ S.hist = JSON.parse(raw); el.histBadge.textContent = 'Your runs'; return; }
+  }catch(e){}
+  S.hist = HIST_SEED.slice();
+  el.histBadge.textContent = 'Sample data';
+}
+function saveHist(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S.hist.slice(0, 40))); el.histBadge.textContent = 'Your runs'; }catch(e){}
+}
+function ago(ts){
+  var d = Math.round((Date.now()-ts)/86400000);
+  if(d <= 0) return 'Today';
+  if(d === 1) return 'Yesterday';
+  if(d < 7) return d + ' days ago';
+  return Math.round(d/7) + ' wk ago';
+}
+function renderHist(){
+  el.hist.innerHTML = S.hist.slice(0, 8).map(function(h){
+    return '<div class="hrow"><div class="hm"><b>' + h.mode + ' · ' + h.targets + ' of ' + h.balls + '</b>' +
+      '<span>' + h.trials + ' trials · ' + h.partial + '% of balls found</span></div>' +
+      '<div class="hc">' + h.score + '</div><div class="hd">' + ago(h.when) + '</div></div>';
+  }).join('');
+}
+function renderChips(){
+  var same = S.hist.filter(function(h){ return h.targets === 4; });
+  if(same.length){
+    var avg = same.slice(0,3).reduce(function(a,h){ return a + h.score; }, 0)/Math.min(3, same.length);
+    el.spdChip.innerHTML = '<span class="dot"></span>Your speed: ' + Math.round(avg);
+  }
+  el.loadChip.textContent = S.mode.targets + ' of ' + S.mode.balls;
+}
+el.resetBtn.addEventListener('click', function(){
+  try{ localStorage.removeItem(KEY); }catch(e){}
+  S.hist = HIST_SEED.slice();
+  el.histBadge.textContent = 'Sample data';
+  renderHist(); renderChips(); toast('Back to the sample data');
+});
+
+/* ───────────── Settings ───────────── */
+function renderModes(){
+  el.modes.innerHTML = MODES.map(function(m){
+    return '<button class="mode" data-mode="' + m.id + '" aria-pressed="' + (m.id === S.mode.id) + '">' +
+      '<span class="mk">' + svg(MODE_ICON[m.id]) + '</span>' +
+      '<span class="mb"><b>' + m.n + '</b><span>' + m.d + '</span></span>' +
+      '<span class="mt"><b>' + m.meta + '</b></span></button>';
+  }).join('');
+  Array.prototype.forEach.call(el.modes.querySelectorAll('.mode'), function(b){
+    b.addEventListener('click', function(){
+      S.mode = MODES.filter(function(m){ return m.id === b.dataset.mode; })[0];
+      renderModes(); renderChips();
+    });
+  });
+}
+el.boxSw.addEventListener('click', function(){
+  S.showBox = el.boxSw.getAttribute('aria-checked') !== 'true';
+  el.boxSw.setAttribute('aria-checked', String(S.showBox));
+  el.boxNote.textContent = S.showBox
+    ? 'On. The wireframe gives you a frame of reference for depth. Turning it off is harder and closer to the original.'
+    : 'Off. No frame of reference, which is harder and closer to the original.';
+  draw();
+});
+el.warmSw.addEventListener('click', function(){
+  S.warmStart = el.warmSw.getAttribute('aria-checked') !== 'true';
+  el.warmSw.setAttribute('aria-checked', String(S.warmStart));
+  el.warmNote.textContent = S.warmStart
+    ? 'On. Saves a third of the run finding your range again. Off starts everyone at the same place.'
+    : 'Off. Every run starts at the same speed, which costs a few trials but is comparable across players.';
+});
+el.startBtn.addEventListener('click', function(){ startSession(S.mode); });
+el.howBtn.addEventListener('click', function(){
+  toast('Watch which ones light up, then keep your attention on them. Do not follow them one at a time.');
+});
+
+var toastT = 0;
+function toast(msg){
+  el.toast.textContent = msg;
+  el.toast.classList.add('on');
+  clearTimeout(toastT);
+  toastT = setTimeout(function(){ el.toast.classList.remove('on'); }, 2800);
+}
+window.addEventListener('resize', function(){ if(S.open){ sizeCanvas(); draw(); } });
+
+/* ───────────── Boot ───────────── */
+paintTheme();
+renderModes();
+HIST_SEED = seedHist();
+loadHist();
+renderHist();
+renderChips();
+})();
+</script>
+
+</body>
+</html>

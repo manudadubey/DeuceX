@@ -1,0 +1,28 @@
+{
+  "name": "procircuit",
+  "private": true,
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@11.21.0",
+  "scripts": {
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "test": "pnpm -r --if-present run test",
+    "test:e2e": "playwright test",
+    "dev:web": "pnpm --filter @procircuit/web dev",
+    "dev:admin": "pnpm --filter @procircuit/admin dev",
+    "dev:api": "pnpm --filter @procircuit/api dev"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^22.9.0",
+    "eslint": "^9.14.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.13.0"
+  }
+}

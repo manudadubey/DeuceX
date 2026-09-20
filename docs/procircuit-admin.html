@@ -1,0 +1,1673 @@
+<title>ProCircuit Admin</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* ── shadcn preset b3REZz9P6 · style Vega · base Neutral · chart Lime · Geist ── */
+  :root {
+    --radius: 0.625rem;
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+
+    --background: #ffffff;
+    --foreground: oklch(0.145 0 0);
+    --card: #ffffff;
+    --card-foreground: oklch(0.145 0 0);
+    --popover: #ffffff;
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --surface: #f8f8f8;
+    --field: oklch(0 0 0 / 3%);
+
+    --chart-1: oklch(0.768 0.233 130.85);
+    --chart-2: oklch(0.648 0.2 131.684);
+    --chart-3: oklch(0.532 0.157 131.589);
+    --chart-4: oklch(0.453 0.124 130.933);
+    --chart-5: oklch(0.405 0.101 131.063);
+    --chart-grid: oklch(0 0 0 / 6%);
+
+    /* semantic (separate from accent) */
+    --ok: oklch(0.627 0.194 149.214);
+    --ok-bg: oklch(0.627 0.194 149.214 / 10%);
+    --warn: oklch(0.666 0.179 58.318);
+    --warn-bg: oklch(0.769 0.188 70.08 / 14%);
+    --danger: oklch(0.577 0.245 27.325);
+    --danger-bg: oklch(0.577 0.245 27.325 / 10%);
+
+    --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --background: oklch(0.145 0 0);
+      --foreground: oklch(0.985 0 0);
+      --card: oklch(0.205 0 0);
+      --card-foreground: oklch(0.985 0 0);
+      --popover: oklch(0.205 0 0);
+      --popover-foreground: oklch(0.985 0 0);
+      --primary: oklch(0.922 0 0);
+      --primary-foreground: oklch(0.205 0 0);
+      --secondary: oklch(0.269 0 0);
+      --secondary-foreground: oklch(0.985 0 0);
+      --muted: oklch(0.269 0 0);
+      --muted-foreground: oklch(0.708 0 0);
+      --accent: oklch(0.269 0 0);
+      --accent-foreground: oklch(0.985 0 0);
+      --destructive: oklch(0.704 0.191 22.216);
+      --border: oklch(1 0 0 / 10%);
+      --input: oklch(1 0 0 / 15%);
+      --ring: oklch(0.556 0 0);
+      --sidebar: oklch(0.205 0 0);
+      --sidebar-foreground: oklch(0.985 0 0);
+      --sidebar-accent: oklch(0.269 0 0);
+      --sidebar-accent-foreground: oklch(0.985 0 0);
+      --sidebar-border: oklch(1 0 0 / 10%);
+      --surface: #161616;
+      --field: oklch(1 0 0 / 4.5%);
+      --chart-1: oklch(0.897 0.196 126.665);
+      --chart-2: oklch(0.768 0.233 130.85);
+      --chart-3: oklch(0.648 0.2 131.684);
+      --chart-4: oklch(0.532 0.157 131.589);
+      --chart-5: oklch(0.453 0.124 130.933);
+      --chart-grid: oklch(1 0 0 / 7%);
+      --ok: oklch(0.723 0.219 149.579);
+      --ok-bg: oklch(0.723 0.219 149.579 / 14%);
+      --warn: oklch(0.828 0.189 84.429);
+      --warn-bg: oklch(0.828 0.189 84.429 / 14%);
+      --danger: oklch(0.704 0.191 22.216);
+      --danger-bg: oklch(0.704 0.191 22.216 / 14%);
+    }
+  }
+  :root[data-theme="dark"] {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --surface: #161616;
+    --field: oklch(1 0 0 / 4.5%);
+    --chart-1: oklch(0.897 0.196 126.665);
+    --chart-2: oklch(0.768 0.233 130.85);
+    --chart-3: oklch(0.648 0.2 131.684);
+    --chart-4: oklch(0.532 0.157 131.589);
+    --chart-5: oklch(0.453 0.124 130.933);
+    --chart-grid: oklch(1 0 0 / 7%);
+    --ok: oklch(0.723 0.219 149.579);
+    --ok-bg: oklch(0.723 0.219 149.579 / 14%);
+    --warn: oklch(0.828 0.189 84.429);
+    --warn-bg: oklch(0.828 0.189 84.429 / 14%);
+    --danger: oklch(0.704 0.191 22.216);
+    --danger-bg: oklch(0.704 0.191 22.216 / 14%);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  /* press feedback on pointer-down, critically damped */
+  .btn, .tile, .tour, .mood button, .tab { transition: transform 120ms cubic-bezier(.2,.8,.2,1), background 150ms, box-shadow 150ms, opacity 150ms; }
+  .btn:active, .mood button:active, .tab:active { transform: scale(.97); }
+  .tile:active { transform: scale(.985); }
+  .tour:active { transform: scale(.992); }
+  button:focus-visible, a:focus-visible, input:focus-visible { outline: none; box-shadow: 0 0 0 3px oklch(from var(--ring) l c h / 50%); }
+  svg.ic { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .num { font-variant-numeric: tabular-nums; }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  /* ── Shell ── */
+  .shell { display: grid; grid-template-columns: 256px 1fr; min-height: 100vh; }
+  .sidebar {
+    position: sticky; top: 0; height: 100vh;
+    background: var(--sidebar); color: var(--sidebar-foreground);
+    border-right: 1px solid var(--sidebar-border);
+    display: flex; flex-direction: column; padding: 8px;
+  }
+  .sb-head { display: flex; align-items: center; gap: 10px; padding: 8px; }
+  .sb-mark {
+    width: 32px; height: 32px; border-radius: var(--radius-md);
+    background: var(--primary); color: var(--primary-foreground);
+    display: grid; place-items: center; font-weight: 600; font-size: 13px; letter-spacing: -0.02em;
+  }
+  .logo { width: 30px; height: 30px; fill: currentColor; color: var(--foreground); flex-shrink: 0; display: block; }
+  .sb-head .t { font-weight: 500; font-size: 14px; line-height: 1.2; }
+  .sb-head .s { font-size: 12px; color: var(--muted-foreground); }
+  .sb-group { padding: 8px; }
+  .sb-label { font-size: 12px; color: var(--muted-foreground); padding: 0 8px 6px; font-weight: 500; }
+  .sb-menu { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+  .sb-item {
+    display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px;
+    border-radius: var(--radius-md); color: var(--sidebar-foreground); text-decoration: none; font-size: 14px;
+  }
+  .sb-item:hover { background: var(--sidebar-accent); color: var(--sidebar-accent-foreground); }
+  .sb-item.active { background: var(--sidebar-accent); font-weight: 500; }
+  .sb-item .ic { color: var(--muted-foreground); }
+  .sb-item.active .ic { color: var(--sidebar-foreground); }
+  .sb-item .tag { margin-left: auto; }
+  .sb-item.locked { color: var(--muted-foreground); }
+  .sb-foot { margin-top: auto; padding: 8px; }
+  .user { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: var(--radius-md); }
+  .user:hover { background: var(--sidebar-accent); }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
+  .avatar { overflow: hidden; width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--chart-2); color: oklch(0.2 0.05 131); display: grid; place-items: center; font-weight: 600; font-size: 12px; }
+  .user .t { font-size: 14px; font-weight: 500; line-height: 1.2; }
+  .user .s { font-size: 12px; color: var(--muted-foreground); }
+
+  .main { min-width: 0; display: flex; flex-direction: column; }
+  .topbar {
+    position: sticky; top: 0; z-index: 5; height: 56px;
+    display: flex; align-items: center; gap: 12px; padding: 0 24px;
+    background: oklch(from var(--background) l c h / 85%); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  .crumbs { display: flex; align-items: center; gap: 8px; color: var(--muted-foreground); font-size: 14px; }
+  .crumbs b { color: var(--foreground); font-weight: 500; }
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .content { padding: 24px; display: flex; flex-direction: column; gap: 24px; max-width: 1400px; width: 100%; margin: 0 auto; transition: max-width 200ms linear; }
+  .shell.collapsed .content { max-width: 1600px; }
+
+  /* ── Vega primitives ── */
+  .card {
+    background: var(--card); color: var(--card-foreground);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.05);
+    display: flex; flex-direction: column; gap: 24px; padding: 24px 0;
+  }
+  .card > * { padding-left: 24px; padding-right: 24px; }
+  .card, .pulse { scroll-margin-top: 72px; }
+  .card-h { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; align-items: start; }
+  .card-t { font-size: 16px; font-weight: 500; line-height: 24px; text-wrap: balance; grid-column: 1; grid-row: 1; }
+  .card-d { font-size: 14px; color: var(--muted-foreground); grid-column: 1; grid-row: 2; }
+  .card-h .act { grid-column: 2; grid-row: 1 / span 2; align-self: start; display: flex; gap: 8px; }
+  .card-f { display: flex; gap: 8px; align-items: center; padding-top: 24px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 36px; padding: 0 16px; border-radius: 8px; font-size: 14px; font-weight: 500;
+    border: 1px solid transparent; background: var(--primary); color: var(--primary-foreground);
+    transition: background .15s, opacity .15s; white-space: nowrap;
+  }
+  .btn:hover { opacity: .9; }
+  .btn.outline { background: var(--field); color: var(--foreground); border-color: var(--input); box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .btn.secondary { background: var(--secondary); color: var(--secondary-foreground); }
+  .btn.ghost { background: transparent; color: var(--foreground); }
+  .btn.ghost:hover { background: var(--accent); opacity: 1; }
+  .btn.destructive { background: var(--destructive); color: #fff; }
+  .btn.outline:hover { background: var(--accent); opacity: 1; }
+  .btn.sm { height: 32px; padding: 0 12px; font-size: 13px; border-radius: var(--radius-md); }
+  .btn.icon { width: 36px; padding: 0; }
+  .btn.icon.sm { width: 32px; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 8px;
+    border-radius: 999px; font-size: 12px; font-weight: 500; line-height: 1; white-space: nowrap;
+    border: 1px solid var(--border); color: var(--foreground);
+  }
+  .badge.secondary { background: var(--secondary); color: var(--secondary-foreground); border-color: transparent; }
+  .badge.ok { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+  .badge.warn { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+  .badge.danger { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
+  .badge.lime { background: oklch(from var(--chart-2) l c h / 16%); color: var(--chart-2); border-color: transparent; }
+  .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .sep { height: 1px; background: var(--border); }
+
+  /* ── Pulse tiles ── */
+  .pulse { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .tile {
+    position: relative; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 20px;
+    text-align: left; background: var(--card); color: var(--card-foreground); border: 0; border-radius: var(--radius-xl);
+    box-shadow: 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.05); transition: box-shadow .15s;
+  }
+  .tile:hover { box-shadow: 0 0 0 1px var(--ring), 0 1px 2px rgba(0,0,0,.05); }
+  .tile .lbl { font-size: 13px; color: var(--muted-foreground); display: flex; align-items: center; gap: 8px; }
+  .tile .val { font-size: 32px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; margin-top: 6px; grid-column: 1 / -1; }
+  .tile .val small { font-size: 16px; font-weight: 500; color: var(--muted-foreground); letter-spacing: 0; }
+  .tile .sub { font-size: 13px; color: var(--muted-foreground); margin-top: 4px; grid-column: 1 / -1; }
+  .tile .badge { grid-column: 2; grid-row: 1; }
+  .tile.warn .val { color: var(--warn); }
+  .tile.danger .val { color: var(--danger); }
+  .tile .meter { height: 6px; border-radius: 999px; background: var(--muted); overflow: hidden; margin-top: 12px; grid-column: 1 / -1; }
+  .tile .meter i { display: block; height: 100%; border-radius: 999px; background: var(--warn); }
+
+  /* ── Grid ── */
+  .g-linked { display: grid; grid-template-columns: 7fr 5fr; gap: 16px; align-items: start; }
+  /* Patron spans two rows on the left; Content + Mindset sit above the two locked Studio cards */
+  .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+  /* ── Agent cards ── */
+  .agent-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .agent-h > div:not(.ico) { flex: 1 1 0; min-width: 0; }
+  .agent-h .ico { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--muted); display: grid; place-items: center; }
+  .agent-h .t { font-size: 14px; font-weight: 500; line-height: 1.2; }
+  .agent-h .s { font-size: 12px; color: var(--muted-foreground); }
+  .agent-h .badge { margin-left: auto; flex: 0 0 auto; }
+  .draft { background: var(--surface); box-shadow: 0 0 0 1px var(--border); border-radius: var(--radius-lg); padding: 14px; font-size: 13px; line-height: 1.55; }
+  .draft .subj { font-weight: 500; margin-bottom: 6px; }
+  .draft p { margin: 0; color: var(--muted-foreground); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .draft .meta { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .insight { font-size: 14px; line-height: 1.55; }
+  .insight .q { color: var(--foreground); }
+  .insight .focus { margin-top: 12px; display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; font-size: 13px; background: var(--surface); box-shadow: 0 0 0 1px var(--border); border-radius: var(--radius-lg); padding: 12px; }
+  .insight .focus .ic { color: var(--chart-2); margin-top: 1px; }
+  .mood { display: flex; flex-direction: column; gap: 8px; }
+  .mood .l { font-size: 12px; color: var(--muted-foreground); display: flex; justify-content: space-between; }
+  .mood .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .mood button { height: 36px; border-radius: var(--radius-md); border: 1px solid var(--input); background: var(--background); font-weight: 500; font-variant-numeric: tabular-nums; transition: background .12s; }
+  .mood button:hover { background: var(--accent); }
+  .mood button[aria-pressed="true"] { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+  .spark { display: flex; align-items: flex-end; gap: 3px; height: 28px; }
+  .spark i { flex: 1; border-radius: 2px 2px 0 0; background: var(--chart-3); }
+  .locked { position: relative; }
+  .locked .veil { position: absolute; inset: 0; border-radius: var(--radius-xl); background: oklch(from var(--background) l c h / 55%); backdrop-filter: blur(2px); display: grid; place-items: center; padding: 24px; }
+  .locked .veil > div { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 280px; }
+  .locked .veil .t { font-weight: 500; font-size: 14px; }
+  .locked .veil .s { font-size: 13px; color: var(--muted-foreground); }
+  .ghost-rows { display: flex; flex-direction: column; gap: 10px; padding-bottom: 8px; }
+  .ghost-rows i { display: block; height: 10px; border-radius: 999px; background: var(--muted); }
+
+  /* ── Routes / page header ── */
+  .page-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  .page-t { font-size: 20px; font-weight: 500; letter-spacing: -0.015em; line-height: 1.2; }
+  .page-d { font-size: 14px; color: var(--muted-foreground); margin-top: 4px; max-width: 64ch; }
+  .page-a { display: flex; gap: 8px; flex-wrap: wrap; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .stats > div { background: var(--card); border-radius: var(--radius-xl); box-shadow: 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.05); padding: 16px 20px; }
+  .stats .l { font-size: 13px; color: var(--muted-foreground); }
+  .stats .v { font-size: 28px; font-weight: 500; letter-spacing: -0.02em; margin-top: 4px; line-height: 1.1; }
+  .stats .v small { font-size: 14px; color: var(--muted-foreground); letter-spacing: 0; }
+  .stats .s { font-size: 12px; color: var(--muted-foreground); margin-top: 6px; }
+  /* Vega Tabs */
+  .seg { display: inline-flex; gap: 2px; padding: 3px; height: 36px; background: var(--muted); border-radius: var(--radius-lg); align-self: flex-start; }
+  .seg { max-width: 100%; min-width: 0; flex: 0 1 auto; overflow-x: auto; scrollbar-width: none; }
+  .card, .content > * { min-width: 0; }
+  .seg button { white-space: nowrap; height: 29px; padding: 0 12px; border: 1px solid transparent; background: transparent; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--muted-foreground); }
+  .seg button[aria-selected="true"] { background: var(--field); border-color: var(--input); color: var(--foreground); box-shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1); }
+  .md { display: grid; grid-template-columns: 5fr 7fr; gap: 16px; align-items: start; }
+  .tlist { display: flex; flex-direction: column; gap: 2px; padding: 0 12px; }
+  .titem { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; width: 100%; text-align: left; border: 0; background: transparent; padding: 12px; border-radius: var(--radius-lg); }
+  .titem:hover { background: var(--accent); }
+  .titem[aria-selected="true"] { background: var(--surface); box-shadow: 0 0 0 1px var(--border); }
+  .titem .rk { grid-row: 1 / span 3; font-family: var(--font-mono); font-size: 12px; color: var(--muted-foreground); }
+  .titem .nm { font-weight: 500; font-size: 14px; }
+  .titem .mt { grid-column: 2; font-size: 12px; color: var(--muted-foreground); }
+  .titem .tst { grid-column: 3; grid-row: 1; justify-self: end; }
+  .titem .dl { grid-column: 3; grid-row: 2; font-size: 12px; color: var(--muted-foreground); text-align: right; white-space: nowrap; }
+  .titem .dl.hot { color: var(--warn); font-weight: 500; }
+  .titem .bar { grid-column: 2 / -1; grid-row: 3; min-width: 0; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-top: 6px; font-size: 11px; color: var(--muted-foreground); }
+  .titem .bar i { display: block; height: 6px; border-radius: 999px; background: var(--muted); overflow: hidden; }
+  .titem .bar i b { display: block; height: 100%; border-radius: 999px; background: var(--chart-2); }
+  .titem .bar span { font-family: var(--font-mono); color: var(--foreground); }
+  .also { padding: 8px 12px 0; border-top: 1px solid var(--border); margin-top: 8px; }
+  .also summary { cursor: pointer; font-size: 13px; color: var(--muted-foreground); padding: 8px 12px; list-style: none; display: flex; align-items: center; gap: 6px; }
+  .also summary::before { content: ''; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform .15s; }
+  .also[open] summary::before { transform: rotate(45deg); }
+  .also ul { list-style: none; margin: 0; padding: 0 12px 8px; display: flex; flex-direction: column; gap: 6px; }
+  .also li { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+  .also .why { color: var(--muted-foreground); text-align: right; }
+  .also .more { color: var(--muted-foreground); }
+  .detail { position: sticky; top: 72px; }
+  .detail .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .detail .nm { font-size: 18px; font-weight: 500; letter-spacing: -0.01em; }
+  .detail .sub { font-size: 13px; color: var(--muted-foreground); margin-top: 2px; }
+  .detail .why { font-size: 14px; line-height: 1.55; }
+  .detail .why b { font-weight: 500; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .rounds { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .rounds th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); font-weight: 500; padding: 0 0 6px; }
+  .rounds th:not(:first-child), .rounds td:not(:first-child) { text-align: right; font-family: var(--font-mono); }
+  .rounds td { padding: 6px 0; border-top: 1px solid var(--border); }
+  .rounds td.pos { color: var(--ok); }
+  .rounds td.neg { color: var(--danger); }
+  .confirm { background: var(--surface); box-shadow: 0 0 0 1px var(--border); border-radius: var(--radius-lg); padding: 14px; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; align-items: center; font-size: 13px; }
+  .confirm .t { font-weight: 500; font-size: 14px; }
+  .confirm .s { color: var(--muted-foreground); }
+  .confirm .btns { grid-row: 1 / span 2; display: flex; gap: 8px; }
+  .memo p { margin: 0 0 12px; font-size: 14px; line-height: 1.6; max-width: 72ch; }
+  .memo p:last-child { margin-bottom: 0; }
+  .inputs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .cal-wrap { overflow-x: auto; }
+  .cal { display: grid; grid-template-columns: 160px repeat(8, minmax(72px, 1fr)); gap: 6px 0; min-width: 720px; font-size: 12px; }
+  .cal .hd { color: var(--muted-foreground); padding: 0 6px 8px; border-bottom: 1px solid var(--border); }
+  .cal .hd b { display: block; color: var(--foreground); font-weight: 500; font-family: var(--font-mono); }
+  .cal .hd.now b { color: var(--chart-2); }
+  .cal .row-l { padding: 8px 6px; font-weight: 500; font-size: 13px; align-self: center; }
+  .cal .row-l small { display: block; color: var(--muted-foreground); font-weight: 400; font-size: 12px; }
+  .cal .cell { border-left: 1px solid var(--chart-grid); min-height: 40px; position: relative; }
+  .cal .cell.blocked { background: repeating-linear-gradient(135deg, var(--muted) 0 6px, transparent 6px 12px); }
+  .cal .bar { position: absolute; inset: 8px 4px; border-radius: 6px; background: var(--chart-2); color: oklch(0.2 0.05 131); font-weight: 500; font-size: 12px; display: flex; align-items: center; padding: 0 8px; white-space: nowrap; overflow: hidden; }
+  .cal .bar.entered { background: var(--foreground); color: var(--background); }
+  .cal .bar.skipped { background: var(--muted); color: var(--muted-foreground); text-decoration: line-through; }
+  .cal .bar.defend { background: var(--warn-bg); color: var(--warn); box-shadow: inset 0 0 0 1px var(--warn); }
+  .cal .dl { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 0 2px var(--card); }
+  .cal .dl::after { content: attr(data-l); position: absolute; top: 14px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--muted-foreground); white-space: nowrap; }
+  .soon { align-items: flex-start; gap: 12px; max-width: 520px; }
+  .soon .ico { width: 36px; height: 36px; border-radius: var(--radius-md); background: var(--muted); display: grid; place-items: center; }
+  .soon .btn { text-decoration: none; }
+  .soon { gap: 12px; }
+
+  /* ── Vega form primitives ── */
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .label { font-size: 14px; font-weight: 500; line-height: 1; }
+  .label small { color: var(--muted-foreground); font-weight: 400; }
+  .desc { font-size: 13px; color: var(--muted-foreground); }
+  .textarea, .input { width: 100%; font: inherit; font-size: 14px; color: var(--foreground); background: var(--field); border: 1px solid var(--input); border-radius: 8px; padding: 8px 10px; box-shadow: 0 1px 2px rgba(0,0,0,.05); outline: none; }
+  .textarea { min-height: 120px; line-height: 1.55; resize: vertical; }
+  .input { height: 36px; }
+  .textarea:focus, .input:focus { border-color: var(--ring); box-shadow: 0 0 0 3px oklch(from var(--ring) l c h / 30%); }
+  .igroup { display: flex; align-items: center; gap: 8px; height: 36px; background: var(--field); border: 1px solid var(--input); border-radius: 8px; padding: 0 10px; color: var(--muted-foreground); }
+  .igroup input { flex: 1; min-width: 0; border: 0; background: transparent; font: inherit; font-size: 14px; color: var(--foreground); outline: none; height: 100%; }
+  .igroup:focus-within { border-color: var(--ring); }
+  .tg { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tg button { height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--input); background: var(--secondary); color: var(--foreground); font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .tg button:hover { background: var(--accent); }
+  .tg button[aria-pressed="true"], .tg button[aria-checked="true"] { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+  .tg.sm button { height: 30px; padding: 0 10px; font-size: 13px; }
+  .tg button .sw { width: 8px; height: 8px; border-radius: 50%; }
+  .switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; background: transparent; border: 0; padding: 0; color: var(--foreground); align-self: flex-start; }
+  .switch .trk { width: 32px; height: 18px; border-radius: 999px; background: var(--input); position: relative; transition: background .15s; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .switch .trk::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--background); transition: transform .15s cubic-bezier(.2,.8,.2,1); }
+  .switch[aria-checked="true"] .trk { background: var(--primary); }
+  .switch[aria-checked="true"] .trk::after { transform: translateX(14px); background: var(--primary-foreground); }
+  .progress { height: 6px; border-radius: 999px; background: var(--muted); overflow: hidden; }
+  .progress i { display: block; height: 100%; background: var(--primary); border-radius: 999px; width: 0; transition: width .25s linear; }
+  .spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--foreground); border-radius: 50%; animation: spin .8s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .item { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 14px; align-items: center; padding: 14px 16px; border-radius: 8px; background: oklch(from var(--secondary) l c h / 50%); }
+  .item .media { grid-row: 1 / span 2; width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--muted); display: grid; place-items: center; }
+  .item .title { font-size: 14px; font-weight: 500; }
+  .item .d { grid-column: 2; font-size: 13px; color: var(--muted-foreground); }
+  .item .actions { grid-column: 3; grid-row: 1 / span 2; display: flex; gap: 6px; align-items: center; }
+  .igrp { display: flex; flex-direction: column; gap: 6px; }
+  .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 32px 16px; color: var(--muted-foreground); font-size: 14px; }
+  .empty .ico { width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--muted); display: grid; place-items: center; color: var(--foreground); }
+  .empty .t { font-weight: 500; color: var(--foreground); }
+
+  /* ── Sidebar collapse (shadcn Sidebar · collapsible="icon") ── */
+  .shell { transition: grid-template-columns 200ms linear; }
+  .shell.collapsed { grid-template-columns: 48px 1fr; }
+  .sidebar { overflow: visible; }
+  .sidebar .sb-rail { position: absolute; top: 0; bottom: 0; right: -2px; width: 4px; cursor: w-resize; background: transparent; border: 0; padding: 0; transition: background .15s; z-index: 6; }
+  .sidebar .sb-rail:hover { background: var(--border); }
+  .shell.collapsed .sb-rail { cursor: e-resize; }
+  .sidebar { position: sticky; }
+  .shell.collapsed .sidebar { padding: 8px 8px; }
+  .shell.collapsed .sb-head { justify-content: center; padding: 8px 0; }
+  .shell.collapsed .sb-head > div, .shell.collapsed .sb-label, .shell.collapsed .sb-item .tag, .shell.collapsed .user > div, .shell.collapsed .sb-foot .link { display: none; }
+  .shell.collapsed .sb-group { padding: 8px 0; }
+  .shell.collapsed .sb-item { width: 32px; height: 32px; padding: 0; justify-content: center; margin: 0 auto; position: relative; }
+  .shell.collapsed .sb-item .lbl { display: none; }
+  .sb-item .lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .shell.collapsed .sb-item.has-tag::after { content: ''; position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+  .shell.collapsed .sb-item.has-tag.tag-lime::after { background: var(--chart-2); }
+  .shell.collapsed .sb-item.has-tag.tag-quiet::after { background: var(--muted-foreground); }
+  .shell.collapsed .user { justify-content: center; padding: 8px 0; }
+  .shell.collapsed .sb-foot { padding: 8px 0; }
+  /* tooltip when collapsed */
+  .shell.collapsed .sb-item[data-tip]:hover::before, .shell.collapsed .sb-item[data-tip]:focus-visible::before { content: attr(data-tip); position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%); background: var(--foreground); color: var(--background); font-size: 12px; font-weight: 500; padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 20; pointer-events: none; }
+  .sb-trigger { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-md); border: 0; background: transparent; color: var(--foreground); margin-left: -6px; }
+  .sb-trigger:hover { background: var(--accent); }
+  .sb-trigger .ic { width: 16px; height: 16px; }
+  @media (max-width: 900px) { .sb-trigger { display: none; } .shell.collapsed { grid-template-columns: 1fr; } }
+
+  /* ── Settings ── */
+  .st { display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: start; }
+  .st-nav { position: sticky; top: 72px; display: flex; flex-direction: column; gap: 2px; }
+  .st-nav a { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border-radius: var(--radius-md); font-size: 14px; color: var(--muted-foreground); text-decoration: none; }
+  .st-nav a:hover { background: var(--accent); color: var(--foreground); }
+  .st-nav a.active { background: var(--sidebar-accent); color: var(--foreground); font-weight: 500; }
+  .st-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .notif { display: grid; grid-template-columns: 1fr repeat(3, 64px); gap: 0 8px; align-items: center; font-size: 13px; }
+  .notif .h { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); font-weight: 500; text-align: center; padding-bottom: 8px; }
+  .notif .h:first-child { text-align: left; }
+  .notif .r { padding: 10px 0; border-top: 1px solid var(--border); }
+  .notif .r .s { display: block; font-size: 12px; color: var(--muted-foreground); }
+  .notif .c { display: grid; place-items: center; border-top: 1px solid var(--border); padding: 10px 0; }
+  .notif .c .cb { width: 18px; height: 18px; border-radius: 5px; border: 1px solid var(--input); background: var(--field); display: grid; place-items: center; cursor: pointer; }
+  .notif .c .cb[aria-checked="true"] { background: var(--primary); border-color: var(--primary); }
+  .notif .c .cb svg { width: 12px; height: 12px; stroke: var(--primary-foreground); stroke-width: 2.5; fill: none; display: none; }
+  .notif .c .cb[aria-checked="true"] svg { display: block; }
+  .sched { display: grid; grid-template-columns: auto 1fr auto auto; gap: 2px 14px; align-items: center; padding: 12px 14px; border-radius: 8px; background: oklch(from var(--secondary) l c h / 50%); }
+  .sched .ico { grid-row: 1 / span 2; width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--muted); display: grid; place-items: center; }
+  .sched .t { grid-column: 2; font-weight: 500; font-size: 14px; } .sched .s { grid-column: 2; font-size: 12px; color: var(--muted-foreground); }
+  .sched .select { grid-column: 3; grid-row: 1 / span 2; min-width: 190px; }
+  .sched .switch { grid-column: 4; grid-row: 1 / span 2; }
+  .conn { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 14px; align-items: center; padding: 12px 14px; border-radius: 8px; background: oklch(from var(--secondary) l c h / 50%); }
+  .conn .ico { grid-row: 1 / span 2; width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--muted); display: grid; place-items: center; }
+  .conn .t { grid-column: 2; font-weight: 500; font-size: 14px; } .conn .s { grid-column: 2; font-size: 12px; color: var(--muted-foreground); }
+  .conn .a { grid-column: 3; grid-row: 1 / span 2; display: flex; gap: 8px; align-items: center; }
+  .share { display: grid; grid-template-columns: 1fr auto; gap: 8px 14px; align-items: start; padding: 14px; border-radius: var(--radius-lg); box-shadow: 0 0 0 1px var(--border); }
+  .share .t { font-weight: 500; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .share .s { grid-column: 1; font-size: 13px; color: var(--muted-foreground); line-height: 1.5; }
+  .share .a { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 6px; }
+  .share .scope { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
+  .share .scope span { display: inline-flex; align-items: center; gap: 4px; }
+  .danger-zone { box-shadow: 0 0 0 1px oklch(from var(--danger) l c h / 35%); }
+
+  /* ── Tooltip (shadcn Tooltip) ── */
+  .tip { position: fixed; z-index: 60; max-width: 260px; padding: 6px 10px; border-radius: 6px; background: var(--foreground); color: var(--background); font-size: 12px; line-height: 1.45; font-weight: 400; pointer-events: none; opacity: 0; transform: translateY(2px); transition: opacity 120ms, transform 120ms cubic-bezier(.2,.8,.2,1); box-shadow: 0 4px 12px rgba(0,0,0,.18); }
+  .tip.show { opacity: 1; transform: translateY(0); }
+  .tip::after { content: ''; position: absolute; left: var(--ax, 50%); bottom: -4px; width: 8px; height: 8px; background: var(--foreground); transform: translateX(-50%) rotate(45deg); }
+  .tip.below::after { bottom: auto; top: -4px; }
+  [data-tip]:not(.sb-item):not(.tab) { text-decoration: underline dotted oklch(from var(--muted-foreground) l c h / 60%); text-decoration-thickness: 1px; text-underline-offset: 3px; cursor: help; }
+  .badge[data-tip], .btn[data-tip], .tile [data-tip], .legend [data-tip], .stats .l[data-tip] { text-decoration: none; }
+  .btn[data-tip] { cursor: pointer; }
+  .badge[data-tip], .legend span[data-tip] { cursor: help; }
+  .help { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); color: var(--muted-foreground); font-size: 10px; font-weight: 600; margin-left: 4px; vertical-align: 1px; cursor: help; text-decoration: none !important; }
+  /* drop the CSS-only sidebar tooltip; JS handles it */
+  .shell.collapsed .sb-item[data-tip]:hover::before, .shell.collapsed .sb-item[data-tip]:focus-visible::before { content: none; }
+
+  /* ── Notification rail (shadcn Sheet, side=right) ── */
+  .nt-scrim { position: fixed; inset: 0; z-index: 44; background: oklch(0 0 0 / 40%); opacity: 0; pointer-events: none; transition: opacity 200ms; }
+  .nt-scrim.on { opacity: 1; pointer-events: auto; }
+  .nt { position: fixed; top: 0; right: 0; bottom: 0; z-index: 45; width: 400px; max-width: 100vw; background: oklch(from var(--background) l c h / 92%); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border-left: 1px solid var(--border); box-shadow: -16px 0 48px rgba(0,0,0,.25); display: flex; flex-direction: column; transform: translateX(100%); transition: transform 320ms cubic-bezier(.2,.8,.2,1); }
+  .nt.on { transform: none; }
+  .nt-h { display: flex; align-items: center; gap: 10px; padding: 16px 16px 12px 20px; }
+  .nt-h .t { font-size: 16px; font-weight: 500; }
+  .nt-h .c { font-size: 12px; color: var(--muted-foreground); }
+  .nt-h .x { margin-left: auto; }
+  .nt-f { padding: 0 20px 12px; display: flex; gap: 8px; align-items: center; }
+  .nt-list { flex: 1; overflow-y: auto; padding: 0 12px 16px; display: flex; flex-direction: column; gap: 4px; }
+  .nt-day { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); font-weight: 500; padding: 14px 8px 6px; }
+  .ntf { display: grid; grid-template-columns: 32px 1fr auto; gap: 2px 12px; align-items: start; padding: 12px; border-radius: var(--radius-lg); background: transparent; border: 0; text-align: left; color: var(--foreground); position: relative; width: 100%; }
+  .ntf:hover { background: var(--accent); }
+  .ntf .ico { grid-column: 1; grid-row: 1 / span 3; width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--muted); display: grid; place-items: center; }
+  .ntf .who { grid-column: 2; grid-row: 1; font-size: 12px; color: var(--muted-foreground); display: flex; gap: 6px; align-items: center; }
+  .ntf .ti { grid-column: 2; grid-row: 2; font-size: 14px; font-weight: 500; line-height: 1.35; }
+  .ntf .bo { grid-column: 2; grid-row: 3; font-size: 13px; color: var(--muted-foreground); line-height: 1.45; }
+  .ntf .when { grid-column: 3; grid-row: 1; font-size: 11px; color: var(--muted-foreground); white-space: nowrap; font-family: var(--font-mono); }
+  .ntf .act { grid-column: 3; grid-row: 2 / span 2; align-self: end; }
+  .ntf .dot { position: absolute; left: 4px; top: 50%; transform: translateY(-50%); width: 6px; height: 6px; border-radius: 50%; background: var(--chart-2); }
+  .ntf.read .ti { font-weight: 400; }
+  .ntf.read .dot { display: none; }
+  .ntf.urgent .ico { background: var(--warn-bg); color: var(--warn); }
+  .nt-foot { padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted-foreground); }
+  .bell { position: relative; }
+  .bell .n { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--warn); color: oklch(0.2 0.05 60); font-size: 10px; font-weight: 600; display: grid; place-items: center; }
+  .bell .n:empty { display: none; }
+  @media (max-width: 900px) { .nt { width: 100vw; border-left: 0; } }
+  @media (prefers-reduced-transparency: reduce) { .nt { background: var(--background); backdrop-filter: none; } }
+  @media (prefers-reduced-motion: reduce) { .nt { transition: opacity 200ms; opacity: 0; transform: none; } .nt.on { opacity: 1; } }
+
+  /* ── User menu (shadcn DropdownMenu, opens upward) ── */
+  .sb-foot { position: relative; }
+  .user { cursor: pointer; }
+  .user::after { content: ''; margin-left: auto; width: 6px; height: 6px; border-right: 1.5px solid var(--muted-foreground); border-bottom: 1.5px solid var(--muted-foreground); transform: rotate(-135deg); opacity: .8; }
+  .shell.collapsed .user::after { display: none; }
+  .umenu { position: absolute; left: 8px; right: 8px; bottom: calc(100% - 4px); background: var(--popover); color: var(--popover-foreground); border-radius: var(--radius-lg); box-shadow: 0 0 0 1px var(--border), 0 12px 32px rgba(0,0,0,.25); padding: 4px; display: flex; flex-direction: column; gap: 1px; z-index: 30; min-width: 220px; transform-origin: bottom left; }
+  .shell.collapsed .umenu { left: 48px; right: auto; bottom: 8px; }
+  .umenu .uh { padding: 8px 10px 6px; } .umenu .uh .t { font-size: 14px; font-weight: 500; } .umenu .uh .s { font-size: 12px; color: var(--muted-foreground); }
+  .umenu [role="menuitem"] { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border-radius: var(--radius-md); font-size: 14px; color: var(--foreground); text-decoration: none; border: 0; background: transparent; width: 100%; text-align: left; font: inherit; cursor: pointer; }
+  .umenu [role="menuitem"]:hover { background: var(--accent); }
+  .umenu [role="menuitem"] .ic { color: var(--muted-foreground); }
+  #signOut { color: var(--destructive); } #signOut .ic { color: var(--destructive); }
+  /* ── Mobile bottom tab bar (translucent material, content scrolls under) ── */
+  .tabbar { display: none; }
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
+    grid-template-columns: repeat(5, 1fr); align-items: end;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: oklch(from var(--background) l c h / 78%);
+    backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: 1px solid var(--border);
+  }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    min-height: 48px; border: 0; background: transparent; border-radius: var(--radius-md);
+    font-size: 11px; font-weight: 500; letter-spacing: .01em; color: var(--muted-foreground); text-decoration: none; position: relative;
+  }
+  .tab .ic { width: 22px; height: 22px; stroke-width: 1.75; }
+  .tab.active { color: var(--foreground); }
+  .tab .n { position: absolute; top: 2px; right: calc(50% - 20px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--warn); color: oklch(0.2 0.05 60); font-size: 10px; font-weight: 600; display: grid; place-items: center; }
+  .tab.rec { color: var(--primary-foreground); }
+  .tab.rec .disc { width: 48px; height: 48px; border-radius: 50%; background: var(--primary); display: grid; place-items: center; box-shadow: 0 6px 18px rgba(0,0,0,.2), 0 0 0 1px var(--border); margin-top: -18px; }
+  .tab.rec .disc .ic { color: var(--primary-foreground); }
+  .tab.rec .disc .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--danger); display: none; }
+  .tab.rec.on .disc .dot { display: block; animation: pulse 1s ease-in-out infinite; }
+  .tab.rec.on .disc .ic { display: none; }
+  .tab.rec span:last-child { color: var(--muted-foreground); }
+
+  /* Reduced motion is gentler feedback, not no feedback: fades stay, movement stops */
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-property: opacity, color, background-color, border-color, box-shadow !important; transition-duration: 150ms !important; transition-timing-function: ease !important; } .btn:active, .tile:active, .tour:active, .mood button:active, .tab:active { transform: none; } }
+  @media (prefers-contrast: more) { .card, .tile, .stats > div { box-shadow: 0 0 0 1px var(--foreground); } .btn.outline { border-color: var(--foreground); } .badge { border-color: currentColor; } }
+  /* Theme change eases instead of jumping between light and dark */
+  .theming, .theming * { transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease, box-shadow 200ms ease !important; }
+  @media (prefers-reduced-transparency: reduce) { .topbar, .tabbar { background: var(--background); backdrop-filter: none; -webkit-backdrop-filter: none; } }
+
+  @media (max-width: 1180px) {
+    .hero { grid-template-columns: 1fr; }
+    .hero-l { border-right: 0; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+    .g-linked { grid-template-columns: 1fr 1fr; }
+    .g3 { grid-template-columns: 1fr 1fr; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .md { grid-template-columns: 1fr; }
+    .scribe { grid-template-columns: 1fr; }
+    .fin-top { grid-template-columns: 1fr; }
+    .fin-mid { grid-template-columns: 1fr; }
+    .fans-top, .fans-bottom { grid-template-columns: 1fr; }
+    .ca { grid-template-columns: 1fr; }
+    .pp { grid-template-columns: 1fr; } .preview { position: static; }
+    .fuel { grid-template-columns: 1fr; }
+    .st { grid-template-columns: 1fr; } .st-nav { position: static; flex-direction: row; flex-wrap: wrap; }
+    .board { grid-template-columns: 1fr 1fr; }
+    .mc { grid-template-columns: 1fr; }
+    .ob { gap: 16px; padding: 20px 16px 48px; }
+    .ob-steps { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; gap: 6px; min-width: 0; max-width: 100%; scrollbar-width: none; }
+    .ob-step { flex: 0 0 auto; }
+    .ob-step .s { display: none; }
+    .plans { grid-template-columns: 1fr; gap: 16px; }
+    .stage { grid-template-columns: 1fr; }
+    .stage .select { grid-column: 1; grid-row: auto; width: 100%; }
+    .fgroup { grid-template-columns: 1fr 1fr; }
+    .scan { grid-template-columns: 1fr; }
+    .scan-r { display: none; }
+    .detail { position: static; }
+    .g3 #patron { grid-column: 1 / -1; }
+    .decision { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .tabbar { display: grid; }
+    .fab { display: none; }
+    .content { padding: 16px 16px calc(96px + env(safe-area-inset-bottom)); gap: 16px; }
+    .topbar { padding: 0 16px; gap: 8px; }
+    .topbar .badge { display: none; }
+    .seg { height: auto; flex-wrap: wrap; overflow: visible; }
+    .crumbs > span:first-child, .crumbs > svg { display: none; }
+    .crumbs b { font-size: 16px; }
+    #shareBtn { width: 32px; padding: 0; }
+    #shareBtn .lbl { display: none; }
+    .pulse { grid-template-columns: 1fr; gap: 12px; }
+    .tile { padding: 16px; }
+    .tile .val { font-size: 28px; }
+    .rank-big { font-size: 56px; }
+    .stat3 { gap: 8px; }
+    .stat3 > div { padding: 10px; }
+    .stat3 .v { font-size: 16px; }
+    .defend { grid-template-columns: 1fr; }
+    .g-linked { grid-template-columns: 1fr; }
+    .g3 { grid-template-columns: 1fr; }
+    .g3 #patron { grid-column: 1; }
+    .runway-after { grid-template-columns: 1fr 1fr; }
+    .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stats > div { padding: 12px 14px; }
+    .stats .v { font-size: 22px; }
+    .two { grid-template-columns: 1fr; }
+    .stage { grid-template-columns: 1fr; justify-items: center; }
+    .stage-r { width: 100%; }
+    .entry { grid-template-columns: 44px 1fr; }
+    .entry .actions { grid-column: 1 / -1; grid-row: auto; justify-content: flex-end; }
+    .hist-h .igroup { max-width: none; flex-basis: 100%; margin-left: 0; }
+    .moodstrip i { height: 16px; }
+    .kpi-row { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .kpi-row .v { font-size: 16px; }
+    .fgroup { grid-template-columns: 1fr; }
+    .axgrid { grid-template-columns: 1fr; }
+    .ea { grid-template-columns: 1fr auto; }
+    .pat { grid-template-columns: 36px 1fr auto; }
+    .hist-row { grid-template-columns: 1fr 1fr; }
+    .today { font-size: 16px; }
+    .row2 { grid-template-columns: 1fr; }
+    .pick { grid-template-columns: 28px 1fr; } .pick .p { grid-column: 2; grid-row: 4; text-align: left; } .pick .btn { grid-column: 1 / -1; grid-row: 5; justify-self: end; }
+    .board { grid-template-columns: 1fr; }
+    .studio-bar { grid-template-columns: auto 1fr; } .studio-bar .a { grid-column: 1 / -1; flex-wrap: wrap; } .studio-bar .a .btn { flex: 1 1 auto; }
+    .sched { grid-template-columns: auto 1fr auto; } .sched .select { grid-column: 1 / 3; grid-row: auto; min-width: 0; } .sched .switch { grid-column: 3; grid-row: 1 / span 2; }
+    .notif { grid-template-columns: 1fr repeat(3, 44px); }
+    .share { grid-template-columns: 1fr; } .share .a { grid-column: 1; grid-row: auto; flex-direction: row; }
+    .visits { grid-template-columns: 1fr 1fr 1fr; gap: 8px; } .visits .v { font-size: 16px; }
+    .fgrid { grid-template-columns: 1fr; }
+    .ob-foot { flex-wrap: wrap; } .ob-foot .desc { flex-basis: 100%; margin-left: 0; }
+    .shell.bare .tabbar { display: none; }
+    .pattern { grid-template-columns: 1fr; }
+    .pattern .a { grid-column: 1; grid-row: auto; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; }
+  .pattern { min-width: 0; } .pattern .t, .pattern .s { min-width: 0; overflow-wrap: anywhere; }
+    .hist-row .t, .hist-row .s { grid-column: 1 / -1; }
+    .hist-row .k { grid-row: auto; text-align: left; }
+    .hist-row .k:nth-of-type(3) { grid-column: 1; } .hist-row .k:nth-of-type(4) { grid-column: 2; }
+    .hist-row .a { grid-row: auto; grid-column: 1 / -1; justify-self: end; }
+    .body { min-height: 280px; font-size: 15px; }
+    .pat .eng { grid-column: 3; }
+    .pat .act { grid-column: 1 / -1; grid-row: auto; justify-self: end; margin-top: 6px; }
+    .upd { grid-template-columns: 1fr auto; }
+    .upd .j { grid-column: 1 / -1; grid-row: auto; text-align: left; display: flex; gap: 6px; align-items: baseline; }
+    .ea .n { grid-row: auto; grid-column: 1 / -1; }
+    .ea .bars { grid-column: 1; grid-row: auto; }
+    .ea .v { grid-column: 2; grid-row: auto; }
+    .axthumb { flex-direction: row; align-items: center; }
+    .thumb.big { width: 64px; height: 84px; }
+    .scan-btns .btn { flex: 1 1 100%; }
+    .tbl th, .tbl td { padding-left: 6px; padding-right: 6px; }
+    .hide-m { display: none; }
+    .tbl td:nth-child(2) { min-width: 140px; }
+    .page-a .btn { flex: 1 1 auto; }
+    .confirm { grid-template-columns: 1fr; }
+    .confirm .btns { grid-row: auto; }
+    .confirm .btns .btn { flex: 1; }
+    .tour { grid-template-columns: 1fr 76px; padding: 12px 10px; }
+    .tour .rk { display: none; }
+    .tour .nm { grid-column: 1; display: block; }
+    .tour .nm .pill-surface { margin: 4px 6px 0 0; }
+    .tour .mt { grid-column: 1; }
+    .tour .dl { grid-column: 2; }
+    .tour .ratio { grid-column: 1 / -1; grid-row: auto; }
+    .fin-head .v small { display: block; margin-top: 2px; }
+    .card { padding: 20px 0; gap: 20px; }
+    .card > * { padding-left: 16px; padding-right: 16px; }
+    .card-h { grid-template-columns: 1fr; }
+    .card-h .act { grid-column: 1; grid-row: 3; }
+    .card-f .btn { flex: 1 1 auto; }
+    .card-f > span { width: 100%; margin-left: 0 !important; }
+    .mood button { height: 44px; }
+    .btn { min-height: 44px; }
+    .switch, .cb, .seg button, .tg button { min-height: 44px; }
+    .toast { bottom: calc(84px + env(safe-area-inset-bottom)); }
+  }
+
+/* ── Vega table / select / empty ── */
+  .tbl-wrap { overflow-x: auto; }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .tbl th { text-align: left; font-size: 13px; font-weight: 400; color: var(--muted-foreground); padding: 0 8px 8px; white-space: nowrap; }
+  .tbl td { padding: 10px 8px; border-top: 1px solid var(--border); vertical-align: middle; }
+  .tbl th.r, .tbl td.r { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .tbl td.r.neg { color: var(--danger); } .tbl td.r.pos { color: var(--ok); }
+  .tbl tfoot td { font-weight: 500; border-top: 1px solid var(--border); }
+  .tbl .sub { display: block; font-size: 12px; color: var(--muted-foreground); }
+  .tbl tr.fresh td { background: oklch(from var(--chart-2) l c h / 8%); }
+  .select { height: 36px; font: inherit; font-size: 14px; color: var(--foreground); background: var(--field); border: 1px solid var(--input); border-radius: 8px; padding: 4px 32px 4px 10px; box-shadow: 0 1px 2px rgba(0,0,0,.05); appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>"); background-repeat: no-repeat; background-position: right 10px center; outline: none; }
+  .select:focus { border-color: var(--ring); }
+  .select option { color: #000; }
+  :root[data-theme="dark"] .select option, .dark .select option { color: inherit; }
+  .fgroup { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 12px; align-items: start; }
+
+  
+  /* ── Country flags ── */
+  .fl { display: inline-block; width: 15px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; box-shadow: 0 0 0 .5px oklch(0 0 0 / .18); flex: 0 0 auto; }
+  .badge .fl, .tg .fl { width: 13px; height: 9px; margin-right: 5px; vertical-align: -.5px; }
+
+  /* ── Toast ── */
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px); opacity: 0; pointer-events: none; z-index: 30;
+    background: var(--popover); color: var(--popover-foreground); box-shadow: 0 0 0 1px var(--border), 0 8px 24px rgba(0,0,0,.14);
+    border-radius: var(--radius-lg); padding: 10px 14px; font-size: 13px; display: flex; gap: 8px; align-items: center; transition: opacity .18s, transform .18s; max-width: 90vw; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ── Charts (hand-drawn SVG) ── */
+  .chart-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted-foreground); flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .legend i.dash { width: 14px; height: 0; border-top: 2px dashed var(--muted-foreground); background: none; border-radius: 0; }
+  .chart { width: 100%; overflow: hidden; }
+  .chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .chart text { font-family: var(--font-sans); font-size: 11px; fill: var(--muted-foreground); }
+  .chart .mono { font-family: var(--font-mono); }
+
+  /* ── Admin shell additions ── */
+  .env { display: inline-flex; align-items: center; gap: 6px; }
+  .env .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+  .search { display: flex; align-items: center; gap: 8px; height: 32px; width: 260px; background: var(--field); border: 1px solid var(--input); border-radius: 8px; padding: 0 10px; color: var(--muted-foreground); box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .top-right { min-width: 0; }
+  .search { flex: 0 1 auto; min-width: 140px; }
+  .search input { flex: 1; min-width: 0; border: 0; background: transparent; font: inherit; font-size: 13px; color: var(--foreground); outline: none; height: 100%; }
+  .search kbd { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); background: var(--muted); border-radius: 4px; padding: 1px 5px; }
+  .search:focus-within { border-color: var(--ring); }
+  .shell[data-role="support"] .owner-only, .shell[data-role="ops"] .owner-only { display: none !important; }
+  .shell[data-role="support"] .ops-only { display: none !important; }
+  .role-note { font-size: 12px; color: var(--muted-foreground); }
+
+  /* ── Attention list (overview) ── */
+  .att { display: flex; flex-direction: column; gap: 6px; }
+  .att-row { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 12px 14px; border-radius: 8px; background: oklch(from var(--secondary) l c h / 50%); }
+  .att-row .ico { grid-row: 1 / span 2; width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--muted); display: grid; place-items: center; }
+  .att-row.warn .ico { background: var(--warn-bg); color: var(--warn); }
+  .att-row.danger .ico { background: var(--danger-bg); color: var(--danger); }
+  .att-row .t { grid-column: 2; font-weight: 500; font-size: 14px; }
+  .att-row .s { grid-column: 2; font-size: 12px; color: var(--muted-foreground); }
+  .att-row .a { grid-column: 3; grid-row: 1 / span 2; display: flex; gap: 6px; align-items: center; }
+  .g-ov { display: grid; grid-template-columns: 7fr 5fr; gap: 16px; align-items: start; }
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+
+  /* ── Players ── */
+  .pl { display: grid; grid-template-columns: minmax(0, 8fr) minmax(360px, 4fr); gap: 16px; align-items: start; }
+  #plTbl td, #plTbl th { white-space: nowrap; }
+  #plTbl td { padding: 8px 8px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .filters .igroup { flex: 1 1 220px; }
+  .tbl tr.row { cursor: pointer; }
+  .tbl tr.row:hover td { background: var(--accent); }
+  .tbl tr.row[aria-selected="true"] td { background: var(--surface); }
+  .tbl tr.row[aria-selected="true"] td:first-child { box-shadow: inset 2px 0 0 var(--chart-2); }
+  .tbl td .who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .tbl td .who .avatar { width: 28px; height: 28px; font-size: 11px; }
+  .tbl td .who .nm { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tbl td .who .em { display: block; font-size: 12px; color: var(--muted-foreground); font-weight: 400; }
+  .pdet { position: sticky; top: 72px; }
+  .pdet .head { display: flex; align-items: flex-start; gap: 12px; }
+  .pdet .head .avatar { width: 44px; height: 44px; font-size: 15px; border-radius: var(--radius-lg); }
+  .pdet .nm { font-size: 18px; font-weight: 500; letter-spacing: -0.01em; }
+  .pdet .sub { font-size: 13px; color: var(--muted-foreground); margin-top: 2px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 16px; font-size: 13px; margin: 0; }
+  .kv dt { color: var(--muted-foreground); white-space: nowrap; }
+  .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  .kv dd.mono { font-size: 12px; }
+  .sect { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); font-weight: 500; }
+  .acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+  .acts .btn { justify-content: flex-start; min-width: 0; overflow: hidden; text-overflow: ellipsis; padding: 0 12px; }
+  .audit { display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0; list-style: none; }
+  .audit li { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 2px 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 13px; }
+  .audit li:first-child { border-top: 0; }
+  .audit .d { width: 8px; height: 8px; border-radius: 50%; background: var(--muted-foreground); margin-top: 6px; }
+  .audit .d.admin { background: var(--warn); }
+  .audit .d.agent { background: var(--chart-2); }
+  .audit .t { grid-column: 2; }
+  .audit .s { grid-column: 2; font-size: 12px; color: var(--muted-foreground); }
+  .audit .w { grid-column: 3; grid-row: 1 / span 2; font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); white-space: nowrap; }
+  .privacy { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; font-size: 13px; background: var(--surface); box-shadow: 0 0 0 1px var(--border); border-radius: var(--radius-lg); padding: 12px; line-height: 1.5; }
+  .privacy .ic { color: var(--muted-foreground); margin-top: 2px; }
+  .confirm .reason { grid-column: 1 / -1; }
+  .pager { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted-foreground); }
+
+  /* ── Agent health ── */
+  .ag-ok { color: var(--ok); } .ag-warn { color: var(--warn); } .ag-bad { color: var(--danger); }
+  .rate { display: inline-grid; grid-template-columns: 56px auto; gap: 8px; align-items: center; }
+  .rate i { display: block; height: 6px; border-radius: 999px; background: var(--muted); overflow: hidden; }
+  .rate i b { display: block; height: 100%; border-radius: 999px; background: var(--chart-2); }
+  .rate.low i b { background: var(--warn); }
+  .queue { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .queue > div { padding: 12px 14px; border-radius: 8px; background: oklch(from var(--secondary) l c h / 50%); }
+  .queue .l { font-size: 12px; color: var(--muted-foreground); }
+  .queue .v { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .queue .v small { font-size: 12px; font-weight: 400; color: var(--muted-foreground); letter-spacing: 0; }
+  .fail { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 12px 14px; border-radius: 8px; background: oklch(from var(--secondary) l c h / 50%); }
+  .fail .ico { grid-row: 1 / span 2; width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--danger-bg); color: var(--danger); display: grid; place-items: center; }
+  .fail .t { grid-column: 2; font-weight: 500; font-size: 14px; }
+  .fail .s { grid-column: 2; font-size: 12px; color: var(--muted-foreground); font-family: var(--font-mono); overflow-wrap: anywhere; }
+  .fail .a { grid-column: 3; grid-row: 1 / span 2; display: flex; gap: 6px; }
+  .kill { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 14px; align-items: center; padding: 12px 14px; border-radius: 8px; background: oklch(from var(--secondary) l c h / 50%); }
+  .kill .ico { grid-row: 1 / span 2; width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--muted); display: grid; place-items: center; }
+  .kill .t { grid-column: 2; font-weight: 500; font-size: 14px; } .kill .s { grid-column: 2; font-size: 12px; color: var(--muted-foreground); }
+  .kill .switch { grid-column: 3; grid-row: 1 / span 2; }
+
+  /* ── Ingestion ── */
+  .feeds { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+  #factRows td { white-space: nowrap; }
+  .tbl td:first-child, .tbl td.r { white-space: nowrap; }
+  .tbl td .badge + .badge { margin-top: 4px; }
+  .feed { display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; border-radius: var(--radius-xl); background: var(--card); box-shadow: 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.05); }
+  .feed .h { display: flex; align-items: center; gap: 8px; }
+  .feed .h .t { font-weight: 500; font-size: 14px; flex: 1; min-width: 0; }
+  .feed .m { font-size: 12px; color: var(--muted-foreground); display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; }
+  .feed .m b { font-weight: 400; color: var(--foreground); font-family: var(--font-mono); }
+  .feed .f { display: flex; gap: 6px; margin-top: auto; }
+  .drop { border: 1px dashed var(--input); border-radius: var(--radius-lg); padding: 24px; text-align: center; color: var(--muted-foreground); font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 8px; background: var(--field); }
+  .drop .ico { width: 36px; height: 36px; border-radius: var(--radius-md); background: var(--muted); display: grid; place-items: center; color: var(--foreground); }
+  .diff { font-family: var(--font-mono); font-size: 12px; }
+  .diff del { color: var(--danger); text-decoration: line-through; margin-right: 6px; }
+  .diff ins { color: var(--ok); text-decoration: none; }
+
+  /* ── Money ── */
+  .stack { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .stack > div { padding: 12px 14px; border-radius: 8px; background: oklch(from var(--secondary) l c h / 50%); }
+  .stack .l { font-size: 12px; color: var(--muted-foreground); display: flex; align-items: center; gap: 6px; }
+  .stack .v { font-size: 20px; font-weight: 500; letter-spacing: -0.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .stack .s { font-size: 12px; color: var(--muted-foreground); }
+  .cap { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; font-size: 13px; }
+  .cap .bar { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--muted); overflow: hidden; }
+  .cap .bar i { display: block; height: 100%; border-radius: 999px; background: var(--chart-2); }
+  .cap .bar i.warn { background: var(--warn); }
+  .pend { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--warn); }
+
+  /* ── Trust & safety ── */
+  .case { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; padding: 14px; border-radius: var(--radius-lg); box-shadow: 0 0 0 1px var(--border); }
+  .case .ico { grid-row: 1 / span 4; width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--muted); display: grid; place-items: center; }
+  .case.danger .ico { background: var(--danger-bg); color: var(--danger); }
+  .case.warn .ico { background: var(--warn-bg); color: var(--warn); }
+  .case .t { grid-column: 2; font-weight: 500; font-size: 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .case .s { grid-column: 2; font-size: 13px; color: var(--muted-foreground); line-height: 1.5; }
+  .case .q { grid-column: 2; font-size: 13px; background: var(--surface); box-shadow: 0 0 0 1px var(--border); border-radius: 8px; padding: 10px 12px; line-height: 1.5; }
+  .case .a { grid-column: 3; grid-row: 1 / span 4; display: flex; flex-direction: column; gap: 6px; }
+  .case .w { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); }
+
+  #routeAct, #routeFyi { grid-template-columns: 1fr repeat(6, 64px); }
+  @media (max-width: 900px) { #routeAct, #routeFyi { grid-template-columns: 1fr repeat(6, 36px); font-size: 12px; } #routeAct .h, #routeFyi .h { font-size: 9px; } }
+
+  /* ── Alerts rail extras ── */
+  a.ntf { text-decoration: none; }
+  .nt-tabs { display: inline-flex; gap: 2px; padding: 3px; background: var(--muted); border-radius: var(--radius-lg); }
+  .nt-tabs button { height: 26px; padding: 0 10px; border: 1px solid transparent; background: transparent; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--muted-foreground); }
+  .nt-tabs button[aria-selected="true"] { background: var(--field); border-color: var(--input); color: var(--foreground); }
+
+  /* ── Admin tab bar: six tabs ── */
+  .tabbar { grid-template-columns: repeat(6, 1fr); }
+
+  @media (max-width: 1180px) {
+    .g-ov, .g2, .pl { grid-template-columns: 1fr; }
+    .pdet { position: static; }
+    .feeds { grid-template-columns: 1fr 1fr; }
+    .queue { grid-template-columns: 1fr 1fr; }
+    .stack { grid-template-columns: 1fr 1fr 1fr; }
+    .search { width: 180px; }
+    .env { display: none; }
+  }
+  @media (max-width: 900px) {
+    .search { display: none; }
+    .env { display: none; }
+    .feeds { grid-template-columns: 1fr; }
+    .stack { grid-template-columns: 1fr; }
+    .acts { grid-template-columns: 1fr; }
+    .att-row { grid-template-columns: 32px minmax(0, 1fr); }
+    .att-row .a { grid-column: 1 / -1; grid-row: auto; justify-content: flex-end; margin-top: 6px; }
+    .fail { grid-template-columns: auto minmax(0, 1fr); }
+    .fail .a { grid-column: 1 / -1; grid-row: auto; justify-content: flex-end; margin-top: 6px; }
+    .case { grid-template-columns: 32px minmax(0, 1fr); }
+    .case .a { grid-column: 1 / -1; grid-row: auto; flex-direction: row; flex-wrap: wrap; justify-content: flex-end; }
+    .tab { font-size: 10px; }
+    .hide-m { display: none; }
+  }
+
+  /* ── Baseline chart motion (shadcn chart enter: marks draw in on mount, never on resize) ── */
+  :root { --ease-out: cubic-bezier(0.23, 1, 0.32, 1); }
+  @keyframes bl-draw { to { stroke-dashoffset: 0; } }
+  @keyframes bl-fade { from { opacity: 0; } to { opacity: var(--o, 1); } }
+  @keyframes bl-grow-y { from { transform: scaleY(0.02); } to { transform: scaleY(1); } }
+  @keyframes bl-grow-x { from { transform: scaleX(0.02); } to { transform: scaleX(1); } }
+  .chart svg .bl-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: bl-draw 600ms var(--ease-out) both; }
+  .chart svg .bl-area { animation: bl-fade 400ms var(--ease-out) 250ms both; }
+  .chart svg .bl-bar { transform-box: fill-box; transform-origin: bottom; animation: bl-grow-y 400ms var(--ease-out) both; }
+  .chart svg .bl-mark { animation: bl-fade 250ms var(--ease-out) 450ms both; }
+  main[data-route]:not([hidden]) .meter i, main[data-route]:not([hidden]) .progress i, main[data-route]:not([hidden]) .cap .bar i, main[data-route]:not([hidden]) .titem .bar i b, main[data-route]:not([hidden]) .rate i b { transform-origin: left; animation: bl-grow-x 500ms var(--ease-out) both; }
+  main[data-route]:not([hidden]) .spark i { transform-origin: bottom; animation: bl-grow-y 400ms var(--ease-out) both; }
+  .spark i:nth-child(2) { animation-delay: 30ms; } .spark i:nth-child(3) { animation-delay: 60ms; } .spark i:nth-child(4) { animation-delay: 90ms; } .spark i:nth-child(5) { animation-delay: 120ms; } .spark i:nth-child(6) { animation-delay: 150ms; } .spark i:nth-child(7) { animation-delay: 180ms; } .spark i:nth-child(8) { animation-delay: 210ms; } .spark i:nth-child(9) { animation-delay: 240ms; } .spark i:nth-child(10) { animation-delay: 270ms; } .spark i:nth-child(11) { animation-delay: 300ms; } .spark i:nth-child(12) { animation-delay: 330ms; }
+  @media (prefers-reduced-motion: reduce) {
+    .chart svg .bl-line { stroke-dasharray: none; stroke-dashoffset: 0; animation: bl-fade 200ms ease both; }
+    .chart svg .bl-bar, main[data-route]:not([hidden]) .spark i, main[data-route]:not([hidden]) .meter i, main[data-route]:not([hidden]) .progress i, main[data-route]:not([hidden]) .cap .bar i, main[data-route]:not([hidden]) .titem .bar i b, main[data-route]:not([hidden]) .rate i b { animation: bl-fade 200ms ease both; }
+    .chart svg .bl-area, .chart svg .bl-mark { animation: bl-fade 200ms ease both; }
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="f-AUT" viewBox="0 0 3 2"><rect width="3" height="2" fill="#ED2939"/><rect y=".667" width="3" height=".667" fill="#fff"/></symbol><symbol id="f-POL" viewBox="0 0 3 2"><rect width="3" height="2" fill="#fff"/><rect y="1" width="3" height="1" fill="#DC143C"/></symbol><symbol id="f-ROU" viewBox="0 0 3 2"><rect width="1" height="2" fill="#002B7F"/><rect x="1" width="1" height="2" fill="#FCD116"/><rect x="2" width="1" height="2" fill="#CE1126"/></symbol><symbol id="f-SVK" viewBox="0 0 3 2"><rect width="3" height="2" fill="#fff"/><rect y=".667" width="3" height=".667" fill="#0B4EA2"/><rect y="1.333" width="3" height=".667" fill="#EE1C25"/><path d="M.55.5h.8v.7q0 .4-.4.6-.4-.2-.4-.6z" fill="#EE1C25" stroke="#fff" stroke-width=".08"/><path d="M.95.72v.7M.72.98h.46" stroke="#fff" stroke-width=".12"/></symbol><symbol id="f-POR" viewBox="0 0 3 2"><rect width="3" height="2" fill="#FF0000"/><rect width="1.2" height="2" fill="#006600"/><circle cx="1.2" cy="1" r=".42" fill="#FFE000"/><circle cx="1.2" cy="1" r=".26" fill="#FF0000"/></symbol><symbol id="f-TUR" viewBox="0 0 3 2"><rect width="3" height="2" fill="#E30A17"/><circle cx="1.1" cy="1" r=".5" fill="#fff"/><circle cx="1.22" cy="1" r=".4" fill="#E30A17"/><path d="M1.75 .78l.14.29.32.04-.23.22.06.32-.29-.16-.29.16.06-.32-.23-.22.32-.04z" fill="#fff"/></symbol><symbol id="f-ITA" viewBox="0 0 3 2"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></symbol><symbol id="f-CZE" viewBox="0 0 3 2"><rect width="3" height="2" fill="#fff"/><rect y="1" width="3" height="1" fill="#D7141A"/><path d="M0 0l1.5 1L0 2z" fill="#11457E"/></symbol><symbol id="f-CHN" viewBox="0 0 3 2"><rect width="3" height="2" fill="#DE2910"/><path d="M.6.3l.15.32.35.04-.26.24.07.35L.6 1.08l-.31.17.07-.35L.1.66l.35-.04z" fill="#FFDE00"/><circle cx="1.2" cy=".3" r=".08" fill="#FFDE00"/><circle cx="1.45" cy=".55" r=".08" fill="#FFDE00"/><circle cx="1.45" cy=".9" r=".08" fill="#FFDE00"/><circle cx="1.2" cy="1.15" r=".08" fill="#FFDE00"/></symbol><symbol id="f-AUS" viewBox="0 0 3 2"><rect width="3" height="2" fill="#00247D"/><path d="M0 0l1.5 1M1.5 0L0 1" stroke="#fff" stroke-width=".28"/><path d="M0 0l1.5 1M1.5 0L0 1" stroke="#CF142B" stroke-width=".1"/><path d="M.75 0v1M0 .5h1.5" stroke="#fff" stroke-width=".3"/><path d="M.75 0v1M0 .5h1.5" stroke="#CF142B" stroke-width=".16"/><circle cx=".75" cy="1.5" r=".17" fill="#fff"/><circle cx="2.25" cy=".45" r=".1" fill="#fff"/><circle cx="2.7" cy=".8" r=".1" fill="#fff"/><circle cx="2.25" cy="1.6" r=".1" fill="#fff"/><circle cx="1.85" cy="1.05" r=".1" fill="#fff"/><circle cx="2.45" cy="1.05" r=".07" fill="#fff"/></symbol><symbol id="f-SUI" viewBox="0 0 3 2"><rect width="3" height="2" fill="#D52B1E"/><path d="M1.5.45v1.1M.95 1h1.1" stroke="#fff" stroke-width=".32"/></symbol><symbol id="f-GER" viewBox="0 0 3 2"><rect width="3" height="2" fill="#000"/><rect y=".667" width="3" height=".667" fill="#DD0000"/><rect y="1.333" width="3" height=".667" fill="#FFCE00"/></symbol><symbol id="f-ESP" viewBox="0 0 3 2"><rect width="3" height="2" fill="#AA151B"/><rect y=".5" width="3" height="1" fill="#F1BF00"/></symbol><symbol id="f-USA" viewBox="0 0 3 2"><rect width="3" height="2" fill="#fff"/><path d="M0 .15h3M0 .46h3M0 .77h3M0 1.08h3M0 1.39h3M0 1.7h3" stroke="#B22234" stroke-width=".155"/><rect width="1.2" height=".93" fill="#3C3B6E"/></symbol><symbol id="f-FRA" viewBox="0 0 3 2"><rect width="1" height="2" fill="#0055A4"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#EF4135"/></symbol><symbol id="logo" viewBox="0 0 193 202"><path fill-rule="evenodd" clip-rule="evenodd" d="M101.02 29.6602C61.4995 29.6602 29.4697 61.7002 29.4697 101.21C29.4697 140.73 61.5095 172.76 101.02 172.76C130.4 172.76 155.65 155.05 166.66 129.72C156.8 146.76 138.38 158.22 117.28 158.22C85.7903 158.22 60.2695 132.7 60.2695 101.21C60.2695 69.7202 85.8003 44.2002 117.28 44.2002C138.38 44.2002 156.8 55.6602 166.66 72.7002C155.65 47.3702 130.41 29.6602 101.02 29.6602Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M115.87 58.75C139.32 58.75 158.34 77.76 158.34 101.22C158.34 124.67 139.33 143.69 115.87 143.69C97.8101 143.69 82.39 132.42 76.25 116.52C81.24 124.12 89.8404 129.14 99.6104 129.14C115.03 129.14 127.53 116.64 127.53 101.22C127.53 85.8 115.03 73.3 99.6104 73.3C89.8404 73.3 81.24 78.32 76.25 85.92C82.38 70.02 97.8101 58.75 115.87 58.75Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M101.02 0.570312C45.4395 0.570312 0.379883 45.6303 0.379883 101.21C0.379883 156.79 45.4395 201.85 101.02 201.85C141.81 201.85 176.93 177.59 192.73 142.71C178.07 169.29 149.78 187.3 117.28 187.3C69.7303 187.3 31.1797 148.75 31.1797 101.2C31.1797 53.6503 69.7303 15.1003 117.28 15.1003C149.78 15.1003 178.07 33.1103 192.73 59.6903C176.93 24.8303 141.81 0.570312 101.02 0.570312Z"/></symbol></svg>
+<div class="shell" data-role="owner">
+  <aside class="sidebar">
+    <button class="sb-rail" id="sbRail" aria-label="Toggle sidebar" tabindex="-1"></button>
+    <div class="sb-head">
+      <svg class="logo" aria-label="ProCircuit"><use href="#logo"/></svg>
+      <div><div class="t">ProCircuit Admin</div><div class="s">Operations console</div></div>
+    </div>
+    <div class="sb-group">
+      <div class="sb-label">Console</div>
+      <ul class="sb-menu">
+        <li><a class="sb-item" href="#/"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Overview<span class="tag badge warn num">5</span></a></li>
+        <li><a class="sb-item" href="#/players"><svg class="ic" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Players<span class="tag badge secondary num">342</span></a></li>
+        <li><a class="sb-item" href="#/agents"><svg class="ic" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Agent health<span class="tag badge danger num">4</span></a></li>
+        <li><a class="sb-item ops-only" href="#/ingestion"><svg class="ic" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg>Ingestion<span class="tag badge warn num">3</span></a></li>
+        <li><a class="sb-item owner-only" href="#/money"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>Money</a></li>
+        <li><a class="sb-item" href="#/trust"><svg class="ic" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>Trust &amp; safety<span class="tag badge warn num">3</span></a></li>
+      </ul>
+    </div>
+    <div class="sb-group">
+      <div class="sb-label">Elsewhere</div>
+      <ul class="sb-menu">
+        <li><a class="sb-item" href="#/soon/stripe"><svg class="ic" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Stripe<span class="tag badge">↗</span></a></li>
+        <li><a class="sb-item" href="#/soon/grafana"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 15 4-6 4 4 5-8"/></svg>Grafana<span class="tag badge">↗</span></a></li>
+        <li><a class="sb-item" href="#/soon/resend"><svg class="ic" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>Resend<span class="tag badge">↗</span></a></li>
+      </ul>
+    </div>
+    <div class="sb-foot">
+      <button class="user" id="userBtn" aria-haspopup="menu" aria-expanded="false" style="border:0;background:transparent;width:100%;text-align:left;color:inherit;font:inherit">
+        <div class="avatar" style="background:var(--primary);color:var(--primary-foreground)">MD</div>
+        <div><div class="t">Manu Dubey</div><div class="s" id="roleLbl">Owner · all areas</div></div>
+      </button>
+      <div class="umenu" id="umenu" role="menu" hidden>
+        <div class="uh"><div class="t">Manu Dubey</div><div class="s">manu@procircuit.app</div></div>
+        <div class="uh" style="padding-top:2px"><div class="s">Preview as role</div></div>
+        <button role="menuitem" data-role="owner"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>Owner <span class="badge secondary" style="margin-left:auto">money, deletes, kill switches</span></button>
+        <button role="menuitem" data-role="ops"><svg class="ic" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Ops <span class="badge secondary" style="margin-left:auto">agents, ingestion</span></button>
+        <button role="menuitem" data-role="support"><svg class="ic" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Support <span class="badge secondary" style="margin-left:auto">players, account actions</span></button>
+        <div class="sep" style="margin:4px 0"></div>
+        <a role="menuitem" href="#/audit"><svg class="ic" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>My admin audit log</a>
+        <button role="menuitem" id="signOut"><svg class="ic" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Sign out</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="sb-trigger" id="sbTrigger" aria-label="Toggle sidebar" title="Toggle sidebar (⌘B)"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg></button>
+      <div class="crumbs"><b id="crumb">Overview</b></div>
+      <span class="badge secondary" style="margin-left:8px">Sun 13 Sep · Week 37</span>
+      <span class="badge env"><span class="dot"></span>Production · ap-southeast-2</span>
+      <div class="top-right">
+        <label class="search" for="q"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="q" placeholder="Find a player by name, email or ranking number" autocomplete="off"><kbd>⌘K</kbd></label>
+        <button class="btn outline sm icon bell" id="bell" aria-label="Alerts" data-tip="Alerts from the platform: failed runs, stale feeds, cases waiting" aria-haspopup="dialog" aria-expanded="false"><svg class="ic" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="n" id="bellN">5</span></button>
+        <button class="btn outline sm icon" id="themeBtn" aria-label="Toggle theme"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></svg></button>
+      </div>
+    </header>
+
+    <!-- ── Overview ── -->
+    <main class="content" data-route="overview">
+      <div class="page-h">
+        <div><div class="page-t">Sunday 13 September</div><div class="page-d">Three months after launch. The morning run finished at 07:04 UTC for 338 of 342 players; four runs failed and are queued for retry.</div><div class="role-note" style="margin-top:6px">Figures aggregated 02:00 UTC · rankings as of Mon 7 Sep · Stripe as of 2 minutes ago · next aggregation 02:00 UTC Monday</div></div>
+        <div class="page-a"><button class="btn outline sm" data-toast="Re-running the four failed morning runs · results in about two minutes"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Retry failed runs</button></div>
+      </div>
+
+      <div class="stats">
+        <div><div class="l">Active players <span class="help" data-tip="Opened the app or captured a note in the last 7 days">?</span></div><div class="v num">342 <small>of 387 signed up</small></div><div class="s">+31 this week · 88 percent weekly active</div></div>
+        <div><div class="l">MRR</div><div class="v num">A$9,870</div><div class="s">109 Pro · 19 Elite · <span class="ag-ok">+A$1,120 this month</span></div></div>
+        <div><div class="l">Trials in progress</div><div class="v num">61</div><div class="s">14 end this week · 38 percent converted last month</div></div>
+        <div><div class="l">Morning run</div><div class="v num">338 <small>of 342</small></div><div class="s"><span class="ag-bad">4 failed</span> · finished 07:04 UTC · median 41 s</div></div>
+      </div>
+
+      <div class="g-ov">
+        <div class="card">
+          <div class="card-h"><div class="card-t">Needs attention</div><div class="card-d">Sorted by what it blocks: launch promises first, then money, then hygiene.</div><div class="act"><a class="btn ghost sm" href="#/trust">All cases</a></div></div>
+          <div class="att" id="att"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-t">Approval rate by agent</div><div class="card-d">Share of proposals the player acted on within 48 hours. Below 30 percent for two weeks is a product alert.</div></div>
+          <div id="apprList" style="display:flex;flex-direction:column;gap:10px"></div>
+          <div class="card-f"><a class="btn outline sm" href="#/agents">Agent health</a><span class="role-note" style="margin-left:auto">Content Agent has been under 30 percent for 12 days</span></div>
+        </div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <div class="card-h"><div class="card-t">Sign-ups and conversions</div><div class="card-d">Weekly, last twelve weeks. Trials that became Pro or Elite in the same or a later week.</div><div class="act"><span class="legend"><span><i style="background:var(--chart-3)"></i>Signed up</span><span><i style="background:var(--chart-1)"></i>Converted</span></span></div></div>
+          <div class="chart" id="cSign"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-t">Model spend per Pro player</div><div class="card-d">Monthly model and API cost divided by paying players. The cap is 15 percent of the Pro price, A$7.35.</div><div class="act"><span class="legend"><span><i style="background:var(--chart-2)"></i>Spend</span><span><i class="dash"></i>Cap</span></span></div></div>
+          <div class="chart" id="cSpend"></div>
+          <div class="card-f"><span class="role-note">September so far: A$4.20 a player. Match Scribe transcription is 46 percent of it.</span></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ── Players ── -->
+    <main class="content" data-route="players" hidden>
+      <div class="page-h">
+        <div><div class="page-t">Players</div><div class="page-d">Every account, what they pay for, and the actions support can take. Notes, transcripts, moods and audio are never shown here.</div></div>
+        <div class="page-a"><button class="btn outline sm" data-toast="Exported 387 rows as CSV (no notes, no moods)"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Export list</button></div>
+      </div>
+      <div class="stats">
+        <div><div class="l">Signed up</div><div class="v num">387</div><div class="s">214 Free · 109 Pro · 19 Elite · 45 dormant · 241 ATP · 146 WTA</div></div>
+        <div><div class="l">By stage</div><div class="v num">96 <small>· 187 · 104</small></div><div class="s">Building · Emerging · Established</div></div>
+        <div><div class="l">Unverified</div><div class="v num warn" style="color:var(--warn)">9</div><div class="s">3 ambiguous matches waiting on the player</div></div>
+        <div><div class="l">Under 18</div><div class="v num">6</div><div class="s">5 guardian-linked · <span class="ag-warn">1 guardian not yet confirmed</span></div></div>
+      </div>
+      <div class="pl">
+        <div class="card">
+          <div class="filters">
+            <label class="igroup"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="plQ" placeholder="Search name, email, country or ranking number"></label>
+            <select class="select" id="fTier"><option value="">All tiers</option><option>Free</option><option>Pro</option><option>Elite</option></select>
+            <select class="select" id="fStatus"><option value="">All statuses</option><option>Active</option><option>Trial</option><option>Past due</option><option>Unverified</option><option>Minor</option><option>Dormant</option><option>Deleting</option></select>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl" id="plTbl">
+              <thead><tr><th>Player</th><th class="hide-m">Ranking</th><th>Stage</th><th>Tier</th><th>Status</th><th class="r hide-m">Patrons</th><th class="hide-m">Last active</th></tr></thead>
+              <tbody id="plRows"></tbody>
+            </table>
+          </div>
+          <div class="pager"><span id="plCount"></span><span>Showing the 24 most recently active · 387 total</span></div>
+        </div>
+        <div class="card pdet" id="pdet"></div>
+      </div>
+    </main>
+
+    <!-- ── Agent health ── -->
+    <main class="content" data-route="agents" hidden>
+      <div class="page-h">
+        <div><div class="page-t">Agent health</div><div class="page-d">Every scheduled run, what it cost, and whether players acted on it. Pausing an agent stops proposals; it never touches anything already approved.</div></div>
+        <div class="page-a"><button class="btn outline sm" data-toast="Nightly aggregation re-run · tables refreshed">Refresh</button></div>
+      </div>
+      <div class="stats">
+        <div><div class="l">Runs today</div><div class="v num">2,046</div><div class="s">Morning batch 1,708 · on-demand 338</div></div>
+        <div><div class="l">Failed</div><div class="v num" style="color:var(--danger)">4</div><div class="s">0.2 percent · all retrying with backoff</div></div>
+        <div><div class="l">Median latency</div><div class="v num">41 <small>s</small></div><div class="s">p95 2 m 12 s · target under 2 minutes</div></div>
+        <div><div class="l">Cost today</div><div class="v num">A$41.20</div><div class="s">A$0.020 per run · 68 percent transcription</div></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-t">Agents</div><div class="card-d">Seven-day window. Approval is the share of proposal-bearing runs with an approval inside 48 hours; dismiss is the share explicitly dismissed.</div></div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>Agent</th><th class="r">Runs</th><th class="r hide-m">Success</th><th class="r hide-m">p50</th><th class="r hide-m">Cost/run</th><th>Approval</th><th class="hide-m">Dismiss</th><th>Status</th><th></th></tr></thead>
+            <tbody id="agRows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-h"><div class="card-t">Failed runs</div><div class="card-d">Each retries three times with backoff. After the third failure the player is told "This morning's run didn't complete".</div></div>
+          <div id="failList" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-t">Queues</div><div class="card-d">Work waiting on something outside the platform.</div></div>
+          <div class="queue">
+            <div><div class="l">Transcription backlog</div><div class="v">3 <small>notes</small></div></div>
+            <div><div class="l">Offline uploads pending</div><div class="v">12 <small>devices</small></div></div>
+            <div><div class="l">Weather refresh failed</div><div class="v">1 <small>venue</small></div></div>
+            <div><div class="l">Emails deferred</div><div class="v">0</div></div>
+          </div>
+          <div class="chart-head" style="margin-top:4px"><div class="card-t" style="font-size:14px">Runs per hour, last 24 hours <span class="role-note">· square-root scale so the 07:00 batch does not hide the day</span></div><span class="legend"><span><i style="background:var(--chart-2)"></i>Completed</span><span><i style="background:var(--danger)"></i>Failed</span></span></div>
+          <div class="chart" id="cRuns"></div>
+        </div>
+      </div>
+      <div class="card owner-only">
+        <div class="card-h"><div class="card-t">Providers and kill switches</div><div class="card-d">Turning a provider off pauses every agent that depends on it and shows players a plain notice. Nothing approved is undone.</div><div class="act"><span class="badge secondary">Owner only</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="kill"><div class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2a4 4 0 0 1 4 4v1h1a3 3 0 0 1 0 6h-1v1a4 4 0 0 1-8 0v-1H7a3 3 0 0 1 0-6h1V6a4 4 0 0 1 4-4Z"/></svg></div><div class="t">Structured-output LLM</div><div class="s">Drafting and extraction · schema validated on every call · region EU</div><button class="switch" role="switch" aria-checked="true" data-kill="the language model"><span class="trk"></span></button></div>
+          <div class="kill"><div class="ico"><svg class="ic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/></svg></div><div class="t">Transcription (Whisper)</div><div class="s">Match Scribe · language detection per note · region EU</div><button class="switch" role="switch" aria-checked="true" data-kill="transcription"><span class="trk"></span></button></div>
+          <div class="kill"><div class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 15 4-6 4 4 5-8"/></svg></div><div class="t">TimesFM forecast</div><div class="s">Elite baseline forecast · runs Mondays after the ranking refresh</div><button class="switch" role="switch" aria-checked="true" data-kill="the ranking forecast"><span class="trk"></span></button></div>
+          <div class="kill"><div class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="t">Patron payouts (Stripe Connect)</div><div class="s">Weekly Express payouts · pausing holds payouts, patrons keep being charged</div><button class="switch" role="switch" aria-checked="true" data-kill="patron payouts"><span class="trk"></span></button></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ── Ingestion ── -->
+    <main class="content" data-route="ingestion" hidden>
+      <div class="page-h">
+        <div><div class="page-t">Data ingestion and overrides</div><div class="page-d">The feeds every agent reads, and the manual paths that keep the product working before a licensed feed is signed or when a feed is wrong.</div></div>
+        <div class="page-a"><button class="btn outline sm" data-toast="Checking all seven feeds · done, nothing changed">Check all now</button></div>
+      </div>
+      <div class="feeds" id="feeds"></div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-h"><div class="card-t">Ranking snapshot import</div><div class="card-d">CSV with player id or name, country, ATP points, ATP rank, ITF points, ITF rank, week. Rows that do not match a verified player are listed, not applied.</div></div>
+          <div class="drop"><div class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></div><div><b style="font-weight:500;color:var(--foreground)">Drop a CSV here</b> or choose a file</div><div>Last import: Mon 7 Sep 06:10 UTC · 2,214 rows · 0 unmatched</div><button class="btn outline sm" id="csvBtn">Load the sample file</button></div>
+          <div id="csvPreview" hidden>
+            <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Player</th><th class="r">ATP</th><th class="r">Points</th><th>Change</th></tr></thead><tbody id="csvRows"></tbody></table></div>
+            <div class="confirm" style="margin-top:12px"><div class="t">Apply this snapshot to 342 players</div><div class="s">Stages are re-detected, dashboards refresh, and 4 players move stage. Nothing is sent to players until their Monday morning run.</div><div class="btns"><button class="btn sm" data-toast="Snapshot applied · 342 players updated, 4 stage changes, logged to the audit trail">Apply</button><button class="btn outline sm" id="csvCancel">Cancel</button></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-t">Fact-sheet corrections</div><div class="card-d">Proposed by support from a tournament fact sheet, applied here. A change to a deadline re-runs the Tournament Agent for players who shortlisted the event.</div></div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>Tournament</th><th>Field</th><th>Change</th><th class="hide-m">Source</th><th></th></tr></thead>
+              <tbody id="factRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-t">Calendar events missing a deadline</div><div class="card-d">The ITF calendar publishes some entry deadlines late. Until one is set the event is shown to players as "deadline unconfirmed" and no countdown runs.</div></div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>Event</th><th>Dates</th><th class="hide-m">Shortlisted by</th><th>Deadline</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><svg class="fl" aria-hidden="true"><use href="#f-TUR"/></svg>M25 Antalya · week 42</td><td class="mono">12 to 18 Oct</td><td class="hide-m">7 players</td><td><input class="input" style="height:32px;width:130px" placeholder="Set date"></td><td class="r"><button class="btn outline sm" data-toast="Deadline set · 7 players' shortlists re-run">Save</button></td></tr>
+              <tr><td><svg class="fl" aria-hidden="true"><use href="#f-ESP"/></svg>M15 Valldoreix · week 43</td><td class="mono">19 to 25 Oct</td><td class="hide-m">3 players</td><td><input class="input" style="height:32px;width:130px" placeholder="Set date"></td><td class="r"><button class="btn outline sm" data-toast="Deadline set · 3 players' shortlists re-run">Save</button></td></tr>
+              <tr><td><svg class="fl" aria-hidden="true"><use href="#f-ITA"/></svg>M25 Santa Margherita · week 44</td><td class="mono">26 Oct to 1 Nov</td><td class="hide-m">11 players</td><td><input class="input" style="height:32px;width:130px" placeholder="Set date"></td><td class="r"><button class="btn outline sm" data-toast="Deadline set · 11 players' shortlists re-run">Save</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- ── Money ── -->
+    <main class="content" data-route="money" hidden>
+      <div class="page-h">
+        <div><div class="page-t">Money</div><div class="page-d">What ProCircuit earns, what it costs to run, and what is stuck. Card data, refunds and invoices live in Stripe; this page reconciles against it.</div></div>
+        <div class="page-a"><a class="btn outline sm" href="#/soon/stripe"><svg class="ic" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>Open Stripe</a></div>
+      </div>
+      <div class="stats">
+        <div><div class="l">MRR</div><div class="v num">A$9,870</div><div class="s">Pro A$4,879 · Elite A$2,527 · annual prorated A$2,464</div></div>
+        <div><div class="l">Platform fee this month <span class="help" data-tip="8 percent of patron gross on Pro, 5 percent on Elite. Decision A1 and A2 (rate, and gross or net of Stripe) are still open.">?</span></div><div class="v num">A$1,412</div><div class="s">on A$17,650 patron gross · 8% Pro, 5% Elite, on gross</div></div>
+        <div><div class="l">Model and API spend</div><div class="v num">A$538</div><div class="s">A$4.20 per Pro player · cap A$7.35</div></div>
+        <div><div class="l">Past due</div><div class="v num" style="color:var(--warn)">7</div><div class="s">A$343 · 3 will lapse to Free on Tuesday</div></div>
+      </div>
+      <div class="privacy"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><div><b style="font-weight:500">Fee basis in force:</b> 8 percent of what patrons pay on Pro, 5 percent on Elite, taken on the gross before Stripe's own charge, which is shown as its own line to the player and the patron (decisions A1 and A2, settled 13 Sep).</div></div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-h"><div class="card-t">MRR by tier</div><div class="card-d">Six months. Annual plans are shown at their monthly equivalent.</div><div class="act"><span class="legend"><span><i style="background:var(--chart-1)"></i>Elite</span><span><i style="background:var(--chart-3)"></i>Pro</span></span></div></div>
+          <div class="chart" id="cMRR"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-t">Cost to serve</div><div class="card-d">Per paying player, September so far, against the 15 percent cap.</div></div>
+          <div class="stack">
+            <div><div class="l">Transcription</div><div class="v num">A$1.93</div><div class="s">46 percent</div></div>
+            <div><div class="l">Drafting and extraction</div><div class="v num">A$1.51</div><div class="s">36 percent</div></div>
+            <div><div class="l">Weather, FX, email</div><div class="v num">A$0.76</div><div class="s">18 percent</div></div>
+          </div>
+          <div class="cap"><span>A$4.20 of the A$7.35 cap</span><span class="mono">57 percent</span><div class="bar"><i style="width:57%"></i></div></div>
+          <div class="cap"><span>Elite forecast (TimesFM) per Elite player</span><span class="mono">A$2.10</span><div class="bar"><i style="width:9%"></i></div></div>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-h"><div class="card-t">Patron waitlists on Pro</div><div class="card-d">Players at the 50-patron cap. The 51st patron sees a waitlist, not an error. An upgrade to Elite lifts the cap and invites the list.</div></div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>Player</th><th class="r">Patrons</th><th class="r">Waiting</th><th class="hide-m">Since</th><th></th></tr></thead>
+              <tbody>
+                <tr><td><svg class="fl" aria-hidden="true"><use href="#f-ESP"/></svg>Mateo Ferrer</td><td class="r">50</td><td class="r">6</td><td class="hide-m">28 Aug</td><td class="r"><button class="btn outline sm" data-toast="Elite upgrade offer sent to Mateo Ferrer">Offer Elite</button></td></tr>
+                <tr><td><svg class="fl" aria-hidden="true"><use href="#f-USA"/></svg>Jordan Blake</td><td class="r">50</td><td class="r">2</td><td class="hide-m">9 Sep</td><td class="r"><button class="btn outline sm" data-toast="Elite upgrade offer sent to Jordan Blake">Offer Elite</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-t">Payouts and disputes</div><div class="card-d">Weekly Express payouts ran Friday. Anything below is waiting on Stripe or on a person.</div></div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>Player</th><th>Item</th><th class="r">Amount</th><th>State</th></tr></thead>
+              <tbody>
+                <tr><td><svg class="fl" aria-hidden="true"><use href="#f-AUT"/></svg>Arya Dubey</td><td>Payout · week 36</td><td class="r">A$549</td><td><span class="badge ok">Sent Fri</span></td></tr>
+                <tr><td><svg class="fl" aria-hidden="true"><use href="#f-CZE"/></svg>Tereza Novak</td><td>Payout · week 36</td><td class="r">A$1,204</td><td><span class="badge warn">Held · KYC pending</span></td></tr>
+                <tr><td><svg class="fl" aria-hidden="true"><use href="#f-FRA"/></svg>Louis Marchand</td><td>Chargeback · patron dispute</td><td class="r">A$65</td><td><span class="badge danger">Evidence due 19 Sep</span></td></tr>
+                <tr><td><svg class="fl" aria-hidden="true"><use href="#f-GER"/></svg>Jonas Weber</td><td>Refund request · annual Pro</td><td class="r">A$468</td><td><span class="badge secondary">Needs owner</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card-f"><span class="role-note">Reconciliation: Stripe balance A$12,418 · ledger A$12,418 · <span class="ag-ok">matched at 06:00 UTC</span></span></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ── Trust & safety ── -->
+    <main class="content" data-route="trust" hidden>
+      <div class="page-h">
+        <div><div class="page-t">Trust and safety</div><div class="page-d">Cases that need a person. Player notes are never opened from here; a flagged item shows only the sentence that tripped the rule and the agent's own reply.</div></div>
+      </div>
+      <div class="stats">
+        <div><div class="l">Open cases</div><div class="v num">3</div><div class="s">1 distress · 1 report · 1 guardian</div></div>
+        <div><div class="l">"Someone to call" shown</div><div class="v num">4 <small>this month</small></div><div class="s">Content never leaves the player's device view</div></div>
+        <div><div class="l">Delete requests</div><div class="v num">2</div><div class="s">In the 14-day cooling-off · earliest 21 Sep</div></div>
+        <div><div class="l">Export requests</div><div class="v num">5</div><div class="s">All delivered within 24 hours</div></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-t">Cases</div><div class="card-d">Oldest first. Resolving a case writes the outcome to the audit log; the player is told when the case concerned their account.</div></div>
+        <div id="cases" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-h"><div class="card-t">Data requests</div><div class="card-d">Export everything and delete account, from Settings &gt; Data &amp; safety.</div></div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>Player</th><th>Request</th><th class="hide-m">Requested</th><th>State</th><th></th></tr></thead>
+              <tbody>
+                <tr><td><svg class="fl" aria-hidden="true"><use href="#f-POL"/></svg>Kacper Zielinski</td><td>Delete account<span class="sub">Cooling-off</span></td><td class="hide-m">7 Sep</td><td><span class="badge warn">8 days left</span></td><td class="r"><button class="btn ghost sm" data-toast="Deletion cancelled at the player's request · account restored">Cancel</button></td></tr>
+                <tr><td><svg class="fl" aria-hidden="true"><use href="#f-SUI"/></svg>Nina Keller</td><td>Delete account<span class="sub">Cooling-off</span></td><td class="hide-m">11 Sep</td><td><span class="badge warn">12 days left</span></td><td class="r"><button class="btn ghost sm" data-toast="Deletion cancelled at the player's request · account restored">Cancel</button></td></tr>
+                <tr><td><svg class="fl" aria-hidden="true"><use href="#f-AUS"/></svg>Harry Lim</td><td>Export<span class="sub">Everything</span></td><td class="hide-m">12 Sep</td><td><span class="badge ok">Delivered</span></td><td></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-t">Real-person governance</div><div class="card-d">Demo and marketing accounts that use a real player's name. Public facts only, private data labelled illustrative, no photographs without licence.</div></div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>Account</th><th>Use</th><th>Checks</th></tr></thead>
+              <tbody>
+                <tr><td><svg class="fl" aria-hidden="true"><use href="#f-AUT"/></svg>Lukas Neumayer (demo)</td><td>Stage 3 prototype</td><td><span class="badge ok">Public facts</span> <span class="badge ok">Illustrative label</span> <span class="badge ok">No photo</span></td></tr>
+                <tr><td><svg class="fl" aria-hidden="true"><use href="#f-ITA"/></svg>Team Sinner (demo)</td><td>Team concept</td><td><span class="badge ok">Public facts</span> <span class="badge ok">Roles not names</span> <span class="badge ok">Banner kept</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="privacy"><svg class="ic" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg><div>Model providers used with no training on player data: structured-output LLM (EU), Whisper (EU), TimesFM (self-hosted). This list is what players see under Data &amp; safety.</div></div>
+        </div>
+      </div>
+    </main>
+
+
+    <!-- ── My admin audit log ── -->
+    <main class="content" data-route="audit" hidden>
+      <div class="page-h">
+        <div><div class="page-t">My admin audit log</div><div class="page-d">Everything done from this console under your name, newest first. Players see the same entries, marked as admin actions, in their own Data &amp; safety log. The owner can see every admin's log.</div></div>
+        <div class="page-a"><button class="btn outline sm" data-toast="Exported 214 entries as CSV">Export</button></div>
+      </div>
+      <div class="card">
+        <div class="filters"><label class="igroup"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input placeholder="Search action, player or reason"></label><select class="select"><option>All admins</option><option>Manu Dubey (owner)</option><option>S. Park (support)</option><option>J. Osei (ops)</option></select><select class="select"><option>Last 30 days</option><option>Last 7 days</option><option>All time</option></select></div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>When</th><th>Admin</th><th>Action</th><th class="hide-m">Consequence shown</th><th>Reason</th></tr></thead><tbody id="adminLog"></tbody></table></div>
+        <div class="pager"><span>12 of 214 entries</span><span>Entries are append-only and cannot be edited or deleted</span></div>
+      </div>
+    </main>
+
+    <!-- ── Alert routing ── -->
+    <main class="content" data-route="routing" hidden>
+      <div class="page-h">
+        <div><div class="page-t">Alert routing</div><div class="page-d">Which alerts reach which role, and how. A needs-action alert always reaches at least one person in the role that owns it, and falls back to the owner after 30 minutes unacknowledged.</div></div>
+        <div class="page-a"><button class="btn sm" data-toast="Routing saved">Save</button></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-t">Needs action</div><div class="card-d">Push and email per role. In-app is always on.</div></div>
+        <div class="notif" id="routeAct"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-t">FYI</div><div class="card-d">Collapsed into one daily email at 08:00 UTC per role unless push is chosen.</div></div>
+        <div class="notif" id="routeFyi"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-t">On-call for distress cases</div><div class="card-d">The person who must confirm within 24 hours that the "Someone to call" card was shown (PRD-13 AD-25).</div></div>
+        <div class="conn"><div class="ico"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg></div><div class="t">This week: Manu Dubey (owner)</div><div class="s">Rotation not yet set up · the owner holds it until there is a second person</div><div class="a"><button class="btn outline sm" data-toast="Rotation editor is next in the prototype">Set rotation</button></div></div>
+      </div>
+    </main>
+
+    <!-- ── Coming soon / external ── -->
+    <main class="content" data-route="soon" hidden>
+      <div class="card soon">
+        <div class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg></div>
+        <div class="card-t" id="soonTitle">External</div>
+        <div class="card-d" id="soonDesc">This opens in another tool.</div>
+        <div><a class="btn outline sm" href="#/">Back to overview</a></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<nav class="tabbar" aria-label="Sections">
+  <a class="tab" href="#/"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span>Overview</span></a>
+  <a class="tab" href="#/players"><svg class="ic" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Players</span></a>
+  <a class="tab" href="#/agents"><svg class="ic" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>Agents</span><span class="n">4</span></a>
+  <a class="tab ops-only" href="#/ingestion"><svg class="ic" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg><span>Ingest</span></a>
+  <a class="tab owner-only" href="#/money"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg><span>Money</span></a>
+  <a class="tab" href="#/trust"><svg class="ic" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg><span>Trust</span></a>
+</nav>
+
+<div class="nt-scrim" id="ntScrim"></div>
+<aside class="nt" id="nt" role="dialog" aria-label="Alerts" aria-hidden="true">
+  <div class="nt-h"><div><div class="t">Alerts</div><div class="c" id="ntCount"></div></div><button class="btn ghost sm icon x" id="ntClose" aria-label="Close"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+  <div class="nt-f"><div class="nt-tabs" role="tablist"><button role="tab" aria-selected="true" data-f="all">All</button><button role="tab" aria-selected="false" data-f="act">Needs action</button><button role="tab" aria-selected="false" data-f="fyi">FYI</button></div><button class="btn ghost sm" id="ntRead" style="margin-left:auto">Mark all read</button></div>
+  <div class="nt-list" id="ntList"></div>
+  <div class="nt-foot"><span>Push and email routing for admins is per role</span><a href="#/routing" style="color:inherit">Routing</a></div>
+</aside>
+
+<div class="tip" id="tip" role="tooltip"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const el = (n, a = {}, txt) => { const e = document.createElementNS(svgNS, n); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; return e; };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const money = n => 'A$' + Math.round(n).toLocaleString('en-AU');
+
+  /* ── Theme toggle ── */
+  $('#themeBtn').addEventListener('click', () => {
+    const r = document.documentElement;
+    const dark = r.getAttribute('data-theme') === 'dark' || (!r.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+    r.classList.add('theming'); r.setAttribute('data-theme', dark ? 'light' : 'dark'); setTimeout(() => r.classList.remove('theming'), 260);
+  });
+
+  /* ── Toast ── */
+  let tt; window.toast = (m) => { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2800); };
+  document.addEventListener('click', e => { const b = e.target.closest('[data-toast]'); if (b && !b.dataset.confirm) toast(b.dataset.toast); });
+
+  /* ── Country flags ── */
+  const FLAG = { AUT: 1, POL: 1, ROU: 1, SVK: 1, POR: 1, TUR: 1, ITA: 1, CZE: 1, CHN: 1, AUS: 1, SUI: 1, GER: 1, ESP: 1, USA: 1, FRA: 1 };
+  const fl = cc => FLAG[cc] ? `<svg class="fl" aria-hidden="true"><use href="#f-${cc}"/></svg>` : '';
+
+  /* ── Sample data: players ── */
+  // Only Arya (fictional) and Neumayer (real, public facts, private data illustrative) match the player prototypes; everyone else is invented.
+  const PLAYERS = [
+    { id: 'p101', name: 'Arya Dubey', email: 'arya@example.at', cc: 'AUT', atp: 487, itf: 212, stage: 2, tier: 'Pro', status: 'Active', patrons: 12, cap: 50, last: '2 h ago', joined: '18 Jun', renews: 'Renews 3 Oct · A$49', cur: 'AUD', tz: 'Europe/Vienna', langs: 'English, Deutsch', verified: 'Verified · ATP feed 7 Sep', coach: 'Coach link · opened 4× this week', mgr: 'Manager link · opened Fri', spend: 4.6, notes: 25, agents: 'All six scheduled · 07:00 UTC', dob: 23 },
+    { id: 'p102', name: 'Lukas Neumayer', email: 'lukas@example.at', cc: 'AUT', atp: 227, itf: null, stage: 3, tier: 'Elite', status: 'Active', patrons: 34, cap: null, last: '5 h ago', joined: '2 Jul', renews: 'Renews 2 Oct · A$149', cur: 'AUD', tz: 'Europe/Vienna', langs: 'Deutsch, English', verified: 'Verified · ATP feed 7 Sep', coach: 'Coach link · opened Sat', mgr: 'Not created', spend: 6.9, notes: 41, agents: 'All six · forecast Mondays', dob: 24, demo: true },
+    { id: 'p103', name: 'Mateo Ferrer', email: 'mateo@example.es', cc: 'ESP', atp: 612, itf: 298, stage: 2, tier: 'Pro', status: 'Active', patrons: 50, cap: 50, last: '1 h ago', joined: '21 Jun', renews: 'Renews 21 Sep · A$49', cur: 'USD', tz: 'Europe/Madrid', langs: 'Español, English', verified: 'Verified · ATP feed 7 Sep', coach: 'Coach link · opened Thu', mgr: 'Manager link · opened 2 Sep', spend: 5.1, notes: 33, agents: 'All six scheduled', dob: 22 },
+    { id: 'p104', name: 'Tereza Novak', email: 'tereza@example.cz', cc: 'CZE', tour: 'WTA', atp: null, itf: 164, stage: 1, tier: 'Pro', status: 'Active', patrons: 27, cap: 50, last: '30 m ago', joined: '9 Jul', renews: 'Renews 9 Oct · A$39 annual', cur: 'AUD', tz: 'Europe/Prague', langs: 'English', verified: 'Verified · ITF feed 7 Sep', coach: 'Not created', mgr: 'Manager link · opened Sun', spend: 3.8, notes: 19, agents: 'Five scheduled · Fuel paused', dob: 20 },
+    { id: 'p105', name: 'Jordan Blake', email: 'jordan@example.com', cc: 'USA', atp: 741, itf: 402, stage: 2, tier: 'Pro', status: 'Active', patrons: 50, cap: 50, last: '3 h ago', joined: '2 Jul', renews: 'Renews 2 Oct · A$49', cur: 'USD', tz: 'America/New_York', langs: 'English', verified: 'Verified · ATP feed 7 Sep', coach: 'Coach link · opened Fri', mgr: 'Not created', spend: 4.9, notes: 28, agents: 'All six scheduled', dob: 25 },
+    { id: 'p106', name: 'Yuki Tanaka', email: 'yuki@example.jp', cc: 'JPN', tour: 'WTA', atp: 388, itf: null, stage: 3, tier: 'Elite', status: 'Trial', patrons: 8, cap: null, last: '20 m ago', joined: '4 Sep', renews: 'Trial ends 18 Sep', cur: 'USD', tz: 'Asia/Tokyo', langs: 'English', verified: 'Verified · ATP feed 7 Sep', coach: 'Not created', mgr: 'Not created', spend: 2.2, notes: 6, agents: 'All six scheduled', dob: 26 },
+    { id: 'p107', name: 'Louis Marchand', email: 'louis@example.fr', cc: 'FRA', atp: 903, itf: 511, stage: 1, tier: 'Pro', status: 'Past due', patrons: 9, cap: 50, last: '2 d ago', joined: '28 Jun', renews: 'Payment failed 10 Sep · lapses Tue', cur: 'AUD', tz: 'Europe/Paris', langs: 'English', verified: 'Verified · ITF feed 7 Sep', coach: 'Coach link · opened 31 Aug', mgr: 'Not created', spend: 3.1, notes: 14, agents: 'All six scheduled', dob: 21 },
+    { id: 'p108', name: 'Wei Chen', email: 'wei@example.cn', cc: 'CHN', atp: 1160, itf: 688, stage: 1, tier: 'Free', status: 'Active', patrons: 0, cap: 0, last: '6 h ago', joined: '30 Aug', renews: 'Free · trial not started', cur: 'CNY', tz: 'Asia/Shanghai', langs: '中文, English', verified: 'Verified · ITF feed 7 Sep', coach: 'Not available on Free', mgr: 'Not available on Free', spend: 0.4, notes: 7, agents: 'Daily insight only', dob: 19 },
+    { id: 'p109', name: 'Sofia Petrescu', email: 'sofia@example.ro', cc: 'ROU', atp: null, itf: 1204, stage: 1, tier: 'Free', status: 'Unverified', patrons: 0, cap: 0, last: '1 d ago', joined: '11 Sep', renews: 'Free', cur: 'AUD', tz: 'Europe/Bucharest', langs: 'English', verified: 'Ambiguous · 2 ITF matches, waiting on the player', coach: 'Not available on Free', mgr: 'Not available on Free', spend: 0.1, notes: 1, agents: 'Daily insight only', dob: 18 },
+    { id: 'p110', name: 'Kacper Zielinski', email: 'kacper@example.pl', cc: 'POL', atp: 566, itf: 240, stage: 2, tier: 'Pro', status: 'Deleting', patrons: 4, cap: 50, last: '6 d ago', joined: '25 Jun', renews: 'Cancelled · deletes 21 Sep', cur: 'AUD', tz: 'Europe/Warsaw', langs: 'English', verified: 'Verified · ATP feed 7 Sep', coach: 'Revoked by the player', mgr: 'Revoked by the player', spend: 0.9, notes: 22, agents: 'All paused by the player', dob: 27 },
+    { id: 'p111', name: 'Emma Roth', email: 'emma@example.de', cc: 'GER', tour: 'WTA', atp: null, itf: 902, stage: 1, tier: 'Free', status: 'Minor', patrons: 0, cap: 0, last: '4 h ago', joined: '6 Sep', renews: 'Free', cur: 'AUD', tz: 'Europe/Berlin', langs: 'Deutsch, English', verified: 'Verified · ITF feed 7 Sep', coach: 'Not available on Free', mgr: 'Guardian link · not yet confirmed', spend: 0.3, notes: 3, agents: 'Daily insight only', dob: 17, guardian: 'pending' },
+    { id: 'p112', name: 'Nico Bianchi', email: 'nico@example.it', cc: 'ITA', atp: 455, itf: null, stage: 2, tier: 'Elite', status: 'Active', patrons: 61, cap: null, last: '45 m ago', joined: '19 Jun', renews: 'Renews 19 Sep · A$119 annual', cur: 'AUD', tz: 'Europe/Rome', langs: 'English', verified: 'Verified · ATP feed 7 Sep', coach: 'Coach link · opened Sat', mgr: 'Manager link · opened Sat', spend: 7.4, notes: 48, agents: 'All six · forecast Mondays', dob: 24 },
+    { id: 'p113', name: 'Harry Lim', email: 'harry@example.au', cc: 'AUS', atp: 1402, itf: 733, stage: 1, tier: 'Pro', status: 'Trial', patrons: 3, cap: 50, last: '1 h ago', joined: '1 Sep', renews: 'Trial ends 15 Sep', cur: 'AUD', tz: 'Australia/Melbourne', langs: 'English', verified: 'Verified · ITF feed 7 Sep', coach: 'Coach link · opened Fri', mgr: 'Not created', spend: 2.8, notes: 9, agents: 'All six scheduled', dob: 20 },
+    { id: 'p114', name: 'Nina Keller', email: 'nina@example.ch', cc: 'SUI', atp: 820, itf: 470, stage: 1, tier: 'Free', status: 'Deleting', patrons: 0, cap: 0, last: '2 d ago', joined: '12 Jul', renews: 'Deletes 25 Sep', cur: 'AUD', tz: 'Europe/Zurich', langs: 'Deutsch', verified: 'Verified · ATP feed 7 Sep', coach: 'Not available on Free', mgr: 'Not available on Free', spend: 0.2, notes: 5, agents: 'Paused', dob: 22 },
+    { id: 'p115', name: 'Diego Alvarez', email: 'diego@example.es', cc: 'ESP', atp: 298, itf: null, stage: 3, tier: 'Elite', status: 'Active', patrons: 44, cap: null, last: '12 m ago', joined: '20 Jun', renews: 'Renews 20 Sep · A$149', cur: 'USD', tz: 'Europe/Madrid', langs: 'Español', verified: 'Verified · ATP feed 7 Sep', coach: 'Coach link · opened Sun', mgr: 'Manager link · opened Thu', spend: 6.1, notes: 37, agents: 'All six · forecast Mondays', dob: 25 },
+    { id: 'p116', name: 'Jonas Weber', email: 'jonas@example.de', cc: 'GER', atp: 690, itf: 310, stage: 2, tier: 'Pro', status: 'Active', patrons: 15, cap: 50, last: '8 h ago', joined: '3 Jul', renews: 'Annual · refund requested', cur: 'AUD', tz: 'Europe/Berlin', langs: 'Deutsch, English', verified: 'Verified · ATP feed 7 Sep', coach: 'Coach link · opened Wed', mgr: 'Not created', spend: 4.0, notes: 21, agents: 'All six scheduled', dob: 23 },
+    { id: 'p117', name: 'Ana Costa', email: 'ana@example.pt', cc: 'POR', tour: 'WTA', atp: 905, itf: 355, stage: 1, tier: 'Pro', status: 'Active', patrons: 11, cap: 50, last: '3 h ago', joined: '14 Jul', renews: 'Renews 14 Oct · A$49', cur: 'AUD', tz: 'Europe/Lisbon', langs: 'English', verified: 'Verified · ITF feed 7 Sep', coach: 'Not created', mgr: 'Manager link · opened Sat', spend: 3.6, notes: 17, agents: 'All six scheduled', dob: 21 },
+    { id: 'p118', name: 'Marek Horvath', email: 'marek@example.sk', cc: 'SVK', atp: 534, itf: 231, stage: 2, tier: 'Free', status: 'Dormant', patrons: 0, cap: 0, last: '23 d ago', joined: '26 Jun', renews: 'Free · trial expired 10 Jul', cur: 'AUD', tz: 'Europe/Bratislava', langs: 'English', verified: 'Verified · ATP feed 7 Sep', coach: 'Not available on Free', mgr: 'Not available on Free', spend: 0, notes: 4, agents: 'Daily insight only', dob: 26 },
+    { id: 'p119', name: 'Selin Aydin', email: 'selin@example.tr', cc: 'TUR', atp: 1011, itf: 590, stage: 1, tier: 'Pro', status: 'Trial', patrons: 2, cap: 50, last: '50 m ago', joined: '8 Sep', renews: 'Trial ends 22 Sep', cur: 'USD', tz: 'Europe/Istanbul', langs: 'English', verified: 'Verified · ITF feed 7 Sep', coach: 'Not created', mgr: 'Not created', spend: 1.4, notes: 4, agents: 'All six scheduled', dob: 19 },
+    { id: 'p120', name: 'Tom Walker', email: 'tom@example.au', cc: 'AUS', atp: 355, itf: null, stage: 3, tier: 'Pro', status: 'Active', patrons: 38, cap: 50, last: '9 h ago', joined: '22 Jun', renews: 'Renews 22 Sep · A$49', cur: 'AUD', tz: 'Australia/Sydney', langs: 'English', verified: 'Verified · ATP feed 7 Sep', coach: 'Coach link · opened Sat', mgr: 'Not created', spend: 5.5, notes: 31, agents: 'All six scheduled', dob: 27 },
+    { id: 'p121', name: 'Lena Fischer', email: 'lena@example.at', cc: 'AUT', tour: 'WTA', atp: null, itf: 1380, stage: 1, tier: 'Free', status: 'Unverified', patrons: 0, cap: 0, last: '5 h ago', joined: '12 Sep', renews: 'Free', cur: 'AUD', tz: 'Europe/Vienna', langs: 'Deutsch', verified: 'No match in the ITF feed · proceeding unverified, public profile off', coach: 'Not available on Free', mgr: 'Not available on Free', spend: 0.1, notes: 2, agents: 'Daily insight only', dob: 18 },
+    { id: 'p122', name: 'Pavel Sokol', email: 'pavel@example.cz', cc: 'CZE', atp: 776, itf: 412, stage: 2, tier: 'Pro', status: 'Active', patrons: 7, cap: 50, last: '1 d ago', joined: '7 Jul', renews: 'Renews 7 Oct · A$49', cur: 'AUD', tz: 'Europe/Prague', langs: 'English', verified: 'Verified · ATP feed 7 Sep', coach: 'Not created', mgr: 'Not created', spend: 3.3, notes: 15, agents: 'All six scheduled', dob: 24 },
+    { id: 'p123', name: 'Chloe Martin', email: 'chloe@example.fr', cc: 'FRA', tour: 'WTA', atp: 640, itf: 260, stage: 2, tier: 'Pro', status: 'Past due', patrons: 13, cap: 50, last: '3 d ago', joined: '30 Jun', renews: 'Payment failed 9 Sep · retry Mon', cur: 'AUD', tz: 'Europe/Paris', langs: 'English', verified: 'Verified · ITF feed 7 Sep', coach: 'Coach link · opened 4 Sep', mgr: 'Not created', spend: 2.9, notes: 12, agents: 'All six scheduled', dob: 22 },
+    { id: 'p124', name: 'Ben Okafor', email: 'ben@example.com', cc: 'USA', atp: 1290, itf: 655, stage: 1, tier: 'Free', status: 'Active', patrons: 0, cap: 0, last: '7 h ago', joined: '5 Sep', renews: 'Free · 6 of 10 notes used', cur: 'USD', tz: 'America/Chicago', langs: 'English', verified: 'Verified · ITF feed 7 Sep', coach: 'Not available on Free', mgr: 'Not available on Free', spend: 0.5, notes: 6, agents: 'Daily insight only', dob: 20 },
+  ];
+  const AUDIT = {
+    p101: [
+      ['agent', 'Tournament Agent run · shortlist of 5, Poznań deadline in 6 days', 'trigger schedule · gpt structured output · 41 s · A$0.03', 'Sun 07:02'],
+      ['player', 'Approved Content Agent draft "Three set points, one lesson"', 'from iPhone · 11 patrons emailed', 'Sat 21:14'],
+      ['agent', 'Payout sent A$549 · Stripe Connect', 'week 36 · gross A$612 · fee A$49 (8 percent on gross) · Stripe A$14', 'Fri 09:00'],
+      ['admin', 'Support re-ran ranking verification', 'by S. Park · reason: player reported stale ITF number · result unchanged', 'Thu 14:30'],
+      ['player', 'Coach link opened', 'Vienna · 4th time this week', 'Thu 08:11'],
+    ],
+    default: [
+      ['agent', 'Morning run completed', 'six agents · 38 s · A$0.02', 'Sun 07:03'],
+      ['player', 'Signed in by magic link', 'from Android', 'Sat 18:40'],
+      ['agent', 'Ranking snapshot applied', 'ATP feed · Monday refresh · stage unchanged', 'Mon 06:12'],
+    ],
+  };
+
+  const STAGE = { 1: 'Building', 2: 'Emerging', 3: 'Established' };
+  const stBadge = s => ({ Active: 'ok', Trial: 'lime', 'Past due': 'warn', Unverified: 'warn', Minor: 'secondary', Dormant: 'secondary', Deleting: 'danger' }[s] || 'secondary');
+  const initials = n => n.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  let sel = 'p101';
+  function renderPlayers() {
+    const q = ($('#plQ').value || '').toLowerCase().trim(), t = $('#fTier').value, s = $('#fStatus').value;
+    const rows = PLAYERS.filter(p => (!t || p.tier === t) && (!s || p.status === s) && (!q || [p.name, p.email, p.cc, String(p.atp || ''), String(p.itf || '')].join(' ').toLowerCase().includes(q)));
+    $('#plRows').innerHTML = rows.map(p => `<tr class="row" data-id="${p.id}" aria-selected="${p.id === sel}"><td><div class="who"><div class="avatar">${initials(p.name)}</div><div style="min-width:0"><div class="nm">${fl(p.cc)}${esc(p.name)}</div></div></div></td><td class="mono hide-m">${p.atp ? (p.tour || 'ATP') + ' #' + p.atp : '<span style="color:var(--muted-foreground)">ITF ' + p.itf + '</span>'}</td><td><span class="badge secondary">${p.stage} · ${STAGE[p.stage]}</span></td><td>${p.tier}</td><td><span class="badge ${stBadge(p.status)}">${p.status}</span></td><td class="r hide-m">${p.patrons}${p.cap ? '<span class="sub">of ' + p.cap + '</span>' : ''}</td><td class="hide-m" style="color:var(--muted-foreground)">${p.last}</td></tr>`).join('') || `<tr><td colspan="7"><div class="empty"><div class="t">No players match</div><div>Try a broader filter.</div></div></td></tr>`;
+    $('#plCount').textContent = rows.length + ' of 24 shown';
+    if (!rows.find(p => p.id === sel) && rows[0]) { sel = rows[0].id; renderPlayers(); return; }
+    renderDetail();
+  }
+  function renderDetail() {
+    const p = PLAYERS.find(x => x.id === sel); if (!p) return;
+    const log = AUDIT[p.id] || AUDIT.default;
+    const minor = p.dob < 18;
+    $('#pdet').innerHTML = `
+      <div class="head"><div class="avatar">${initials(p.name)}</div><div style="min-width:0;flex:1"><div class="nm">${esc(p.name)}</div><div class="sub">${fl(p.cc)}${p.cc} · ${p.atp ? (p.tour || 'ATP') + ' #' + p.atp : 'no ' + (p.tour || 'ATP') + ' points'}${p.itf ? ' · ITF #' + p.itf : ''} <span class="badge secondary">Stage ${p.stage} · ${STAGE[p.stage]}</span> <span class="badge ${p.tier === 'Free' ? 'secondary' : 'lime'}">${p.tier}</span> <span class="badge ${stBadge(p.status)}">${p.status}</span>${p.demo ? ' <span class="badge">Demo · public facts</span>' : ''}</div></div></div>
+      ${minor ? `<div class="privacy" style="box-shadow:0 0 0 1px var(--warn)"><svg class="ic" viewBox="0 0 24 24" style="color:var(--warn)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg><div><b style="font-weight:500">Under 18.</b> Guardian email ${p.guardian === 'pending' ? 'sent 6 Sep, not yet confirmed. Public profile is off and stays off until confirmation.' : 'confirmed.'} The manager link goes to the guardian by default.</div></div>` : ''}
+      <div><div class="sect" style="margin-bottom:8px">Account</div><dl class="kv"><dt>Email</dt><dd>${esc(p.email)}</dd><dt>Signed up</dt><dd>${p.joined} 2026 · ${p.status === 'Trial' ? 'in trial' : 'via ' + (p.cc === 'USA' ? 'App Store' : 'web')}</dd><dt>Plan</dt><dd>${p.tier} · ${p.renews}</dd><dt>Verification</dt><dd>${p.verified}</dd><dt>Home currency</dt><dd>${p.cur} · ${p.tz}</dd><dt>Languages</dt><dd>${p.langs}</dd><dt>Agents</dt><dd>${p.agents}</dd><dt>Model spend</dt><dd class="mono">A$${p.spend.toFixed(2)} this month</dd></dl></div>
+      <div><div class="sect" style="margin-bottom:8px">Share links</div><dl class="kv"><dt>Coach</dt><dd>${p.coach}${/opened/.test(p.coach) ? ' · <a href="#" data-toast="Coach link revoked · takes effect within a minute" style="color:inherit">Revoke</a>' : ''}</dd><dt>Manager</dt><dd>${p.mgr}${/opened/.test(p.mgr) ? ' · <a href="#" data-toast="Manager link revoked · takes effect within a minute" style="color:inherit">Revoke</a>' : ''}</dd></dl></div>
+      <div><div class="sect" style="margin-bottom:8px">Actions</div><div class="acts">
+        <button class="btn outline sm" data-confirm="Send a magic link to ${esc(p.email)}" data-conf-s="The link is valid for 15 minutes. Nothing else changes." data-toast="Magic link sent to ${esc(p.email)} · logged"><svg class="ic" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>Send magic link</button>
+        <button class="btn outline sm" data-confirm="Re-run ranking verification for ${esc(p.name)}" data-conf-s="Matches name and country against the ATP and ITF feeds again. The player is told only if the result changes." data-toast="Verification re-run · ${p.status === 'Unverified' ? 'still ambiguous, the player has to choose' : 'unchanged, player not notified'} · logged"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Re-verify ranking</button>
+        <button class="btn outline sm" data-confirm="Extend ${esc(p.name)}'s trial by 14 days" data-conf-s="${p.status === 'Trial' ? 'Trial end moves 14 days later and the player is notified.' : 'This player is not in a trial; a 14-day Pro trial starts today and the player is notified.'}" data-reason="1" data-toast="Trial extended 14 days · player notified · reason logged"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Extend trial 14 d</button>
+        <button class="btn outline sm owner-only" data-confirm="Comp Elite for one month" data-conf-s="A Stripe coupon covers one month of Elite. Patron fee drops to 5 percent for that month and the player is notified." data-reason="1" data-toast="Elite comped for one month · coupon applied · reason logged"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>Comp Elite 1 month</button>
+        <button class="btn outline sm" data-confirm="Pause all agents for ${esc(p.name)}" data-conf-s="Scheduled runs stop and each agent page shows a plain notice. Nothing approved is undone. The player is notified." data-toast="All agents paused for ${esc(p.name)} · player notified · logged"><svg class="ic" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>Pause agents</button>
+        <button class="btn outline sm" data-confirm="Export ${esc(p.name)}'s data" data-conf-s="JSON, CSV and transcripts go to the player's own email within 24 hours. Nothing is sent to you." data-toast="Export queued · delivered to the player within 24 hours · logged"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Export data</button>
+      </div>
+      <div class="confirm" id="actConfirm" hidden><div class="t" id="acT"></div><div class="s" id="acS"></div><label class="field reason" id="acRwrap" hidden><span class="desc">Reason (required, written to the audit log)</span><input class="input" id="acReason" placeholder="For example: ticket 4831, player asked by email"></label><div class="btns"><button class="btn sm" id="acGo">Confirm</button><button class="btn outline sm" id="acNo">Cancel</button></div></div></div>
+      <div class="privacy"><svg class="ic" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg><div>Notes, transcripts, audio and moods are not visible in the console. A support case can request time-boxed read access to note summaries; the access is logged and the player is notified.</div></div>
+      <div><div class="sect" style="margin-bottom:8px">Audit log</div><ul class="audit">${log.map(([k, t, s, w]) => `<li><span class="d ${k}"></span><span class="t">${esc(t)}</span><span class="s">${esc(s)}</span><span class="w">${w}</span></li>`).join('')}</ul><div class="role-note" style="margin-top:8px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-right:6px"></span>Admin actions carry the admin's name and a reason. <a href="#" data-toast="Opening the full log for ${esc(p.name)}" style="color:inherit">Full log</a></div></div>
+      <div class="card-f owner-only" style="justify-content:space-between"><span class="role-note">Danger zone · owner only</span><button class="btn outline sm" id="delBtn" style="color:var(--danger)">Delete account</button></div>
+      <div class="confirm owner-only" id="delConfirm" hidden><div class="t">Delete ${esc(p.name)}'s account</div><div class="s">Starts the 14-day cooling-off. The player is emailed now and can cancel. Patron billing stops at once; payouts already sent are not reversed.</div><label class="field reason"><span class="desc">Reason (required, written to the audit log)</span><input class="input" id="delReason" placeholder="For example: player requested by email, ticket 4821"></label><div class="btns"><button class="btn sm" id="delGo" style="background:var(--destructive);color:#fff">Start cooling-off</button><button class="btn outline sm" id="delNo">Cancel</button></div></div>`;
+    $('#delBtn')?.addEventListener('click', () => { $('#delConfirm').hidden = false; $('#delReason').focus(); });
+    $('#delNo')?.addEventListener('click', () => { $('#delConfirm').hidden = true; });
+    $('#delGo')?.addEventListener('click', () => { const r = $('#delReason').value.trim(); if (!r) { toast('A reason is required before anything is deleted'); $('#delReason').focus(); return; } p.status = 'Deleting'; p.renews = 'Deletes 27 Sep'; $('#delConfirm').hidden = true; toast('Cooling-off started · deletes 27 Sep unless the player cancels · reason logged'); renderPlayers(); });
+    let pendingAct = null;
+    $('#pdet').querySelectorAll('[data-confirm]').forEach(btn => btn.addEventListener('click', e => { e.stopImmediatePropagation(); pendingAct = btn; $('#acT').textContent = btn.dataset.confirm; $('#acS').textContent = btn.dataset.confS; $('#acRwrap').hidden = !btn.dataset.reason; $('#acReason').value = ''; $('#actConfirm').hidden = false; $('#actConfirm').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); if (btn.dataset.reason) $('#acReason').focus(); }, true));
+    $('#acNo')?.addEventListener('click', () => { $('#actConfirm').hidden = true; pendingAct = null; });
+    $('#acGo')?.addEventListener('click', () => { if (!pendingAct) return; if (pendingAct.dataset.reason && !$('#acReason').value.trim()) { toast('A reason is required before this is applied'); $('#acReason').focus(); return; } $('#actConfirm').hidden = true; toast(pendingAct.dataset.toast); pendingAct = null; });
+    $('#pdet').querySelectorAll('a[href="#"]').forEach(a => a.addEventListener('click', e => e.preventDefault()));
+  }
+  $('#plRows').addEventListener('click', e => { const tr = e.target.closest('tr.row'); if (!tr) return; sel = tr.dataset.id; renderPlayers(); if (innerWidth <= 1180) $('#pdet').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  ['#plQ', '#fTier', '#fStatus'].forEach(s => $(s).addEventListener('input', renderPlayers));
+
+  /* ── Global search ── */
+  const q = $('#q');
+  q.addEventListener('keydown', e => { if (e.key === 'Enter') { $('#plQ').value = q.value; $('#fTier').value = ''; $('#fStatus').value = ''; location.hash = '#/players'; renderPlayers(); q.blur(); } if (e.key === 'Escape') q.blur(); });
+  window.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); q.focus(); q.select(); } });
+
+  /* ── Overview: attention and approval ── */
+  const ATT = [
+    ['danger', 'Four morning runs failed three times', 'Tournament Agent for 3 players in Poznań week (weather API), Match Scribe for 1 (Whisper timeout). Players were told at 07:10.', '#/agents', 'Open'],
+    ['warn', 'Guardian confirmation outstanding for 7 days', 'Emma Roth (17) signed up 6 Sep. Public profile stays off; the account is read-only for sharing until the guardian confirms.', '#/trust', 'Case'],
+    ['warn', 'Content Agent approval rate under 30 percent for 12 days', 'Product alert fires at 14 days. 27 percent across 108 players with drafts; 61 percent of skips give "nothing to say yet".', '#/agents', 'Review'],
+    ['warn', 'Three ITF calendar events have no entry deadline', 'Shortlisted by 21 players between them. Shown as "deadline unconfirmed" until set.', '#/ingestion', 'Set'],
+    ['', 'Seven subscriptions past due, A$343', 'Stripe retries Monday. Three lapse to Free on Tuesday; data is retained read-only.', '#/money', 'Money'],
+  ];
+  const ICO = { danger: '<svg class="ic" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>', warn: '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>', '': '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>' };
+  $('.sb-item[href="#/"] .tag').textContent = ATT.length;
+  $('#att').innerHTML = ATT.map(([k, t, s, h, a]) => `<div class="att-row ${k}"><div class="ico">${ICO[k]}</div><div class="t">${t}</div><div class="s">${s}</div><div class="a"><a class="btn outline sm" href="${h}">${a}</a></div></div>`).join('');
+
+  const AGENTS = [
+    { n: 'Tournament Agent', runs: 2394, ok: 99.6, p50: '38 s', cost: 0.031, appr: 71, dis: 9, st: 'ok' },
+    { n: 'Match Scribe', runs: 1102, ok: 99.1, p50: '17 s', cost: 0.048, appr: 94, dis: 2, st: 'ok' },
+    { n: 'Financial Agent', runs: 2394, ok: 100, p50: '12 s', cost: 0.009, appr: 58, dis: 6, st: 'ok' },
+    { n: 'Content Agent', runs: 756, ok: 99.9, p50: '52 s', cost: 0.040, appr: 27, dis: 34, st: 'warn' },
+    { n: 'Mindset Coach', runs: 2394, ok: 100, p50: '24 s', cost: 0.018, appr: 64, dis: 11, st: 'ok' },
+    { n: 'Conditions brief', runs: 1680, ok: 98.9, p50: '9 s', cost: 0.004, appr: 49, dis: 5, st: 'ok' },
+    { n: 'Fuel', runs: 214, ok: 99.5, p50: '21 s', cost: 0.022, appr: 77, dis: 4, st: 'ok' },
+    { n: 'Baseline forecast (Elite)', runs: 19, ok: 100, p50: '3 m 40 s', cost: 2.10, appr: null, dis: null, st: 'ok', weekly: true },
+  ];
+  const rate = v => v == null ? '<span style="color:var(--muted-foreground)">n/a</span>' : `<span class="rate ${v < 30 ? 'low' : ''}"><i><b style="width:${v}%"></b></i><span class="mono">${v}%</span></span>`;
+  $('#apprList').innerHTML = AGENTS.filter(a => a.appr != null).map(a => `<div style="display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;font-size:13px"><span>${a.n}</span>${rate(a.appr)}</div>`).join('');
+  $('#agRows').innerHTML = AGENTS.map(a => `<tr><td><b style="font-weight:500">${a.n}</b>${a.weekly ? '<span class="sub">Mondays after the ranking refresh</span>' : '<span class="sub">Daily 07:00 UTC plus on demand</span>'}</td><td class="r">${a.runs.toLocaleString()}</td><td class="r hide-m ${a.ok < 99.5 ? 'neg' : ''}">${a.ok}%</td><td class="r hide-m">${a.p50}</td><td class="r hide-m">A$${a.cost.toFixed(3)}</td><td>${rate(a.appr)}</td><td class="hide-m">${a.dis == null ? '<span style="color:var(--muted-foreground)">n/a</span>' : a.dis + '%'}</td><td><span class="badge ${a.st === 'warn' ? 'warn' : 'ok'}">${a.st === 'warn' ? 'Under threshold' : 'Healthy'}</span></td><td class="r" style="white-space:nowrap"><button class="btn ghost sm" data-toast="${a.n} run now for all players · proposals in about two minutes">Run now</button><button class="btn ghost sm ops-only" data-toast="${a.n} paused · players see a plain notice, nothing approved is undone">Pause</button></td></tr>`).join('');
+
+  const FAILS = [
+    ['Tournament Agent · Arya Dubey', 'weather.fetch: 502 Bad Gateway for venue 52.41,16.93 (Poznań) · attempt 3 of 3', 'Retry'],
+    ['Tournament Agent · Pavel Sokol', 'weather.fetch: 502 Bad Gateway for venue 52.41,16.93 (Poznań) · attempt 3 of 3', 'Retry'],
+    ['Tournament Agent · Jonas Weber', 'weather.fetch: 502 Bad Gateway for venue 52.41,16.93 (Poznań) · attempt 3 of 3', 'Retry'],
+    ['Match Scribe · Diego Alvarez', 'whisper.transcribe: timeout after 61 s on a 58 s note · attempt 2 of 3', 'Retry now'],
+  ];
+  $('#failList').innerHTML = FAILS.map(([t, s, a]) => `<div class="fail"><div class="ico"><svg class="ic" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg></div><div class="t">${t}</div><div class="s">${s}</div><div class="a"><button class="btn outline sm" data-toast="Queued · ${t.split(' · ')[1]} will see the result in about a minute">${a}</button></div></div>`).join('');
+
+  /* ── Kill switches ── */
+  $$('[data-kill]').forEach(sw => sw.addEventListener('click', () => { const on = sw.getAttribute('aria-checked') === 'true'; if (on && !confirm(`Turn off ${sw.dataset.kill}? Every agent that depends on it pauses and players see a plain notice.`)) return; sw.setAttribute('aria-checked', String(!on)); toast(on ? `${sw.dataset.kill} turned off · logged with your name` : `${sw.dataset.kill} back on`); }));
+
+  /* ── Ingestion ── */
+  const FEEDS = [
+    ['ATP rankings · singles and doubles', 'ok', 'Weekly · Monday', 'Mon 7 Sep 06:10', 'Mon 14 Sep', '2,214 + 1,640 rows', 'Licensed feed (TDI)'],
+    ['WTA rankings · singles and doubles', 'ok', 'Weekly · Monday', 'Mon 7 Sep 06:12', 'Mon 14 Sep', '1,480 + 1,120 rows', 'Licensed feed'],
+    ['ITF rankings · men and women', 'ok', 'Weekly · Monday', 'Mon 7 Sep 06:14', 'Mon 14 Sep', '4,880 + 3,910 rows', 'ITF'],
+    ['ITF calendar', 'warn', 'Daily', 'Sun 13 Sep 04:00', 'Mon 14 Sep 04:00', '3 events missing a deadline', 'ITF'],
+    ['ATP Challenger calendar', 'ok', 'Daily', 'Sun 13 Sep 04:02', 'Mon 14 Sep 04:00', '61 events · 0 issues', 'ATP'],
+    ['WTA 125 and tour calendar', 'ok', 'Daily', 'Sun 13 Sep 04:03', 'Mon 14 Sep 04:00', '38 events · 0 issues', 'WTA'],
+    ['Weather', 'ok', 'Daily inside travel windows', 'Sun 13 Sep 05:30', 'Mon 14 Sep 05:30', '96 venues · 1 failed (Poznań)', 'Open-Meteo'],
+    ['ECB reference rates', 'ok', 'Daily · ECB business days', 'Fri 11 Sep 14:15', 'Mon 14 Sep 14:15', 'Weekend: Friday rates in use', 'ECB'],
+    ['Stripe webhooks', 'ok', 'Streaming', '2 minutes ago', 'continuous', '0 unprocessed', 'Stripe'],
+    ['Resend delivery events', 'ok', 'Streaming', '6 minutes ago', 'continuous', '2 bounces this week · 0 complaints', 'Resend'],
+  ];
+  $('#feeds').innerHTML = FEEDS.map(([n, st, cad, last, next, det, src]) => `<div class="feed"><div class="h"><div class="t">${n}</div><span class="badge ${st}">${st === 'ok' ? 'Healthy' : 'Attention'}</span></div><div class="m"><span>Cadence</span><b>${cad}</b><span>Last</span><b>${last}</b><span>Next</span><b>${next}</b><span>Detail</span><b style="font-family:var(--font-sans)">${det}</b><span>Source</span><b style="font-family:var(--font-sans)">${src}</b></div><div class="f"><button class="btn outline sm" data-toast="${n} refreshed · no change">Refresh now</button><button class="btn ghost sm" data-toast="Opening the last 20 ${n} runs">History</button></div></div>`).join('');
+  const CSV = [['Arya Dubey', 487, 96, '−3 · 490 → 487'], ['Lukas Neumayer', 227, 241, '+2 · 225 → 227'], ['Mateo Ferrer', 612, 68, '−9 · 621 → 612'], ['Diego Alvarez', 298, 172, '0'], ['Tom Walker', 355, 141, '+4 · 351 → 355'], ['Marek Horvath', 534, 82, '−21 · 555 → 534']];
+  $('#csvBtn').addEventListener('click', () => { $('#csvRows').innerHTML = CSV.map(([n, r, p, c]) => `<tr><td>${n}</td><td class="r">${r}</td><td class="r">${p}</td><td class="mono" style="font-size:12px;color:var(--muted-foreground)">${c}</td></tr>`).join('') + '<tr><td colspan="4" style="color:var(--muted-foreground);font-size:12px">… 2,208 more rows · 0 unmatched</td></tr>'; $('#csvPreview').hidden = false; });
+  $('#csvCancel').addEventListener('click', () => { $('#csvPreview').hidden = true; });
+  const FACTS = [
+    ['POL', 'Challenger Poznań · CH 75', 'Ball', '<del>Dunlop Fort</del><ins>Dunlop Fort Clay Court</ins>', 'Fact sheet v2, 10 Sep'],
+    ['SVK', 'Challenger Bratislava · CH 100', 'Entry deadline', '<del>Thu 25 Sep</del><ins>Wed 24 Sep</ins>', 'Supervisor email'],
+    ['ROU', 'M25 Sibiu', 'Altitude', '<del>unset</del><ins>415 m</ins>', 'Venue coordinates'],
+  ];
+  $('#factRows').innerHTML = FACTS.map(([cc, t, f, d, s]) => `<tr><td>${fl(cc)}${t}</td><td>${f}</td><td class="diff">${d}</td><td class="hide-m" style="color:var(--muted-foreground)">${s}</td><td class="r" style="white-space:nowrap"><button class="btn outline sm" data-toast="Applied · ${f === 'Entry deadline' ? 'Tournament Agent re-run for 9 players who shortlisted it' : 'briefs refresh on the next run'}">Apply</button><button class="btn ghost sm" data-toast="Rejected · noted on the correction">Reject</button></td></tr>`).join('');
+
+  /* ── Trust & safety cases ── */
+  const CASES = [
+    ['danger', 'Distress pattern matched · Mindset Coach', 'Opened Sat 22:40 · player in Stage 2, Pro', 'The "Someone to call" card was shown at 22:40 with Austrian resources and cannot be dismissed. Nothing from the note is shown here. The rule requires a person to confirm within 24 hours that the card was shown and that no further contact is warranted unless the pattern recurs.', ['Confirm card shown', 'Hand to on-call'], 'Sat 22:40', 'Cannot be closed by dismissal. Escalates to the owner at 22:40 tonight if unconfirmed.'],
+    ['warn', 'Public profile reported · Fan Agent answer', 'Opened Sun 09:12 · reported by a patron of Nico Bianchi', 'Patron wrote: "The answer about his injury felt like it was written by a bot and not labelled." The label "answered by the Fan Agent" is mandatory; the log shows it was rendered. The answer itself referenced an injury, which the Fan Agent must not do (PRD-10).', ['Withdraw the answer', 'Dismiss report'], 'Sun 09:12'],
+    ['warn', 'Guardian not confirmed · Emma Roth (17)', 'Opened 6 Sep · reminder sent 10 Sep', 'Guardian email was sent to the address given at onboarding and not confirmed. Public profile is off. If unconfirmed at 14 days the account is limited to Match Scribe with no sharing until it is.', ['Resend to guardian', 'Limit account now'], '6 Sep'],
+  ];
+  $('#cases').innerHTML = CASES.map(([k, t, s, q, acts, w, rule]) => `<div class="case ${k}"><div class="ico">${ICO[k === 'danger' ? 'danger' : 'warn']}</div><div class="t">${t} <span class="w">${w}</span></div><div class="s">${s}</div><div class="q">${q}</div>${rule ? `<div class="s" style="color:var(--warn)">${rule}</div>` : ''}<div class="a">${acts.map((a, i) => `<button class="btn ${i ? 'outline' : ''} sm" data-toast="${a} · outcome written to the audit log">${a}</button>`).join('')}</div></div>`).join('');
+
+
+  /* ── Admin audit log and alert routing ── */
+  const ADMINLOG = [
+    ['Sun 09:40', 'Manu Dubey · owner', 'Retry failed runs (4)', 'Four runs re-queued; players see results in about two minutes', ''],
+    ['Sun 09:31', 'Manu Dubey · owner', 'Viewed case · distress pattern', 'No content shown; case timer unchanged', ''],
+    ['Sat 16:02', 'S. Park · support', 'Extend trial 14 days · Harry Lim', 'Trial end moves to 29 Sep; player notified', 'Player emailed: passport delay kept him off court for two weeks'],
+    ['Sat 15:47', 'S. Park · support', 'Send magic link · Chloe Martin', 'Link valid 15 minutes', ''],
+    ['Fri 11:20', 'J. Osei · ops', 'Apply fact-sheet correction · Poznań ball', 'Briefs refresh on next run for 9 players', ''],
+    ['Fri 10:05', 'J. Osei · ops', 'Pause agent · Fuel · Tereza Novak', 'Fuel stops for one player; notice shown; player notified', ''],
+    ['Thu 14:30', 'S. Park · support', 'Re-verify ranking · Arya Dubey', 'Result unchanged; player not notified', 'Player reported stale ITF number'],
+    ['Thu 09:12', 'Manu Dubey · owner', 'Comp Elite 1 month · Nico Bianchi', 'Coupon applied; fee 5 percent for the month; player notified', 'Goodwill after payout held for KYC through no fault of his'],
+    ['Wed 18:44', 'J. Osei · ops', 'Set deadline · M25 Antalya', 'Countdowns start for 7 players', ''],
+    ['Tue 08:00', 'Manu Dubey · owner', 'Role granted · J. Osei · ops', 'Ops areas visible to J. Osei from next sign-in', 'Engineer on rotation from 8 Sep'],
+    ['Mon 06:15', 'J. Osei · ops', 'Apply ranking snapshot · 2,214 rows', '342 players updated, 4 stage changes', 'Weekly refresh, ATP feed'],
+    ['7 Sep', 'Manu Dubey · owner', 'Delete account · cooling-off · Kacper Zielinski', 'Deletes 21 Sep unless cancelled; player emailed', 'Player requested by email, ticket 4821'],
+  ];
+  $('#adminLog').innerHTML = ADMINLOG.map(([w, a, act, c, r]) => `<tr><td class="mono" style="font-size:12px;color:var(--muted-foreground)">${w}</td><td>${a}</td><td><b style="font-weight:500">${act}</b></td><td class="hide-m" style="color:var(--muted-foreground)">${c}</td><td style="color:var(--muted-foreground)">${r || '<span style="opacity:.5">not required</span>'}</td></tr>`).join('');
+  const cb = on => `<div class="c"><span class="cb" role="checkbox" aria-checked="${on ? 'true' : 'false'}"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></div>`;
+  const ROUTE_ACT = [['Failed run after third attempt', 'ops', [1,1,0,0,1,1]], ['Feed missed its window', 'ops', [1,0,0,0,1,0]], ['Case opened · distress', 'owner', [1,1,1,1,1,1]], ['Case opened · report or guardian', 'support', [1,0,0,0,1,1]], ['Chargeback evidence due in 3 days', 'owner', [0,0,0,0,1,1]], ['Model spend at 80 percent of cap', 'owner', [0,0,0,0,1,1]], ['Reconciliation mismatch', 'owner', [0,0,0,0,1,1]]];
+  const ROUTE_FYI = [['Morning run summary', 'ops', [0,1,0,0,0,1]], ['Weekly payouts sent', 'owner', [0,0,0,0,0,1]], ['Weekly sign-ups and conversions', 'all', [0,1,0,1,0,1]]];
+  const routeGrid = (host, rows) => { host.innerHTML = '<div class="h">Alert</div><div class="h">Ops push</div><div class="h">Ops email</div><div class="h">Support push</div><div class="h">Support email</div><div class="h">Owner push</div><div class="h">Owner email</div>' + rows.map(([t, o, v]) => `<div class="r">${t}<span class="s">Owned by ${o}</span></div>${v.map(cb).join('')}`).join(''); host.querySelectorAll('.cb').forEach(c => c.addEventListener('click', () => c.setAttribute('aria-checked', String(c.getAttribute('aria-checked') !== 'true')))); };
+  routeGrid($('#routeAct'), ROUTE_ACT); routeGrid($('#routeFyi'), ROUTE_FYI);
+
+  /* ── Charts ── */
+  function frame(host, w, h) { host.innerHTML = ''; const svg = el('svg', { viewBox: `0 0 ${w} ${h}`, width: w, height: h }); host.appendChild(svg); return svg; }
+  function bars(host, series, opts) {
+    // series: [{v:[...], color}] stacked; opts.labels, opts.fmt, opts.line (dashed y), opts.h
+    if (!host || !host.getClientRects().length) return;
+    const W = host.clientWidth || 480, H = opts.h || 180, pad = { l: 34, r: 8, t: 10, b: 24 };
+    const svg = frame(host, W, H);
+    const n = series[0].v.length, tot = series[0].v.map((_, i) => series.reduce((s, x) => s + x.v[i], 0));
+    const sc = opts.sqrt ? Math.sqrt : (v => v), max = sc(Math.max(...tot, opts.line || 0)) * 1.1 || 1;
+    const x = i => pad.l + (W - pad.l - pad.r) * (i + 0.5) / n, bw = Math.min(28, (W - pad.l - pad.r) / n * 0.6);
+    const y = v => pad.t + (H - pad.t - pad.b) * (1 - sc(v) / max);
+    for (let k = 0; k <= 3; k++) { const v = opts.sqrt ? Math.pow(max * k / 3, 2) : max * k / 3; svg.appendChild(el('line', { x1: pad.l, x2: W - pad.r, y1: y(v), y2: y(v), stroke: 'var(--chart-grid)' })); svg.appendChild(el('text', { x: pad.l - 6, y: y(v) + 4, 'text-anchor': 'end', class: 'mono' }, (opts.fmt || (a => Math.round(a)))(v))); }
+    for (let i = 0; i < n; i++) { let acc = 0; series.forEach(s => { const v = s.v[i]; if (!v) return; const r = el('rect', { x: x(i) - bw / 2, y: y(acc + v), width: bw, height: y(acc) - y(acc + v), rx: 3, fill: s.color }); svg.appendChild(r); acc += v; }); if (opts.labels && (n <= 8 || i % Math.ceil(n / 8) === 0)) svg.appendChild(el('text', { x: x(i), y: H - 6, 'text-anchor': 'middle' }, opts.labels[i])); }
+    if (opts.line) svg.appendChild(el('line', { x1: pad.l, x2: W - pad.r, y1: y(opts.line), y2: y(opts.line), stroke: 'var(--muted-foreground)', 'stroke-dasharray': '4 4' }));
+  }
+  const WK = ['w26', 'w27', 'w28', 'w29', 'w30', 'w31', 'w32', 'w33', 'w34', 'w35', 'w36', 'w37'];
+  const drawSign = () => bars($('#cSign'), [{ v: [18, 22, 25, 21, 30, 34, 29, 38, 41, 36, 44, 31], color: 'var(--chart-3)' }, { v: [6, 8, 9, 8, 11, 13, 12, 15, 16, 14, 17, 9], color: 'var(--chart-1)' }], { labels: WK });
+  const drawSpend = () => bars($('#cSpend'), [{ v: [5.9, 5.4, 4.8, 4.5, 4.3, 4.2], color: 'var(--chart-2)' }], { labels: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'], line: 7.35, fmt: v => 'A$' + v.toFixed(1) });
+  const drawMRR = () => bars($('#cMRR'), [{ v: [1420, 2680, 4210, 5790, 7350, 8750], color: 'var(--chart-3)' }, { v: [0, 190, 420, 780, 1010, 1120], color: 'var(--chart-1)' }], { labels: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'], fmt: v => v >= 1000 ? (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : Math.round(v) });
+  const HOURS = Array.from({ length: 24 }, (_, i) => i);
+  const drawRuns = () => bars($('#cRuns'), [{ v: HOURS.map(h => h === 7 ? 1704 : h === 8 ? 120 : 20 + Math.round(30 * Math.abs(Math.sin(h)))), color: 'var(--chart-2)' }, { v: HOURS.map(h => h === 7 ? 4 : 0), color: 'var(--danger)' }], { labels: HOURS.map(h => String(h).padStart(2, '0')), h: 150, sqrt: true });
+  const drawAll = () => { drawSign(); drawSpend(); drawMRR(); drawRuns(); };
+  new ResizeObserver(() => requestAnimationFrame(drawAll)).observe(document.body);
+
+  /* ── Alerts rail ── */
+  const NOTES = [
+    ['Today', 'act', 'Agent health', 'Four morning runs failed three times', 'Weather API for Poznań, one Whisper timeout. Players were told at 07:10.', '07:11', '#/agents'],
+    ['Today', 'fyi', 'Ingestion', 'Morning run finished for 338 of 342', '07:04 UTC · median 41 s · A$38.10', '07:04', '#/agents'],
+    ['Today', 'act', 'Trust and safety', 'Public profile reported by a patron', 'Fan Agent answer for Nico Bianchi referenced an injury.', '09:12', '#/trust'],
+    ['Yesterday', 'act', 'Trust and safety', 'Distress pattern matched', '"Someone to call" card shown. A person must confirm within 24 hours.', '22:40', '#/trust'],
+    ['Yesterday', 'fyi', 'Money', 'Weekly payouts sent', '87 payouts · A$14,120 · 1 held for KYC', '09:00', '#/money'],
+    ['Friday', 'act', 'Ingestion', 'ITF calendar: 3 events without a deadline', 'Shortlisted by 21 players.', '04:00', '#/ingestion'],
+    ['Friday', 'fyi', 'Players', '31 sign-ups this week', '9 started a Pro trial the same day.', '18:00', '#/players'],
+  ];
+  let ntF = 'all', ntRead = false;
+  const nt = $('#nt'), ntScrim = $('#ntScrim');
+  function renderNt() { const list = NOTES.filter(n => ntF === 'all' || n[1] === ntF); let day = ''; $('#ntList').innerHTML = list.map(n => { const h = n[0] !== day ? `<div class="nt-day">${n[0]}</div>` : ''; day = n[0]; return h + `<a class="ntf ${ntRead || n[1] === 'fyi' ? 'read' : ''} ${n[1] === 'act' ? 'urgent' : ''}" href="${n[6]}"><span class="dot"></span><div class="ico">${n[1] === 'act' ? ICO.warn : ICO['']}</div><div class="who">${n[2]}</div><div class="ti">${n[3]}</div><div class="bo">${n[4]}</div><div class="when">${n[5]}</div></a>`; }).join(''); const un = ntRead ? 0 : NOTES.filter(n => n[1] === 'act').length; $('#ntCount').textContent = un ? un + ' need action' : 'Nothing waiting'; $('#bellN').textContent = un || ''; }
+  function openNt(o) { nt.classList.toggle('on', o); ntScrim.classList.toggle('on', o); nt.setAttribute('aria-hidden', String(!o)); $('#bell').setAttribute('aria-expanded', String(o)); }
+  $('#bell').addEventListener('click', () => openNt(!nt.classList.contains('on')));
+  $('#ntClose').addEventListener('click', () => openNt(false)); ntScrim.addEventListener('click', () => openNt(false));
+  $('#ntRead').addEventListener('click', () => { ntRead = true; renderNt(); });
+  $$('.nt-tabs button').forEach(b => b.addEventListener('click', () => { $$('.nt-tabs button').forEach(x => x.setAttribute('aria-selected', 'false')); b.setAttribute('aria-selected', 'true'); ntF = b.dataset.f; renderNt(); }));
+  $('#ntList').addEventListener('click', e => { if (e.target.closest('a')) openNt(false); });
+  renderNt();
+
+  /* ── Router (hash) ── */
+  const routes = { overview: { crumb: 'Overview' }, players: { crumb: 'Players' }, agents: { crumb: 'Agent health' }, ingestion: { crumb: 'Ingestion' }, money: { crumb: 'Money' }, trust: { crumb: 'Trust and safety' },
+    'soon/stripe': { crumb: 'Stripe', desc: 'Subscriptions, invoices, refunds and Connect payouts live in the Stripe Dashboard. The console links out rather than rebuilding them.' },
+    'soon/grafana': { crumb: 'Grafana', desc: 'Infrastructure metrics, latency and error budgets live in Grafana against the nightly aggregation tables.' },
+    'soon/resend': { crumb: 'Resend', desc: 'Patron email delivery logs, bounces and complaints live in Resend.' },
+    audit: { crumb: 'My admin audit log' }, routing: { crumb: 'Alert routing' } };
+  function route() {
+    const path = (location.hash.replace(/^#\/?/, '') || 'overview').replace(/\/$/, '');
+    const r = routes[path] || routes.overview;
+    const target = $(`main[data-route="${path}"]`) ? path : path.startsWith('soon/') ? 'soon' : 'overview';
+    $$('main[data-route]').forEach(m => m.hidden = m.dataset.route !== target);
+    if (target === 'soon') { $('#soonTitle').textContent = r.crumb; $('#soonDesc').textContent = r.desc || ''; }
+    $('#crumb').textContent = r.crumb; document.title = r.crumb + ' · ProCircuit Admin';
+    const href = '#/' + (path === 'overview' ? '' : path);
+    $$('.sb-item, .tabbar a.tab').forEach(a => a.classList.toggle('active', a.getAttribute('href') === href));
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    if (target === 'players') renderPlayers();
+    requestAnimationFrame(drawAll);
+  }
+  window.addEventListener('hashchange', route);
+
+  /* ── Sidebar collapse ── */
+  const shell = $('.shell');
+  $$('.sb-item').forEach(a => { const tag = a.querySelector('.tag'); const label = [...a.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent.trim()).join(' ').trim(); [...a.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim()).forEach(n => { const sp = document.createElement('span'); sp.className = 'lbl'; sp.textContent = n.textContent.trim(); n.replaceWith(sp); }); a.dataset.tip = label + (tag && tag.textContent.trim() && tag.textContent.trim() !== '↗' ? ' · ' + tag.textContent.trim() : ''); if (tag) { a.classList.add('has-tag'); if (tag.classList.contains('lime')) a.classList.add('tag-lime'); else if (!tag.classList.contains('warn') && !tag.classList.contains('danger')) a.classList.add('tag-quiet'); } });
+  function setSidebar(c) { shell.classList.toggle('collapsed', c); $('#sbTrigger').setAttribute('aria-expanded', String(!c)); try { localStorage.setItem('pc.admin.sidebar', c ? 'collapsed' : 'expanded'); } catch (e) {} setTimeout(drawAll, 210); }
+  const toggleSidebar = () => setSidebar(!shell.classList.contains('collapsed'));
+  $('#sbTrigger').addEventListener('click', toggleSidebar); $('#sbRail').addEventListener('click', toggleSidebar);
+  window.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b' && !e.shiftKey) { e.preventDefault(); toggleSidebar(); } });
+  try { if (localStorage.getItem('pc.admin.sidebar') === 'collapsed') { shell.classList.add('collapsed'); $('#sbTrigger').setAttribute('aria-expanded', 'false'); } } catch (e) {}
+
+  /* ── Tooltips ── */
+  const tip = $('#tip'); let tipEl = null, tipT = 0;
+  function showTip(elm) {
+    const text = elm.dataset.tip; if (!text) return;
+    if (elm.classList.contains('sb-item') && !shell.classList.contains('collapsed')) return;
+    tipEl = elm; tip.textContent = text; tip.classList.remove('below'); tip.style.left = '0px'; tip.style.top = '0px'; tip.classList.add('show');
+    const r = elm.getBoundingClientRect(), tr = tip.getBoundingClientRect();
+    let left = r.left + r.width / 2 - tr.width / 2, top = r.top - tr.height - 8, below = false;
+    if (elm.classList.contains('sb-item')) { left = r.right + 10; top = r.top + r.height / 2 - tr.height / 2; tip.style.setProperty('--ax', '-4px'); }
+    else { if (top < 8) { top = r.bottom + 8; below = true; } left = Math.max(8, Math.min(left, innerWidth - tr.width - 8)); tip.style.setProperty('--ax', (r.left + r.width / 2 - left) + 'px'); }
+    tip.classList.toggle('below', below); tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  }
+  function hideTip() { tip.classList.remove('show'); tipEl = null; }
+  document.addEventListener('pointerover', e => { const t = e.target.closest('[data-tip]'); if (t && t !== tipEl) { clearTimeout(tipT); tipT = setTimeout(() => showTip(t), 350); } });
+  document.addEventListener('pointerout', e => { const t = e.target.closest('[data-tip]'); if (t && !t.contains(e.relatedTarget)) { clearTimeout(tipT); hideTip(); } });
+  document.addEventListener('focusin', e => { const t = e.target.closest('[data-tip]'); if (t) showTip(t); });
+  document.addEventListener('focusout', hideTip); document.addEventListener('scroll', hideTip, true);
+
+  /* ── User menu and role preview ── */
+  const umenu = $('#umenu'), userBtn = $('#userBtn');
+  const ROLE = { owner: 'Owner · all areas', ops: 'Ops · agents and ingestion', support: 'Support · players only' };
+  const closeUm = () => { umenu.hidden = true; userBtn.setAttribute('aria-expanded', 'false'); };
+  userBtn.addEventListener('click', e => { e.stopPropagation(); const open = umenu.hidden; umenu.hidden = !open; userBtn.setAttribute('aria-expanded', String(open)); });
+  document.addEventListener('click', e => { if (!umenu.hidden && !umenu.contains(e.target) && e.target !== userBtn) closeUm(); });
+  $$('#umenu [data-role]').forEach(b => b.addEventListener('click', () => { const r = b.dataset.role; shell.dataset.role = r; $('#roleLbl').textContent = ROLE[r]; closeUm(); toast(`Previewing the console as ${r} · areas outside the role are hidden, not just disabled`); const cur = (location.hash.replace(/^#\/?/, '') || 'overview'); if ((r !== 'owner' && cur === 'money') || (r === 'support' && cur === 'ingestion')) location.hash = '#/'; }));
+  umenu.querySelectorAll('a[role=menuitem]').forEach(a => a.addEventListener('click', closeUm));
+  window.addEventListener('keydown', e => { if (e.key === 'Escape') { closeUm(); openNt(false); } });
+  $('#signOut').addEventListener('click', () => { closeUm(); toast('Signed out of the console'); });
+
+  /* ── Boot ── */
+  route();
+})();
+
+/* ── Baseline chart motion: tag marks on every freshly drawn chart so the CSS enter animation runs.
+   Runs on mount and on data change (same width), never on a resize redraw. */
+(function () {
+  const isChartHost = n => n && n.nodeType === 1 && (n.classList.contains('chart') || /Chart$/.test(n.id || ''));
+  function tag(svg, host) {
+    const w = svg.getAttribute('viewBox') || svg.getAttribute('width') || '';
+    if (host.dataset.blDone === '1' && host.dataset.blW !== w) { host.dataset.blW = w; return; } // a resize redraw: no animation
+    host.dataset.blW = w; host.dataset.blDone = '1';
+    let bar = 0;
+    svg.querySelectorAll('path, rect, circle, polyline, polygon').forEach(e => {
+      const tagN = e.tagName.toLowerCase();
+      const fill = e.getAttribute('fill') || '';
+      const stroke = e.getAttribute('stroke') || '';
+      if (tagN === 'path' || tagN === 'polyline' || tagN === 'polygon') {
+        if ((fill === 'none' || !fill) && stroke) { e.setAttribute('pathLength', '1'); e.classList.add('bl-line'); }
+        else if (fill && fill !== 'none') { const o = e.getAttribute('opacity'); if (o) e.style.setProperty('--o', o); e.classList.add('bl-area'); }
+      } else if (tagN === 'rect') {
+        const h = +e.getAttribute('height') || 0, wd = +e.getAttribute('width') || 0;
+        if (fill.includes('var(--') && !fill.includes('grid') && h > 0 && wd > 0 && wd < 80) { e.classList.add('bl-bar'); e.style.animationDelay = Math.min(bar * 25, 400) + 'ms'; bar++; }
+      } else if (tagN === 'circle') {
+        e.classList.add('bl-mark');
+      }
+    });
+  }
+  const mo = new MutationObserver(list => {
+    for (const m of list) {
+      const host = m.target;
+      if (!isChartHost(host)) continue;
+      m.addedNodes.forEach(n => { if (n.nodeType === 1 && n.tagName.toLowerCase() === 'svg') requestAnimationFrame(() => tag(n, host)); });
+    }
+  });
+  mo.observe(document.body, { childList: true, subtree: true });
+  window.addEventListener('hashchange', () => document.querySelectorAll('[data-bl-done]').forEach(h => { delete h.dataset.blDone; }));
+  document.querySelectorAll('.chart > svg, [id$="Chart"] > svg').forEach(s => tag(s, s.parentElement));
+})();
+</script>

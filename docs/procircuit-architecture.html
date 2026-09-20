@@ -1,0 +1,546 @@
+<title>ProCircuit System Architecture</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --radius: 0.625rem; --radius-md: calc(var(--radius) - 2px); --radius-lg: var(--radius); --radius-xl: calc(var(--radius) + 4px);
+    --background: #ffffff; --foreground: oklch(0.145 0 0); --card: #ffffff; --primary: oklch(0.205 0 0); --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0); --muted: oklch(0.97 0 0); --muted-foreground: oklch(0.556 0 0); --accent: oklch(0.97 0 0);
+    --border: oklch(0.922 0 0); --input: oklch(0.922 0 0); --ring: oklch(0.708 0 0); --surface: #f8f8f8; --field: oklch(0 0 0 / 3%);
+    --chart-1: oklch(0.768 0.233 130.85); --chart-2: oklch(0.648 0.2 131.684); --chart-3: oklch(0.532 0.157 131.589); --chart-4: oklch(0.453 0.124 130.933); --chart-grid: oklch(0 0 0 / 6%);
+    --ok: oklch(0.627 0.194 149.214); --ok-bg: oklch(0.627 0.194 149.214 / 10%); --warn: oklch(0.666 0.179 58.318); --warn-bg: oklch(0.769 0.188 70.08 / 14%); --danger: oklch(0.577 0.245 27.325); --danger-bg: oklch(0.577 0.245 27.325 / 10%);
+    --lime-bg: oklch(0.648 0.2 131.684 / 14%);
+    --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --background: oklch(0.145 0 0); --foreground: oklch(0.985 0 0); --card: oklch(0.205 0 0); --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0); --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0); --accent: oklch(0.269 0 0);
+    --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%); --ring: oklch(0.556 0 0); --surface: #161616; --field: oklch(1 0 0 / 4.5%);
+    --chart-1: oklch(0.897 0.196 126.665); --chart-2: oklch(0.768 0.233 130.85); --chart-3: oklch(0.648 0.2 131.684); --chart-4: oklch(0.532 0.157 131.589); --chart-grid: oklch(1 0 0 / 7%);
+    --ok: oklch(0.723 0.219 149.579); --ok-bg: oklch(0.723 0.219 149.579 / 14%); --warn: oklch(0.828 0.189 84.429); --warn-bg: oklch(0.828 0.189 84.429 / 14%); --danger: oklch(0.704 0.191 22.216); --danger-bg: oklch(0.704 0.191 22.216 / 14%);
+    --lime-bg: oklch(0.768 0.233 130.85 / 16%);
+  } }
+  :root[data-theme="dark"] {
+    --background: oklch(0.145 0 0); --foreground: oklch(0.985 0 0); --card: oklch(0.205 0 0); --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0); --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0); --accent: oklch(0.269 0 0);
+    --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%); --ring: oklch(0.556 0 0); --surface: #161616; --field: oklch(1 0 0 / 4.5%);
+    --chart-1: oklch(0.897 0.196 126.665); --chart-2: oklch(0.768 0.233 130.85); --chart-3: oklch(0.648 0.2 131.684); --chart-4: oklch(0.532 0.157 131.589); --chart-grid: oklch(1 0 0 / 7%);
+    --ok: oklch(0.723 0.219 149.579); --ok-bg: oklch(0.723 0.219 149.579 / 14%); --warn: oklch(0.828 0.189 84.429); --warn-bg: oklch(0.828 0.189 84.429 / 14%); --danger: oklch(0.704 0.191 22.216); --danger-bg: oklch(0.704 0.191 22.216 / 14%);
+    --lime-bg: oklch(0.768 0.233 130.85 / 16%);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-sans); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01"; }
+  a { color: inherit; }
+  a:focus-visible, button:focus-visible { outline: none; box-shadow: 0 0 0 3px oklch(from var(--ring) l c h / 50%); border-radius: 4px; }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .wrap { min-width: 0; max-width: 1240px; margin: 0 auto; padding-block: 0 64px; padding-inline: 24px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; }
+  .top { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; height: 60px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+  .logo { width: 28px; height: 28px; fill: currentColor; }
+  .top .t { font-weight: 500; }
+  .top .s { font-size: 13px; color: var(--muted-foreground); }
+  .top .badge { margin-left: auto; }
+  .top { flex-wrap: wrap; min-width: 0; }
+  @media (max-width: 560px) { .top { height: auto; padding-block: 12px; } .top .badge { margin-left: 0; flex-basis: 100%; white-space: normal; height: auto; padding: 4px 8px; } }
+  .badge { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 500; line-height: 1; white-space: nowrap; border: 1px solid var(--border); }
+  .badge.secondary { background: var(--secondary); border-color: transparent; }
+  .badge.lime { background: var(--lime-bg); color: var(--chart-3); border-color: transparent; }
+  .badge.ok { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+  .badge.warn { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+  .badge.danger { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
+  nav.toc { position: sticky; top: 24px; align-self: start; display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; }
+  nav.toc .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); font-weight: 500; padding: 0 10px 6px; }
+  nav.toc a { display: flex; align-items: center; height: 30px; padding: 0 10px; border-radius: var(--radius-md); color: var(--muted-foreground); text-decoration: none; }
+  nav.toc a:hover { background: var(--accent); color: var(--foreground); }
+  main { min-width: 0; display: flex; flex-direction: column; gap: 56px; }
+  section { scroll-margin-top: 24px; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 30px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.15; margin: 0; text-wrap: balance; }
+  h2 { font-size: 21px; font-weight: 500; letter-spacing: -0.015em; line-height: 1.2; margin: 0; text-wrap: balance; }
+  h3 { font-size: 15px; font-weight: 500; margin: 0; }
+  p { margin: 0; max-width: 72ch; }
+  .lede { font-size: 17px; color: var(--muted-foreground); max-width: 68ch; }
+  .meta { font-size: 13px; color: var(--muted-foreground); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); font-weight: 500; }
+  .note { background: var(--surface); box-shadow: 0 0 0 1px var(--border); border-radius: var(--radius-lg); padding: 14px 16px; font-size: 14px; line-height: 1.5; max-width: none; }
+  .note b { font-weight: 500; }
+  .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .layer { background: var(--card); border-radius: var(--radius-xl); box-shadow: 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.05); padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .layer .l { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); font-weight: 500; }
+  .layer .v { font-size: 16px; font-weight: 500; letter-spacing: -0.01em; }
+  .layer .s { font-size: 13px; color: var(--muted-foreground); }
+  .layer .alt { font-size: 12px; color: var(--muted-foreground); margin-top: auto; padding-top: 8px; border-top: 1px solid var(--border); }
+  .layer .alt b { font-weight: 500; color: var(--foreground); }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  section > *, .two > *, .three > * { min-width: 0; }
+  figure .fig { overflow-x: auto; background: var(--card); box-shadow: 0 0 0 1px var(--border); border-radius: var(--radius-xl); padding: 16px; }
+  figure svg { display: block; width: 100%; height: auto; max-width: 100%; min-width: 640px; color: var(--foreground); }
+  figure svg text { font-family: var(--font-sans); font-size: 12px; fill: currentColor; }
+  figure svg .m { font-family: var(--font-mono); font-size: 11px; }
+  figure svg .mut { fill: var(--muted-foreground); }
+  figure svg .box { fill: var(--surface); stroke: var(--border); stroke-width: 1; }
+  figure svg .box.dark { fill: var(--muted); }
+  figure svg .box.lime { fill: var(--lime-bg); stroke: var(--chart-2); }
+  figure svg .box.warn { fill: var(--warn-bg); stroke: var(--warn); }
+  figure svg .grp { fill: none; stroke: var(--border); stroke-dasharray: 4 4; }
+  figure svg .ln { stroke: currentColor; stroke-width: 1.25; fill: none; }
+  figure svg .ln.mut { stroke: var(--muted-foreground); }
+  figure svg .ln.lime { stroke: var(--chart-2); stroke-width: 1.75; }
+  figure svg .ln.dash { stroke-dasharray: 4 3; }
+  figcaption { font-size: 13px; color: var(--muted-foreground); max-width: 72ch; }
+  .tbl-wrap { overflow-x: auto; background: var(--card); box-shadow: 0 0 0 1px var(--border); border-radius: var(--radius-xl); padding: 8px 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; font-size: 12px; font-weight: 500; color: var(--muted-foreground); padding: 10px 8px; white-space: nowrap; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 8px; border-top: 1px solid var(--border); vertical-align: top; }
+  tr:first-child td { border-top: 0; }
+  td.k { white-space: nowrap; font-weight: 500; }
+  td.r, th.r { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td .sub { display: block; font-size: 12px; color: var(--muted-foreground); }
+  code { font-family: var(--font-mono); font-size: 12.5px; background: var(--field); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; }
+  pre { margin: 0; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.5; background: var(--surface); box-shadow: 0 0 0 1px var(--border); border-radius: var(--radius-lg); padding: 14px 16px; overflow-x: auto; }
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .stat { background: var(--card); border-radius: var(--radius-xl); box-shadow: 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.05); padding: 14px 18px; }
+  .stat .l { font-size: 12px; color: var(--muted-foreground); }
+  .stat .v { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; margin-top: 2px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat .v small { font-size: 13px; color: var(--muted-foreground); letter-spacing: 0; font-weight: 400; }
+  .stat .s { font-size: 12px; color: var(--muted-foreground); margin-top: 4px; }
+  .risk { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 4px 12px; padding: 12px 0; border-top: 1px solid var(--border); }
+  .risk:first-child { border-top: 0; }
+  .risk .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted-foreground); padding-top: 3px; }
+  .risk .t { font-weight: 500; }
+  .risk .s { grid-column: 2; font-size: 13.5px; color: var(--muted-foreground); max-width: 72ch; }
+  .chart-wrap { background: var(--card); box-shadow: 0 0 0 1px var(--border); border-radius: var(--radius-xl); padding: 16px 20px; }
+  .chart-wrap svg { width: 100%; height: auto; display: block; }
+  .chart-wrap text { font-family: var(--font-sans); font-size: 12px; fill: var(--muted-foreground); }
+  .chart-wrap text.v { fill: var(--foreground); font-family: var(--font-mono); font-size: 11.5px; }
+  .chart-wrap rect.bar { fill: var(--chart-2); }
+  .chart-wrap rect.bar:hover { fill: var(--chart-1); }
+  .chart-wrap .cap { stroke: var(--muted-foreground); stroke-dasharray: 4 3; }
+  .chart-wrap .grid { stroke: var(--chart-grid); }
+  .foot { grid-column: 1 / -1; border-top: 1px solid var(--border); padding-top: 16px; font-size: 13px; color: var(--muted-foreground); }
+  @media (max-width: 960px) {
+    .wrap { grid-template-columns: 1fr; gap: 24px; }
+    nav.toc { position: static; flex-direction: row; flex-wrap: wrap; gap: 4px; }
+    nav.toc .lbl { flex-basis: 100%; }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .three { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding-inline: 16px; }
+    .grid, .two, .three { grid-template-columns: 1fr; }
+    h1 { font-size: 26px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="logo" viewBox="0 0 193 202"><path fill-rule="evenodd" clip-rule="evenodd" d="M101.02 29.6602C61.4995 29.6602 29.4697 61.7002 29.4697 101.21C29.4697 140.73 61.5095 172.76 101.02 172.76C130.4 172.76 155.65 155.05 166.66 129.72C156.8 146.76 138.38 158.22 117.28 158.22C85.7903 158.22 60.2695 132.7 60.2695 101.21C60.2695 69.7202 85.8003 44.2002 117.28 44.2002C138.38 44.2002 156.8 55.6602 166.66 72.7002C155.65 47.3702 130.41 29.6602 101.02 29.6602Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M115.87 58.75C139.32 58.75 158.34 77.76 158.34 101.22C158.34 124.67 139.33 143.69 115.87 143.69C97.8101 143.69 82.39 132.42 76.25 116.52C81.24 124.12 89.8404 129.14 99.6104 129.14C115.03 129.14 127.53 116.64 127.53 101.22C127.53 85.8 115.03 73.3 99.6104 73.3C89.8404 73.3 81.24 78.32 76.25 85.92C82.38 70.02 97.8101 58.75 115.87 58.75Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M101.02 0.570312C45.4395 0.570312 0.379883 45.6303 0.379883 101.21C0.379883 156.79 45.4395 201.85 101.02 201.85C141.81 201.85 176.93 177.59 192.73 142.71C178.07 169.29 149.78 187.3 117.28 187.3C69.7303 187.3 31.1797 148.75 31.1797 101.2C31.1797 53.6503 69.7303 15.1003 117.28 15.1003C149.78 15.1003 178.07 33.1103 192.73 59.6903C176.93 24.8303 141.81 0.570312 101.02 0.570312Z"/></symbol><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker><marker id="arrLime" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="oklch(0.648 0.2 131.684)"/></marker></svg>
+
+<div class="wrap">
+  <header class="top">
+    <svg class="logo" aria-label="ProCircuit"><use href="#logo"/></svg>
+    <div><div class="t">ProCircuit</div><div class="s">System architecture and tech stack</div></div>
+    <span class="badge secondary">v0.4 · 14 Sep 2026 · from TECH-ARCHITECTURE.md</span>
+  </header>
+
+  <nav class="toc" aria-label="Sections">
+    <div class="lbl">On this page</div>
+    <a href="#stack">Stack at a glance</a>
+    <a href="#system">System architecture</a>
+    <a href="#gate">The approval gate</a>
+    <a href="#mcp">Where MCP fits</a>
+    <a href="#data">Data model</a>
+    <a href="#integrations">Integrations</a>
+    <a href="#delivery">Environments and delivery</a>
+    <a href="#security">Security and privacy</a>
+    <a href="#observability">Observability</a>
+    <a href="#economics">Unit economics</a>
+    <a href="#cost">Running cost</a>
+    <a href="#plan">Build plan</a>
+    <a href="#team">Team</a>
+    <a href="#risks">Risks</a>
+  </nav>
+
+  <main>
+    <section id="intro">
+      <div class="eyebrow">Reference</div>
+      <h1>What ProCircuit is built on, and why each piece is there</h1>
+      <p class="lede">A single-page companion to the thirteen requirements documents. It shows the stack, how a scheduled agent run becomes a proposal and never an action, where every kind of data lives, and what it costs to run. Numbers marked as estimates come with their working.</p>
+      <div class="meta"><span class="badge lime">Release 1 scope</span><span>ATP and WTA players · Free and Pro tiers · Elite and the Studio agents in Release 2</span></div>
+    </section>
+
+    <section id="stack">
+      <h2>Stack at a glance</h2>
+      <p>A deliberately boring stack a team of three to five can run without a platform engineer. Every layer below names the choice, the reason, and the alternative that was weighed.</p>
+      <div class="grid">
+        <div class="layer"><div class="l">Player app</div><div class="v">Next.js PWA + Capacitor</div><div class="s">One web codebase, installable, offline queue. Capacitor wraps it for iOS and Android so background upload and native push work where Safari's PWA does not.</div><div class="alt"><b>Weighed:</b> React Native or full native. Doubles surface for a small team; nothing in the PRDs needs it.</div></div>
+        <div class="layer"><div class="l">Admin console</div><div class="v">Second Next.js deployment</div><div class="s">Same repository, own hostname (admin.procircuit.app), staff auth with mandatory passkey, a database role limited to what the console needs.</div><div class="alt"><b>Weighed:</b> a route group in the player app. Smaller, but a staff-auth bug would sit next to every player.</div></div>
+        <div class="layer"><div class="l">API and workers</div><div class="v">Fastify on Fly.io</div><div class="s">Owns everything with an external side effect: agent runs, webhooks, the actions module. Long-running processes for cron and queue workers.</div><div class="alt"><b>Weighed:</b> NestJS (more ceremony), Vercel functions (no long-running workers).</div></div>
+        <div class="layer"><div class="l">Database</div><div class="v">PostgreSQL via Supabase</div><div class="s">Row-level security for per-player isolation, check constraints for the money model, auth and realtime bundled.</div><div class="alt"><b>Weighed:</b> Neon or RDS plus a separate auth provider: less lock-in, a few more weeks of plumbing.</div></div>
+        <div class="layer"><div class="l">Jobs and schedules</div><div class="v">pg-boss on Postgres</div><div class="s">Six scheduled agents and every webhook run through one queue table with idempotency keys. No Redis to operate.</div><div class="alt"><b>Weighed:</b> BullMQ on Redis. The right next step if Postgres-as-queue ever becomes the bottleneck.</div></div>
+        <div class="layer"><div class="l">Object storage</div><div class="v">Cloudflare R2</div><div class="s">Voice notes and photos under player-scoped keys, no egress fees, S3-compatible. A daily worker deletes audio at seven days.</div><div class="alt"><b>Weighed:</b> S3. Egress cost and no reason to prefer it.</div></div>
+        <div class="layer"><div class="l">Models</div><div class="v">Structured-output LLM · Whisper · TimesFM</div><div class="s">Every agent call is JSON-schema constrained and Zod-validated. Whisper for transcription. TimesFM self-hosted for the Elite forecast.</div><div class="alt"><b>Policy:</b> providers used under no-training terms; the model behind each label is configuration, not copy.</div></div>
+        <div class="layer"><div class="l">Money and email</div><div class="v">Stripe Billing + Connect Express · Resend</div><div class="s">Card data never touches ProCircuit (PCI SAQ A). Connect Express pays patrons out weekly. Resend sends patron updates.</div><div class="alt"><b>Weighed:</b> Paddle (no Connect equivalent for payouts).</div></div>
+      </div>
+    </section>
+
+    <section id="system">
+      <h2>System architecture</h2>
+      <p>Two deployments face people, one service owns side effects, one database owns the truth. Everything to the right of the API is a vendor the platform can survive losing for a day.</p>
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 1080 600" role="img" aria-label="Players use a Next.js PWA wrapped in Capacitor; staff use a separate admin console. Both call a Fastify API and read Postgres through row-level security. Workers run scheduled agents from a pg-boss queue and are the only thing that talks to the model providers and feeds. The actions module is the only path to Stripe and Resend. Audio and photos go to R2.">
+            <!-- clients -->
+            <rect x="20" y="20" width="230" height="330" rx="12" class="grp"/>
+            <text x="32" y="40" class="mut">Clients</text>
+            <rect x="32" y="52" width="206" height="56" rx="8" class="box lime"/>
+            <text x="44" y="74" font-weight="500">Player app</text>
+            <text x="44" y="92" class="mut">Next.js PWA · Capacitor shells</text>
+            <rect x="32" y="120" width="206" height="44" rx="8" class="box"/>
+            <text x="44" y="140" font-weight="500">Coach and manager links</text>
+            <text x="44" y="156" class="mut">read-only · 128-bit tokens · 90 days</text>
+            <rect x="32" y="176" width="206" height="44" rx="8" class="box warn"/>
+            <text x="44" y="196" font-weight="500">Admin console</text>
+            <text x="44" y="212" class="mut">admin.procircuit.app · passkey</text>
+            <rect x="32" y="250" width="206" height="84" rx="8" class="box dark"/>
+            <text x="44" y="270" font-weight="500">Not in the picture, by decision</text>
+            <text x="44" y="288" class="mut">No bank aggregation.</text>
+            <text x="44" y="304" class="mut">No password store.</text>
+            <text x="44" y="320" class="mut">No agent imports Stripe or Resend.</text>
+            <!-- fly -->
+            <rect x="330" y="20" width="250" height="330" rx="12" class="grp"/>
+            <text x="342" y="40" class="mut">Fly.io · one service, two process types</text>
+            <rect x="342" y="52" width="226" height="64" rx="8" class="box"/>
+            <text x="354" y="74" font-weight="500">Fastify API</text>
+            <text x="354" y="92" class="mut">auth, CRUD, webhooks,</text>
+            <text x="354" y="106" class="mut">share-link checks, admin</text>
+            <rect x="342" y="128" width="226" height="80" rx="8" class="box"/>
+            <text x="354" y="150" font-weight="500">Workers</text>
+            <text x="354" y="168" class="mut">pg-boss: agent runs, ingestion,</text>
+            <text x="354" y="182" class="mut">lifecycle jobs, nightly rollup</text>
+            <text x="354" y="196" class="mut">pause and kill-switch checks</text>
+            <rect x="342" y="226" width="226" height="50" rx="8" class="box lime"/>
+            <text x="354" y="247" font-weight="500">Actions module</text>
+            <text x="354" y="265" class="mut">sole importer of Stripe, Resend</text>
+            <rect x="342" y="290" width="226" height="46" rx="8" class="box dark"/>
+            <text x="354" y="310" font-weight="500">Scheduler</text>
+            <text x="354" y="326" class="mut">one job per agent per player</text>
+            <!-- vendors read-only -->
+            <rect x="660" y="20" width="400" height="190" rx="12" class="grp"/>
+            <text x="672" y="40" class="mut">Read-only vendors · called by workers only</text>
+            <rect x="672" y="52" width="184" height="44" rx="8" class="box"/><text x="684" y="70" font-weight="500">LLM · Whisper</text><text x="684" y="86" class="mut">schema in, Zod out</text>
+            <rect x="868" y="52" width="180" height="44" rx="8" class="box"/><text x="880" y="70" font-weight="500">TimesFM</text><text x="880" y="86" class="mut">self-hosted · Mondays</text>
+            <rect x="672" y="108" width="184" height="44" rx="8" class="box"/><text x="684" y="126" font-weight="500">ATP · WTA · ITF feeds</text><text x="684" y="142" class="mut">weekly · CSV fallback</text>
+            <rect x="868" y="108" width="180" height="44" rx="8" class="box"/><text x="880" y="126" font-weight="500">Weather</text><text x="880" y="142" class="mut">Open-Meteo · daily</text>
+            <rect x="672" y="164" width="184" height="36" rx="8" class="box"/><text x="684" y="182" font-weight="500">ECB rates</text><text x="760" y="182" class="mut">daily, kept</text>
+            <rect x="868" y="164" width="180" height="36" rx="8" class="box"/><text x="880" y="182" font-weight="500">Grafana · Sentry</text>
+            <!-- vendors side effect -->
+            <rect x="660" y="222" width="400" height="80" rx="12" class="grp"/>
+            <text x="672" y="242" class="mut">Side-effect vendors · actions module only</text>
+            <rect x="672" y="252" width="184" height="40" rx="8" class="box"/><text x="684" y="270" font-weight="500">Stripe</text><text x="684" y="285" class="mut">Billing · Connect payouts</text>
+            <rect x="868" y="252" width="180" height="40" rx="8" class="box"/><text x="880" y="270" font-weight="500">Resend</text><text x="880" y="285" class="mut">patron email</text>
+            <!-- data -->
+            <rect x="330" y="380" width="730" height="150" rx="12" class="grp"/>
+            <text x="342" y="400" class="mut">Data · ap-southeast-2</text>
+            <rect x="342" y="412" width="340" height="104" rx="8" class="box"/>
+            <text x="354" y="434" font-weight="500">PostgreSQL (Supabase)</text>
+            <text x="354" y="452" class="mut">RLS per player · narrower role for the console</text>
+            <text x="354" y="468" class="mut">money · notes · rankings · queue · audit tables</text>
+            <text x="354" y="484" class="mut">feed snapshots · cases · alerts</text>
+            <text x="354" y="504" class="mut">PITR 7 days · snapshots 30 days · restore drills</text>
+            <rect x="700" y="412" width="348" height="104" rx="8" class="box"/>
+            <text x="712" y="434" font-weight="500">Cloudflare R2</text>
+            <text x="712" y="452" class="mut">player-scoped keys · S3 API · no egress</text>
+            <text x="712" y="468" class="mut">audio: gone at confirmation or 7 days</text>
+            <text x="712" y="484" class="mut">photos: deleted after extraction</text>
+            <text x="712" y="504" class="mut">thumbnails are renditions, not photos</text>
+            <!-- arrows: clients -> api -->
+            <line x1="238" y1="80" x2="342" y2="80" class="ln" marker-end="url(#arr)"/><text x="290" y="72" text-anchor="middle" class="m mut">HTTPS · session</text>
+            <line x1="238" y1="142" x2="342" y2="96" class="ln mut" marker-end="url(#arr)"/><text x="284" y="128" text-anchor="middle" class="m mut">token</text>
+            <line x1="238" y1="198" x2="342" y2="108" class="ln mut" marker-end="url(#arr)"/><text x="306" y="180" text-anchor="middle" class="m mut">staff role</text>
+            <!-- scheduler -> workers -->
+            <line x1="455" y1="290" x2="455" y2="208" class="ln" marker-end="url(#arr)"/><text x="463" y="285" class="m mut">enqueue, idempotent</text>
+            <!-- workers -> read-only vendors -->
+            <line x1="568" y1="168" x2="660" y2="130" class="ln" marker-end="url(#arr)"/><text x="600" y="185" text-anchor="middle" class="m mut">call, ingest</text>
+            <!-- actions -> side effect -->
+            <line x1="568" y1="251" x2="660" y2="270" class="ln lime" marker-end="url(#arrLime)"/><text x="612" y="278" text-anchor="middle" class="m mut">approval id</text>
+            <!-- webhooks back -->
+            <line x1="660" y1="292" x2="568" y2="100" class="ln mut dash" marker-end="url(#arr)"/><text x="676" y="318" class="m mut">webhooks in</text>
+            <!-- fly -> data -->
+            <line x1="455" y1="350" x2="455" y2="412" class="ln" marker-end="url(#arr)" marker-start="url(#arr)"/><text x="463" y="372" class="m mut">RLS · jobs · proposals · audit</text>
+            <line x1="565" y1="350" x2="740" y2="412" class="ln mut" marker-end="url(#arr)"/><text x="730" y="372" text-anchor="middle" class="m mut">put, delete</text>
+            <!-- footnote -->
+            <text x="20" y="560" class="mut">Solid lines carry authenticated traffic; the dashed line is inbound webhooks. The lime line is the only path that can move money or send email,</text>
+            <text x="20" y="576" class="mut">and it refuses to run without a matching, unconsumed row in the approvals table (figure 2).</text>
+          </svg>
+        </div>
+        <figcaption>Figure 1. The player app and the admin console are separate deployments that share a component library and the API. Workers are the only code that calls model providers; the actions module is the only code that can act in the outside world.</figcaption>
+      </figure>
+    </section>
+
+    <section id="gate">
+      <h2>The approval gate, as code structure</h2>
+      <p>The product's central promise is that nothing leaves the app without a tap. Convention breaks under a rushed feature, so the gate is enforced by the shape of the code and a runtime check, not by review notes.</p>
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 1080 300" role="img" aria-label="A scheduled trigger enqueues a job with an idempotency key. The worker checks pause and kill-switch state, assembles inputs tagged with freshness, calls the model with a JSON schema, validates with Zod, and writes a proposal row plus an agent_runs row with cost. The player taps approve, which writes an approvals row. Only then can the actions module call Stripe, Resend or entry, verifying the approval id and payload hash first.">
+            <rect x="20" y="60" width="130" height="70" rx="8" class="box dark"/><text x="85" y="88" text-anchor="middle" font-weight="500">Trigger</text><text x="85" y="106" text-anchor="middle" class="mut">schedule · manual</text><text x="85" y="120" text-anchor="middle" class="mut">event · threshold</text>
+            <rect x="180" y="60" width="150" height="70" rx="8" class="box"/><text x="255" y="84" text-anchor="middle" font-weight="500">Queue job</text><text x="255" y="102" text-anchor="middle" class="m mut">(agent, player, window)</text><text x="255" y="118" text-anchor="middle" class="mut">unique: retries are no-ops</text>
+            <rect x="360" y="60" width="180" height="70" rx="8" class="box"/><text x="450" y="84" text-anchor="middle" font-weight="500">Worker pickup</text><text x="450" y="102" text-anchor="middle" class="mut">paused? provider off? skip</text><text x="450" y="118" text-anchor="middle" class="mut">inputs tagged {value, as_of, stale}</text>
+            <rect x="570" y="60" width="160" height="70" rx="8" class="box"/><text x="650" y="84" text-anchor="middle" font-weight="500">Model call</text><text x="650" y="102" text-anchor="middle" class="mut">JSON schema in, Zod out</text><text x="650" y="118" text-anchor="middle" class="mut">one corrective retry, then fail</text>
+            <rect x="760" y="60" width="150" height="70" rx="8" class="box lime"/><text x="835" y="84" text-anchor="middle" font-weight="500">Proposal row</text><text x="835" y="102" text-anchor="middle" class="mut">+ agent_runs with cost</text><text x="835" y="118" text-anchor="middle" class="mut">last-good kept on failure</text>
+            <line x1="150" y1="95" x2="180" y2="95" class="ln" marker-end="url(#arr)"/>
+            <line x1="330" y1="95" x2="360" y2="95" class="ln" marker-end="url(#arr)"/>
+            <line x1="540" y1="95" x2="570" y2="95" class="ln" marker-end="url(#arr)"/>
+            <line x1="730" y1="95" x2="760" y2="95" class="ln" marker-end="url(#arr)"/>
+            <!-- player -->
+            <rect x="760" y="170" width="150" height="60" rx="8" class="box dark"/><text x="835" y="194" text-anchor="middle" font-weight="500">Player taps</text><text x="835" y="212" text-anchor="middle" class="mut">consequence sentence shown</text>
+            <line x1="835" y1="130" x2="835" y2="170" class="ln" marker-end="url(#arr)"/><text x="845" y="154" class="m mut">shown, never sent</text>
+            <rect x="570" y="170" width="160" height="60" rx="8" class="box"/><text x="650" y="194" text-anchor="middle" font-weight="500">approvals row</text><text x="650" y="212" text-anchor="middle" class="mut">who, when, device, payload hash</text>
+            <line x1="760" y1="200" x2="730" y2="200" class="ln" marker-end="url(#arr)"/>
+            <rect x="360" y="170" width="180" height="60" rx="8" class="box lime"/><text x="450" y="194" text-anchor="middle" font-weight="500">Actions module</text><text x="450" y="212" text-anchor="middle" class="mut">verifies approval id + hash first</text>
+            <line x1="570" y1="200" x2="540" y2="200" class="ln lime" marker-end="url(#arrLime)"/>
+            <rect x="20" y="170" width="310" height="60" rx="8" class="box"/><text x="175" y="194" text-anchor="middle" font-weight="500">Stripe · Resend · tournament entry · ICS</text><text x="175" y="212" text-anchor="middle" class="mut">SDKs importable from this one module only (lint rule)</text>
+            <line x1="360" y1="200" x2="330" y2="200" class="ln lime" marker-end="url(#arrLime)"/>
+            <text x="20" y="270" class="mut">Staff follow the same rule: every admin action that changes an account or money is a two-step with a consequence sentence and, for deletions, comps,</text>
+            <text x="20" y="286" class="mut">refunds, imports and provider switches, a written reason, all written to admin_actions and merged into the player's own audit log.</text>
+          </svg>
+        </div>
+        <figcaption>Figure 2. Top row: how a run becomes a proposal. Bottom row: the only path from a proposal to the outside world runs through a player-authored approval row, checked by the actions module before any SDK is touched.</figcaption>
+      </figure>
+      <div class="two">
+        <div class="note"><b>Failure is labelled, not hidden.</b> A stale feed marks its field stale and the output schema always has a place to say a value was not refreshed, so a partial failure produces a labelled partial answer. A validation failure keeps last week's proposal visible with a banner. After three failed attempts the player is told the run did not complete.</div>
+        <div class="note"><b>Elite's Agent Studio cannot remove the gate.</b> A player edits a small typed configuration object (cadence, tone, thresholds, escalation categories), never the system prompt or the pipeline. Schema validation, the gate and the five always-escalate categories are platform code outside any editable template.</div>
+      </div>
+    </section>
+
+    <section id="mcp">
+      <h2>Where MCP fits, and where it does not</h2>
+      <p>The Model Context Protocol lets a model call tools through a standard server. Reviewed against this architecture, it earns its place in two areas and would damage a third.</p>
+      <div class="three">
+        <div class="note"><b>Not in the scheduled agents.</b> A run is one schema-constrained call on a pre-assembled bundle whose fields carry freshness tags, hashed into <code>agent_runs</code> with a fixed cost. Tool-calling would make cost variable (section on unit economics is already over the cap), empty the inputs hash of meaning, and move staleness labelling into the model. Ingestion, extraction and transcription are not agentic at all.</div>
+        <div class="note"><b>In building the platform.</b> Supabase, Vercel, Stripe, Sentry and GitHub ship MCP servers. Claude Code uses them for migrations to a branch, logs and advisors, deployments and build logs, test-mode Stripe configuration, errors and pull requests. Writes go to branches and test modes only. No product change; a shorter build.</div>
+        <div class="note"><b>In operating the platform.</b> One server to write beside E18: the console's reads and actions as MCP tools, under the console's rules (staff identity, role, a reason for deletions, comps, refunds, imports and switches, an <code>admin_actions</code> row with actor <code>mcp:&lt;admin&gt;</code>), every side effect through the actions module. "Find why three morning runs failed and retry them" becomes one request with the audit trail intact.</div>
+      </div>
+      <p style="font-size:14px;color:var(--muted-foreground)">Plausible later: a read-only server grounding the Fan Agent (Release 2, only if the answer bank grows large), a constrained tool set for Agent Studio, and a player-scoped server so a player can ask their own assistant about their own money (Release 3, with a privacy review).</p>
+    </section>
+
+    <section id="data">
+      <h2>Data model</h2>
+      <p>Postgres, with the money tables designed first. Every money-bearing row stores its original currency, amount and date; the home-currency figure is always derived from an append-only archive of ECB rates, so a player can change home currency years later and every historical line still converts correctly.</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Group</th><th>Tables</th><th>The rule that shapes them</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Money</td><td><code>fx_rates_daily</code> <code>ledger_lines</code> <code>prize_receivables</code> <code>reserve_entries</code> <code>payouts</code></td><td>Insert-only rates; no stored home-currency amount; a receivable stays out of reserves until marked received (M-DATA-2); a doubles receivable carries <code>player_share</code>; a payout freezes <code>platform_fee_rate</code> and stores Stripe's charge separately, with <code>net = gross − fee − stripe</code> as a check constraint.</td></tr>
+          <tr><td class="k">Player and tour</td><td><code>players</code> <code>ranking_snapshots</code> <code>tournaments</code> <code>entry_decisions</code> <code>equipment_profile</code> <code>conditions_briefs</code></td><td><code>players.tour</code> is ATP or WTA and every label reads it (M-STG-3). Snapshots hold tour singles and doubles plus ITF, append-only, so stage detection is auditable. Deletion is three timestamps on <code>players</code> implementing the 14-day cooling-off.</td></tr>
+          <tr><td class="k">Notes and coaching</td><td><code>notes</code> <code>patterns</code></td><td>Audio reference lives on the note until <code>transcript_confirmed_at</code> or seven days; the transcript stays. Patterns carry evidence note ids and a dismissed flag.</td></tr>
+          <tr><td class="k">Patrons and content</td><td><code>patrons</code> <code>patron_updates</code> <code>fan_answers</code></td><td>One language per update in Release 1. A fan answer is labelled unless it references a player approval, enforced by a check (Release 2).</td></tr>
+          <tr><td class="k">Sharing and notifications</td><td><code>share_links</code> <code>notifications</code></td><td>128-bit tokens, checked on every request, 90-day expiry with renewal. Notifications carry a category, for-you or FYI, and at most one for-you per agent run.</td></tr>
+          <tr><td class="k">Audit</td><td><code>agent_runs</code> <code>approvals</code> <code>admin_actions</code></td><td>Three tables because a run, a player tap and a staff action are different actors. All append-only, all surfaced to the player under Data &amp; safety, staff actions marked as such with the reason verbatim.</td></tr>
+          <tr><td class="k">Staff and operations</td><td><code>admin_users</code> <code>cases</code> <code>feed_status</code> <code>snapshot_imports</code> <code>fact_corrections</code> <code>provider_switches</code> <code>alerts</code> <code>agent_health_daily</code></td><td>The console's database role can read account-level tables and write only these; it has no grant on transcripts, audio references, moods, photo references or fan-answer text. That grant list is how "the console never shows notes" is enforced.</td></tr>
+        </tbody>
+      </table></div>
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 1080 200" role="img" aria-label="An expense of 38.50 euro on 10 September is stored as original amount, currency and date. Display in AUD or USD is computed by dividing the euro rate by the target rate for that same date from the archived ECB table. Changing the home currency preference changes only the lookup, never the stored row.">
+            <rect x="20" y="40" width="250" height="110" rx="8" class="box"/><text x="32" y="62" font-weight="500">ledger_lines row</text><text x="32" y="84" class="m">amount_original  38.50</text><text x="32" y="102" class="m">currency_original  EUR</text><text x="32" y="120" class="m">fx_rate_date  2026-09-10</text><text x="32" y="140" class="mut">no home-currency column, ever</text>
+            <rect x="400" y="40" width="260" height="110" rx="8" class="box"/><text x="412" y="62" font-weight="500">fx_rates_daily (insert-only)</text><text x="412" y="84" class="m">2026-09-10  AUD  1.6410</text><text x="412" y="102" class="m">2026-09-10  USD  1.0940</text><text x="412" y="120" class="m">2026-09-10  CNY  7.7600</text><text x="412" y="140" class="mut">rate_to_eur · provisional rows kept beside final</text>
+            <rect x="790" y="40" width="270" height="110" rx="8" class="box lime"/><text x="802" y="62" font-weight="500">Display, at read time</text><text x="802" y="84" class="m">AUD  38.50 × 1.6410 = A$63.18</text><text x="802" y="102" class="m">USD  38.50 × 1.0940 = US$42.12</text><text x="802" y="120" class="m">CNY  38.50 × 7.7600 = ¥298.76</text><text x="802" y="140" class="mut">original €38.50 shown underneath</text>
+            <line x1="270" y1="95" x2="400" y2="95" class="ln" marker-end="url(#arr)"/><text x="335" y="86" text-anchor="middle" class="m mut">lookup by date</text>
+            <line x1="660" y1="95" x2="790" y2="95" class="ln" marker-end="url(#arr)"/><text x="725" y="86" text-anchor="middle" class="m mut">preference picks column</text>
+            <text x="20" y="180" class="mut">This is the acceptance test in PRD-00 M-DATA-1, written as an automated test before Release 1 ships.</text>
+          </svg>
+        </div>
+        <figcaption>Figure 3. The money model. A stored row never changes; the home-currency preference only changes which archived rate is looked up.</figcaption>
+      </figure>
+    </section>
+
+    <section id="integrations">
+      <h2>Integrations</h2>
+      <p>Each row says what happens when the vendor is down, because the product promises to show uncertainty rather than hide it.</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Integration</th><th>Used for</th><th>When it is down</th><th>Cost</th></tr></thead>
+        <tbody>
+          <tr><td class="k">ATP and WTA feeds <span class="sub">TDI or direct licences · singles and doubles</span></td><td>Weekly snapshots, calendars, prize and points tables</td><td>Last-good snapshot with "not refreshed"; stage detection freezes; manual CSV import from the console</td><td>Unknown; negotiated, likely the largest recurring line. Two negotiations since WTA joined Release 1.</td></tr>
+          <tr><td class="k">ITF rankings and calendars <span class="sub">men's and women's</span></td><td>Stage 1 and 2 ladders, ITF events</td><td>Same; late-published deadlines are a permanent constraint the console handles by hand</td><td>No confirmed public API at the needed freshness; a data partner or a maintained scrape</td></tr>
+          <tr><td class="k">Weather <span class="sub">Open-Meteo</span></td><td>Conditions briefs, 7-day hourly per venue</td><td>Climate normals; Air tile marked not refreshed</td><td>Free at this volume</td></tr>
+          <tr><td class="k">ECB reference rates</td><td>Every currency conversion</td><td>Provisional rate stored and re-rated when published, both kept</td><td>Free</td></tr>
+          <tr><td class="k">Stripe Billing and Connect Express</td><td>Subscriptions; patron payouts</td><td>Webhook backlog replays; payouts show Held</td><td>1.75% + 30c domestic, more abroad; Connect fees on top of the 8 or 5 percent platform fee</td></tr>
+          <tr><td class="k">Resend</td><td>Patron update email</td><td>Visible failure, queued retry, never dropped</td><td>About US$20 a month at launch</td></tr>
+          <tr><td class="k">Whisper</td><td>Match Scribe transcription</td><td>Note stays in review with Retry</td><td>About US$0.006 a minute</td></tr>
+          <tr><td class="k">Structured-output LLM</td><td>Every agent's proposal</td><td>Run marked failed, last-good shown</td><td>See unit economics</td></tr>
+          <tr><td class="k">TimesFM <span class="sub">self-hosted</span></td><td>Elite baseline forecast, Mondays</td><td>Forecast tile marked stale</td><td>Compute only</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="delivery">
+      <h2>Environments and delivery</h2>
+      <p>One monorepo, three environments, a pipeline that refuses a build which breaks the gate.</p>
+      <div class="two">
+        <div>
+          <h3>Repository layout</h3>
+          <pre>procircuit/
+  apps/
+    web/        Next.js PWA (players, share links)
+    admin/      Next.js console (staff)
+    api/        Fastify service + workers
+    mobile/     Capacitor shells for iOS, Android
+  packages/
+    ui/         tokens and components ported from the prototypes
+    db/         schema, migrations, RLS policies, typed client
+    agents/     one folder per agent: prompt, schema, tests
+    actions/    the only importer of Stripe, Resend, entry, ICS
+    shared/     money, units, language, date helpers
+  infra/        Fly, Vercel, Supabase config; cron definitions
+  docs/         PRD-00 to PRD-13, this page</pre>
+        </div>
+        <div>
+          <h3>Environments</h3>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>Env</th><th>What it is</th><th>Data</th></tr></thead>
+            <tbody>
+              <tr><td class="k">Local</td><td>Supabase CLI stack, workers in watch mode, vendors mocked</td><td>Seed from the three prototype personas</td></tr>
+              <tr><td class="k">Preview</td><td>Per pull request on Vercel and a Fly review app; a database branch per PR</td><td>Anonymised seed, never production</td></tr>
+              <tr><td class="k">Staging</td><td>Production shape, Stripe and Resend in test mode, real feeds</td><td>Synthetic players only</td></tr>
+              <tr><td class="k">Production</td><td>ap-southeast-2 with EU sub-processors under SCCs</td><td>Point-in-time recovery 7 days, nightly snapshot 30 days, quarterly restore drill</td></tr>
+            </tbody>
+          </table></div>
+          <h3 style="margin-top:16px">Pipeline, every push</h3>
+          <p style="font-size:14px">Type-check, lint (including the rule that only <code>packages/actions</code> may import Stripe, Resend or the entry client), unit tests for every agent schema, the money-model acceptance test, migration dry-run against a branch, preview deploy. Merges to main deploy to staging; a tagged release deploys to production with migrations run first and a one-click rollback of the app (never of a migration; those are forward-only and additive).</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="security">
+      <h2>Security and privacy</h2>
+      <div class="three">
+        <div class="note"><b>Isolation.</b> Row-level security keyed on the authenticated player; the console uses a separate database role with an explicit grant list. Share-link tokens are 128-bit, checked on every request, revocation effective within a minute.</div>
+        <div class="note"><b>Identity.</b> Players sign in by magic link with an optional passkey; no passwords exist to store, reset or leak. Staff sign in by magic link plus a mandatory passkey and never share accounts.</div>
+        <div class="note"><b>Money.</b> Stripe holds all card data (PCI SAQ A). Bank connection is refused by design; reserves are typed by the player.</div>
+        <div class="note"><b>Lifecycle jobs.</b> Audio deleted at transcript confirmation or seven days. Photos deleted after extraction. Account deletion after a 14-day cooling-off, executed by a job that also reaches backups and sub-processors and writes a completion record.</div>
+        <div class="note"><b>Compliance.</b> Australian Privacy Act and APPs as baseline; GDPR for European players (export and erasure are real jobs, not policy text); standard contractual clauses behind every sub-processor; provider list disclosed to players under Data &amp; safety.</div>
+        <div class="note"><b>Secrets and keys.</b> Vendor keys in the host's secret manager, rotated on staff departure, never in the repository. Agents and LLM code have no vendor credentials at all.</div>
+      </div>
+    </section>
+
+    <section id="observability">
+      <h2>Observability</h2>
+      <p>The <code>agent_runs</code> table already carries count, latency and cost per run. A nightly job joins it with <code>approvals</code> to produce approval and dismiss rates per agent into <code>agent_health_daily</code>, which drives both the admin console's Agent health page and Grafana.</p>
+      <div class="three">
+        <div class="stat"><div class="l">Availability target</div><div class="v">99.5<small>% monthly</small></div><div class="s">About 3.6 hours of error budget, measured by an external uptime check</div></div>
+        <div class="stat"><div class="l">Product alert</div><div class="v">&lt; 30<small>% approval, 14 days</small></div><div class="s">Any agent below the line for two weeks pages the owner</div></div>
+        <div class="stat"><div class="l">Spend alert</div><div class="v">80<small>% of cap</small></div><div class="s">Per-Pro-player model spend against A$7.35, checked daily</div></div>
+      </div>
+    </section>
+
+    <section id="economics">
+      <h2>Unit economics of model spend</h2>
+      <p>PRD-00 caps average Pro model and API spend at 15 percent of the Pro price, A$7.35 a month. Summing each agent's own cost target at realistic usage gives about A$10.83, which is over the line. The chart is an estimate built from the contracts; the console's Money page will show the real figure from week one.</p>
+      <div class="chart-wrap">
+        <svg viewBox="0 0 1000 330" role="img" aria-label="Estimated monthly model cost per Pro player by agent: Financial 3.30, Mindset Coach 2.40, Tournament 1.72, Match Scribe 1.00, Conditions 0.78, Fuel 0.75, Content 0.64, Fans 0.24 Australian dollars. Total 10.83 against a cap of 7.35.">
+            <line x1="200" y1="20" x2="200" y2="290" class="grid"/>
+            <line x1="400" y1="20" x2="400" y2="290" class="grid"/><text x="400" y="308" text-anchor="middle">A$1</text>
+            <line x1="600" y1="20" x2="600" y2="290" class="grid"/><text x="600" y="308" text-anchor="middle">A$2</text>
+            <line x1="800" y1="20" x2="800" y2="290" class="grid"/><text x="800" y="308" text-anchor="middle">A$3</text>
+            <text x="200" y="308" text-anchor="middle">A$0</text>
+            <g>
+              <text x="190" y="40" text-anchor="end">Financial Agent</text><rect class="bar" x="200" y="28" width="660" height="16" rx="4"><title>Financial Agent · A$3.30 a month · daily run plus 15 receipts</title></rect><text class="v" x="868" y="41">3.30</text>
+              <text x="190" y="72" text-anchor="end">Mindset Coach</text><rect class="bar" x="200" y="60" width="480" height="16" rx="4"><title>Mindset Coach · A$2.40 · daily insight</title></rect><text class="v" x="688" y="73">2.40</text>
+              <text x="190" y="104" text-anchor="end">Tournament Agent</text><rect class="bar" x="200" y="92" width="344" height="16" rx="4"><title>Tournament Agent · A$1.72 · weekly</title></rect><text class="v" x="552" y="105">1.72</text>
+              <text x="190" y="136" text-anchor="end">Match Scribe</text><rect class="bar" x="200" y="124" width="200" height="16" rx="4"><title>Match Scribe · A$1.00 · 20 notes</title></rect><text class="v" x="408" y="137">1.00</text>
+              <text x="190" y="168" text-anchor="end">Conditions</text><rect class="bar" x="200" y="156" width="156" height="16" rx="4"><title>Conditions and Equipment · A$0.78</title></rect><text class="v" x="364" y="169">0.78</text>
+              <text x="190" y="200" text-anchor="end">Fuel</text><rect class="bar" x="200" y="188" width="150" height="16" rx="4"><title>Fuel · A$0.75 · 15 scans</title></rect><text class="v" x="358" y="201">0.75</text>
+              <text x="190" y="232" text-anchor="end">Content Agent</text><rect class="bar" x="200" y="220" width="128" height="16" rx="4"><title>Content Agent · A$0.64 · 8 drafts, one language</title></rect><text class="v" x="336" y="233">0.64</text>
+              <text x="190" y="264" text-anchor="end">Fans</text><rect class="bar" x="200" y="252" width="48" height="16" rx="4"><title>Fans · A$0.24 · 8 drafted notes</title></rect><text class="v" x="256" y="265">0.24</text>
+            </g>
+            <text x="20" y="290" class="v">Total A$10.83 · cap A$7.35</text>
+        </svg>
+      </div>
+      <div class="two">
+        <div class="note"><b>Where the money goes.</b> Financial and Mindset Coach are over half the total because they run daily whether or not anything changed. Caching on the input hash (regenerate prose only when inputs move) plausibly cuts both by 30 to 50 percent.</div>
+        <div class="note"><b>The other levers.</b> Model tiering (a small model for the Financial sentence, the brief comparison and menu translation; a large one for patron updates, outreach and the insight), batching the five Conditions briefs into one call, and per-tier rate limits on on-demand runs. Two to three weeks of scheduled Release 1 work, not an afterthought.</div>
+      </div>
+    </section>
+
+    <section id="cost">
+      <h2>Running cost, first year shape</h2>
+      <p>Infrastructure is small; the two lines that matter are model spend, which scales with players, and the ranking-data licences, which are unknown until negotiated. Everything below is an estimate at about 400 players, 130 of them paying.</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Line</th><th>Basis</th><th class="r">Monthly, estimate</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Vercel</td><td>Pro team, two deployments, preview deploys</td><td class="r">US$40</td></tr>
+          <tr><td class="k">Fly.io</td><td>Two shared-CPU machines for API and workers, one for TimesFM batch</td><td class="r">US$60</td></tr>
+          <tr><td class="k">Supabase</td><td>Pro plan, point-in-time recovery add-on</td><td class="r">US$125</td></tr>
+          <tr><td class="k">Cloudflare R2</td><td>Audio at seven days and photos read-once: tens of gigabytes</td><td class="r">US$5</td></tr>
+          <tr><td class="k">Resend, Sentry, Grafana Cloud</td><td>Starter tiers</td><td class="r">US$60</td></tr>
+          <tr><td class="k">Model and API spend</td><td>About A$4.20 a paying player today, A$10.83 at the contracts' full usage</td><td class="r">A$550 to A$1,400</td></tr>
+          <tr><td class="k">Ranking data licences</td><td>ATP, WTA and ITF; negotiated, not listed</td><td class="r">unknown</td></tr>
+          <tr><td class="k">Stripe</td><td>Passed through on subscriptions; on patron money, taken before the platform fee is shown</td><td class="r">variable</td></tr>
+        </tbody>
+      </table></div>
+      <p style="font-size:14px;color:var(--muted-foreground)">Against MRR of about A$9,870 at that size, platform infrastructure is under 5 percent of revenue and model spend 6 to 14 percent; the licence line is the one that can change the business, which is why it sits first in the risk list.</p>
+    </section>
+
+    <section id="plan">
+      <h2>Build plan</h2>
+      <p>Eighteen epics, thirteen in Release 1, sized in engineer-weeks for a team of three to five. The critical path is not the sum but the longest chain: foundation into feeds into the Tournament Agent into Conditions.</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Epic</th><th>Scope</th><th class="r">Weeks</th><th>Depends on</th><th>Release</th></tr></thead>
+        <tbody>
+          <tr><td class="k">E0 Foundation</td><td>Auth, player model, RLS, design-system port, mobile shell, offline queue, CI</td><td class="r">4</td><td>none</td><td><span class="badge lime">R1</span></td></tr>
+          <tr><td class="k">E1 Onboarding</td><td>Four steps, stage detection, guardian flow, ambiguous-match chooser, unverified state</td><td class="r">4</td><td>E0, E2</td><td><span class="badge lime">R1</span></td></tr>
+          <tr><td class="k">E2 Feeds</td><td>ATP, WTA, ITF licensing and ingestion, singles and doubles, calendars, manual override</td><td class="r">5 to 9</td><td>E0</td><td><span class="badge lime">R1</span></td></tr>
+          <tr><td class="k">E3 Match Scribe</td><td>Recorder, Whisper, extraction, audio lifecycle</td><td class="r">3</td><td>E0</td><td><span class="badge lime">R1</span></td></tr>
+          <tr><td class="k">E4 Financial Agent</td><td>Ledger, FX archive, receipts, runway engine, reserves</td><td class="r">4</td><td>E0</td><td><span class="badge lime">R1</span></td></tr>
+          <tr><td class="k">E5 Tournament Agent</td><td>Shortlist engine, cost model, entry flow, calendar</td><td class="r">4</td><td>E2, E4</td><td><span class="badge lime">R1</span></td></tr>
+          <tr><td class="k">E6 Conditions</td><td>Weather, fact sheets, racquet visual, tension test, stamps</td><td class="r">2.5</td><td>E5, E3</td><td><span class="badge lime">R1</span></td></tr>
+          <tr><td class="k">E7 Fans</td><td>Connect Express, tiers, webhooks, attention pass, payouts</td><td class="r">3.5</td><td>E0</td><td><span class="badge lime">R1</span></td></tr>
+          <tr><td class="k">E8 Content Agent</td><td>Drafting, voice profile, checks, single language, publish gate</td><td class="r">2.5</td><td>E3, E7</td><td><span class="badge lime">R1</span></td></tr>
+          <tr><td class="k">E9 Mindset Coach</td><td>Insight, patterns, mood chart, distress card</td><td class="r">3</td><td>E3</td><td><span class="badge lime">R1</span></td></tr>
+          <tr><td class="k">E10 Fuel</td><td>Menu scan, dietary rules, expense logging</td><td class="r">2</td><td>E4, E5</td><td><span class="badge lime">R1</span></td></tr>
+          <tr><td class="k">E11 Profile, Settings, Sharing</td><td>Nine panes, share links with expiry, two-category notifications, cooling-off</td><td class="r">3.5</td><td>E0</td><td><span class="badge lime">R1</span></td></tr>
+          <tr><td class="k">E12 Gate and audit</td><td>Actions module, audit tables, cost accounting, retry, pause and kill switches</td><td class="r">3</td><td>E0</td><td><span class="badge lime">R1</span></td></tr>
+          <tr><td class="k">E18 Admin console</td><td>Separate deployment, roles, player actions, agent health, ingestion, money, cases, alerts</td><td class="r">4</td><td>E0, E12, E2</td><td><span class="badge lime">R1</span></td></tr>
+          <tr><td class="k">E13 Elite forecast</td><td>TimesFM, weekly batch, forecast tile</td><td class="r">2.5</td><td>E2</td><td><span class="badge secondary">R2</span></td></tr>
+          <tr><td class="k">E14 Sponsor Agent</td><td>Pipeline, outreach, compliance, media kit</td><td class="r">3</td><td>E11</td><td><span class="badge secondary">R2</span></td></tr>
+          <tr><td class="k">E15 Fan Agent</td><td>Q&amp;A, escalation, moderation, review-before-sending</td><td class="r">3</td><td>E7</td><td><span class="badge secondary">R2</span></td></tr>
+          <tr><td class="k">E16 Agent Studio</td><td>Constrained schedule and prompt editing</td><td class="r">2.5</td><td>E12</td><td><span class="badge secondary">R2</span></td></tr>
+          <tr><td class="k">E17 Digest, coach accounts, multi-language</td><td>Digest email, invited coaches, one draft per language</td><td class="r">2.5</td><td>E9, E11, E8</td><td><span class="badge secondary">R2</span></td></tr>
+        </tbody>
+      </table></div>
+      <div class="three">
+        <div class="stat"><div class="l">Release 1 total</div><div class="v">45 to 49<small> engineer-weeks</small></div><div class="s">Thirteen epics</div></div>
+        <div class="stat"><div class="l">Critical path</div><div class="v">15.5 to 19.5<small> weeks</small></div><div class="s">E0 → E2 → E5 → E6, gated by licensing</div></div>
+        <div class="stat"><div class="l">Calendar target</div><div class="v">4 to 5<small> months</small></div><div class="s">If licensing resolves inside the window</div></div>
+      </div>
+    </section>
+
+    <section id="team">
+      <h2>Team shape</h2>
+      <p>Three to five engineers, and the roles matter more than the count because two of the tracks cannot share a person for long.</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Role</th><th>Owns</th><th>First month</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Product engineer, web</td><td>Player app, design-system port, Settings, Profile, mobile shells</td><td>E0 with the platform engineer, then E11</td></tr>
+          <tr><td class="k">Platform engineer</td><td>API, workers, queue, gate and audit (E12), admin console (E18), CI and environments</td><td>E0, E12; the actions-module lint rule in week two</td></tr>
+          <tr><td class="k">Data and integrations engineer</td><td>Feeds and licensing liaison (E2), FX archive and money model (E4), observability</td><td>Start the ATP, WTA and ITF conversations in week one; build the CSV import path first</td></tr>
+          <tr><td class="k">Agent engineer</td><td>Every agent's prompt, schema and tests; model tiering, caching, cost accounting</td><td>Match Scribe (E3), then Financial (E4) with the data engineer</td></tr>
+          <tr><td class="k">Founder (Manu)</td><td>Product decisions, player research, on-call for distress cases until there is a second person, licensing negotiation</td><td>Research sessions with the v0.2 kit</td></tr>
+        </tbody>
+      </table></div>
+      <p style="font-size:14px;color:var(--muted-foreground)">A fifth engineer, if there is one, goes to the agent track: it is the one with the most product judgement per line of code and the one whose cost overruns show up on the Money page.</p>
+    </section>
+
+    <section id="risks">
+      <h2>Risks, ranked by damage</h2>
+      <div>
+        <div class="risk"><div class="n">1</div><div class="t">Ranking and calendar data from three bodies</div><div class="s">Tournament Agent, stage detection and Conditions all sit downstream of licences that are negotiated, not bought. Mitigation: start all three conversations in week one and ship the manual ingestion path as a first-class console feature so the product can soft-launch on hand-entered data.</div></div>
+        <div class="risk"><div class="n">2</div><div class="t">The money model being subtly wrong</div><div class="s">Currency switches, provisional-then-final rates, receivables in the wrong bucket. Mitigation: build the FX archive and locked-rate ledger before any money-touching agent, and make M-DATA-1's example an automated test.</div></div>
+        <div class="risk"><div class="n">3</div><div class="t">The gate enforced by convention</div><div class="s">Mitigation: the actions module, a lint rule on SDK imports, and a runtime check for an unconsumed approval, all in E12 before any agent sees real Stripe or Resend credentials.</div></div>
+        <div class="risk"><div class="n">4</div><div class="t">Model spend over the 15 percent ceiling</div><div class="s">The contracts' targets sum to A$10.83 against A$7.35. Mitigation: caching, tiering and batching as scheduled Release 1 work; the console alerts at 80 percent of cap from week one.</div></div>
+        <div class="risk"><div class="n">5</div><div class="t">Stripe Connect Express country coverage</div><div class="s">Players are worldwide; some countries are unsupported for payouts. Mitigation: check the early player list against Connect's country table before promising a launch date; have a manual payout fallback.</div></div>
+        <div class="risk"><div class="n">6</div><div class="t">iOS background upload and push through a wrapper</div><div class="s">Capacitor covers it; App Store review of thin wrappers is the residual risk. Mitigation: ship real native affordances (share sheet, push, background upload) so the app is not a webview with an icon.</div></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">Source: TECH-ARCHITECTURE.md v0.3 and PRD-00 v0.4 to PRD-13, ProCircuit, 13 September 2026. Figures marked as estimates are shown with their basis; the ranking-data licence cost is unknown until negotiated.</footer>
+</div>

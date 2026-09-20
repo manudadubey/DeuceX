@@ -1,0 +1,24 @@
+# Original source documents live in docs/ inside the repo; this top-level
+# folder is the upload location outside the repo structure and would only
+# duplicate that content (including several hundred-KB HTML prototypes).
+Documents/
+
+node_modules/
+.pnpm-store/
+dist/
+build/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+.turbo/
+.vercel/
+.supabase/
+next-env.d.ts
+*.tsbuildinfo

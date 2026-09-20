@@ -1,0 +1,2506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{height:100%}</style>
+</head>
+<body>
+<title>ProCircuit Training</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');
+
+/* ── Tokens (shadcn Vega preset b3REZz9P6, Neutral base, Lime charts) ── */
+:root{
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --background:#ffffff;
+  --foreground:oklch(0.145 0 0);
+  --card:#ffffff;
+  --card-foreground:oklch(0.145 0 0);
+  --primary:oklch(0.205 0 0);
+  --primary-foreground:oklch(0.985 0 0);
+  --secondary:oklch(0.97 0 0);
+  --secondary-foreground:oklch(0.205 0 0);
+  --muted:oklch(0.97 0 0);
+  --muted-foreground:oklch(0.556 0 0);
+  --border:oklch(0.922 0 0);
+  --input:oklch(0.922 0 0);
+  --ring:oklch(0.708 0 0);
+  --surface:#f8f8f8;
+  --field:oklch(0 0 0 / 3%);
+
+  --chart-1:oklch(0.768 0.233 130.85);
+  --chart-2:oklch(0.648 0.2 131.684);
+  --chart-3:oklch(0.532 0.157 131.589);
+  --chart-4:oklch(0.453 0.124 130.933);
+  --chart-5:oklch(0.392 0.104 130.5);
+  --chart-grid:oklch(0 0 0 / 6%);
+
+  --ok:oklch(0.627 0.194 149.214);
+  --ok-bg:oklch(0.627 0.194 149.214 / 12%);
+  --warn:oklch(0.666 0.179 58.318);
+  --warn-bg:oklch(0.666 0.179 58.318 / 12%);
+  --danger:oklch(0.577 0.245 27.325);
+  --danger-bg:oklch(0.577 0.245 27.325 / 12%);
+
+  --shadow-card: 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.05);
+  --ease: cubic-bezier(.2,.8,.2,1);
+  --ease-chart: cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --background:oklch(0.145 0 0);
+    --foreground:oklch(0.985 0 0);
+    --card:oklch(0.205 0 0);
+    --card-foreground:oklch(0.985 0 0);
+    --primary:oklch(0.922 0 0);
+    --primary-foreground:oklch(0.205 0 0);
+    --secondary:oklch(0.269 0 0);
+    --secondary-foreground:oklch(0.985 0 0);
+    --muted:oklch(0.269 0 0);
+    --muted-foreground:oklch(0.708 0 0);
+    --border:oklch(1 0 0 / 10%);
+    --input:oklch(1 0 0 / 15%);
+    --ring:oklch(0.556 0 0);
+    --surface:oklch(0.175 0 0);
+    --field:oklch(1 0 0 / 4.5%);
+    --chart-1:oklch(0.897 0.196 126.665);
+    --chart-2:oklch(0.768 0.233 130.85);
+    --chart-3:oklch(0.648 0.2 131.684);
+    --chart-4:oklch(0.532 0.157 131.589);
+    --chart-5:oklch(0.453 0.124 130.933);
+    --chart-grid:oklch(1 0 0 / 8%);
+    --shadow-card: 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  --background:oklch(0.145 0 0);
+  --foreground:oklch(0.985 0 0);
+  --card:oklch(0.205 0 0);
+  --card-foreground:oklch(0.985 0 0);
+  --primary:oklch(0.922 0 0);
+  --primary-foreground:oklch(0.205 0 0);
+  --secondary:oklch(0.269 0 0);
+  --secondary-foreground:oklch(0.985 0 0);
+  --muted:oklch(0.269 0 0);
+  --muted-foreground:oklch(0.708 0 0);
+  --border:oklch(1 0 0 / 10%);
+  --input:oklch(1 0 0 / 15%);
+  --ring:oklch(0.556 0 0);
+  --surface:oklch(0.175 0 0);
+  --field:oklch(1 0 0 / 4.5%);
+  --chart-1:oklch(0.897 0.196 126.665);
+  --chart-2:oklch(0.768 0.233 130.85);
+  --chart-3:oklch(0.648 0.2 131.684);
+  --chart-4:oklch(0.532 0.157 131.589);
+  --chart-5:oklch(0.453 0.124 130.933);
+  --chart-grid:oklch(1 0 0 / 8%);
+  --shadow-card: 0 0 0 1px var(--border), 0 1px 2px rgba(0,0,0,.25);
+}
+
+/* ── Base ── */
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{
+  margin:0;
+  background:var(--background);
+  color:var(--foreground);
+  font-family:'Geist','Geist Fallback',system-ui,-apple-system,'Segoe UI',sans-serif;
+  font-size:14px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  transition:background-color .2s var(--ease), color .2s var(--ease);
+}
+.mono{font-family:'Geist Mono','SFMono-Regular',ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0;font-weight:500;letter-spacing:-0.01em;text-wrap:balance}
+p{margin:0}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px;border-radius:var(--radius-sm)}
+
+.app{min-height:100%;display:flex;flex-direction:column}
+
+/* ── Top bar ── */
+.top{
+  position:sticky;top:env(safe-area-inset-top, 0px);z-index:30;
+  display:flex;align-items:center;gap:12px;
+  height:56px;padding:0 16px;
+  background:color-mix(in oklab, var(--background) 82%, transparent);
+  backdrop-filter:saturate(180%) blur(14px);
+  -webkit-backdrop-filter:saturate(180%) blur(14px);
+  box-shadow:inset 0 -1px 0 var(--border);
+}
+.brand{display:flex;align-items:center;gap:8px;font-size:14px;min-width:0}
+.brand .bm{width:22px;height:22px;border-radius:7px;background:var(--foreground);color:var(--background);
+  display:grid;place-items:center;font-size:11px;font-weight:600;flex:none}
+.brand .sep{color:var(--muted-foreground)}
+.brand strong{font-weight:500}
+.brand .bt{color:var(--muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topr{margin-left:auto;display:flex;gap:4px}
+
+.icon{
+  width:36px;height:36px;min-width:36px;display:grid;place-items:center;
+  background:transparent;border:0;border-radius:var(--radius-md);cursor:pointer;
+  color:var(--muted-foreground);transition:background-color .15s var(--ease), color .15s var(--ease), transform .12s var(--ease);
+}
+.icon:hover{background:var(--secondary);color:var(--foreground)}
+.icon:active{transform:scale(.94)}
+.icon svg{width:17px;height:17px}
+
+/* ── Layout ── */
+.wrap{width:100%;max-width:980px;margin:0 auto;padding-inline:16px;padding-block:24px 64px;
+  display:flex;flex-direction:column;gap:20px}
+
+.phead{display:flex;flex-direction:column;gap:8px}
+.phead h1{font-size:26px;letter-spacing:-0.02em}
+.phead .sub{color:var(--muted-foreground);max-width:60ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+
+/* ── Chip / badge ── */
+.chip{
+  display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;
+  border-radius:999px;background:var(--secondary);color:var(--secondary-foreground);
+  font-size:12px;white-space:nowrap
+}
+.chip.lime{background:color-mix(in oklab, var(--chart-1) 16%, transparent);color:var(--chart-2)}
+.chip .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.85}
+.badge{
+  display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;
+  font-size:12px;background:var(--secondary);color:var(--secondary-foreground)
+}
+.badge.ok{background:var(--ok-bg);color:var(--ok)}
+.badge.warn{background:var(--warn-bg);color:var(--warn)}
+.badge.lime{background:color-mix(in oklab, var(--chart-1) 16%, transparent);color:var(--chart-2)}
+
+/* ── Player strip ── */
+.player{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-lg);
+  background:var(--secondary);color:var(--secondary-foreground)}
+.player .av{width:32px;height:32px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:var(--background);color:var(--foreground);font-size:12px;font-weight:500;
+  box-shadow:0 0 0 1px var(--border)}
+.player .pn{font-weight:500;line-height:1.25}
+.player .pm{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted-foreground);line-height:1.25}
+.player .badge{margin-left:auto}
+.fl{width:15px;height:10px;border-radius:2px;flex:none;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.18)}
+
+/* ── Tabs ── */
+.tabs{display:inline-flex;gap:0;padding:3px;background:var(--muted);border-radius:var(--radius);width:max-content;max-width:100%}
+.tabs button{
+  appearance:none;border:1px solid transparent;background:transparent;cursor:pointer;
+  height:32px;padding:0 14px;border-radius:calc(var(--radius) - 3px);font-size:13.5px;font-weight:500;
+  color:var(--muted-foreground);transition:background-color .15s var(--ease), color .15s var(--ease)
+}
+.tabs button[aria-selected="true"]{background:var(--field);border-color:var(--input);color:var(--foreground);
+  box-shadow:0 1px 2px rgba(0,0,0,.06)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tabs button[aria-selected="true"]{background:var(--card)}}
+:root[data-theme="dark"] .tabs button[aria-selected="true"]{background:var(--card)}
+
+.pane{display:flex;flex-direction:column;gap:16px}
+
+/* ── Card ── */
+.card{background:var(--card);color:var(--card-foreground);border-radius:var(--radius-xl);
+  box-shadow:var(--shadow-card);padding-block:24px;display:flex;flex-direction:column;gap:16px}
+.card > *{padding-inline:24px}
+.card .full{padding-inline:0}
+.ch{display:flex;flex-direction:column;gap:4px}
+.ch .row{display:flex;align-items:flex-start;gap:12px}
+.ch h2{font-size:16px}
+.ch p{font-size:13.5px;color:var(--muted-foreground);max-width:62ch}
+.ch .badge{margin-left:auto;flex:none}
+
+/* ── Button ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  height:36px;padding:0 15px;border-radius:var(--radius-md);border:1px solid transparent;
+  font-size:13.5px;font-weight:500;cursor:pointer;white-space:nowrap;
+  background:var(--primary);color:var(--primary-foreground);
+  transition:transform .12s var(--ease), opacity .15s var(--ease), background-color .15s var(--ease)
+}
+.btn:hover{opacity:.9}
+.btn:active{transform:scale(.98)}
+.btn svg{width:15px;height:15px}
+.btn.outline{background:var(--field);border-color:var(--input);color:var(--foreground)}
+.btn.outline:hover{background:var(--secondary);opacity:1}
+.btn.ghost{background:transparent;color:var(--muted-foreground)}
+.btn.ghost:hover{background:var(--secondary);color:var(--foreground);opacity:1}
+.btn.lg{height:44px;padding:0 20px;font-size:14.5px}
+.btn.sm{height:32px;padding:0 12px;font-size:13px}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+
+/* ── Item / switch ── */
+.item{background:color-mix(in oklab, var(--secondary) 50%, transparent);border-radius:var(--radius-md);padding:14px 16px}
+.srow{display:flex;align-items:center;gap:14px}
+.srow .st{min-width:0}
+.srow .st b{display:block;font-weight:500}
+.srow .st span{display:block;font-size:12.5px;color:var(--muted-foreground)}
+.sw{margin-left:auto;flex:none;position:relative;width:38px;height:22px;min-height:22px;border-radius:999px;
+  background:var(--input);border:0;cursor:pointer;transition:background-color .18s var(--ease)}
+.sw::before{content:"";position:absolute;inset:-9px -4px;border-radius:999px}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+  background:var(--background);box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .18s var(--ease)}
+.sw[aria-checked="true"]{background:var(--primary)}
+.sw[aria-checked="true"]::after{transform:translateX(16px);background:var(--primary-foreground)}
+
+/* ── Mode chooser ── */
+.modes{display:flex;flex-direction:column;gap:8px}
+.mode{
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;
+  text-align:left;width:100%;cursor:pointer;
+  background:color-mix(in oklab, var(--secondary) 50%, transparent);
+  border:1px solid transparent;border-radius:var(--radius-md);padding:14px 16px;
+  transition:border-color .15s var(--ease), background-color .15s var(--ease), transform .12s var(--ease)
+}
+.mode:active{transform:scale(.995)}
+.mode[aria-pressed="true"]{border-color:var(--chart-2);background:color-mix(in oklab, var(--chart-1) 9%, transparent)}
+.mode .mk{grid-column:1;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;
+  background:var(--background);box-shadow:0 0 0 1px var(--border);color:var(--muted-foreground)}
+.mode[aria-pressed="true"] .mk{color:var(--chart-2)}
+.mode .mk svg{width:16px;height:16px}
+.mode .mb{grid-column:2;min-width:0}
+.mode .mb b{display:block;font-weight:500}
+.mode .mb span{display:block;font-size:12.5px;color:var(--muted-foreground)}
+.mode .mt{grid-column:3;font-size:12.5px;color:var(--muted-foreground);text-align:right;flex:none}
+.mode .mt b{display:block;font-weight:500;color:var(--foreground);font-size:13.5px}
+
+/* ── Key value grid ── */
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.kv .k{background:color-mix(in oklab, var(--secondary) 50%, transparent);border-radius:var(--radius-md);padding:12px 14px}
+.kv .k dt{font-size:12px;color:var(--muted-foreground);margin:0 0 4px}
+.kv .k dd{margin:0;font-size:20px;font-weight:500;letter-spacing:-0.02em}
+.kv .k dd small{font-size:12.5px;font-weight:400;color:var(--muted-foreground);letter-spacing:0}
+
+/* ── Notes list ── */
+.notes{display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:var(--muted-foreground)}
+.notes div{display:flex;gap:10px;align-items:flex-start}
+.notes .b{width:5px;height:5px;border-radius:50%;background:var(--muted-foreground);opacity:.55;margin-top:8px;flex:none}
+
+/* ── Session overlay ── */
+.sess{
+  position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;
+  background:var(--background);
+  padding-top:env(safe-area-inset-top, 0px);padding-bottom:env(safe-area-inset-bottom, 0px);
+  animation:fade .25s var(--ease)
+}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sess .shd{display:flex;align-items:center;gap:10px;height:56px;padding:0 10px 0 16px;flex:none}
+.sess .shd .sname{font-weight:500;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sess .shd .badge{flex:none;white-space:nowrap}
+.sess .shd .sright{margin-left:auto;display:flex;align-items:center;gap:6px}
+.sess .sbody{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;
+  padding:4px 16px 18px;max-width:980px;width:100%;margin:0 auto}
+
+.panel{position:relative;flex:1;min-height:200px;border-radius:var(--radius-xl);overflow:hidden;
+  background:var(--surface);box-shadow:0 0 0 1px var(--border);
+  transition:box-shadow .4s var(--ease)}
+.panel.lock{box-shadow:0 0 0 1px var(--chart-2), 0 0 34px -6px color-mix(in oklab, var(--chart-1) 55%, transparent)}
+.panel svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cue{position:absolute;left:0;right:0;top:14px;text-align:center;pointer-events:none}
+.cue b{display:block;font-size:15px;font-weight:500;letter-spacing:.01em}
+.cue span{display:block;font-size:12px;color:var(--muted-foreground);margin-top:2px}
+/* Still pacer: no oscillating full-field motion, for reduced motion. */
+.still .stillbox{display:flex}
+.stillbox{display:none;position:absolute;inset:0;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.stillbox .sring{width:132px;height:132px}
+.stillbox .scount{font-size:13px;color:var(--muted-foreground)}
+.still svg.wavesvg{display:none}
+.lockpill{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;opacity:0;
+  transition:opacity .4s var(--ease)}
+.panel.lock .lockpill{opacity:1}
+
+.readout{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;flex:none}
+.readout .r{background:color-mix(in oklab, var(--secondary) 55%, transparent);border-radius:var(--radius-md);
+  padding:11px 13px;min-width:0}
+.readout .r dt{font-size:11.5px;color:var(--muted-foreground);margin:0 0 3px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.readout .r dd{margin:0;font-size:22px;font-weight:500;letter-spacing:-0.02em;line-height:1.15}
+.readout .r dd small{font-size:12px;font-weight:400;color:var(--muted-foreground);letter-spacing:0}
+.sfoot{display:flex;gap:8px;align-items:center;flex:none;flex-wrap:wrap}
+.sfoot .proto{margin-left:auto;font-size:12px}
+
+/* face down */
+.sess.facedown{background:#08090a;color:#e6e6e6}
+.sess.facedown .shd,.sess.facedown .readout,.sess.facedown .sfoot,.sess.facedown .panel svg,
+.sess.facedown .cue span{display:none}
+.sess.facedown .panel{background:transparent;box-shadow:none}
+.sess.facedown .stillbox{display:none}
+.sess.facedown .cue{top:50%;transform:translateY(-50%)}
+.sess.facedown .cue b{font-size:17px;color:#e6e6e6}
+.fdhint{position:absolute;left:0;right:0;bottom:36px;text-align:center;font-size:12.5px;color:#7d8184;display:none}
+.sess.facedown .fdhint{display:block}
+.fddot{position:absolute;left:50%;top:calc(50% + 46px);transform:translate(-50%,-50%);width:9px;height:9px;
+  border-radius:50%;background:var(--chart-1);display:none}
+.sess.facedown .fddot{display:block}
+
+/* ── Summary ── */
+.sum{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:14px;padding-bottom:8px}
+.bigcoh{display:flex;align-items:center;gap:18px}
+.ring{width:96px;height:96px;flex:none}
+.bigcoh .bt b{display:block;font-size:30px;font-weight:500;letter-spacing:-0.025em;line-height:1.1}
+.bigcoh .bt span{display:block;font-size:13px;color:var(--muted-foreground);margin-top:3px;max-width:34ch}
+.away{text-align:center;padding:36px 16px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.away b{font-size:20px;font-weight:500;letter-spacing:-0.02em}
+.away p{color:var(--muted-foreground);max-width:32ch;font-size:13.5px}
+
+/* ── Charts ── */
+.chartbox{position:relative;width:100%}
+.chartbox svg{display:block;width:100%;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted-foreground)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+
+/* ── Rate test ── */
+.rail{display:flex;gap:6px}
+.rail .sl{flex:1;height:5px;border-radius:999px;background:var(--input);overflow:hidden}
+.rail .sl i{display:block;height:100%;width:0;background:var(--chart-1);border-radius:999px}
+.bigrate{font-variant-numeric:tabular-nums;font-size:44px;font-weight:500;letter-spacing:-0.03em;line-height:1}
+.bigrate small{font-size:14px;font-weight:400;color:var(--muted-foreground);letter-spacing:0}
+
+/* ── History list ── */
+.hl{display:flex;flex-direction:column}
+.hrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;
+  padding:11px 0;box-shadow:inset 0 -1px 0 var(--border)}
+.hrow:last-child{box-shadow:none}
+.hrow .hm{grid-column:1;min-width:0}
+.hrow .hm b{display:block;font-weight:500;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hrow .hm span{display:block;font-size:12px;color:var(--muted-foreground)}
+.hrow .hc{grid-column:2;text-align:right;font-size:14px;font-weight:500}
+.hrow .hd{grid-column:3;text-align:right;font-size:12.5px;color:var(--muted-foreground);width:64px}
+.tbl-scroll{overflow-x:auto}
+
+/* ── Toast ── */
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom, 0px));transform:translate(-50%,14px);
+  z-index:80;background:var(--primary);color:var(--primary-foreground);border-radius:999px;
+  padding:9px 16px;font-size:13px;opacity:0;pointer-events:none;
+  transition:opacity .22s var(--ease), transform .22s var(--ease);max-width:calc(100vw - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ── Tool head ── */
+.toolhead{display:flex;flex-direction:column;gap:7px;padding:2px 2px 0}
+.toolhead h2{font-size:19px;letter-spacing:-0.015em}
+.toolhead p{color:var(--muted-foreground);font-size:13.5px;max-width:64ch}
+
+/* ── Rehearsal phases ── */
+.phases{display:flex;flex-direction:column;gap:8px}
+.ph{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;
+  background:color-mix(in oklab, var(--secondary) 50%, transparent);border-radius:var(--radius-md);padding:12px 16px}
+.ph .pn2{grid-column:1;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none;
+  background:var(--background);box-shadow:0 0 0 1px var(--border);font-size:12px;font-weight:500}
+.ph .pb{grid-column:2;min-width:0}
+.ph .pb b{display:block;font-weight:500}
+.ph .pb span{display:block;font-size:12.5px;color:var(--muted-foreground)}
+.ph .psec{grid-column:3;font-size:12.5px;color:var(--muted-foreground);flex:none}
+
+/* ── Toggle group (Baseline .tg) ── */
+.tg{display:inline-flex;background:var(--secondary);border:1px solid var(--input);
+  border-radius:var(--radius-md);overflow:hidden;flex:none}
+.tg button{height:36px;min-width:56px;padding:0 13px;border:0;background:transparent;cursor:pointer;
+  font-size:13px;font-weight:500;color:var(--muted-foreground);
+  transition:background-color .15s var(--ease), color .15s var(--ease)}
+.tg button + button{box-shadow:inset 1px 0 0 var(--input)}
+.tg button[aria-pressed="true"]{background:var(--background);color:var(--foreground)}
+
+/* ── Rehearsal ring ── */
+.rring{width:min(58vh,240px);height:min(58vh,240px);max-width:100%}
+.rwrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.rcentre{position:absolute;text-align:center;padding:0 24px}
+.rcentre b{display:block;font-size:17px;font-weight:500;letter-spacing:-0.01em}
+.rcentre span{display:block;font-size:13px;color:var(--muted-foreground);margin-top:6px;max-width:26ch}
+.rcountbox{display:none;font-size:66px;font-weight:500;letter-spacing:-0.03em;line-height:1;
+  font-variant-numeric:tabular-nums;margin-bottom:10px}
+.rstill .rcountbox{display:block}
+.rstill .rring{visibility:hidden}
+
+/* ── Tap pad ── */
+.tappad{display:grid;gap:10px;flex:none}
+.tappad.two{grid-template-columns:1fr 1fr}
+.tapbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  min-height:86px;border-radius:var(--radius-xl);border:1px solid var(--input);background:var(--field);
+  color:var(--foreground);font-size:17px;font-weight:500;cursor:pointer;
+  transition:transform .1s var(--ease), background-color .15s var(--ease)}
+.tapbtn:active{transform:scale(.985)}
+.tapbtn small{font-size:12px;font-weight:400;color:var(--muted-foreground)}
+.tapbtn.win{border-color:color-mix(in oklab, var(--chart-2) 55%, transparent)}
+.tapbtn.serve{background:var(--primary);color:var(--primary-foreground);border-color:transparent;min-height:104px}
+.tapbtn.serve small{color:color-mix(in oklab, var(--primary-foreground) 70%, transparent)}
+
+/* ── Mic level ── */
+.level{height:6px;border-radius:999px;background:var(--input);overflow:hidden;flex:none}
+.level i{display:block;height:100%;width:0;background:var(--chart-1);border-radius:999px}
+.ticks{height:26px;position:relative;overflow:hidden;flex:none}
+.ticks i{position:absolute;bottom:0;width:2px;height:100%;background:var(--chart-2);border-radius:1px;opacity:.85}
+
+/* ── Big delta and comparison ── */
+.bigdelta{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.bigdelta b{font-size:34px;font-weight:500;letter-spacing:-0.025em;font-variant-numeric:tabular-nums;line-height:1.05}
+.bigdelta span{font-size:13.5px;color:var(--muted-foreground);max-width:40ch}
+.cmp{display:flex;flex-direction:column;gap:10px}
+.cmp .cr{display:grid;grid-template-columns:96px minmax(0,1fr) auto;align-items:center;gap:12px;font-size:13px}
+.cmp .cl{grid-column:1;color:var(--muted-foreground)}
+.cmp .cb{grid-column:2;height:14px;border-radius:7px;background:var(--input);overflow:hidden;min-width:0}
+.cmp .cb i{display:block;height:100%;border-radius:7px;background:var(--chart-1);opacity:.9}
+.cmp .cr.loss .cb i{background:var(--chart-4);opacity:.9}
+.cmp .cv{grid-column:3;font-variant-numeric:tabular-nums;font-weight:500}
+
+/* ── Pattern card ── */
+.pat{display:flex;flex-direction:column;gap:12px}
+.pat .pstate{font-size:15px;font-weight:500;letter-spacing:-0.01em}
+.pat .pexp{font-size:13.5px;color:var(--muted-foreground);max-width:62ch}
+.dots{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--chart-1)}
+.dots i.miss{background:var(--input)}
+.dots span{font-size:12.5px;color:var(--muted-foreground);margin-left:6px}
+.pat.off{opacity:.55}
+
+/* ── Responsive ── */
+@media (max-width:620px){
+  .phead h1{font-size:22px}
+  .card{padding-block:20px}
+  .card > *{padding-inline:18px}
+  .readout .r dd{font-size:19px}
+  .bigcoh{gap:14px}
+  .ring{width:80px;height:80px}
+  .bigcoh .bt b{font-size:26px}
+  .mode{grid-template-columns:auto minmax(0,1fr);row-gap:6px}
+  .toolhead h2{font-size:17px}
+  .cmp .cr{grid-template-columns:78px minmax(0,1fr) auto;gap:8px}
+  .bigdelta b{font-size:28px}
+  .tapbtn{min-height:76px;font-size:16px}
+  .tapbtn.serve{min-height:92px}
+  .mode .mt{grid-column:2;text-align:left}
+  .mode .mt b{display:inline;font-size:12.5px;color:var(--muted-foreground);font-weight:400}
+  .mode .mt b::after{content:' \00b7 '}
+  .tabs{width:100%}
+  .tabs button{flex:1;padding:0 6px;height:38px}
+  .icon,.btn{min-height:44px}
+  .tabs{padding:3px}
+  .tabs button{height:44px}
+  .icon{height:44px;width:44px}
+  .btn{height:44px}
+  .btn.sm{height:38px}
+  .sw{height:28px;width:48px;min-height:0}
+  .sw::after{width:24px;height:24px}
+  .sw[aria-checked="true"]::after{transform:translateX(20px)}
+}
+
+/* ── Motion and contrast ── */
+/* Baseline v1.1: stop movement, keep opacity and colour fades at 150ms. */
+@media (prefers-reduced-motion: reduce){
+  .btn:active,.icon:active,.mode:active{transform:none}
+  .sess{animation:none}
+  .toast{transition:opacity .15s linear;transform:translate(-50%,0)}
+  .toast.on{transform:translate(-50%,0)}
+  .panel,.lockpill,.mode,.item,.card,.icon,.btn,.sw,.tabs button{
+    transition-property:opacity, box-shadow, background-color, color, border-color;
+    transition-duration:.15s;transition-timing-function:linear}
+  .sw::after{transition:none}
+}
+@media (prefers-reduced-transparency: reduce){
+  .top{background:var(--background);backdrop-filter:none;-webkit-backdrop-filter:none}
+}
+/* Short viewports: landscape phones, and desktop windows with the inspector open. */
+@media (max-height:560px){
+  .sess .shd{height:48px}
+  .sess .sbody{gap:8px;padding-bottom:10px}
+  .panel{min-height:120px}
+  .readout .r{padding:7px 10px}
+  .readout .r dd{font-size:17px}
+  .cue{top:8px}
+  .cue b{font-size:14px}
+  .cue span{display:none}
+}
+@media (prefers-contrast: more){
+  .card{box-shadow:0 0 0 1px var(--foreground)}
+  .item,.mode,.kv .k,.readout .r{box-shadow:0 0 0 1px var(--foreground)}
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="f-AUT" viewBox="0 0 3 2"><rect width="3" height="2" fill="#ED2939"/><rect y=".667" width="3" height=".666" fill="#fff"/></symbol>
+</svg>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <span class="bm">PC</span>
+      <span class="bt">ProCircuit <span class="sep">/</span> <strong>Mindset Coach</strong></span>
+    </div>
+    <div class="topr">
+      <button class="icon" id="soundBtn" title="Sound" aria-label="Sound on or off"></button>
+      <button class="icon" id="themeBtn" title="Theme" aria-label="Switch theme"></button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="phead">
+      <h1>Training</h1>
+      <p class="sub">Two tools inside the Mindset Coach: one for your breath, one for the sixteen seconds between points. Neither of them watches you play.</p>
+    </div>
+
+    <div class="player">
+      <span class="av">AD</span>
+      <div>
+        <div class="pn">Arya Dubey</div>
+        <div class="pm"><svg class="fl"><use href="#f-AUT"></use></svg> ATP 487 · Stage 2 Emerging</div>
+      </div>
+      <span class="badge">Prototype</span>
+    </div>
+
+    <div class="tabs" role="tablist" id="tabs">
+      <button role="tab" id="tab-resonance" aria-controls="pane-resonance" data-tab="resonance" aria-selected="true">Resonance</button>
+      <button role="tab" id="tab-sixteen" aria-controls="pane-sixteen" data-tab="sixteen" aria-selected="false">Sixteen</button>
+    </div>
+
+    <!-- ── Resonance ── -->
+    <section class="pane" id="pane-resonance" role="tabpanel" aria-labelledby="tab-resonance" tabindex="0" data-pane="resonance">
+      <div class="toolhead">
+        <h2>Resonance</h2>
+        <p>Breathing at your own resonance rate: before you go on, at the changeover, and after the match. The goal is the moment your heart rate and your breath lock into the same rhythm.</p>
+        <div class="chips">
+          <span class="chip lime" id="rateChip"><span class="dot"></span>Your rate: 5.5 breaths a minute</span>
+          <span class="chip" id="srcChip">Simulated signal</span>
+          <span class="chip">Elite</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch"><div class="row"><h2>Start a session</h2></div>
+          <p>Three lengths, one rate. The changeover session runs on sound and vibration alone, so the phone can stay face down in your bag.</p></div>
+        <div class="modes" id="modes"></div>
+        <div class="actions">
+          <button class="btn lg" id="startBtn">Start session</button>
+          <button class="btn outline lg" id="camBtn">Use the camera for heart rate</button>
+        </div>
+        <div class="item">
+          <div class="srow">
+            <div class="st"><b>Heart rate source</b><span id="camNote">Simulated in this prototype. The camera reads a pulse from your fingertip over the lens.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="row"><h2>What Resonance does not do</h2><span class="badge warn">Read this</span></div></div>
+        <div class="notes">
+          <div><i class="b"></i><span>It is not a medical device and it makes no health claim. If something feels wrong physically, that is a conversation with a doctor, not with an app.</span></div>
+          <div><i class="b"></i><span>Camera heart rate is a relative signal for training. It is not a clinical heart rate variability measurement and it should never be read as one.</span></div>
+          <div><i class="b"></i><span>There is no readiness score and no recovery score. Nothing here tells you whether to play.</span></div>
+          <div><i class="b"></i><span>Camera frames are read once on your phone and never stored or sent anywhere.</span></div>
+        </div>
+        <div class="item">
+          <div class="srow">
+            <div class="st"><b>Include heart data in the coach link</b><span>Off by default. Marko sees your matches, shortlists and patterns, never this.</span></div>
+            <button class="sw" id="shareSw" role="switch" aria-checked="false" aria-label="Include heart data in the coach link"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="rateCard"></div>
+      <div class="card">
+        <div class="ch"><div class="row"><h2>Why a personal rate</h2></div>
+          <p>Everyone has a breathing rate at which the heart rate swing is largest, usually between four and seven breaths a minute. At that rate the breath and the heart reinforce each other instead of fighting. The test finds yours once, then you stop thinking about it.</p></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="row"><h2>Calm trend</h2><span class="badge">Illustrative</span></div>
+          <p>Average coherence by week. Coherence is the share of a session in which your heart rate rose and fell in step with your breath.</p></div>
+        <div class="full chartbox" id="trendChart" style="height:200px"></div>
+        <div class="legend"><span><i style="background:var(--chart-1)"></i>Average coherence</span></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="row"><h2>Sessions</h2><span class="badge" id="sessCount">14</span></div></div>
+        <dl class="kv" id="histKv"></dl>
+        <div class="hl" id="histList"></div>
+        <div class="actions"><button class="btn ghost sm" id="resetBtn">Reset to the sample data</button></div>
+      </div>
+    </section>
+
+    <!-- ── Sixteen ── -->
+    <section class="pane" id="pane-sixteen" role="tabpanel" aria-labelledby="tab-sixteen" tabindex="0" data-pane="sixteen" hidden>
+      <div class="toolhead">
+        <h2>Sixteen</h2>
+        <p>The gap between points is about seventy percent of a match and the only part of it you fully control. Sixteen drills the four phases of the routine, then measures what you actually do out there.</p>
+        <div class="chips">
+          <span class="chip lime" id="sxChip"><span class="dot"></span>Median 18.4s · 12% variation</span>
+          <span class="chip" id="sxSrcChip">Sample set</span>
+          <span class="chip">Pro</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="row"><h2>Rehearse the routine</h2><span class="badge" id="rehLen">90 seconds</span></div>
+          <p>Four phases, five times through. Stand up and do it, with a racquet if one is to hand. It is rote learning, and that is the point: at 4-5 in the third you should not be deciding what to do next.</p></div>
+        <div class="phases" id="phaseList"></div>
+        <div class="actions">
+          <button class="btn lg" id="rehBtn">Start rehearsal</button>
+          <button class="btn outline lg" id="rehReps">5 times through</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="row"><h2>Mirror a practice set</h2><span class="badge lime">The measurement</span></div>
+          <p>Prop the phone on the fence, or hand it to whoever is watching. Sixteen does not follow the ball. It works out where the points ended and times the gaps between them.</p></div>
+        <div class="modes" id="capModes"></div>
+        <div class="actions"><button class="btn lg" id="mirBtn">Start</button></div>
+        <div class="item">
+          <div class="srow">
+            <div class="st"><b>What leaves the microphone</b><span>Nothing. The sound is analysed on this phone and never recorded, stored or sent. Only the times of the ball strikes survive the session, and they stay here.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card pat" id="sxPatternCard"></div>
+
+      <div class="card">
+        <div class="ch"><div class="row"><h2>Sessions</h2><span class="badge" id="sxCount">6</span></div>
+          <p>How steady the gap is, and what happens to it after a point you lost. The gap should get steadier and the two numbers should converge.</p></div>
+        <dl class="kv" id="sxKv"></dl>
+        <div class="full chartbox" id="sxTrend" style="height:200px"></div>
+        <div class="legend">
+          <span><i style="background:var(--chart-1)"></i>Seconds faster after a lost point</span>
+          <span>Closer to zero is better. Variation is in the list below.</span>
+        </div>
+        <div class="hl" id="sxList"></div>
+        <div class="actions"><button class="btn ghost sm" id="sxReset">Reset to the sample data</button></div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="row"><h2>What Sixteen does not do</h2><span class="badge warn">Read this</span></div></div>
+        <div class="notes">
+          <div><i class="b"></i><span>It does not judge your technique, score the match or tell you that you played badly. It times gaps, and that is all it times.</span></div>
+          <div><i class="b"></i><span>Shorter is not better. The number that matters is how steady you are, not how fast. The 25-second clock is the only hard limit here.</span></div>
+          <div><i class="b"></i><span>Listening cannot tell your court from the one next to it, or a rally from someone hitting against a wall. Check the point count before you trust a set.</span></div>
+          <div><i class="b"></i><span>No audio is recorded or kept, in any mode, at any point. There is nothing to delete because nothing is written.</span></div>
+        </div>
+        <div class="item">
+          <div class="srow">
+            <div class="st"><b>Include the routine pattern in the coach link</b><span>On by default. Marko sees the sentence and the count, never the set, never the score.</span></div>
+            <button class="sw" id="sxShareSw" role="switch" aria-checked="true" aria-label="Include the routine pattern in the coach link"></button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ── Helpers ── */
+var $ = function(s,r){ return (r||document).querySelector(s); };
+var $$ = function(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+function el(tag, attrs, text){
+  var n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for(var k in attrs){ if(attrs[k]!==null && attrs[k]!==undefined) n.setAttribute(k, attrs[k]); }
+  if(text!==undefined && text!==null) n.textContent = text;
+  return n;
+}
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){} return null; }
+var toastT;
+function toast(msg){
+  var t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove('on'); }, 2600);
+}
+var RM = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+/* ── Icons ── */
+var ICON = {
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  vol:'<path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.8 5.2a9 9 0 0 1 0 13.6"/>',
+  mute:'<path d="M11 5 6 9H2v6h4l5 4z"/><path d="m22 9-6 6M16 9l6 6"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  play:'<path d="M6 4l13 8-13 8z" fill="currentColor" stroke="none"/>',
+  pause:'<path d="M7 4v16M17 4v16"/>',
+  cam:'<path d="M14.5 4h-5L8 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-4z"/><circle cx="12" cy="13" r="3.5"/>',
+  door:'<path d="M9 3h9a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H9"/><path d="M15 12H3"/><path d="m7 8-4 4 4 4"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  bed:'<path d="M3 18V7"/><path d="M3 12h18v6"/><path d="M7 12V9h6a4 4 0 0 1 4 3"/>',
+  redo:'<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>',
+  check:'<path d="m5 13 4 4L19 7"/>',
+  still:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4"/>',
+  mic:'<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><path d="M12 18v4"/>',
+  hand:'<path d="M8 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M11 11V4.5a1.5 1.5 0 0 1 3 0V11"/><path d="M14 11.5V6.5a1.5 1.5 0 0 1 3 0V14"/><path d="M8 11V9.5a1.5 1.5 0 0 0-3 0V14a7 7 0 0 0 7 7h2a6 6 0 0 0 6-6"/>',
+  rows:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>'
+};
+function svgIcon(name, size){
+  return '<svg viewBox="0 0 24 24" width="'+(size||17)+'" height="'+(size||17)+'" fill="none" stroke="currentColor" '+
+         'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+ICON[name]+'</svg>';
+}
+
+/* ── Preferences ── */
+var prefs = { sound:true, haptics:true, share:false };
+try{ var sp = store('pc.rprefs'); if(sp) prefs = JSON.parse(sp); }catch(e){}
+function savePrefs(){ store('pc.rprefs', JSON.stringify(prefs)); }
+
+/* ── Theme ── */
+function currentTheme(){
+  var t = document.documentElement.getAttribute('data-theme');
+  if(t) return t;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+function paintTheme(){ $('#themeBtn').innerHTML = svgIcon(currentTheme()==='dark' ? 'sun' : 'moon'); }
+$('#themeBtn').addEventListener('click', function(){
+  document.documentElement.setAttribute('data-theme', currentTheme()==='dark' ? 'light' : 'dark');
+  paintTheme(); drawTrend(); drawRateChart($('#rateChart'), rateResult); drawSxTrend();
+});
+paintTheme();
+
+function paintSound(){ $('#soundBtn').innerHTML = svgIcon(prefs.sound ? 'vol' : 'mute'); }
+$('#soundBtn').addEventListener('click', function(){ prefs.sound = !prefs.sound; savePrefs(); paintSound();
+  toast(prefs.sound ? 'Sound on' : 'Sound off'); });
+paintSound();
+
+var shareSw = $('#shareSw');
+shareSw.setAttribute('aria-checked', prefs.share ? 'true':'false');
+shareSw.addEventListener('click', function(){
+  prefs.share = !prefs.share; savePrefs();
+  shareSw.setAttribute('aria-checked', prefs.share ? 'true':'false');
+  toast(prefs.share ? 'Heart data is now in the coach link' : 'Heart data is out of the coach link');
+});
+
+/* ── Audio cues ── */
+var actx = null;
+function beep(freq, dur){
+  if(!prefs.sound) return;
+  try{
+    if(!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if(actx.state === 'suspended') actx.resume();
+    var o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.09, actx.currentTime + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + dur + 0.05);
+  }catch(e){}
+}
+function buzz(ms){ if(prefs.haptics && navigator.vibrate){ try{ navigator.vibrate(ms); }catch(e){} } }
+
+/* ── Physiology model ─────────────────────────────────────────────
+   The player's true resonance rate. Away from it the heart rate swing
+   shrinks and lags the breath, so the two waves never line up. This is
+   what makes the rate test worth twelve minutes.
+------------------------------------------------------------------ */
+var TRUE_RES = 5.5;
+var noiseState = 0, phaseW = 0;
+function rsaAmp(f){
+  var d = f - TRUE_RES;
+  return 15.5 * Math.exp(-(d*d)/(2*0.72*0.72));   // peak to peak, bpm
+}
+function phaseLagCycles(f){ return (f - TRUE_RES) * 0.115; }
+function simHr(t, f, cyclePos){
+  var entrain = 1 - Math.exp(-t/42);
+  var base = 63.5 + 12.5*Math.exp(-t/170);
+  noiseState = noiseState*0.95 + (Math.random()-0.5)*1.08;   // gentle wander, about 1 bpm
+  phaseW = phaseW*0.985 + (Math.random()-0.5)*0.06;          // the breath is never perfectly steady
+  var osc = (rsaAmp(f)/2) * entrain * (-Math.cos(2*Math.PI*(cyclePos - phaseLagCycles(f) - phaseW)));
+  return base + osc + noiseState;
+}
+/* Peak to peak size of the heart rate swing that is actually at the breathing
+   frequency. Quadrature magnitude, so noise and drift do not inflate it. */
+function rsaMeasure(arr, f, dt){
+  var n = arr.length, i, m = 0;
+  if(n < 40) return 0;
+  for(i=0;i<n;i++) m += arr[i];
+  m /= n;
+  var w = 2*Math.PI*f/60, a = 0, b = 0, x;
+  for(i=0;i<n;i++){ x = arr[i]-m; a += x*Math.cos(w*i*dt); b += x*Math.sin(w*i*dt); }
+  a = 2*a/n; b = 2*b/n;
+  return 2*Math.sqrt(a*a + b*b);
+}
+
+/* ── Pacer ── */
+function pacerPos(cyclePos, inh, exh){
+  var iF = inh/(inh+exh), u;
+  if(cyclePos < iF){ u = cyclePos/iF; return 0.5 - 0.5*Math.cos(Math.PI*u); }
+  u = (cyclePos - iF)/(1 - iF); return 0.5 + 0.5*Math.cos(Math.PI*u);
+}
+
+/* ── Coherence ── */
+function pearson(a, b){
+  var n = a.length, sa=0, sb=0, i;
+  for(i=0;i<n;i++){ sa+=a[i]; sb+=b[i]; }
+  var ma = sa/n, mb = sb/n, num=0, da=0, db=0, x, y;
+  for(i=0;i<n;i++){ x=a[i]-ma; y=b[i]-mb; num+=x*y; da+=x*x; db+=y*y; }
+  if(da<=0 || db<=0) return 0;
+  return num/Math.sqrt(da*db);
+}
+
+/* ── Camera pulse (best effort, falls back quietly) ───────────────
+   Fingertip over the lens with the torch on. Mean red channel,
+   detrended, peaks counted. Relative signal only.
+------------------------------------------------------------------ */
+var cam = { on:false, stream:null, video:null, canvas:null, ctx:null, buf:[], bpm:null, quality:0, raf:0 };
+function camNoteSet(txt){ $('#camNote').textContent = txt; }
+function setSource(){
+  $('#srcChip').textContent = cam.on ? 'Live camera signal' : 'Simulated signal';
+  $('#camBtn').textContent = cam.on ? 'Stop using the camera' : 'Use the camera for heart rate';
+}
+function stopCam(){
+  cam.on = false;
+  if(cam.raf) cancelAnimationFrame(cam.raf);
+  if(cam.stream){ cam.stream.getTracks().forEach(function(t){ t.stop(); }); cam.stream = null; }
+  cam.bpm = null; cam.quality = 0; setSource();
+  camNoteSet('Simulated in this prototype. The camera reads a pulse from your fingertip over the lens.');
+}
+async function startCam(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    toast('No camera available here, staying on the simulated signal'); return;
+  }
+  try{
+    cam.stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment', width:320, height:240 } });
+  }catch(e){
+    toast('Camera blocked in this preview, staying on the simulated signal'); return;
+  }
+  try{ await cam.stream.getVideoTracks()[0].applyConstraints({ advanced:[{ torch:true }] }); }catch(e){}
+  if(!cam.video){
+    cam.video = document.createElement('video');
+    cam.video.setAttribute('playsinline',''); cam.video.muted = true;
+    cam.canvas = document.createElement('canvas'); cam.canvas.width = 32; cam.canvas.height = 32;
+    cam.ctx = cam.canvas.getContext('2d', { willReadFrequently:true });
+  }
+  cam.video.srcObject = cam.stream;
+  try{ await cam.video.play(); }catch(e){}
+  cam.on = true; cam.buf = []; setSource();
+  camNoteSet('Live. Cover the lens with a fingertip and hold still. If the signal drops out, the session falls back to the simulated one.');
+  sampleCam();
+}
+function sampleCam(){
+  if(!cam.on) return;
+  cam.raf = requestAnimationFrame(sampleCam);
+  try{
+    cam.ctx.drawImage(cam.video, 0, 0, 32, 32);
+    var d = cam.ctx.getImageData(10, 10, 12, 12).data, s = 0, i;
+    for(i=0;i<d.length;i+=4){ s += d[i]; }
+    cam.buf.push({ t: performance.now()/1000, v: s/(d.length/4) });
+    if(cam.buf.length > 320) cam.buf.shift();
+    if(cam.buf.length > 90) estimateBpm();
+  }catch(e){}
+}
+function estimateBpm(){
+  var n = cam.buf.length, i;
+  var vals = [], ts = [];
+  for(i=0;i<n;i++){ vals.push(cam.buf[i].v); ts.push(cam.buf[i].t); }
+  var w = 12, det = [];
+  for(i=0;i<n;i++){
+    var a = Math.max(0,i-w), b = Math.min(n-1,i+w), s=0, c=0, j;
+    for(j=a;j<=b;j++){ s+=vals[j]; c++; }
+    det.push(vals[i] - s/c);
+  }
+  var peaks = [];
+  for(i=2;i<n-2;i++){
+    if(det[i]>det[i-1] && det[i]>=det[i+1] && det[i]>det[i-2] && det[i]>=det[i+2] && det[i]>0.12){
+      if(!peaks.length || ts[i]-ts[peaks[peaks.length-1]] > 0.36) peaks.push(i);
+    }
+  }
+  if(peaks.length < 5){ cam.quality = 0; return; }
+  var ibi = [];
+  for(i=1;i<peaks.length;i++) ibi.push(ts[peaks[i]] - ts[peaks[i-1]]);
+  ibi = ibi.slice(-8).sort(function(a,b){ return a-b; });
+  var med = ibi[Math.floor(ibi.length/2)];
+  var sd = 0; for(i=0;i<ibi.length;i++) sd += (ibi[i]-med)*(ibi[i]-med);
+  sd = Math.sqrt(sd/ibi.length);
+  if(med < 0.3 || med > 1.5 || sd > 0.22){ cam.quality = 0; return; }
+  cam.quality = 1; cam.bpm = 60/med;
+}
+$('#camBtn').addEventListener('click', function(){ if(cam.on) stopCam(); else startCam(); });
+setSource();
+
+/* ── Modes ── */
+var MODES = [
+  { id:'pre',   name:'Before you go on', icon:'door',  mins:5, inh:1, exh:1,
+    desc:'Seated, five minutes, phone in your hand.', meta:'Even in and out' },
+  { id:'chg',   name:'Changeover',       icon:'clock', mins:1.5, inh:1, exh:1,
+    desc:'Ninety seconds, sound and vibration only. The phone can stay face down.', meta:'Face down' },
+  { id:'post',  name:'After the match',  icon:'bed',   mins:8, inh:4, exh:6,
+    desc:'Longer out breath than in. For the nights after a late finish.', meta:'4 in, 6 out' }
+];
+var chosen = 'pre';
+function renderModes(){
+  var host = $('#modes'); host.innerHTML = '';
+  MODES.forEach(function(m){
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'mode'; b.setAttribute('aria-pressed', m.id===chosen ? 'true':'false');
+    b.innerHTML = '<span class="mk">'+svgIcon(m.icon,16)+'</span>'+
+      '<span class="mb"><b>'+m.name+'</b><span>'+m.desc+'</span></span>'+
+      '<span class="mt"><b>'+(m.mins===1.5?'1:30':m.mins+' min')+'</b>'+m.meta+'</span>';
+    b.addEventListener('click', function(){ chosen = m.id; renderModes(); });
+    host.appendChild(b);
+  });
+}
+renderModes();
+
+/* ── Resonance rate ── */
+var rateResult = null;
+try{ var rr = store('pc.res'); if(rr) rateResult = JSON.parse(rr); }catch(e){}
+if(!rateResult){
+  rateResult = { bpm:5.5, date:'22 Aug 2026',
+    blocks:[{f:6.5,amp:4.6},{f:6.0,amp:9.8},{f:5.5,amp:12.9},{f:5.0,amp:10.4},{f:4.5,amp:5.1}] };
+}
+function paintRateChip(){
+  $('#rateChip').innerHTML = '<span class="dot"></span>Your rate: '+rateResult.bpm.toFixed(1)+' breaths a minute';
+}
+paintRateChip();
+
+/* ── Tabs ── */
+$$('#tabs button').forEach(function(b){
+  b.addEventListener('click', function(){
+    $$('#tabs button').forEach(function(x){ x.setAttribute('aria-selected', x===b ? 'true':'false'); });
+    $$('.pane').forEach(function(p){ p.hidden = p.dataset.pane !== b.dataset.tab; });
+    if(b.dataset.tab==='resonance'){ drawTrend(); renderRatePane(); }
+    if(b.dataset.tab==='sixteen'){ renderSixteen(); }
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════
+   SESSION
+═══════════════════════════════════════════════════════════════ */
+var S = null, overlay = null, lastFocus = null, overlayDismiss = null;
+var HZ = 10, WIN = 45*HZ;
+var stillPacer = RM.matches;
+
+function openOverlay(node, labelText, focusSel, returnTo, dismissFn){
+  overlayDismiss = dismissFn || null;
+  var a = document.activeElement;
+  lastFocus = (a && a !== document.body && a.getClientRects().length) ? a
+            : (returnTo ? document.querySelector(returnTo) : null);
+  node.setAttribute('role','dialog');
+  node.setAttribute('aria-modal','true');
+  node.setAttribute('aria-label', labelText);
+  node.tabIndex = -1;
+  document.body.appendChild(node);
+  var f = focusSel ? node.querySelector(focusSel) : null;
+  (f || node).focus();
+}
+function trapFocus(e){
+  if(e.key !== 'Tab' || !overlay) return;
+  var all = overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  var f = Array.prototype.filter.call(all, function(n){ return !n.hidden && n.getClientRects().length; });
+  if(!f.length) return;
+  var first = f[0], last = f[f.length-1];
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+}
+function dismissSession(){
+  if(S && S.running) endSession();
+  else closeOverlay();
+}
+document.addEventListener('keydown', function(e){
+  if(!overlay) return;
+  if(e.key === 'Tab'){ trapFocus(e); return; }
+  if(e.key !== 'Escape') return;
+  e.preventDefault();
+  if(overlay.classList.contains('facedown')){ overlay.classList.remove('facedown'); return; }
+  if(overlayDismiss){ overlayDismiss(); return; }
+  if(test){ test = null; closeOverlay(); return; }
+  dismissSession();
+});
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden && S && S.running && !S.paused){ togglePause(); S.bgPaused = true; }
+  else if(!document.hidden && S && S.bgPaused){
+    S.bgPaused = false;
+    toast('Paused while the app was in the background. Press play to carry on.');
+  }
+});
+
+function buildOverlay(){
+  overlay = document.createElement('div');
+  overlay.className = 'sess';
+  overlay.innerHTML =
+    '<div class="shd">'+
+      '<span class="sname" id="sName"></span>'+
+      '<span class="badge" id="sRate"></span>'+
+      '<span class="sright">'+
+        '<button class="icon" id="sStill" title="Still pacer" aria-label="Still pacer" aria-pressed="false">'+svgIcon('still')+'</button>'+
+        '<button class="icon" id="sFace" title="Phone down" aria-label="Phone down">'+svgIcon('moon')+'</button>'+
+        '<button class="icon" id="sPause" title="Pause" aria-label="Pause">'+svgIcon('pause')+'</button>'+
+        '<button class="icon" id="sClose" title="End" aria-label="End session">'+svgIcon('x')+'</button>'+
+      '</span>'+
+    '</div>'+
+    '<div class="sbody" id="sBody">'+
+      '<div class="panel" id="sPanel">'+
+        '<div class="cue"><b id="sCue">Breathe in</b><span id="sCueSub">Follow the ball</span></div>'+
+        '<div class="stillbox">'+
+          '<svg class="sring" viewBox="0 0 100 100" aria-hidden="true">'+
+            '<circle cx="50" cy="50" r="42" fill="none" stroke="var(--input)" stroke-width="7"></circle>'+
+            '<circle id="stillArc" cx="50" cy="50" r="42" fill="none" stroke="var(--chart-1)" stroke-width="7" '+
+              'stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="263.9" stroke-dashoffset="263.9"></circle>'+
+          '</svg>'+
+          '<span class="scount mono" id="stillCount">Breath 1</span>'+
+        '</div>'+
+        '<span class="badge lime lockpill">Locked in</span>'+
+        '<div class="fddot"></div>'+
+        '<div class="fdhint">Screen down. Tap anywhere to bring it back.</div>'+
+      '</div>'+
+      '<dl class="readout">'+
+        '<div class="r"><dt>Heart rate</dt><dd class="mono" id="rHr">--<small> bpm</small></dd></div>'+
+        '<div class="r"><dt>Coherence</dt><dd class="mono" id="rCoh">0<small>%</small></dd></div>'+
+        '<div class="r"><dt>Time left</dt><dd class="mono" id="rTime">0:00</dd></div>'+
+      '</dl>'+
+      '<div class="sfoot">'+
+        '<button class="btn outline" id="sEnd">End and see the summary</button>'+
+        '<button class="btn ghost sm proto" id="sSkip">Prototype: skip 60s</button>'+
+      '</div>'+
+    '</div>';
+  openOverlay(overlay, 'Resonance session', null, '#startBtn');
+
+  $('#sClose', overlay).addEventListener('click', dismissSession);
+  $('#sEnd', overlay).addEventListener('click', endSession);
+  $('#sPause', overlay).addEventListener('click', togglePause);
+  $('#sStill', overlay).addEventListener('click', function(){
+    stillPacer = !stillPacer;
+    this.setAttribute('aria-pressed', stillPacer ? 'true':'false');
+    $('#sPanel', overlay).classList.toggle('still', stillPacer);
+    toast(stillPacer ? 'Still pacer on, the waves stop moving' : 'Waves back on');
+  });
+  if(stillPacer){
+    $('#sStill', overlay).setAttribute('aria-pressed','true');
+    $('#sPanel', overlay).classList.add('still');
+  }
+  $('#sSkip', overlay).addEventListener('click', function(){
+    S.ff = true; for(var i=0;i<60*HZ;i++) step(1/HZ); S.ff = false;
+  });
+  $('#sFace', overlay).addEventListener('click', function(){ overlay.classList.add('facedown'); });
+  overlay.addEventListener('click', function(e){
+    if(overlay.classList.contains('facedown')){ overlay.classList.remove('facedown'); e.stopPropagation(); }
+  }, true);
+
+  var p = $('#sPanel', overlay);
+  var svg = el('svg', { preserveAspectRatio:'none', 'class':'wavesvg' });
+  var defs = el('defs');
+  var grad = el('linearGradient', { id:'gHr_sPanel', x1:'0', y1:'0', x2:'0', y2:'1' });
+  grad.appendChild(el('stop', { offset:'0%', 'stop-color':'var(--muted-foreground)', 'stop-opacity':'.20' }));
+  grad.appendChild(el('stop', { offset:'100%', 'stop-color':'var(--muted-foreground)', 'stop-opacity':'0' }));
+  defs.appendChild(grad); svg.appendChild(defs);
+  svg.appendChild(el('path', { id:'hrArea', fill:'url(#gHr_sPanel)', stroke:'none' }));
+  svg.appendChild(el('polyline', { id:'hrLine', fill:'none', stroke:'var(--muted-foreground)', 'stroke-width':'1.8',
+    'stroke-linejoin':'round', 'stroke-linecap':'round', opacity:'.85' }));
+  svg.appendChild(el('polyline', { id:'pcLine', fill:'none', stroke:'var(--chart-1)', 'stroke-width':'2.4',
+    'stroke-linejoin':'round', 'stroke-linecap':'round' }));
+  svg.appendChild(el('circle', { id:'pcBall', r:'7', fill:'var(--chart-1)' }));
+  p.insertBefore(svg, p.firstChild);
+  S.svg = svg;
+  S.ro = new ResizeObserver(function(){ sizeSvg(); });
+  S.ro.observe(p);
+  sizeSvg();
+}
+function sizeSvg(){
+  if(!S || !S.svg) return;
+  var p = $('#sPanel', overlay), w = p.clientWidth, h = p.clientHeight;
+  S.w = w; S.h = h;
+  S.svg.setAttribute('viewBox', '0 0 '+w+' '+h);
+}
+
+function startSession(){
+  var m = MODES.filter(function(x){ return x.id===chosen; })[0];
+  noiseState = 0; phaseW = 0;
+  S = { mode:m, f:rateResult.bpm, inh:m.inh, exh:m.exh, dur:m.mins*60, t:0,
+        hr:[], pc:[], full:[], coh:0, lock:0, breaths:0, prevCycle:0, prevPhase:null,
+        hrNow:null, hrStart:null, hrEnd:null, running:true, paused:false, last:0, acc:0, fullAcc:0 };
+  buildOverlay();
+  $('#sName', overlay).textContent = m.name;
+  $('#sRate', overlay).textContent = rateResult.bpm.toFixed(1)+' breaths a minute';
+  if(m.id==='chg'){ $('#sCueSub', overlay).textContent = 'Or tap the moon and put the phone down'; }
+  if(m.inh!==m.exh){ $('#sCueSub', overlay).textContent = 'Longer out than in'; }
+  S.raf = requestAnimationFrame(frame);
+  beep(520, .18);
+}
+function togglePause(){
+  if(!S) return;
+  S.paused = !S.paused;
+  $('#sPause', overlay).innerHTML = svgIcon(S.paused ? 'play' : 'pause');
+  if(!S.paused){ S.last = 0; S.raf = requestAnimationFrame(frame); }
+}
+function frame(ts){
+  if(!S || !S.running) return;
+  if(S.paused) return;
+  if(!S.last) S.last = ts;
+  var dt = Math.min(0.25, (ts - S.last)/1000); S.last = ts;
+  S.acc += dt;
+  while(S.acc >= 1/HZ){ step(1/HZ); S.acc -= 1/HZ; }
+  draw();
+  if(S.t >= S.dur){ endSession(); return; }
+  S.raf = requestAnimationFrame(frame);
+}
+function step(dt){
+  S.t += dt;
+  var T = 60/S.f;
+  var c = (S.t % T)/T;
+  var p = pacerPos(c, S.inh, S.exh);
+
+  if(c < S.prevCycle){ S.breaths++; }
+  S.prevCycle = c;
+
+  var iF = S.inh/(S.inh+S.exh);
+  var phase = c < iF ? 'in' : 'out';
+  if(phase !== S.prevPhase){
+    S.prevPhase = phase;
+    if(S.t > 0.2 && !S.ff){ beep(phase==='in' ? 587 : 392, .22); buzz(phase==='in' ? 26 : 16); }
+  }
+
+  var hr, usingCam = !!(cam.on && cam.quality && cam.bpm);
+  if(usingCam){ hr = cam.bpm; }
+  else { hr = simHr(S.t, S.f, c); }
+  if(cam.on && S.wasCam && !usingCam && !S.ff && !S.camWarned){
+    S.camWarned = true;
+    toast('Lost the pulse signal, back on the simulated one. Hold your fingertip still.');
+  }
+  if(usingCam) S.camWarned = false;
+  S.wasCam = usingCam;
+  S.hrNow = hr;
+
+  S.hr.push(hr); S.pc.push(p);
+  if(S.hr.length > WIN){ S.hr.shift(); S.pc.shift(); }
+
+  var n = S.hr.length;
+  if(n >= 12*HZ){
+    var w = Math.min(30*HZ, n);
+    var r = pearson(S.hr.slice(-w), S.pc.slice(-w));
+    var target = clamp(r, 0, 1) * 100;
+    S.coh = S.coh*0.94 + target*0.06;
+  }
+  if(S.coh >= 65) S.lock += dt;
+
+  S.fullAcc += dt;
+  if(S.fullAcc >= 0.5){ S.fullAcc = 0; S.full.push({ p:p, hr:hr, lock:S.coh>=65 }); }
+}
+function draw(){
+  if(!S || !S.w) return;
+  var w = S.w, h = S.h, n = S.hr.length;
+  if(n < 2) return;
+
+  var top = h*0.14, bot = h*0.86, mid = (top+bot)/2, span = bot-top;
+
+  var centre = 0, i;
+  for(i=0;i<n;i++) centre += S.hr[i];
+  centre /= n;
+  var half = 9;
+
+  var right = w - 8;
+  var pts = [], hpts = [];
+  for(i=0;i<n;i++){
+    var x = right - ((n-1-i)/(WIN-1))*right;
+    pts.push(x.toFixed(1)+','+(bot - S.pc[i]*span).toFixed(1));
+    var hy = mid - clamp((S.hr[i]-centre)/half, -1.25, 1.25) * (span*0.38);
+    hpts.push(x.toFixed(1)+','+hy.toFixed(1));
+  }
+  var firstX = right - ((n-1)/(WIN-1))*right;
+  $('#pcLine', S.svg).setAttribute('points', pts.join(' '));
+  $('#hrLine', S.svg).setAttribute('points', hpts.join(' '));
+  $('#hrArea', S.svg).setAttribute('d', 'M'+firstX.toFixed(1)+','+h+' L'+hpts.join(' L')+' L'+right.toFixed(1)+','+h+' Z');
+  var ball = $('#pcBall', S.svg);
+  ball.setAttribute('cx', right.toFixed(1));
+  ball.setAttribute('cy', (bot - S.pc[n-1]*span).toFixed(1));
+
+  var iF = S.inh/(S.inh+S.exh);
+  var T = 60/S.f, c = (S.t % T)/T;
+  $('#sCue', overlay).textContent = c < iF ? 'Breathe in' : 'Breathe out';
+
+  if(stillPacer){
+    var arc = $('#stillArc', overlay);
+    if(arc){
+      var C = 2*Math.PI*42;
+      arc.setAttribute('stroke-dashoffset', (C*(1 - clamp(S.t/S.dur, 0, 1))).toFixed(1));
+    }
+    var cnt = $('#stillCount', overlay);
+    if(cnt) cnt.textContent = 'Breath '+(S.breaths+1);
+  }
+  $('#rHr', overlay).innerHTML = (S.hrNow ? Math.round(S.hrNow) : '--')+'<small> bpm</small>';
+  $('#rCoh', overlay).innerHTML = Math.round(S.coh)+'<small>%</small>';
+  var left = Math.max(0, S.dur - S.t);
+  $('#rTime', overlay).textContent = Math.floor(left/60)+':'+String(Math.floor(left%60)).padStart(2,'0');
+  $('#sPanel', overlay).classList.toggle('lock', S.coh >= 65);
+}
+
+/* ── Summary ── */
+function endSession(){
+  if(!S) return;
+  S.running = false;
+  if(S.raf) cancelAnimationFrame(S.raf);
+  if(S.ro) S.ro.disconnect();
+  beep(392, .3);
+  showSummary();
+}
+function showSummary(){
+  var coh = Math.round(S.coh);
+  var lockPct = S.t > 0 ? Math.round(S.lock/S.t*100) : 0;
+  /* Averaged over twenty seconds at each end, so the reading is not a point
+     on the breathing swing. */
+  function mean(a){ if(!a.length) return null; var s=0,i; for(i=0;i<a.length;i++) s+=a[i].hr; return s/a.length; }
+  var f = S.full;
+  var hrs = f.length > 60 ? Math.round(mean(f.slice(10, 50))) : null;
+  var hre = f.length > 60 ? Math.round(mean(f.slice(-40))) : null;
+  var mins = Math.max(1, Math.round(S.t/60));
+
+  var verdict = coh >= 70 ? 'You and your heart were in step for most of it.'
+              : coh >= 45 ? 'It started to lock in near the end. Longer sessions settle faster.'
+              : 'Short session, not enough time to settle. It usually takes about ninety seconds.';
+
+  var body = $('#sBody', overlay);
+  body.innerHTML =
+    '<div class="sum">'+
+      '<div class="bigcoh">'+
+        '<svg class="ring" viewBox="0 0 100 100" id="sumRing"></svg>'+
+        '<div class="bt"><b class="mono">'+coh+'%</b><span>Coherence. '+verdict+'</span></div>'+
+      '</div>'+
+      '<dl class="kv">'+
+        '<div class="k"><dt>Time in lock</dt><dd class="mono">'+lockPct+'<small>%</small></dd></div>'+
+        '<div class="k"><dt>Heart rate</dt><dd class="mono">'+(hrs&&hre ? hrs+' &rarr; '+hre : '--')+'</dd></div>'+
+        '<div class="k"><dt>Breaths</dt><dd class="mono">'+S.breaths+'</dd></div>'+
+        '<div class="k"><dt>Length</dt><dd class="mono">'+mins+'<small> min</small></dd></div>'+
+      '</dl>'+
+      '<div class="chartbox" id="sumChart" style="height:150px"></div>'+
+      '<div class="legend"><span><i style="background:var(--chart-1)"></i>Your breath</span>'+
+        '<span><i style="background:var(--muted-foreground)"></i>Your heart rate</span>'+
+        '<span><i style="background:color-mix(in oklab, var(--chart-1) 22%, transparent)"></i>In lock</span></div>'+
+      '<div class="actions"><button class="btn" id="sumSave">Save to history</button>'+
+        '<button class="btn outline" id="sumDrop">Discard</button></div>'+
+    '</div>';
+  $('#sPause', overlay).hidden = true;
+  $('#sFace', overlay).hidden = true;
+  drawRing(coh);
+  drawSumChart();
+  $('#sumSave', overlay).addEventListener('click', function(){ saveSession(coh, lockPct, hrs, hre, mins); });
+  $('#sumDrop', overlay).addEventListener('click', closeOverlay);
+}
+function drawRing(pct){
+  var svg = $('#sumRing', overlay);
+  svg.innerHTML = '';
+  svg.appendChild(el('circle', { cx:50, cy:50, r:42, fill:'none', stroke:'var(--input)', 'stroke-width':'8' }));
+  var C = 2*Math.PI*42;
+  var arc = el('circle', { cx:50, cy:50, r:42, fill:'none', stroke:'var(--chart-1)', 'stroke-width':'8',
+    'stroke-linecap':'round', transform:'rotate(-90 50 50)',
+    'stroke-dasharray':C, 'stroke-dashoffset':C });
+  svg.appendChild(arc);
+  var target = C*(1 - clamp(pct,0,100)/100);
+  if(RM.matches){ arc.setAttribute('stroke-dashoffset', target); return; }
+  arc.style.transition = 'stroke-dashoffset .9s var(--ease-chart)';
+  requestAnimationFrame(function(){ arc.setAttribute('stroke-dashoffset', target); });
+}
+function drawSumChart(){
+  var host = $('#sumChart', overlay);
+  var w = host.clientWidth || 600, h = 150;
+  var svg = el('svg', { viewBox:'0 0 '+w+' '+h, preserveAspectRatio:'none' });
+  var d = S.full, n = d.length;
+  if(n < 3){ host.innerHTML = ''; host.appendChild(svg); return; }
+
+  var top = 14, bot = h-14, mid = (top+bot)/2, span = bot-top, i;
+  var mn = Infinity, mx = -Infinity;
+  for(i=0;i<n;i++){ if(d[i].hr<mn) mn=d[i].hr; if(d[i].hr>mx) mx=d[i].hr; }
+  var centre = (mn+mx)/2, half = Math.max(6, (mx-mn)/2 + 1);
+
+  var pp = [], hp = [];
+  for(i=0;i<n;i++){
+    var x = (i/(n-1))*w;
+    pp.push(x.toFixed(1)+','+(bot - d[i].p*span).toFixed(1));
+    hp.push(x.toFixed(1)+','+(mid - ((d[i].hr-centre)/half)*(span*0.42)).toFixed(1));
+  }
+  // lock bands
+  var start = null;
+  for(i=0;i<n;i++){
+    if(d[i].lock && start===null) start = i;
+    if((!d[i].lock || i===n-1) && start!==null){
+      var x1 = (start/(n-1))*w, x2 = (i/(n-1))*w;
+      svg.appendChild(el('rect', { x:x1, y:0, width:Math.max(1,x2-x1), height:h,
+        fill:'var(--chart-1)', opacity:'.10' }));
+      start = null;
+    }
+  }
+  svg.appendChild(el('polyline', { points:hp.join(' '), fill:'none', stroke:'var(--muted-foreground)',
+    'stroke-width':'1.6', 'stroke-linejoin':'round', opacity:'.85' }));
+  svg.appendChild(el('polyline', { points:pp.join(' '), fill:'none', stroke:'var(--chart-1)',
+    'stroke-width':'2', 'stroke-linejoin':'round' }));
+  host.innerHTML = ''; host.appendChild(svg);
+}
+function saveSession(coh, lockPct, hrs, hre, mins){
+  SESSIONS.unshift({ date:'19 Sep', mode:S.mode.name, mins:mins, coh:coh, lock:lockPct,
+    hrs:hrs||0, hre:hre||0, week:38 });
+  persistSessions();
+  renderHistory();
+  var body = $('#sBody', overlay);
+  body.innerHTML =
+    '<div class="away">'+
+      '<span class="badge ok">Saved</span>'+
+      '<b>Put the phone away.</b>'+
+      '<p>That is the whole session. Nothing else to do here, and nothing else worth reading before you walk on.</p>'+
+      '<button class="btn outline" id="awayClose">Close</button>'+
+    '</div>';
+  $('#awayClose', overlay).addEventListener('click', closeOverlay);
+}
+function closeOverlay(){
+  if(overlay){ overlay.remove(); overlay = null; }
+  overlayDismiss = null;
+  S = null;
+  if(lastFocus && lastFocus.getClientRects().length){ lastFocus.focus(); }
+  lastFocus = null;
+}
+$('#startBtn').addEventListener('click', startSession);
+
+/* ══════════════════════════════════════════════════════════════
+   RATE TEST
+═══════════════════════════════════════════════════════════════ */
+var RATES = [6.5, 6.0, 5.5, 5.0, 4.5];
+var demoSpeed = true;
+var test = null;
+
+function renderRatePane(){
+  var c = $('#rateCard');
+  c.innerHTML =
+    '<div class="ch"><div class="row"><h2>Your resonance rate</h2>'+
+      '<span class="badge lime">'+rateResult.bpm.toFixed(1)+' a minute</span></div>'+
+      '<p>Measured '+rateResult.date+'. Five blocks of breathing, one at each rate, while the app watches how far your heart rate swings. The widest swing wins.</p></div>'+
+    '<div class="full chartbox" id="rateChart" style="height:190px"></div>'+
+    '<div class="legend"><span><i style="background:var(--chart-1)"></i>Your rate</span>'+
+      '<span><i style="background:var(--chart-4)"></i>Other rates tested</span><span>Bars are the heart rate swing, bpm</span></div>'+
+    '<div class="item"><div class="srow">'+
+      '<div class="st"><b>Demo speed</b><span>Blocks run for 30 seconds instead of two minutes, so the whole test takes two and a half.</span></div>'+
+      '<button class="sw" id="demoSw" role="switch" aria-checked="'+(demoSpeed?'true':'false')+'" aria-label="Demo speed"></button>'+
+    '</div></div>'+
+    '<div class="actions"><button class="btn outline" id="retestBtn">'+svgIcon('redo',15)+' Run the test again</button></div>';
+  drawRateChart($('#rateChart'), rateResult);
+  $('#demoSw').addEventListener('click', function(){
+    demoSpeed = !demoSpeed; this.setAttribute('aria-checked', demoSpeed?'true':'false');
+  });
+  $('#retestBtn').addEventListener('click', startTest);
+}
+function drawRateChart(host, result){
+  if(!host) return;
+  var w = host.clientWidth || 600, h = 190;
+  var svg = el('svg', { viewBox:'0 0 '+w+' '+h });
+  var pad = { l:40, r:14, t:14, b:34 };
+  var iw = w-pad.l-pad.r, ih = h-pad.t-pad.b;
+  var b = result.blocks, i;
+  var mx = 0; for(i=0;i<b.length;i++) mx = Math.max(mx, b[i].amp);
+  var top = Math.ceil(mx/4)*4 + 4;
+
+  for(i=0;i<=top;i+=4){
+    var y = pad.t + ih - (i/top)*ih;
+    svg.appendChild(el('line', { x1:pad.l, y1:y, x2:w-pad.r, y2:y, stroke:'var(--chart-grid)', 'stroke-width':'1' }));
+    svg.appendChild(el('text', { x:pad.l-8, y:y+4, 'text-anchor':'end', fill:'var(--muted-foreground)',
+      'font-size':'11', 'font-family':'Geist Mono, monospace' }, String(i)));
+  }
+  var bw = iw/b.length;
+  b.forEach(function(d, k){
+    var bh = (d.amp/top)*ih;
+    var x = pad.l + k*bw + bw*0.22, bwid = bw*0.56;
+    var win = Math.abs(d.f - result.bpm) < 0.01;
+    var r = el('rect', { x:x, y:pad.t+ih-bh, width:bwid, height:bh, rx:5,
+      fill: win ? 'var(--chart-1)' : 'var(--chart-4)' });
+    svg.appendChild(r);
+    svg.appendChild(el('text', { x:x+bwid/2, y:pad.t+ih-bh-7, 'text-anchor':'middle',
+      fill: win ? 'var(--chart-2)' : 'var(--muted-foreground)', 'font-size':'11.5',
+      'font-family':'Geist Mono, monospace' }, d.amp.toFixed(1)));
+    svg.appendChild(el('text', { x:x+bwid/2, y:h-13, 'text-anchor':'middle',
+      fill: win ? 'var(--foreground)' : 'var(--muted-foreground)', 'font-size':'12' }, d.f.toFixed(1)));
+  });
+  svg.appendChild(el('text', { x:w/2, y:h-1, 'text-anchor':'middle', fill:'var(--muted-foreground)',
+    'font-size':'11' }, 'Breaths a minute'));
+  host.innerHTML = ''; host.appendChild(svg);
+}
+
+function startTest(){
+  noiseState = 0;
+  phaseW = 0;
+  test = { i:0, t:0, blockLen: demoSpeed ? 30 : 120, results:[], hr:[], pc:[], coh:0, raf:0, last:0, acc:0 };
+  overlay = document.createElement('div');
+  overlay.className = 'sess';
+  overlay.innerHTML =
+    '<div class="shd"><span class="sname">Finding your rate</span>'+
+      '<span class="badge" id="tBlock">Block 1 of 5</span>'+
+      '<span class="sright"><button class="icon" id="tClose" aria-label="Stop the test">'+svgIcon('x')+'</button></span></div>'+
+    '<div class="sbody">'+
+      '<div class="rail" id="tRail"></div>'+
+      '<div class="panel" id="sPanel" style="min-height:170px">'+
+        '<div class="cue"><b id="sCue">Breathe in</b><span id="tRate"></span></div></div>'+
+      '<dl class="readout">'+
+        '<div class="r"><dt>Rate</dt><dd class="mono" id="tR">--</dd></div>'+
+        '<div class="r"><dt>Heart rate swing</dt><dd class="mono" id="tS">--<small> bpm</small></dd></div>'+
+        '<div class="r"><dt>Block time left</dt><dd class="mono" id="tT">0:00</dd></div>'+
+      '</dl>'+
+      '<div class="sfoot"><button class="btn outline" id="tStop">Stop the test</button>'+
+        '<button class="btn ghost sm proto" id="tSkip">Prototype: finish this block</button></div>'+
+    '</div>';
+  openOverlay(overlay, 'Resonance rate test', null, '#retestBtn');
+  var rail = $('#tRail', overlay);
+  RATES.forEach(function(){ var d = document.createElement('div'); d.className='sl'; d.innerHTML='<i></i>'; rail.appendChild(d); });
+
+  S = { svg:null, w:0, h:0 };
+  var p = $('#sPanel', overlay);
+  var svg = el('svg', { preserveAspectRatio:'none' });
+  svg.appendChild(el('polyline', { id:'hrLine', fill:'none', stroke:'var(--muted-foreground)', 'stroke-width':'1.8',
+    'stroke-linejoin':'round', opacity:'.85' }));
+  svg.appendChild(el('polyline', { id:'pcLine', fill:'none', stroke:'var(--chart-1)', 'stroke-width':'2.4',
+    'stroke-linejoin':'round' }));
+  svg.appendChild(el('circle', { id:'pcBall', r:'6', fill:'var(--chart-1)' }));
+  p.insertBefore(svg, p.firstChild);
+  S.svg = svg;
+  var ro = new ResizeObserver(function(){ S.w = p.clientWidth; S.h = p.clientHeight;
+    svg.setAttribute('viewBox','0 0 '+S.w+' '+S.h); });
+  ro.observe(p);
+  S.w = p.clientWidth; S.h = p.clientHeight; svg.setAttribute('viewBox','0 0 '+S.w+' '+S.h);
+
+  $('#tClose', overlay).addEventListener('click', function(){ test=null; closeOverlay(); });
+  $('#tStop', overlay).addEventListener('click', function(){ test=null; closeOverlay(); });
+  $('#tSkip', overlay).addEventListener('click', function(){
+    if(!test) return;
+    var need = Math.ceil((test.blockLen - test.t)*HZ), at = test.i;
+    for(var i=0;i<need;i++){ if(!test || test.i !== at) break; tStep(1/HZ); }
+  });
+  test.raf = requestAnimationFrame(tFrame);
+}
+function tFrame(ts){
+  if(!test) return;
+  if(!test.last) test.last = ts;
+  var dt = Math.min(0.25, (ts-test.last)/1000); test.last = ts;
+  test.acc += dt;
+  while(test.acc >= 1/HZ){ tStep(1/HZ); test.acc -= 1/HZ; if(!test) return; }
+  if(test) tDraw();
+  if(test) test.raf = requestAnimationFrame(tFrame);
+}
+function tStep(dt){
+  var f = RATES[test.i];
+  test.t += dt;
+  var T = 60/f, c = (test.t % T)/T;
+  var p = pacerPos(c, 1, 1);
+  var hr = simHr(test.t + 60, f, c);
+  test.hr.push(hr); test.pc.push(p);
+  if(test.hr.length > WIN){ test.hr.shift(); test.pc.shift(); }
+
+  if(test.t >= test.blockLen){
+    var amp = Math.max(0.5, rsaMeasure(test.hr, f, 1/HZ));
+    test.results.push({ f:f, amp:Math.round(amp*10)/10 });
+    $$('#tRail .sl i', overlay)[test.i].style.width = '100%';
+    test.i++; test.t = 0; test.hr = []; test.pc = []; noiseState = 0; phaseW = 0;
+    beep(494, .16);
+    if(test.i >= RATES.length){ finishTest(); return; }
+  }
+}
+function tDraw(){
+  var f = RATES[test.i];
+  $('#tBlock', overlay).textContent = 'Block '+(test.i+1)+' of '+RATES.length;
+  $('#tRate', overlay).textContent = f.toFixed(1)+' breaths a minute';
+  $('#tR', overlay).textContent = f.toFixed(1);
+  var n = test.hr.length;
+  if(n > 60){
+    $('#tS', overlay).innerHTML = rsaMeasure(test.hr, f, 1/HZ).toFixed(1)+'<small> bpm</small>';
+  }
+  var left = Math.max(0, test.blockLen - test.t);
+  $('#tT', overlay).textContent = Math.floor(left/60)+':'+String(Math.floor(left%60)).padStart(2,'0');
+  $$('#tRail .sl i', overlay)[test.i].style.width = (test.t/test.blockLen*100)+'%';
+
+  var T = 60/f, c = (test.t % T)/T;
+  $('#sCue', overlay).textContent = c < 0.5 ? 'Breathe in' : 'Breathe out';
+
+  if(!S.w || n < 2) return;
+  var w = S.w, h = S.h, top = h*0.16, bot = h*0.84, mid=(top+bot)/2, span = bot-top, i;
+  var centre = 0; for(i=0;i<n;i++) centre += test.hr[i]; centre /= n;
+  var right = w - 7;
+  var pts = [], hp = [];
+  for(i=0;i<n;i++){
+    var x = right - ((n-1-i)/(WIN-1))*right;
+    pts.push(x.toFixed(1)+','+(bot - test.pc[i]*span).toFixed(1));
+    hp.push(x.toFixed(1)+','+(mid - clamp((test.hr[i]-centre)/9,-1.25,1.25)*(span*0.38)).toFixed(1));
+  }
+  $('#pcLine', S.svg).setAttribute('points', pts.join(' '));
+  $('#hrLine', S.svg).setAttribute('points', hp.join(' '));
+  $('#pcBall', S.svg).setAttribute('cx', right.toFixed(1));
+  $('#pcBall', S.svg).setAttribute('cy', (bot - test.pc[n-1]*span).toFixed(1));
+}
+function finishTest(){
+  var res = test.results.slice();
+  var best = res[0], i;
+  for(i=1;i<res.length;i++){ if(res[i].amp > best.amp) best = res[i]; }
+  test = null;
+  var today = '19 Sep 2026';
+  var pending = { bpm:best.f, date:today, blocks:res };
+
+  var body = $('.sbody', overlay);
+  body.innerHTML =
+    '<div class="sum">'+
+      '<div><div class="bigrate">'+best.f.toFixed(1)+' <small>breaths a minute</small></div>'+
+      '<p style="color:var(--muted-foreground);margin-top:6px;max-width:52ch">Your heart rate swung widest here, '+
+      best.amp.toFixed(1)+' bpm from trough to peak. That is your rate until something changes: illness, a long break, a jump in fitness.</p></div>'+
+      '<div class="chartbox" id="tResChart" style="height:190px"></div>'+
+      '<div class="legend"><span><i style="background:var(--chart-1)"></i>Your rate</span>'+
+        '<span><i style="background:var(--chart-4)"></i>Other rates tested</span><span>Bars are the heart rate swing, bpm</span></div>'+
+      '<div class="actions"><button class="btn" id="tSave">Save this rate</button>'+
+        '<button class="btn outline" id="tDrop">Discard</button></div>'+
+    '</div>';
+  drawRateChart($('#tResChart', overlay), pending);
+  beep(587, .3);
+
+  $('#tSave', overlay).addEventListener('click', function(){
+    rateResult = pending;
+    store('pc.res', JSON.stringify(rateResult));
+    paintRateChip(); renderRatePane(); closeOverlay();
+    toast('Rate saved: '+pending.bpm.toFixed(1)+' breaths a minute');
+  });
+  $('#tDrop', overlay).addEventListener('click', closeOverlay);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   HISTORY
+═══════════════════════════════════════════════════════════════ */
+var SESSIONS = [
+  { date:'18 Sep', mode:'Before you go on', mins:5, coh:81, lock:74, hrs:76, hre:64, week:38 },
+  { date:'17 Sep', mode:'Changeover',       mins:2, coh:72, lock:58, hrs:88, hre:79, week:38 },
+  { date:'16 Sep', mode:'After the match',  mins:8, coh:77, lock:69, hrs:81, hre:63, week:38 },
+  { date:'14 Sep', mode:'Before you go on', mins:5, coh:79, lock:71, hrs:75, hre:65, week:37 },
+  { date:'12 Sep', mode:'Changeover',       mins:2, coh:68, lock:52, hrs:90, hre:82, week:37 },
+  { date:'11 Sep', mode:'After the match',  mins:8, coh:74, lock:66, hrs:84, hre:66, week:37 },
+  { date:'09 Sep', mode:'Before you go on', mins:5, coh:70, lock:61, hrs:78, hre:67, week:37 },
+  { date:'05 Sep', mode:'Before you go on', mins:5, coh:63, lock:49, hrs:79, hre:69, week:36 },
+  { date:'04 Sep', mode:'Changeover',       mins:2, coh:57, lock:38, hrs:91, hre:85, week:36 },
+  { date:'01 Sep', mode:'Before you go on', mins:5, coh:61, lock:45, hrs:80, hre:70, week:36 },
+  { date:'28 Aug', mode:'After the match',  mins:8, coh:54, lock:36, hrs:83, hre:70, week:35 },
+  { date:'27 Aug', mode:'Before you go on', mins:5, coh:50, lock:31, hrs:81, hre:72, week:35 },
+  { date:'25 Aug', mode:'Before you go on', mins:5, coh:46, lock:24, hrs:82, hre:74, week:35 },
+  { date:'23 Aug', mode:'Before you go on', mins:5, coh:44, lock:20, hrs:84, hre:76, week:34 }
+];
+var SAMPLE = JSON.stringify(SESSIONS);
+try{ var sv = store('pc.breath'); if(sv) SESSIONS = JSON.parse(sv); }catch(e){}
+function persistSessions(){ store('pc.breath', JSON.stringify(SESSIONS)); }
+
+function weekly(){
+  var by = {}, order = [];
+  SESSIONS.forEach(function(s){
+    if(!by[s.week]){ by[s.week] = []; order.push(s.week); }
+    by[s.week].push(s.coh);
+  });
+  order.sort(function(a,b){ return a-b; });
+  return order.map(function(w){
+    var a = by[w], s = 0; a.forEach(function(v){ s += v; });
+    return { week:w, avg: Math.round(s/a.length) };
+  });
+}
+function drawTrend(){
+  var host = $('#trendChart'); if(!host) return;
+  var w = host.clientWidth || 600, h = 200;
+  var d = weekly(); if(d.length < 2){ host.innerHTML=''; return; }
+  var svg = el('svg', { viewBox:'0 0 '+w+' '+h });
+  var pad = { l:38, r:16, t:16, b:30 };
+  var iw = w-pad.l-pad.r, ih = h-pad.t-pad.b;
+  var lo = 40, hi = 90, i;
+
+  for(i=lo;i<=hi;i+=10){
+    var y = pad.t + ih - ((i-lo)/(hi-lo))*ih;
+    svg.appendChild(el('line', { x1:pad.l, y1:y, x2:w-pad.r, y2:y, stroke:'var(--chart-grid)', 'stroke-width':'1' }));
+    svg.appendChild(el('text', { x:pad.l-8, y:y+4, 'text-anchor':'end', fill:'var(--muted-foreground)',
+      'font-size':'11', 'font-family':'Geist Mono, monospace' }, i+'%'));
+  }
+  var pts = d.map(function(p, k){
+    var x = pad.l + (d.length===1 ? iw/2 : (k/(d.length-1))*iw);
+    var y = pad.t + ih - ((clamp(p.avg,lo,hi)-lo)/(hi-lo))*ih;
+    return [x, y];
+  });
+  var defs = el('defs');
+  var g = el('linearGradient', { id:'gTrend_trendChart', x1:'0', y1:'0', x2:'0', y2:'1' });
+  g.appendChild(el('stop', { offset:'0%', 'stop-color':'var(--chart-1)', 'stop-opacity':'.28' }));
+  g.appendChild(el('stop', { offset:'100%', 'stop-color':'var(--chart-1)', 'stop-opacity':'0' }));
+  defs.appendChild(g); svg.appendChild(defs);
+  svg.appendChild(el('path', { d:'M'+pts[0][0]+','+(pad.t+ih)+' L'+pts.map(function(p){return p[0]+','+p[1];}).join(' L')+
+    ' L'+pts[pts.length-1][0]+','+(pad.t+ih)+' Z', fill:'url(#gTrend_trendChart)', stroke:'none' }));
+  svg.appendChild(el('polyline', { points:pts.map(function(p){return p[0]+','+p[1];}).join(' '),
+    fill:'none', stroke:'var(--chart-1)', 'stroke-width':'2.4', 'stroke-linejoin':'round', 'stroke-linecap':'round' }));
+  pts.forEach(function(p, k){
+    var last = k===pts.length-1;
+    svg.appendChild(el('circle', { cx:p[0], cy:p[1], r: last?5:3.2, fill: last?'var(--chart-1)':'var(--background)',
+      stroke:'var(--chart-1)', 'stroke-width':'2' }));
+    svg.appendChild(el('text', { x:p[0], y:h-11, 'text-anchor':'middle', fill:'var(--muted-foreground)',
+      'font-size':'11' }, 'Wk '+d[k].week));
+  });
+  var lastP = pts[pts.length-1];
+  svg.appendChild(el('text', { x:lastP[0], y:lastP[1]-12, 'text-anchor':'end', fill:'var(--chart-2)',
+    'font-size':'12', 'font-family':'Geist Mono, monospace' }, d[d.length-1].avg+'%'));
+  host.innerHTML = ''; host.appendChild(svg);
+}
+function renderHistory(){
+  $('#sessCount').textContent = SESSIONS.length;
+  var tot = 0, best = 0, mins = 0;
+  SESSIONS.forEach(function(s){ tot += s.coh; best = Math.max(best, s.coh); mins += s.mins; });
+  var avg = SESSIONS.length ? Math.round(tot/SESSIONS.length) : 0;
+  $('#histKv').innerHTML =
+    '<div class="k"><dt>Average coherence</dt><dd class="mono">'+avg+'<small>%</small></dd></div>'+
+    '<div class="k"><dt>Best session</dt><dd class="mono">'+best+'<small>%</small></dd></div>'+
+    '<div class="k"><dt>Time breathing</dt><dd class="mono">'+mins+'<small> min</small></dd></div>';
+  var list = $('#histList'); list.innerHTML = '';
+  SESSIONS.forEach(function(s){
+    var row = document.createElement('div');
+    row.className = 'hrow';
+    var drop = s.hrs && s.hre ? (s.hrs - s.hre) : 0;
+    row.innerHTML =
+      '<span class="hm"><b>'+s.mode+'</b><span>'+s.mins+' min · '+s.lock+'% in lock'+
+        (drop>0 ? ' · heart rate down '+drop+' bpm' : '')+'</span></span>'+
+      '<span class="hc mono">'+s.coh+'%</span>'+
+      '<span class="hd">'+s.date+'</span>';
+    list.appendChild(row);
+  });
+  drawTrend();
+}
+$('#resetBtn').addEventListener('click', function(){
+  SESSIONS = JSON.parse(SAMPLE);
+  persistSessions();
+  renderHistory();
+  toast('History reset to the fourteen sample sessions');
+});
+renderHistory();
+renderRatePane();
+
+window.addEventListener('resize', function(){
+  clearTimeout(window.__rz);
+  window.__rz = setTimeout(function(){
+    drawTrend(); drawRateChart($('#rateChart'), rateResult); drawSxTrend();
+  }, 140);
+});
+
+/* ══════════════════════════════════════════════════════════════
+   SIXTEEN
+   The gap between points. Rehearse the four phases, then measure
+   what actually happens on court.
+═══════════════════════════════════════════════════════════════ */
+
+var SHOT_CLOCK = 25;   // the serve clock, ATP, WTA and ITF
+var PH = [
+  { n:'Positive response', s:4, t:'Turn to the baseline. Head and shoulders up, racquet at the throat in your other hand.' },
+  { n:'Relaxation',        s:5, t:'Walk to the back fence. Eyes on the strings. Keep moving, stay loose.' },
+  { n:'Preparation',       s:5, t:'Three feet behind the baseline. Strong stance. Say the score out loud and see the point.' },
+  { n:'Ritual',            s:4, t:'Your bounces, the same number every time. Then serve.' }
+];
+var REPS = [3, 5, 8];
+var repIdx = 1;
+var CAP = [
+  { id:'listen', name:'Listen',      icon:'mic',  meta:'Gaps only',
+    desc:'Phone on the fence. Finds the points from the sound of the ball. Gives you the gaps, not who won them.' },
+  { id:'tap',    name:'Tap it in',   icon:'hand', meta:'Everything',
+    desc:'You or your coach tap won, lost and serve. The only mode that can show what happens after a loss.' },
+  { id:'sample', name:'Sample set',  icon:'rows', meta:'No court needed',
+    desc:'A practice set from last Tuesday, so you can read the summary without going outside.' }
+];
+var capMode = 'sample';
+
+var sxPrefs = { share:true, dismissed:false };
+try{ var sp2 = store('pc.sxprefs'); if(sp2) sxPrefs = JSON.parse(sp2); }catch(e){}
+function saveSxPrefs(){ store('pc.sxprefs', JSON.stringify(sxPrefs)); }
+
+/* ── Small stats helpers ── */
+function sxMedian(a){
+  if(!a.length) return null;
+  var b = a.slice().sort(function(x,y){ return x-y; }), m = Math.floor(b.length/2);
+  return b.length % 2 ? b[m] : (b[m-1]+b[m])/2;
+}
+function sxMean(a){ var s2=0,i; for(i=0;i<a.length;i++) s2+=a[i]; return a.length? s2/a.length : 0; }
+function sxSd(a){ var m=sxMean(a), s2=0, i; for(i=0;i<a.length;i++) s2+=(a[i]-m)*(a[i]-m); return a.length>1? Math.sqrt(s2/(a.length-1)) : 0; }
+var RND = Math.random;
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function withSeed(seed, fn){
+  var prev = RND; RND = mulberry32(seed);
+  try{ return fn(); } finally { RND = prev; }
+}
+function randn(){ var u=1-RND(), v=RND(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+
+/* ── One rule for what a gap is, used by every capture path ──
+   Below GAP_MIN it is a mis-tap or a stray strike. At or above
+   CHANGEOVER_MIN it is a changeover or a set break, which is not a
+   gap between points and is not governed by the 25-second clock.
+------------------------------------------------------------- */
+var GAP_MIN = 4, GAP_MAX = 200, CHANGEOVER_MIN = 45;
+function classifyGap(iv){
+  if(iv == null || iv < GAP_MIN || iv > GAP_MAX) return { interval:null, changeover:false };
+  return { interval: Math.round(iv*10)/10, changeover: iv >= CHANGEOVER_MIN };
+}
+
+/* ── Sample set ──────────────────────────────────────────────
+   A practice set with the effect we are looking for built in:
+   the gap shortens after a lost point, most of all on serve.
+------------------------------------------------------------- */
+function sampleSet(n, rush, spread){
+  spread = spread || 0.15;
+  var pts = [], serving = true, inGame = 0, gameLen = 6, games = 0, nextCo = false;
+  for(var i=0;i<n;i++){
+    var prev = i ? pts[i-1] : null;
+    var g = { interval:null, changeover:false };
+    if(prev){
+      if(nextCo){
+        nextCo = false;
+        g = classifyGap(87 + RND()*9);          // the 90 seconds they are actually given
+      } else {
+        var m = 19.6;
+        if(prev.won === false) m -= (prev.serving ? rush : rush*0.45);
+        if(!serving) m -= 0.9;
+        var iv = m * Math.exp(randn()*spread);
+        if(RND() < 0.05) iv += 6 + RND()*9;      // towel, ball change, a long look at the coach
+        g = classifyGap(clamp(iv, 7.5, 40));
+      }
+    }
+    pts.push({ i:i, interval:g.interval, changeover:g.changeover, serving:serving,
+               won: RND() < 0.52, prevWon: prev ? prev.won : null });
+    inGame++;
+    if(inGame >= gameLen){
+      inGame = 0; serving = !serving; games++;
+      if(games % 2 === 1) nextCo = true;         // changeover after every odd game
+      gameLen = 4 + Math.floor(RND()*6);
+    }
+  }
+  return pts;
+}
+
+function sxStats(pts){
+  var co = pts.filter(function(p){ return p.changeover; }).length;
+  var iv = pts.filter(function(p){ return p.interval != null && !p.changeover; });
+  if(iv.length < 4) return null;
+  var srv = iv.filter(function(p){ return p.serving === true; });
+  var useServe = srv.length >= 12;
+  var basis = useServe ? srv : iv;
+  var vals = basis.map(function(p){ return p.interval; });
+  var mean = sxMean(vals);
+  var aw = basis.filter(function(p){ return p.prevWon === true; }).map(function(p){ return p.interval; });
+  var al = basis.filter(function(p){ return p.prevWon === false; }).map(function(p){ return p.interval; });
+  var hasOut = aw.length >= 4 && al.length >= 4;
+  return {
+    n: iv.length,
+    med: Math.round(sxMedian(vals)*10)/10,
+    cv: Math.round(sxSd(vals)/mean*100),
+    afterWin: hasOut ? Math.round(sxMedian(aw)*10)/10 : null,
+    afterLoss: hasOut ? Math.round(sxMedian(al)*10)/10 : null,
+    delta: hasOut ? Math.round((sxMedian(al)-sxMedian(aw))*10)/10 : null,
+    over: iv.filter(function(p){ return p.interval > SHOT_CLOCK; }).length,
+    basis: useServe ? 'your service points' : 'all points',
+    changeovers: co, lossN: al.length, winN: aw.length
+  };
+}
+
+/* ── Seeded history ── */
+function seedSx(){
+  var out = [], spec = [
+    { date:'20 Aug', ctx:'Practice set', n:54, rush:7.4, sp:0.23 },
+    { date:'27 Aug', ctx:'Practice set', n:58, rush:6.6, sp:0.21 },
+    { date:'03 Sep', ctx:'Practice set', n:61, rush:6.1, sp:0.19 },
+    { date:'09 Sep', ctx:'Match',        n:66, rush:5.4, sp:0.17 },
+    { date:'14 Sep', ctx:'Practice set', n:57, rush:4.8, sp:0.15 },
+    { date:'18 Sep', ctx:'Practice set', n:59, rush:4.3, sp:0.13 }
+  ];
+  spec.forEach(function(sp, k){
+    var pts = withSeed(7919*(k+1) + 1234, function(){ return sampleSet(sp.n, sp.rush, sp.sp); });
+    var st = sxStats(pts);
+    out.unshift({ id:'s'+k, date:sp.date, ctx:sp.ctx, mode:'sample', pts:pts, st:st });
+  });
+  return out;
+}
+var SX = seedSx();
+var SX_SEED = JSON.stringify(SX);
+try{ var sv2 = store('pc.sx'); if(sv2) SX = JSON.parse(sv2); }catch(e){}
+function persistSx(){ try{ store('pc.sx', JSON.stringify(SX)); }catch(e){} }
+
+/* ══ Rendering the Sixteen pane ══ */
+function renderPhases(){
+  var host = $('#phaseList'); if(!host) return;
+  host.innerHTML = '';
+  PH.forEach(function(ph, k){
+    var d = document.createElement('div');
+    d.className = 'ph';
+    d.innerHTML = '<span class="pn2 mono">'+(k+1)+'</span>'+
+      '<span class="pb"><b>'+ph.n+'</b><span>'+ph.t+'</span></span>'+
+      '<span class="psec mono">'+ph.s+'s</span>';
+    host.appendChild(d);
+  });
+  var per = PH.reduce(function(a,b){ return a+b.s; }, 0);
+  $('#rehLen').textContent = Math.round(per*REPS[repIdx]) + ' seconds';
+  $('#rehReps').textContent = REPS[repIdx] + ' times through';
+}
+function renderCapModes(){
+  var host = $('#capModes'); if(!host) return;
+  host.innerHTML = '';
+  CAP.forEach(function(m){
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'mode';
+    b.setAttribute('aria-pressed', m.id === capMode ? 'true' : 'false');
+    b.innerHTML = '<span class="mk">'+svgIcon(m.icon,16)+'</span>'+
+      '<span class="mb"><b>'+m.name+'</b><span>'+m.desc+'</span></span>'+
+      '<span class="mt"><b>'+m.meta+'</b></span>';
+    b.addEventListener('click', function(){ capMode = m.id; renderCapModes(); });
+    host.appendChild(b);
+  });
+  $('#sxSrcChip').textContent = CAP.filter(function(m){ return m.id===capMode; })[0].name;
+}
+function renderSxPattern(){
+  var host = $('#sxPatternCard'); if(!host) return;
+  var withD = SX.filter(function(x){ return x.st && x.st.delta != null; });
+  if(withD.length < 3){
+    host.innerHTML = '<div class="ch"><div class="row"><h2>Not enough sets yet</h2></div>'+
+      '<p>Three sets with outcomes and Sixteen can tell you whether the routine survives a lost point. Tap mode is the one that records them.</p></div>';
+    return;
+  }
+  var deltas = withD.map(function(x){ return x.st.delta; });
+  var recent = deltas.slice(0, 3);
+  var d = Math.abs(Math.round(sxMedian(recent)*10)/10);
+  var hits = deltas.filter(function(v){ return v <= -2; }).length;
+  var conf = hits / deltas.length >= 0.6 ? 'Strong' : 'Emerging';
+  var dots = deltas.map(function(v){ return '<i class="'+(v <= -2 ? '' : 'miss')+'"></i>'; }).join('');
+  host.className = 'card pat' + (sxPrefs.dismissed ? ' off' : '');
+  host.innerHTML =
+    '<div class="ch"><div class="row"><h2>What the sets say</h2>'+
+      '<span class="badge '+(conf==='Strong'?'warn':'')+'">'+conf+'</span></div></div>'+
+    '<div class="pstate">After a point you lose, you serve '+d.toFixed(1)+' seconds sooner.</div>'+
+    '<div class="pexp">Across your last three sets, measured on '+withD[0].st.basis+'. The routine is there after a point you win and it '+
+      'goes missing after one you lose. Shorter is not the problem in itself; the problem is that it is a different routine.</div>'+
+    '<div class="dots">'+dots+'<span>'+hits+' of '+deltas.length+' sets</span></div>'+
+    (sxPrefs.dismissed
+      ? '<div class="pexp">Dismissed. It comes back if it shows up in two more sets.</div><div class="actions">'+
+        '<button class="btn outline sm" id="sxUndo">'+svgIcon('undo',14)+' Undo</button></div>'
+      : '<div class="actions">'+
+        '<button class="btn outline sm" id="sxShow">Show the last set</button>'+
+        '<button class="btn ghost sm" id="sxNot">Not a pattern</button></div>');
+  if(sxPrefs.dismissed){
+    $('#sxUndo').addEventListener('click', function(){ sxPrefs.dismissed = false; saveSxPrefs(); renderSxPattern(); });
+  } else {
+    $('#sxShow').addEventListener('click', function(){ sxSummary(SX[0].pts, { readOnly:true, label:SX[0].ctx+' · '+SX[0].date }); });
+    $('#sxNot').addEventListener('click', function(){
+      sxPrefs.dismissed = true; saveSxPrefs(); renderSxPattern();
+      toast('Okay. Dismissed, and Sixteen heard you.');
+    });
+  }
+}
+function drawSxTrend(){
+  var host = $('#sxTrend'); if(!host) return;
+  var d = SX.slice().reverse().filter(function(x){ return x.st && x.st.delta != null; });
+  if(d.length < 2){ host.innerHTML = ''; return; }
+  var w = host.clientWidth || 600, h = 200;
+  var svg = el('svg', { viewBox:'0 0 '+w+' '+h });
+  var pad = { l:40, r:16, t:16, b:30 }, iw = w-pad.l-pad.r, ih = h-pad.t-pad.b, i;
+  var lo = 0, hi = 9;
+  for(i=lo;i<=hi;i+=3){
+    var y = pad.t + ih - ((i-lo)/(hi-lo))*ih;
+    svg.appendChild(el('line', { x1:pad.l, y1:y, x2:w-pad.r, y2:y,
+      stroke: i===0 ? 'var(--border)' : 'var(--chart-grid)', 'stroke-width':'1' }));
+    svg.appendChild(el('text', { x:pad.l-8, y:y+4, 'text-anchor':'end', fill:'var(--muted-foreground)',
+      'font-size':'11', 'font-family':'Geist Mono, monospace' }, i+'s'));
+  }
+  svg.appendChild(el('text', { x:w-pad.r, y:pad.t+ih-2, 'text-anchor':'end', fill:'var(--muted-foreground)',
+    'font-size':'10.5' }, 'no difference'));
+  var pts = d.map(function(x, k){
+    return [ pad.l + (k/(d.length-1))*iw,
+             pad.t + ih - (clamp(Math.abs(x.st.delta), lo, hi)/(hi-lo))*ih ];
+  });
+  svg.appendChild(el('polyline', { points:pts.map(function(q){ return q[0]+','+q[1]; }).join(' '),
+    fill:'none', stroke:'var(--chart-1)', 'stroke-width':'2.4', 'stroke-linejoin':'round', 'stroke-linecap':'round' }));
+  pts.forEach(function(q, k){
+    var last = k === pts.length-1;
+    svg.appendChild(el('circle', { cx:q[0], cy:q[1], r: last?5:3.2, fill: last?'var(--chart-1)':'var(--background)',
+      stroke:'var(--chart-1)', 'stroke-width':'2' }));
+    svg.appendChild(el('text', { x:q[0], y:h-11, 'text-anchor':'middle', fill:'var(--muted-foreground)',
+      'font-size':'11' }, d[k].date));
+  });
+  var lastP = pts[pts.length-1];
+  svg.appendChild(el('text', { x:lastP[0], y:lastP[1]-12, 'text-anchor':'end', fill:'var(--chart-2)',
+    'font-size':'12', 'font-family':'Geist Mono, monospace' }, Math.abs(d[d.length-1].st.delta).toFixed(1)+'s'));
+  host.innerHTML = ''; host.appendChild(svg);
+}
+function renderSxHistory(){
+  $('#sxCount').textContent = SX.length;
+  var withD = SX.filter(function(x){ return x.st && x.st.delta != null; });
+  var meds = SX.filter(function(x){ return x.st; }).map(function(x){ return x.st.med; });
+  var cvs  = SX.filter(function(x){ return x.st; }).map(function(x){ return x.st.cv; });
+  var latest = SX[0] && SX[0].st;
+  $('#sxKv').innerHTML =
+    '<div class="k"><dt>Median gap</dt><dd class="mono">'+(latest? latest.med.toFixed(1):'--')+'<small>s</small></dd></div>'+
+    '<div class="k"><dt>Variation</dt><dd class="mono">'+(latest? latest.cv:'--')+'<small>%</small></dd></div>'+
+    '<div class="k"><dt>After a loss</dt><dd class="mono">'+(latest && latest.delta!=null ? latest.delta.toFixed(1)+'s' : '--')+'</dd></div>'+
+    '<div class="k"><dt>Over the clock</dt><dd class="mono">'+(latest? latest.over:'--')+'</dd></div>';
+  var list = $('#sxList'); list.innerHTML = '';
+  SX.forEach(function(x){
+    var row = document.createElement('div');
+    row.className = 'hrow';
+    var st = x.st || {};
+    row.innerHTML =
+      '<span class="hm"><b>'+x.ctx+'</b><span>'+(st.n||0)+' points · median '+
+        (st.med!=null? st.med.toFixed(1):'--')+'s · '+(st.cv!=null? st.cv:'--')+'% variation'+
+        (st.over ? ' · '+st.over+' over the clock' : '')+'</span></span>'+
+      '<span class="hc mono">'+(st.delta!=null ? st.delta.toFixed(1)+'s' : '--')+'</span>'+
+      '<span class="hd">'+x.date+'</span>';
+    row.style.cursor = 'pointer';
+    row.addEventListener('click', function(){ sxSummary(x.pts, { readOnly:true, label:x.ctx+' · '+x.date }); });
+    list.appendChild(row);
+  });
+  if(latest) $('#sxChip').innerHTML = '<span class="dot"></span>Median '+latest.med.toFixed(1)+'s · '+latest.cv+'% variation';
+  drawSxTrend();
+}
+function renderSixteen(){
+  renderPhases(); renderCapModes(); renderSxPattern(); renderSxHistory();
+}
+
+/* ══ Rehearsal ══ */
+var R = null, stillRehearse = RM.matches;
+function startRehearsal(){
+  var per = PH.reduce(function(a,b){ return a+b.s; }, 0);
+  R = { rep:0, ph:0, t:0, per:per, reps:REPS[repIdx], running:true, paused:false, raf:0, last:0 };
+  overlay = document.createElement('div');
+  overlay.className = 'sess';
+  overlay.innerHTML =
+    '<div class="shd"><span class="sname">Rehearse the routine</span>'+
+      '<span class="badge" id="rRep">Rep 1 of '+R.reps+'</span>'+
+      '<span class="sright">'+
+        '<button class="icon" id="rStill" aria-label="Still rehearsal" aria-pressed="false">'+svgIcon('still')+'</button>'+
+        '<button class="icon" id="rPause" aria-label="Pause">'+svgIcon('pause')+'</button>'+
+        '<button class="icon" id="rClose" aria-label="End rehearsal">'+svgIcon('x')+'</button></span></div>'+
+    '<div class="sbody">'+
+      '<div class="panel" id="rPanel">'+
+        '<div class="rwrap"><svg class="rring" viewBox="0 0 100 100" id="rRing" aria-hidden="true"></svg></div>'+
+        '<div class="rwrap"><div class="rcentre">'+
+          '<div class="rcountbox mono" id="rCount">4</div>'+
+          '<b id="rName">Positive response</b><span id="rText"></span></div></div>'+
+      '</div>'+
+      '<dl class="readout">'+
+        '<div class="r"><dt>Phase</dt><dd class="mono" id="rPh">1<small> of 4</small></dd></div>'+
+        '<div class="r"><dt>Seconds left</dt><dd class="mono" id="rSec">4</dd></div>'+
+        '<div class="r"><dt>Times through</dt><dd class="mono" id="rRepN">1<small> of '+R.reps+'</small></dd></div>'+
+      '</dl>'+
+      '<div class="sfoot"><button class="btn outline" id="rEnd">End rehearsal</button></div>'+
+    '</div>';
+  openOverlay(overlay, 'Rehearse the routine', null, '#rehBtn', endRehearsal);
+  buildRing();
+  $('#rClose', overlay).addEventListener('click', endRehearsal);
+  $('#rEnd', overlay).addEventListener('click', endRehearsal);
+  $('#rPause', overlay).addEventListener('click', function(){
+    if(!R) return;
+    R.paused = !R.paused;
+    this.innerHTML = svgIcon(R.paused ? 'play' : 'pause');
+    this.setAttribute('aria-label', R.paused ? 'Resume' : 'Pause');
+    if(!R.paused){ R.last = 0; R.raf = requestAnimationFrame(rFrame); }
+  });
+  $('#rStill', overlay).addEventListener('click', function(){
+    stillRehearse = !stillRehearse;
+    this.setAttribute('aria-pressed', stillRehearse ? 'true':'false');
+    $('#rPanel', overlay).classList.toggle('rstill', stillRehearse);
+    toast(stillRehearse ? 'Still rehearsal, the ring stops moving' : 'Ring back on');
+  });
+  if(stillRehearse){
+    $('#rStill', overlay).setAttribute('aria-pressed','true');
+    $('#rPanel', overlay).classList.add('rstill');
+  }
+  beep(523, .2); buzz(24);
+  R.raf = requestAnimationFrame(rFrame);
+}
+function buildRing(){
+  var svg = $('#rRing', overlay);
+  svg.innerHTML = '';
+  var C = 2*Math.PI*44, seg = C*84/360, k;
+  for(k=0;k<4;k++){
+    svg.appendChild(el('circle', { cx:50, cy:50, r:44, fill:'none', stroke:'var(--input)', 'stroke-width':'7',
+      'stroke-linecap':'round', 'stroke-dasharray':seg.toFixed(2)+' '+(C*2).toFixed(2),
+      transform:'rotate('+(k*90-87)+' 50 50)' }));
+    svg.appendChild(el('circle', { id:'rSeg'+k, cx:50, cy:50, r:44, fill:'none', stroke:'var(--chart-1)', 'stroke-width':'7',
+      'stroke-linecap':'round', 'stroke-dasharray':'0 '+(C*2).toFixed(2),
+      transform:'rotate('+(k*90-87)+' 50 50)' }));
+  }
+}
+function rFrame(ts){
+  if(!R || !R.running || R.paused) return;
+  if(!R.last) R.last = ts;
+  var dt = Math.min(0.25, (ts-R.last)/1000); R.last = ts;
+  R.t += dt;
+  var cur = PH[R.ph];
+  if(R.t >= cur.s){
+    R.t = 0; R.ph++;
+    if(R.ph >= PH.length){
+      R.ph = 0; R.rep++;
+      if(R.rep >= R.reps){ finishRehearsal(); return; }
+      beep(659, .22); buzz(34);
+    } else { beep(494, .16); buzz(18); }
+  }
+  rDraw();
+  R.raf = requestAnimationFrame(rFrame);
+}
+function rDraw(){
+  var C = 2*Math.PI*44, seg = C*84/360, k;
+  for(k=0;k<4;k++){
+    var f = k < R.ph ? 1 : (k === R.ph ? clamp(R.t/PH[k].s, 0, 1) : 0);
+    var e2 = $('#rSeg'+k, overlay);
+    if(e2){
+      e2.setAttribute('stroke-dasharray', (f*seg).toFixed(2)+' '+(C*2).toFixed(2));
+      e2.setAttribute('stroke-opacity', f < 0.004 ? '0' : '1');
+    }
+  }
+  var cur = PH[R.ph];
+  $('#rName', overlay).textContent = cur.n;
+  $('#rText', overlay).textContent = cur.t;
+  $('#rPh', overlay).innerHTML = (R.ph+1)+'<small> of 4</small>';
+  var left = Math.max(0, Math.ceil(cur.s - R.t));
+  $('#rSec', overlay).textContent = left;
+  var rc = $('#rCount', overlay); if(rc) rc.textContent = left;
+  $('#rRepN', overlay).innerHTML = (R.rep+1)+'<small> of '+R.reps+'</small>';
+  $('#rRep', overlay).textContent = 'Rep '+(R.rep+1)+' of '+R.reps;
+}
+function finishRehearsal(){
+  R.running = false;
+  if(R.raf) cancelAnimationFrame(R.raf);
+  beep(784, .3);
+  $('.sbody', overlay).innerHTML =
+    '<div class="away">'+
+      '<span class="badge ok">Done</span>'+
+      '<b>'+R.reps+' times through.</b>'+
+      '<p>Same four phases, same order, every point. The only thing that should change out there is the score you say out loud.</p>'+
+      '<button class="btn outline" id="rDone">Close</button>'+
+    '</div>';
+  $('#rDone', overlay).addEventListener('click', closeOverlay);
+}
+function endRehearsal(){
+  if(!R) { closeOverlay(); return; }
+  if(R.running){ R.running = false; if(R.raf) cancelAnimationFrame(R.raf); }
+  R = null; closeOverlay();
+}
+
+/* ══ Microphone onset detection ══════════════════════════════
+   Ball strikes are sharp broadband transients. Spectral flux in
+   the 1.5 to 8 kHz band against an adaptive threshold finds them.
+   The audio itself is never kept: only the onset times.
+------------------------------------------------------------- */
+var SENS = [ { n:'High', k:2.2 }, { n:'Normal', k:3.2 }, { n:'Low', k:4.6 } ];
+var mic = { on:false, stream:null, ctx:null, an:null, buf:null, prev:null, hist:[], onsets:[],
+            last:0, level:0, sens:1, raf:0, t0:0 };
+function micStop(){
+  mic.on = false;
+  if(mic.raf) cancelAnimationFrame(mic.raf);
+  if(mic.stream){ mic.stream.getTracks().forEach(function(t){ t.stop(); }); mic.stream = null; }
+  if(mic.ctx){ try{ mic.ctx.close(); }catch(e){} mic.ctx = null; }
+}
+function micStart(cb){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ cb(false); return; }
+  navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false } })
+    .then(function(st){
+      mic.stream = st;
+      mic.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      var src = mic.ctx.createMediaStreamSource(st);
+      mic.an = mic.ctx.createAnalyser();
+      mic.an.fftSize = 1024; mic.an.smoothingTimeConstant = 0;
+      src.connect(mic.an);
+      mic.buf = new Float32Array(mic.an.frequencyBinCount);
+      mic.prev = new Float32Array(mic.an.frequencyBinCount);
+      var binHz = (mic.ctx.sampleRate || 48000) / mic.an.fftSize;
+      mic.lo = Math.max(1, Math.round(1500/binHz));
+      mic.hi = Math.min(mic.an.frequencyBinCount-1, Math.round(8000/binHz));
+      for(var i=0;i<mic.prev.length;i++) mic.prev[i] = -100;
+      mic.on = true; mic.onsets = []; mic.hist = []; mic.last = 0;
+      mic.t0 = performance.now()/1000;
+      micLoop(); cb(true);
+    })
+    .catch(function(){ cb(false); });
+}
+function micLoop(){
+  if(!mic.on) return;
+  mic.raf = requestAnimationFrame(micLoop);
+  mic.an.getFloatFrequencyData(mic.buf);
+  var lo = mic.lo, hi = mic.hi, flux = 0, lvl = 0, i, v, d;
+  for(i=lo;i<=hi;i++){
+    v = Math.max(-100, mic.buf[i]);
+    d = v - mic.prev[i];
+    if(d > 0) flux += d;
+    lvl += v + 100;
+    mic.prev[i] = v;
+  }
+  mic.level = clamp((lvl/(hi-lo+1))/55, 0, 1);
+  mic.hist.push(flux); if(mic.hist.length > 90) mic.hist.shift();
+  if(mic.hist.length < 30) return;
+  var sorted = mic.hist.slice().sort(function(a,b){ return a-b; });
+  var med = sorted[Math.floor(sorted.length/2)], mad = 0;
+  for(i=0;i<sorted.length;i++) mad += Math.abs(sorted[i]-med);
+  mad /= sorted.length;
+  var thr = med + SENS[mic.sens].k * (mad + 1);
+  var now = performance.now()/1000;
+  if(flux > thr && now - mic.last > 0.22){ mic.last = now; mic.onsets.push(now - mic.t0); }
+}
+function pointsFromOnsets(on){
+  if(on.length < 4) return [];
+  var GAP = 3.5, groups = [[on[0]]], i;
+  for(i=1;i<on.length;i++){
+    if(on[i]-on[i-1] <= GAP) groups[groups.length-1].push(on[i]);
+    else groups.push([on[i]]);
+  }
+  /* A single strike is an ace or a double fault, not noise, when it stands
+     alone between two real gaps. Dropping them biased the sample toward long
+     rallies, and aces are service points, the basis we measure on. */
+  groups = groups.filter(function(g, k){
+    if(g.length >= 2) return true;
+    var before = k > 0 ? g[0] - groups[k-1][groups[k-1].length-1] : 99;
+    var after  = k < groups.length-1 ? groups[k+1][0] - g[g.length-1] : 99;
+    return before >= GAP_MIN && after >= GAP_MIN;
+  });
+  var out = [];
+  for(i=0;i<groups.length;i++){
+    var g2 = { interval:null, changeover:false };
+    if(i > 0) g2 = classifyGap(groups[i][0] - groups[i-1][groups[i-1].length-1]);
+    out.push({ i:i, interval:g2.interval, changeover:g2.changeover, serving:null, won:null, prevWon:null });
+  }
+  return out;
+}
+
+/* ══ Mirror ══ */
+var MIR = null;
+function startMirror(){
+  if(capMode === 'sample'){ runSample(); return; }
+  if(capMode === 'listen') startListen();
+  else startTap();
+}
+
+function runSample(){
+  var pts = withSeed(20260919, function(){ return sampleSet(64, 4.8, 0.14); });
+  overlay = document.createElement('div');
+  overlay.className = 'sess';
+  overlay.innerHTML =
+    '<div class="shd"><span class="sname">Reading the set</span>'+
+      '<span class="badge">Sample</span>'+
+      '<span class="sright"><button class="icon" id="mClose" aria-label="Close">'+svgIcon('x')+'</button></span></div>'+
+    '<div class="sbody"><div class="panel" id="mPanel" style="min-height:180px"></div>'+
+      '<div class="sfoot"><button class="btn outline" id="mSkip">Skip to the summary</button></div></div>';
+  openOverlay(overlay, 'Reading the set', null, '#mirBtn', closeOverlay);
+  $('#mClose', overlay).addEventListener('click', closeOverlay);
+  var shown = 0, timer = setInterval(function(){
+    shown += 3;
+    if(!overlay){ clearInterval(timer); return; }
+    drawStrip($('#mPanel', overlay), pts.slice(0, shown), sxStats(pts), true);
+    if(shown >= pts.length){ clearInterval(timer); sxSummary(pts, { mode:'sample', ctx:'Practice set' }); }
+  }, 70);
+  $('#mSkip', overlay).addEventListener('click', function(){
+    clearInterval(timer); sxSummary(pts, { mode:'sample', ctx:'Practice set' });
+  });
+}
+
+function startListen(){
+  MIR = { pts:[], raf:0 };
+  overlay = document.createElement('div');
+  overlay.className = 'sess';
+  overlay.innerHTML =
+    '<div class="shd"><span class="sname">Listening</span>'+
+      '<span class="badge" id="lState">Starting</span>'+
+      '<span class="sright"><button class="icon" id="mClose" aria-label="Stop">'+svgIcon('x')+'</button></span></div>'+
+    '<div class="sbody">'+
+      '<div class="panel" id="mPanel" style="min-height:150px"></div>'+
+      '<div class="ticks" id="lTicks"></div>'+
+      '<div class="level"><i id="lLevel"></i></div>'+
+      '<dl class="readout">'+
+        '<div class="r"><dt>Points</dt><dd class="mono" id="lPts">0</dd></div>'+
+        '<div class="r"><dt>Last gap</dt><dd class="mono" id="lGap">--<small>s</small></dd></div>'+
+        '<div class="r"><dt>Strikes heard</dt><dd class="mono" id="lOn">0</dd></div>'+
+      '</dl>'+
+      '<div class="srow item"><div class="st"><b>Sensitivity</b><span>Lower it if a neighbouring court is being counted.</span></div>'+
+        '<div class="tg" id="lSens" style="margin-left:auto"></div></div>'+
+      '<div class="sfoot"><button class="btn outline" id="mEnd">End and see the summary</button></div>'+
+    '</div>';
+  openOverlay(overlay, 'Listening for points', null, '#mirBtn', stopListen);
+  $('#mClose', overlay).addEventListener('click', stopListen);
+  $('#mEnd', overlay).addEventListener('click', function(){
+    var pts = pointsFromOnsets(mic.onsets);
+    micStop();
+    if(pts.filter(function(p){ return p.interval!=null; }).length < 4){
+      toast('Not enough points to read. Try again closer to the court.');
+      closeOverlay(); return;
+    }
+    sxSummary(pts, { mode:'listen', ctx:'Practice set' });
+  });
+  var sensHost = $('#lSens', overlay);
+  SENS.forEach(function(sv, k){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', k===mic.sens ? 'true':'false');
+    b.textContent = sv.n;
+    b.addEventListener('click', function(){
+      mic.sens = k;
+      $$('#lSens button', overlay).forEach(function(x, j){ x.setAttribute('aria-pressed', j===k?'true':'false'); });
+    });
+    sensHost.appendChild(b);
+  });
+  micStart(function(ok){
+    if(!ok){
+      $('#lState', overlay).textContent = 'No microphone';
+      toast('Microphone not available here. Tap mode and the sample set still work.');
+      return;
+    }
+    $('#lState', overlay).textContent = 'Set in progress';
+    lLoop();
+  });
+}
+function lLoop(){
+  if(!overlay || !mic.on) return;
+  MIR.raf = requestAnimationFrame(lLoop);
+  var pts = pointsFromOnsets(mic.onsets);
+  var iv = pts.filter(function(p){ return p.interval!=null; });
+  $('#lPts', overlay).textContent = pts.length;
+  $('#lOn', overlay).textContent = mic.onsets.length;
+  $('#lGap', overlay).innerHTML = iv.length ? iv[iv.length-1].interval.toFixed(1)+'<small>s</small>' : '--<small>s</small>';
+  $('#lLevel', overlay).style.width = (mic.level*100).toFixed(0)+'%';
+  var host = $('#lTicks', overlay), now = performance.now()/1000 - mic.t0, W = host.clientWidth || 300;
+  host.innerHTML = '';
+  mic.onsets.filter(function(t){ return now - t < 8; }).forEach(function(t){
+    var i2 = document.createElement('i');
+    i2.style.left = (W * (1 - (now-t)/8)).toFixed(0)+'px';
+    host.appendChild(i2);
+  });
+  if(iv.length >= 2) drawStrip($('#mPanel', overlay), pts, sxStats(pts) || {}, true);
+}
+function stopListen(){
+  if(MIR && MIR.raf) cancelAnimationFrame(MIR.raf);
+  micStop(); MIR = null; closeOverlay();
+}
+
+function startTap(){
+  MIR = { pts:[], state:'serve', serving:true, lastEnd:null, pendWon:null };
+  overlay = document.createElement('div');
+  overlay.className = 'sess';
+  overlay.innerHTML =
+    '<div class="shd"><span class="sname">Tapping</span>'+
+      '<span class="badge" id="tState" role="status" aria-live="polite">First serve</span>'+
+      '<span class="sright">'+
+        '<button class="icon" id="tUndo" aria-label="Undo the last tap">'+svgIcon('undo')+'</button>'+
+        '<button class="icon" id="mClose" aria-label="Stop">'+svgIcon('x')+'</button></span></div>'+
+    '<div class="sbody">'+
+      '<div class="srow item"><div class="st"><b>Arya is serving this game</b><span>Flip it at each change of serve. The gap is the server\'s to set.</span></div>'+
+        '<button class="sw" id="tServe" role="switch" aria-checked="true" aria-label="Arya is serving"></button></div>'+
+      '<dl class="readout">'+
+        '<div class="r"><dt>Points</dt><dd class="mono" id="tPts">0</dd></div>'+
+        '<div class="r"><dt>Last gap</dt><dd class="mono" id="tGap">--<small>s</small></dd></div>'+
+        '<div class="r"><dt>Median</dt><dd class="mono" id="tMed">--<small>s</small></dd></div>'+
+      '</dl>'+
+      '<div class="tappad" id="tPad"></div>'+
+      '<div class="sfoot"><button class="btn outline" id="mEnd">End and see the summary</button>'+
+        '<button class="btn ghost sm proto" id="tFill">Prototype: fill with a set</button></div>'+
+    '</div>';
+  openOverlay(overlay, 'Tap the points in', null, '#mirBtn', function(){ MIR = null; closeOverlay(); });
+  $('#tFill', overlay).addEventListener('click', function(){
+    var pts = withSeed(20260918, function(){ return sampleSet(62, 4.8, 0.14); });
+    MIR = null;
+    sxSummary(pts, { mode:'tap', ctx:'Practice set' });
+  });
+  $('#mClose', overlay).addEventListener('click', function(){ MIR = null; closeOverlay(); });
+  $('#tServe', overlay).addEventListener('click', function(){
+    MIR.serving = !MIR.serving;
+    this.setAttribute('aria-checked', MIR.serving ? 'true':'false');
+  });
+  $('#tUndo', overlay).addEventListener('click', function(){
+    if(MIR.state === 'serve' && MIR.pendWon !== null){ MIR.state='point'; MIR.pendWon=null; }
+    else if(MIR.pts.length){ MIR.pts.pop(); MIR.state = MIR.pts.length ? 'point' : 'serve'; }
+    tapDraw();
+  });
+  $('#mEnd', overlay).addEventListener('click', function(){
+    var pts = MIR.pts.slice();
+    if(pts.filter(function(p){ return p.interval!=null; }).length < 4){
+      toast('Not enough points with a believable gap. Real gaps run about 10 to 25 seconds.'); return;
+    }
+    MIR = null;
+    sxSummary(pts, { mode:'tap', ctx:'Practice set' });
+  });
+  tapDraw();
+}
+function tapDraw(){
+  if(!overlay || !MIR) return;
+  var pad = $('#tPad', overlay);
+  pad.innerHTML = '';
+  if(MIR.state === 'point'){
+    pad.className = 'tappad two';
+    [['Won', true], ['Lost', false]].forEach(function(o){
+      var b = document.createElement('button');
+      b.type='button'; b.className = 'tapbtn' + (o[1] ? ' win' : '');
+      b.innerHTML = o[0] + '<small>point over</small>';
+      b.addEventListener('click', function(){
+        MIR.pendWon = o[1]; MIR.lastEnd = performance.now()/1000; MIR.state = 'serve';
+        beep(o[1] ? 587 : 392, .12); buzz(14); tapDraw();
+      });
+      pad.appendChild(b);
+    });
+    $('#tState', overlay).textContent = 'Waiting for the point to end';
+  } else {
+    pad.className = 'tappad';
+    var b = document.createElement('button');
+    b.type='button'; b.className='tapbtn serve';
+    b.innerHTML = (MIR.pts.length ? 'Serve struck' : 'First serve') + '<small>tap as the ball is hit</small>';
+    b.addEventListener('click', function(){
+      var now = performance.now()/1000;
+      var g3 = classifyGap(MIR.lastEnd != null ? (now - MIR.lastEnd) : null);
+      MIR.pts.push({ i:MIR.pts.length, interval:g3.interval, changeover:g3.changeover,
+                     serving:MIR.serving, won:null, prevWon:MIR.pendWon });
+      MIR.pendWon = null; MIR.state = 'point';
+      beep(659, .12); buzz(20); tapDraw();
+    });
+    pad.appendChild(b);
+    $('#tState', overlay).textContent = MIR.pts.length ? 'Waiting for the serve' : 'First serve';
+  }
+  var iv2 = MIR.pts.filter(function(p){ return p.interval!=null && !p.changeover; });
+  $('#tPts', overlay).textContent = MIR.pts.length;
+  $('#tGap', overlay).innerHTML = iv2.length ? iv2[iv2.length-1].interval.toFixed(1)+'<small>s</small>' : '--<small>s</small>';
+  var m = iv2.length ? sxMedian(iv2.map(function(p){ return p.interval; })) : null;
+  $('#tMed', overlay).innerHTML = m!=null ? m.toFixed(1)+'<small>s</small>' : '--<small>s</small>';
+}
+
+/* ══ The strip chart ══ */
+function drawStrip(host, pts, st, compact){
+  if(!host) return;
+  var w = host.clientWidth || 600, h = host.clientHeight || 160;
+  if(!compact) h = 170;
+  var svg = el('svg', { viewBox:'0 0 '+w+' '+h });
+  var pad = { l:34, r:12, t:12, b:22 }, iw = w-pad.l-pad.r, ih = h-pad.t-pad.b;
+  var iv = pts.filter(function(p){ return p.interval != null && !p.changeover; });
+  var coIdx = [];
+  pts.forEach(function(q){
+    if(q.changeover) coIdx.push(iv.filter(function(r){ return r.i < q.i; }).length);
+  });
+  if(iv.length < 2){ host.innerHTML=''; host.appendChild(svg); return; }
+  var mx = Math.max(30, Math.ceil(Math.max.apply(null, iv.map(function(p){ return p.interval; }))/5)*5);
+  var y = function(v){ return pad.t + ih - (clamp(v,0,mx)/mx)*ih; };
+  var i;
+  for(i=0;i<=mx;i+=10){
+    svg.appendChild(el('line', { x1:pad.l, y1:y(i), x2:w-pad.r, y2:y(i), stroke:'var(--chart-grid)', 'stroke-width':'1' }));
+    svg.appendChild(el('text', { x:pad.l-6, y:y(i)+4, 'text-anchor':'end', fill:'var(--muted-foreground)',
+      'font-size':'10.5', 'font-family':'Geist Mono, monospace' }, String(i)));
+  }
+  var bw = iw/Math.max(iv.length, 12);
+  iv.forEach(function(p, k){
+    var bh = Math.max(1, pad.t + ih - y(p.interval));
+    svg.appendChild(el('rect', {
+      x: pad.l + k*bw + bw*0.2, y: y(p.interval),
+      width: Math.max(1.5, bw*0.6), height: bh, rx: Math.min(2, bw*0.25),
+      fill: p.prevWon === false ? 'var(--chart-4)' : (p.prevWon === true ? 'var(--chart-1)' : 'var(--muted-foreground)'),
+      opacity: p.serving === false ? '.38' : '.95'
+    }));
+  });
+  // a changeover is not a gap between points, so it is marked rather than plotted
+  coIdx.forEach(function(k){
+    var cx = pad.l + k*bw;
+    svg.appendChild(el('line', { x1:cx, y1:pad.t, x2:cx, y2:pad.t+ih,
+      stroke:'var(--muted-foreground)', 'stroke-width':'1', 'stroke-dasharray':'2 3', opacity:'.5' }));
+  });
+  // reference lines go on top of the bars, or they cannot be read
+  if(st && st.med){
+    svg.appendChild(el('line', { x1:pad.l, y1:y(st.med), x2:w-pad.r, y2:y(st.med),
+      stroke:'var(--foreground)', 'stroke-width':'1', 'stroke-dasharray':'2 4', opacity:'.55' }));
+    svg.appendChild(el('text', { x:w-pad.r, y:y(st.med)+13, 'text-anchor':'end',
+      fill:'var(--muted-foreground)', 'font-size':'10.5' }, 'median '+st.med.toFixed(1)+'s'));
+  }
+  svg.appendChild(el('line', { x1:pad.l, y1:y(SHOT_CLOCK), x2:w-pad.r, y2:y(SHOT_CLOCK),
+    stroke:'var(--danger)', 'stroke-width':'1.4', 'stroke-dasharray':'4 4', opacity:'.9' }));
+  svg.appendChild(el('text', { x:w-pad.r, y:y(SHOT_CLOCK)-5, 'text-anchor':'end', fill:'var(--danger)',
+    'font-size':'10.5' }, '25s clock'));
+  host.innerHTML = ''; host.appendChild(svg);
+}
+
+/* ══ Summary ══ */
+function sxSummary(pts, meta){
+  var st = sxStats(pts);
+  if(!st){ toast('Not enough points to read.'); closeOverlay(); return; }
+  var fresh = !overlay;
+  if(fresh){
+    overlay = document.createElement('div');
+    overlay.className = 'sess';
+  }
+  var head = meta.readOnly ? (meta.label || 'Set') : 'Set summary';
+  var lead = st.delta != null
+    ? '<div class="bigdelta"><b>'+Math.abs(st.delta).toFixed(1)+'s faster</b>'+
+      '<span>after a point you lost, measured on '+st.basis+'. '+
+      (Math.abs(st.delta) >= 3 ? 'That is the routine going missing when it is needed most.'
+                               : 'Close enough to even that the routine is holding.')+'</span></div>'
+    : '<div class="bigdelta"><b>'+st.cv+'% variation</b>'+
+      '<span>in the gap between points. Listening gives you the gaps but not who won them, so the after-a-loss comparison needs tap mode.</span></div>';
+  overlay.innerHTML =
+    '<div class="shd"><span class="sname">'+head+'</span>'+
+      '<span class="badge">'+st.n+' points</span>'+
+      '<span class="sright"><button class="icon" id="sxClose" aria-label="Close">'+svgIcon('x')+'</button></span></div>'+
+    '<div class="sbody"><div class="sum">'+
+      lead+
+      '<dl class="kv">'+
+        '<div class="k"><dt>Median gap</dt><dd class="mono">'+st.med.toFixed(1)+'<small>s</small></dd></div>'+
+        '<div class="k"><dt>Variation</dt><dd class="mono">'+st.cv+'<small>%</small></dd></div>'+
+        '<div class="k"><dt>Over the 25s clock</dt><dd class="mono">'+st.over+'</dd></div>'+
+        '<div class="k"><dt>Points read</dt><dd class="mono">'+st.n+'</dd></div>'+
+      '</dl>'+
+      '<div class="chartbox" id="sxStrip" style="height:170px"></div>'+
+      '<div class="legend">'+
+        '<span><i style="background:var(--chart-1)"></i>After a point won</span>'+
+        '<span><i style="background:var(--chart-4)"></i>After a point lost</span>'+
+        '<span><i style="background:var(--muted-foreground);opacity:.4"></i>Receiving, or outcome unknown</span>'+
+        (st.changeovers ? '<span>'+st.changeovers+' changeovers left out, the clock does not run in them</span>' : '')+
+        '</div>'+
+      (st.delta != null ?
+        '<div class="cmp">'+
+          '<div class="cr"><span class="cl">After a win</span><span class="cb"><i style="width:'+
+            (st.afterWin/Math.max(st.afterWin,st.afterLoss)*100).toFixed(0)+'%"></i></span>'+
+            '<span class="cv mono">'+st.afterWin.toFixed(1)+'s</span></div>'+
+          '<div class="cr loss"><span class="cl">After a loss</span><span class="cb"><i style="width:'+
+            (st.afterLoss/Math.max(st.afterWin,st.afterLoss)*100).toFixed(0)+'%"></i></span>'+
+            '<span class="cv mono">'+st.afterLoss.toFixed(1)+'s</span></div>'+
+        '</div>' : '')+
+      (meta.readOnly ? '<div class="actions"><button class="btn outline" id="sxDone">Close</button></div>'
+        : '<div class="srow item"><div class="st"><b>Label this set</b>'+
+            '<span>A match reads differently from a practice set, so the history keeps them apart.</span></div>'+
+            '<div class="tg" id="sxCtx" style="margin-left:auto"></div></div>'+
+          '<div class="actions"><button class="btn" id="sxSave">Save the set</button>'+
+          '<button class="btn outline" id="sxDrop">Discard</button></div>')+
+    '</div></div>';
+  if(fresh) openOverlay(overlay, 'Set summary', null, '#mirBtn', closeOverlay);
+  drawStrip($('#sxStrip', overlay), pts, st, false);
+  $('#sxClose', overlay).addEventListener('click', closeOverlay);
+  overlayDismiss = closeOverlay;
+  if(meta.readOnly){ $('#sxDone', overlay).addEventListener('click', closeOverlay); return; }
+  var ctxPick = meta.ctx || 'Practice set';
+  var ctxHost = $('#sxCtx', overlay);
+  ['Practice set', 'Match'].forEach(function(lbl){
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = lbl;
+    b.setAttribute('aria-pressed', lbl === ctxPick ? 'true':'false');
+    b.addEventListener('click', function(){
+      ctxPick = lbl;
+      $$('#sxCtx button', overlay).forEach(function(x){ x.setAttribute('aria-pressed', x.textContent===lbl?'true':'false'); });
+    });
+    ctxHost.appendChild(b);
+  });
+  $('#sxDrop', overlay).addEventListener('click', closeOverlay);
+  $('#sxSave', overlay).addEventListener('click', function(){
+    SX.unshift({ id:'n'+Date.now(), date:'19 Sep', ctx:ctxPick, mode:meta.mode, pts:pts, st:st });
+    if(SX.length > 10) SX.length = 10;
+    persistSx(); renderSixteen();
+    $('.sbody', overlay).innerHTML =
+      '<div class="away">'+
+        '<span class="badge ok">Saved</span>'+
+        '<b>'+st.n+' points, read and put away.</b>'+
+        '<p>'+(sxPrefs.share
+          ? 'Marko sees one sentence and a count from this. He does not see the set, the score or the gaps.'
+          : 'Nothing from this goes to the coach link while that switch is off.')+'</p>'+
+        '<button class="btn outline" id="sxDone2">Close</button>'+
+      '</div>';
+    $('#sxDone2', overlay).addEventListener('click', closeOverlay);
+  });
+}
+
+/* ══ Wiring ══ */
+$('#rehBtn').addEventListener('click', startRehearsal);
+$('#rehReps').addEventListener('click', function(){ repIdx = (repIdx+1) % REPS.length; renderPhases(); });
+$('#mirBtn').addEventListener('click', startMirror);
+$('#sxReset').addEventListener('click', function(){
+  SX = JSON.parse(SX_SEED); persistSx(); renderSixteen();
+  toast('Sixteen history reset to the six sample sets');
+});
+var sxSw = $('#sxShareSw');
+sxSw.setAttribute('aria-checked', sxPrefs.share ? 'true':'false');
+sxSw.addEventListener('click', function(){
+  sxPrefs.share = !sxPrefs.share; saveSxPrefs();
+  this.setAttribute('aria-checked', sxPrefs.share ? 'true':'false');
+  toast(sxPrefs.share ? 'The routine pattern is in the coach link' : 'The routine pattern is out of the coach link');
+});
+renderSixteen();
+
+})();
+</script>
+
+</body>
+</html>
