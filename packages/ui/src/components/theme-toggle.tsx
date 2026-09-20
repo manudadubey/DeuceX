@@ -1,9 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@procircuit/ui';
+import { Button, type ButtonProps } from './button';
 
-export function ThemeToggle() {
+// Baseline §Implementation "Theme follows the system with a manual override that wins in
+// both directions and eases between the two" — the `.theming` class (globals.css) makes the
+// flip a 200ms fade instead of a jump. Shared by the kitchen sink and the app shell topbar.
+export function ThemeToggle({
+  size = 'icon',
+  ...props
+}: Omit<ButtonProps, 'onClick' | 'children'>) {
   const [dark, setDark] = useState<boolean | null>(null);
 
   function toggle() {
@@ -18,7 +24,7 @@ export function ThemeToggle() {
   }
 
   return (
-    <Button variant="outline" size="icon" onClick={toggle} aria-label="Toggle theme">
+    <Button variant="outline" size={size} onClick={toggle} aria-label="Toggle theme" {...props}>
       {dark ? '☀' : '☾'}
     </Button>
   );

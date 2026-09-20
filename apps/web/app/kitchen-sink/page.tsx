@@ -70,6 +70,7 @@ import {
   TabsList,
   TabsTrigger,
   Textarea,
+  ThemeToggle,
   Toast,
   ToastClose,
   ToastDescription,
@@ -84,7 +85,6 @@ import {
   TooltipTrigger,
   HelpMark,
 } from '@procircuit/ui';
-import { ThemeToggle } from './theme-toggle';
 
 // Every component from step 0.4 of docs/BUILD-PLAN-CLAUDE-CODE.md, in both themes (toggle
 // top right) and matching docs/procircuit-baseline.html. Not a route the product ships;

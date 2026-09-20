@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Button } from '@procircuit/ui';
 import { createClient } from '@/lib/supabase/client';
 
 export function PasskeyRegister() {
@@ -22,11 +23,15 @@ export function PasskeyRegister() {
   }
 
   return (
-    <div>
-      <button type="button" onClick={handleClick}>
+    <div className="flex flex-col items-start gap-2">
+      <Button variant="outline" onClick={handleClick}>
         Register a passkey
-      </button>
-      {message ? <p role={status === 'error' ? 'alert' : 'status'}>{message}</p> : null}
+      </Button>
+      {message ? (
+        <p role={status === 'error' ? 'alert' : 'status'} className="text-sm text-muted-foreground">
+          {message}
+        </p>
+      ) : null}
     </div>
   );
 }
