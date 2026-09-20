@@ -152,29 +152,32 @@ server-side-flow pattern closely (fetched live from their docs this session, not
 data, since this area moves fast), but the end-to-end path needs a real run by a human before
 calling it done.
 
-**Genuinely blocked without the project owner**: Supabase Auth's dashboard-level settings — Site
-URL, the redirect-URL allowlist, the Magic Link email template, and the Passkey/WebAuthn Relying
-Party config — live in GoTrue's own config, not in Postgres, so no tool available in this session
-(the Supabase MCP server's tool list, or SQL) can read or write them; that needs either the
-dashboard or a Management API token this session doesn't have. Manual checklist, once `apps/web`
-has a real URL (`http://localhost:3000` for local dev; the Vercel `procircuit` URL, and later the
-production domain):
+**Genuinely blocked without the project owner** (at the time this was first written): Supabase
+Auth's dashboard-level settings — Site URL, the redirect-URL allowlist, the Magic Link email
+template, and the Passkey/WebAuthn Relying Party config — live in GoTrue's own config, not in
+Postgres, so no tool available in this session (the Supabase MCP server's tool list, or SQL) can
+read or write them; that needs either the dashboard or a Management API token this session didn't
+have. The owner logged into the dashboard the same day, which unblocked items 1 and 3 below
+immediately and item 2 once a Resend account existed (see the two follow-up sections below for
+what was actually done and verified). What's left, before this works anywhere but
+`http://localhost:3000`:
 
-1. **Auth > URL Configuration**: set Site URL to that origin; add `<origin>/auth/confirm` (or a
-   wildcard `<origin>/**`) to Redirect URLs for every environment (local, Vercel preview, prod).
-2. **Auth > Email Templates > Magic Link**: replace the default `{{ .ConfirmationURL }}` body
-   with a link to `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink` — the
-   default template does a client-side hash redirect that `app/auth/confirm/route.ts` (a
-   server-side `verifyOtp` exchange) does not use.
-3. **Auth > Passkeys**: turn on "Enable Passkey authentication"; set Relying Party Display Name
-   ("ProCircuit"), Relying Party ID (the bare domain, e.g. `procircuit.vercel.app` for now), and
-   Relying Party Origins (the exact origins above). Note: Supabase's own passkey API is marked
-   experimental ("the API may change without notice") — acceptable given the worksheet-11
-   decision explicitly wants passkey support, but worth knowing before relying on it in
-   production.
+1. ~~**Auth > URL Configuration**~~ Done for local dev (Site URL defaulted to
+   `http://localhost:3000` already; added `http://localhost:3000/**` to Redirect URLs). Redo for
+   the Vercel `procircuit` URL and later the production domain when those exist.
+2. ~~**Auth > Email Templates > Magic Link**~~ Done: repointed to
+   `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink`, verified delivering
+   through Resend with that exact link.
+3. ~~**Auth > Passkeys**~~ Done for local dev only: enabled, RP ID `localhost`, origin
+   `http://localhost:3000`. **Must be redone against the real domain before launch** — changing
+   the RP ID invalidates every passkey registered under the old one, so whatever gets registered
+   against `localhost` now (including the one used to verify this step) won't carry over. Also
+   worth remembering: Supabase's passkey API is marked experimental ("the API may change without
+   notice").
 4. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (the publishable
-   key, not the service role key) as environment variables on the `procircuit` Vercel project,
-   and in a local `.env.local` for `apps/web` — both are in `.env.example` now.
+   key, not the service role key) as environment variables on the `procircuit` Vercel project —
+   done locally in `apps/web/.env.local` (gitignored) for this session's testing, not yet done on
+   Vercel itself.
 
 Skipped, deliberately: the onboarding flow and the `players` row that would normally get created
 after a first sign-in (PRD-11, a later step) — a first-time magic-link sign-in currently leaves
@@ -224,9 +227,38 @@ just renders inert HTML; nothing is consumed until a human clicks.
 This fix is necessary but not sufficient on its own: the email going out right now still uses
 Supabase's default template, which links straight to GoTrue's own `/verify` endpoint, not to
 `/auth/confirm` — so the exact scanner race just demonstrated will keep happening until custom
-SMTP is set up and the template is repointed (checklist item 2 above). The mechanism itself is
-confirmed working end to end at the protocol level (OTP request, mail dispatch, and server-side
-verification all succeeded); what's unproven is a human successfully completing it via a real
-email, which needs that SMTP decision first. Passkey registration and sign-in remain unverified
-for a related reason: registering one requires an existing session, and getting a session
-currently requires surviving the same scanner race.
+SMTP is set up and the template is repointed (checklist item 2 above).
+
+### Follow-up · custom SMTP wired up, full loop verified, same day
+
+The owner created a Resend account and handed over access to finish the job. Generated a Resend
+API key, configured it as ProCircuit's custom SMTP in Supabase (`smtp.resend.com:587`, sender
+`onboarding@resend.dev` until a domain is verified — Resend's shared onboarding domain, which
+exists for exactly this bootstrapping case), and rewrote the Magic Link template's source to
+`{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink` (the Supabase dashboard's
+template editor is a Monaco instance; keyboard-driven select-all/retype produced corrupted output
+twice, so the edit was made through `window.monaco.editor.getEditors()[0].setValue(...)` instead,
+which is exact and idempotent). Saving both flipped the project's email rate limit from
+Supabase's built-in 2/hour to the custom-SMTP default of 30/hour, confirmed in `auth_logs`.
+
+Ran the real flow end to end this time, no shortcuts: submitted the sign-in form from a running
+`apps/web` instance, confirmed in Resend's own dashboard that the mail was generated from
+ProCircuit's actual template and marked `Delivered`, then opened the exact link from that email
+(`/auth/confirm?token_hash=pkce_...&type=magiclink`) and clicked "Sign in". Landed on `/`
+correctly reading "Signed in as manu.dadubey@gmail.com." From there, "Register a passkey"
+succeeded (`Registered passkey (Chromium Browser)`), proving `registerPasskey()` works once a
+session exists. Signed out, returned to `/signin` cleanly.
+
+One piece stayed unverified, for a reason worth recording rather than working around: clicking
+"Use a passkey instead" (`signInWithPasskey()`, the discoverable-credential *sign-in* ceremony)
+timed out with a WebAuthn privacy-considerations error. Passkey *registration* is a "create"
+ceremony that this sandboxed browser could satisfy; *sign-in* is a "get" ceremony against an
+existing credential, which needs an interactive OS-level picker the automation harness won't
+complete on its own (by design — it's the same protection that stops a script from silently
+approving a biometric prompt). This isn't a gap in the code: sign-in and registration go through
+the identical `auth.experimental.passkey`-enabled browser client. It needs a human, in a real
+browser, to confirm — everything server-side and everything registration-side is already proven.
+
+Net result: magic-link sign-in is fully verified end to end against production infrastructure
+(real SMTP, real template, real click-through, real session). Passkey registration is verified.
+Passkey sign-in is implemented identically but needs a real device to finish confirming.
