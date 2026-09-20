@@ -10,3 +10,5 @@ export type HomeCurrency = 'AUD' | 'USD' | 'CNY';
 export type Units = 'metric' | 'imperial';
 
 export type Stage = 1 | 2 | 3;
+
+export { hashApprovalPayload } from './approval-hash';

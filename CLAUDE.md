@@ -5,15 +5,18 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0 step 0.5 done, start at step 0.6
+## Status: Phase 0 done (step 0.6), start Phase 1 step 1.1
 
 The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
 0.3); `packages/ui` has the full Baseline component set and a `/kitchen-sink` route in `apps/web`
 (step 0.4); `apps/web` has the real app shell (sidebar, topbar, mobile tab bar, FAB, bare shell)
-and the full step 0.5 route table, every route a placeholder except the dashboard's "three
-answers" empty state (step 0.5). No agents, no side effects, no approval gate yet. The next
-session should start at **step 0.6 (the approval gate and audit, before any agent exists)** in
+and the full step 0.5 route table (step 0.5); `packages/actions` has the approval gate
+(`runGatedAction`, backed by a new append-only `approval_consumptions` table), `recordRun()`,
+the pricing table, and the pg-boss queue with its idempotency key, pickup-time pause/provider-
+switch check and 5/20/60 minute retry schedule, all with tests (step 0.6). Still no agents and
+no real vendor call anywhere. The next session should start at **step 1.1 (notes and the
+recorder)**, the first step of **Phase 1: the first usable slice**, in
 `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture section it names.
 Check `docs/BUILD-LOG.md` for what each prior step actually did (including follow-ups) before
 assuming anything about the current state — this line is a pointer, not the full record.
