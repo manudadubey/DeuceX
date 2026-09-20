@@ -27,6 +27,7 @@ export * from './components/tooltip';
 export * from './components/sheet';
 export * from './components/confirm';
 export * from './components/flag';
+export * from './components/theme-toggle';
 
 export * from './charts/svg';
 export * from './charts/format';

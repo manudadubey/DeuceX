@@ -334,3 +334,84 @@ helper is a product-level concern for whichever step first needs to fire one); p
 Storybook-style prop docs beyond the source comments. `axisK()`'s home-currency conversion is
 unexercised beyond the identity rate (1) since `fx_rates_daily` reads don't exist until an
 agent needs them.
+
+## Step 0.5 · App shell and routing — 20 September 2026
+
+Acceptance checks restated before starting: (1) navigation works on desktop and phone, (2)
+the collapsed sidebar widens the content, (3) the tab bar appears at 390px, (4) Lighthouse
+accessibility is above 95 on the shell.
+
+Built two route groups in `apps/web/app`: `(app)` (the full shell) and `(bare)` (onboarding,
+sign-in, the coach view). `(app)/layout.tsx` gates every route it wraps on a session in one
+place (`supabase.auth.getClaims()`, redirect to `/signin`) instead of each page repeating
+step 0.3's check, then renders `components/shell/app-shell.tsx`: a 256px sidebar (48px
+collapsed, `Cmd/Ctrl+B`, persisted to `pc.sidebar` per PROCIRCUIT-CONTEXT 4.5) built from
+Baseline's own sidebar groups (Workspace, Agents, Account) minus the Sponsor and Fan agents,
+which are Elite-only and don't exist yet; a sticky translucent topbar (title looked up from
+the route, a date/week chip, share, tour, bell, theme); a `main` column whose max-width grows
+from 1400px to 1600px when collapsed; a floating "Match Scribe" capture button under 900px
+replaced by a five-tab bottom bar (Home, Tournaments, Scribe, Fans, Money), matching
+`docs/procircuit-dashboard.html`'s actual markup exactly (900px, not the 1180px the context
+doc's prose gives elsewhere — the build-plan step itself says 900px, and it's also what
+`packages/ui`'s own mobile-target rule already uses, so there's no real conflict once the
+prototype's CSS is checked directly). `components/shell/bare-shell.tsx` is the centred-column,
+logo-then-content wrapper for the other group. The ten `(app)` routes and the `/onboarding`
+and `/coach/[token]` `(bare)` routes are honest placeholders (an `Empty` block naming what
+will eventually fill them, not fixture data); the dashboard (`/`) is the one exception, built
+out as the real "three answers" empty state (PROCIRCUIT-CONTEXT 5.1) — an unverified-ranking
+notice plus three `PulseTile`-styled links (Runway, Decision required, Patrons since last
+login) that go to their eventual agent route and say why they're empty, rather than showing
+placeholder numbers. `/signin` (moved from `app/signin` into `(bare)/signin`, logic
+untouched) and its two existing client components were restyled onto Baseline's `Card`/
+`Field`/`Button` instead of bare HTML, since they now sit inside the same bare shell as
+everything else. The passkey-registration control step 0.3 left on the dashboard "because
+there was nowhere else" moved to `/settings`, which now exists.
+
+Share and the tour walkthrough are rendered `disabled` with a "Coming soon" title rather than
+wired to fake behaviour — neither has a real implementation yet (no coach-share flow, no
+walkthrough content). The bell opens a real `Sheet` with a genuine empty state ("No
+notifications yet"): true, not a stub, since no agent writes notifications until Phase 1. The
+FAB and mobile "Scribe" tab both lead to the real (placeholder) `/match-scribe` route; the
+FAB's other two quick actions (scan a menu, scan a receipt) are disabled for the same reason
+share/tour are. Extracted `ThemeToggle` (previously duplicated inline on the kitchen sink)
+into `packages/ui` so the topbar and the kitchen sink share one implementation; behaviour is
+unchanged from what step 0.4 already screenshotted and verified.
+
+Verified by hand, not just asserted: ran `apps/web` locally end to end (real Supabase
+credentials, not placeholders) and confirmed in the browser, not just in code — an
+unauthenticated `/` redirects to `/signin`; `/signin`, `/onboarding` and `/coach/:token` render
+the bare shell correctly in both themes at desktop and 375px with no console errors; the
+kitchen sink's extracted `ThemeToggle` still flips both themes correctly. Added
+`components/shell/use-sidebar-collapsed.test.tsx` and `sidebar.test.tsx` (new
+`@testing-library/react`/`jsdom` setup for `apps/web`, since nothing rendered a React
+component in a test here before) proving the collapse toggle, its `pc.sidebar` persistence,
+the `Cmd`/`Ctrl+B` shortcut, and active-route `aria-current` highlighting. Added
+`e2e/shell.spec.ts`: the unauthenticated redirect, no password field anywhere across the bare
+routes (M-ID-1), no horizontal scroll at 390px for `/signin`/`/onboarding`/`/coach/:token` in
+both themes, and an `@axe-core/playwright` scan of `/signin` — which found two real, fixable
+issues (no `<main>` landmark, no top-level heading) before it passed clean, both fixed in
+`bare-shell.tsx` and the sign-in page rather than suppressed.
+
+**Not verified, and can't be from here**: Lighthouse itself. There's no Chrome DevTools
+Lighthouse run available from this sandbox (same category of gap as step 0.3's WebAuthn
+ceremony), and the authenticated app shell specifically — sidebar, topbar, tab bar as
+rendered for a real signed-in player — couldn't be opened in a live browser either: doing
+that needs a real Supabase session, and the only two ways to get one are a real magic-link
+email click-through (needs a human) or weakening the `(app)/layout.tsx` auth check, which is
+exactly the kind of shortcut this project's own approval-gate rule exists to prevent taking
+casually, even temporarily and even reverted before commit. The authenticated shell's
+interactive logic (collapse, persistence, keyboard shortcut, active-link state) is covered
+instead by the component tests above, which don't need a session because they render the
+components directly; a human should still open `/` after signing in for real and confirm it
+against Lighthouse before this is called fully done.
+
+Incidental fix: `playwright.config.ts` now takes its port from `PORT` (default 3000) instead
+of hardcoding it, because this session collided with another Claude Code session's dev server
+already bound to 3000 on the same machine — a plain, reusable fix, not scoped to this step.
+
+Skipped, deliberately: the sidebar's user-menu popover (Public profile/Settings/Replay
+setup/Sign out) that Baseline's chrome section describes — the sidebar footer already links
+to Public profile and Settings and now has a working Sign out button, and a second copy of
+the same three links behind a popover is not something this step's acceptance checks ask for;
+notification content, the walkthrough, and the coach-share flow itself (PRD-04/PRD-12, not
+built); `apps/admin`'s shell (out of scope, a later step).

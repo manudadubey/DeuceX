@@ -22,10 +22,15 @@ export function PasskeySignIn() {
 
   return (
     <>
-      <button type="button" onClick={handleClick}>
+      <button type="button" onClick={handleClick} className="font-medium text-foreground underline">
         Use a passkey instead
       </button>
-      {error ? <span role="alert"> {error}</span> : null}
+      {error ? (
+        <span role="alert" className="text-danger">
+          {' '}
+          {error}
+        </span>
+      ) : null}
     </>
   );
 }

@@ -5,13 +5,15 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0 step 0.4 done, start at step 0.5
+## Status: Phase 0 step 0.5 done, start at step 0.6
 
 The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
 0.3); `packages/ui` has the full Baseline component set and a `/kitchen-sink` route in `apps/web`
-(step 0.4). Nothing product-specific has been built on top of any of this yet — no app shell, no
-agents, no dashboard. The next session should start at **step 0.5 (app shell and routing)** in
+(step 0.4); `apps/web` has the real app shell (sidebar, topbar, mobile tab bar, FAB, bare shell)
+and the full step 0.5 route table, every route a placeholder except the dashboard's "three
+answers" empty state (step 0.5). No agents, no side effects, no approval gate yet. The next
+session should start at **step 0.6 (the approval gate and audit, before any agent exists)** in
 `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture section it names.
 Check `docs/BUILD-LOG.md` for what each prior step actually did (including follow-ups) before
 assuming anything about the current state — this line is a pointer, not the full record.
