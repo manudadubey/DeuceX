@@ -16,6 +16,7 @@
     "@fastify/multipart": "^9.0.1",
     "@procircuit/db": "workspace:*",
     "@supabase/supabase-js": "^2.116.0",
+    "dotenv": "^16.4.5",
     "fastify": "^5.0.0",
     "pg-boss": "^12.33.2"
   },

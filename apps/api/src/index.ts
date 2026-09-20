@@ -1,5 +1,7 @@
+import { fileURLToPath } from 'node:url';
 import { createAnonClient, createServiceRoleClient } from '@procircuit/db';
 import cors from '@fastify/cors';
+import { config as loadEnv } from 'dotenv';
 import Fastify from 'fastify';
 import { registerNotesRoutes, type NotesRoutesDeps } from './notes/routes';
 import { createNotesBoss, enqueueTranscription, registerNotesWorkers } from './notes/queue';
@@ -14,6 +16,15 @@ import { createWhisperAdapter } from './transcription/whisper-adapter';
 // job (webhooks, the queue worker, structured-output calls). Simple CRUD
 // against the database is handled by Next.js server actions in apps/web
 // instead. See TECH-ARCHITECTURE.md section 1.
+
+// Local-dev convenience only: Fly.io/Render (TECH-ARCHITECTURE.md section 1)
+// inject env vars directly in staging and production, where no root .env
+// exists, so this is a silent no-op there. Not loaded under NODE_ENV=test —
+// tests use injected fakes (apps/api/src/test-support/fake-db.ts and the
+// mock adapters), never real vendor credentials.
+if (process.env.NODE_ENV !== 'test') {
+  loadEnv({ path: fileURLToPath(new URL('../../../.env', import.meta.url)) });
+}
 
 export function buildServer(notesDeps?: NotesRoutesDeps) {
   const app = Fastify({ logger: true });
