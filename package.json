@@ -15,7 +15,8 @@
     "test:e2e": "playwright test",
     "dev:web": "pnpm --filter @procircuit/web dev",
     "dev:admin": "pnpm --filter @procircuit/admin dev",
-    "dev:api": "pnpm --filter @procircuit/api dev"
+    "dev:api": "pnpm --filter @procircuit/api dev",
+    "dev:sign-in-link": "node scripts/dev-sign-in-link.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

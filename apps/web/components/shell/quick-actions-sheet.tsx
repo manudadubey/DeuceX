@@ -29,7 +29,7 @@ export function QuickActionsSheet({ children }: { children: React.ReactNode }) {
         </SheetDescription>
         <div className="flex flex-col gap-1 px-3 pb-4">
           <Link
-            href="/match-scribe"
+            href="/match-scribe?record=1"
             className="flex items-center gap-3 rounded-md p-3 text-sm hover:bg-accent"
           >
             <Mic aria-hidden="true" className="size-5 text-muted-foreground" />

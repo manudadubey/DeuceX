@@ -1,0 +1,12 @@
+-- Tightens the notes.update grant from the first step 1.1 migration.
+-- Save (review -> saved) has to enforce the Free-tier quota (S-16) and
+-- trigger the audio-confirmed deletion (S-13), both of which need
+-- apps/api's service-role path, not a direct client write — so a player's
+-- own authenticated session should never be able to move a note's status or
+-- set deleted_at directly; both are how apps/api and its own quota/lifecycle
+-- checks are bypassed. Every real status transition (save, discard, delete,
+-- transcription pipeline updates) goes through apps/api on the service
+-- role, which does not need a column grant. What is left grantable to
+-- authenticated is exactly the content the player edits by hand while a
+-- note is still in review.
+revoke update (status, deleted_at) on public.notes from authenticated;

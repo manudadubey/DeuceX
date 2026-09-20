@@ -139,3 +139,168 @@ describeIfConfigured('fx_rates_daily is insert-only', () => {
     ).rejects.toThrow(/insert-only/);
   });
 });
+
+describeIfConfigured('notes row-level security and quota (step 1.1)', () => {
+  let client: Client;
+  const playerA = randomUUID();
+  const playerB = randomUUID();
+  let noteA: string;
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
+      playerA,
+      `notes-rls-a-${playerA}@procircuit.test`,
+      playerB,
+      `notes-rls-b-${playerB}@procircuit.test`,
+    ]);
+    await client.query(
+      `insert into public.players
+         (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+       values
+         ($1, 'wta', 'Player A', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney'),
+         ($3, 'atp', 'Player B', $4, 'US', '2000-01-01', 'USD', 'en', 'imperial', 'America/New_York')`,
+      [
+        playerA,
+        `notes-rls-a-${playerA}@procircuit.test`,
+        playerB,
+        `notes-rls-b-${playerB}@procircuit.test`,
+      ],
+    );
+    const inserted = await client.query(
+      `insert into public.notes (player_id, ctx, status) values ($1, 'match', 'review') returning id`,
+      [playerA],
+    );
+    noteA = inserted.rows[0].id;
+  });
+
+  afterAll(async () => {
+    await client.query(`delete from public.notes where player_id in ($1, $2)`, [playerA, playerB]);
+    await client.query(`delete from public.check_ins where player_id in ($1, $2)`, [
+      playerA,
+      playerB,
+    ]);
+    await client.query(`delete from public.players where id in ($1, $2)`, [playerA, playerB]);
+    await client.query(`delete from auth.users where id in ($1, $2)`, [playerA, playerB]);
+    await client.end();
+  });
+
+  it("lets a player read only their own notes, never another player's", async () => {
+    await asPlayer(client, playerB, async () => {
+      const result = await client.query('select id from public.notes');
+      expect(result.rows).toEqual([]);
+    });
+    await asPlayer(client, playerA, async () => {
+      const result = await client.query('select id from public.notes');
+      expect(result.rows).toEqual([{ id: noteA }]);
+    });
+  });
+
+  it('lets a player edit review-state content fields on their own note', async () => {
+    await asPlayer(client, playerA, async () => {
+      await client.query(
+        `update public.notes set mood = 'confident', transcript = $1 where id = $2`,
+        ['Lost in a breaker.', noteA],
+      );
+    });
+    const result = await client.query('select mood, transcript from public.notes where id = $1', [
+      noteA,
+    ]);
+    expect(result.rows[0]).toEqual({ mood: 'confident', transcript: 'Lost in a breaker.' });
+  });
+
+  it('refuses a player setting status or deleted_at directly (apps/api-only columns)', async () => {
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query(`update public.notes set status = 'saved' where id = $1`, [noteA]),
+      ).rejects.toThrow(/permission denied/);
+      await expect(
+        client.query(`update public.notes set deleted_at = now() where id = $1`, [noteA]),
+      ).rejects.toThrow(/permission denied/);
+    });
+  });
+
+  it("refuses a player editing someone else's note", async () => {
+    await asPlayer(client, playerB, async () => {
+      await client.query(`update public.notes set mood = 'flat' where id = $1`, [noteA]);
+      // RLS silently filters the row out of the UPDATE's WHERE clause rather
+      // than erroring, so the row is simply unchanged, not the error case.
+    });
+    const result = await client.query('select mood from public.notes where id = $1', [noteA]);
+    expect(result.rows[0].mood).toBe('confident');
+  });
+
+  it('never allows a SQL DELETE on notes for any role (soft delete only)', async () => {
+    await expect(client.query(`delete from public.notes where id = $1`, [noteA])).rejects.toThrow(
+      /permission denied/,
+    );
+  });
+
+  it("notes_saved_this_month() only ever counts the calling player's own saved notes", async () => {
+    await client.query(`update public.notes set status = 'saved' where id = $1`, [noteA]);
+    await asPlayer(client, playerA, async () => {
+      const result = await client.query('select public.notes_saved_this_month() as n');
+      expect(result.rows[0].n).toBe(1);
+    });
+    await asPlayer(client, playerB, async () => {
+      const result = await client.query('select public.notes_saved_this_month() as n');
+      expect(result.rows[0].n).toBe(0);
+    });
+    await client.query(`update public.notes set status = 'review' where id = $1`, [noteA]);
+  });
+
+  it('refuses an authenticated session calling notes_saved_this_month_for (service-role only)', async () => {
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query('select public.notes_saved_this_month_for($1)', [playerA]),
+      ).rejects.toThrow(/permission denied/);
+    });
+  });
+});
+
+describeIfConfigured('check_ins row-level security (step 1.1)', () => {
+  let client: Client;
+  const playerA = randomUUID();
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2)`, [
+      playerA,
+      `checkins-rls-${playerA}@procircuit.test`,
+    ]);
+    await client.query(
+      `insert into public.players
+         (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+       values ($1, 'wta', 'Player A', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney')`,
+      [playerA, `checkins-rls-${playerA}@procircuit.test`],
+    );
+  });
+
+  afterAll(async () => {
+    await client.query(`delete from public.check_ins where player_id = $1`, [playerA]);
+    await client.query(`delete from public.players where id = $1`, [playerA]);
+    await client.query(`delete from auth.users where id = $1`, [playerA]);
+    await client.end();
+  });
+
+  it('lets a player insert and then replace their own check-in for the same day', async () => {
+    await asPlayer(client, playerA, async () => {
+      await client.query(
+        `insert into public.check_ins (player_id, date, value, source) values ($1, '2026-09-21', 3, 'scribe')
+         on conflict (player_id, date) do update set value = excluded.value`,
+        [playerA],
+      );
+      await client.query(
+        `insert into public.check_ins (player_id, date, value, source) values ($1, '2026-09-21', 5, 'scribe')
+         on conflict (player_id, date) do update set value = excluded.value`,
+        [playerA],
+      );
+      const result = await client.query('select value from public.check_ins where player_id = $1', [
+        playerA,
+      ]);
+      expect(result.rows).toEqual([{ value: 5 }]);
+    });
+  });
+});

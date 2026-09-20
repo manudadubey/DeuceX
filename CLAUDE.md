@@ -5,7 +5,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0 done (step 0.6), start Phase 1 step 1.1
+## Status: Phase 0 done, step 1.1 done, start step 1.2
 
 The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -14,12 +14,19 @@ The monorepo scaffold is built and deploying; the database has RLS-protected Pro
 and the full step 0.5 route table (step 0.5); `packages/actions` has the approval gate
 (`runGatedAction`, backed by a new append-only `approval_consumptions` table), `recordRun()`,
 the pricing table, and the pg-boss queue with its idempotency key, pickup-time pause/provider-
-switch check and 5/20/60 minute retry schedule, all with tests (step 0.6). Still no agents and
-no real vendor call anywhere. The next session should start at **step 1.1 (notes and the
-recorder)**, the first step of **Phase 1: the first usable slice**, in
-`docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture section it names.
-Check `docs/BUILD-LOG.md` for what each prior step actually did (including follow-ups) before
-assuming anything about the current state — this line is a pointer, not the full record.
+switch check and 5/20/60 minute retry schedule, all with tests (step 0.6). Match Scribe's
+`notes` and `check_ins` tables, the real `/match-scribe` route (recorder, review, history,
+daily check-in), the offline queue, the Free-tier quota, and the audio lifecycle (immediate
+delete on save, a 7-day sweep as backstop) are built behind adapters for R2 and Whisper, with a
+working mock/in-memory fallback for both (step 1.1) — **but neither vendor is actually
+configured yet**: no R2 bucket exists and no `OPENAI_API_KEY` is set anywhere, so nothing here
+has made a real vendor call in staging or production. Provisioning both is the first thing the
+next session (or the owner, directly) needs to do before step 1.1's "real Whisper in staging"
+acceptance check is actually true; see `.env.example` for the exact vars. The next session
+should start at **step 1.2 (structured extraction)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read
+that step plus whatever architecture section it names. Check `docs/BUILD-LOG.md` for what each
+prior step actually did (including follow-ups) before assuming anything about the current
+state — this line is a pointer, not the full record.
 
 ## Read before coding
 

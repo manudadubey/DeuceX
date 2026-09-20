@@ -112,8 +112,8 @@ export async function runGatedAction<T>(
     throw new ApprovalActionMismatchError(input.approvalId, input.actionType, approval.actionType);
   }
 
-  const expectedHash = hashApprovalPayload(approval.payload);
-  const suppliedHash = hashApprovalPayload(input.payload);
+  const expectedHash = await hashApprovalPayload(approval.payload);
+  const suppliedHash = await hashApprovalPayload(input.payload);
   if (expectedHash !== suppliedHash) {
     throw new ApprovalPayloadMismatchError(input.approvalId);
   }
