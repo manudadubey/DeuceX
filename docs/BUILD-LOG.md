@@ -185,3 +185,48 @@ rename, delete) — PRD-12 ST-2 wants that, but PRD-12's Settings pane doesn't e
 temporary "Register a passkey" button on the placeholder home page is scoped to proving the
 mechanism, not to replacing that later screen. Also skipped: `apps/admin`'s mandatory-passkey
 sign-in, explicitly deferred by the build plan to a later step.
+
+### Follow-up · live testing against the real project, same day
+
+The owner logged into the Supabase dashboard mid-session so this could be tested for real rather
+than left as an untested plan. Configured, with the dashboard open in the browser: URL
+Configuration (Site URL was already `http://localhost:3000` by default; added
+`http://localhost:3000/**` to Redirect URLs), and Auth > Passkeys (enabled; Relying Party display
+name "ProCircuit", RP ID `localhost`, origin `http://localhost:3000` — dev-only values, need
+redoing against the real domain before launch, which will invalidate any passkeys registered
+against `localhost`). The Magic Link email template could **not** be edited: Supabase's built-in
+mailer only sends its fixed default templates, and "Set up custom SMTP to edit templates" gates
+the editor entirely. That's a vendor decision (whose SMTP, e.g. Resend, already the planned
+provider for patron email) that belongs to the project owner, not something to pick alone.
+
+Ran the actual flow: started `apps/web` locally (`.claude/launch.json` added for this), submitted
+the sign-in form with the owner's own email. Confirmed via `auth_logs` (Supabase's log stream,
+queried through the MCP server, not guessed at): `POST /otp` succeeded, GoTrue sent the mail
+(`mail.send`, `mail_type: confirmation`), and — 10 seconds later, with no human having clicked
+anything — a `GET /verify` request completed the sign-in (`action: user_signedup`) from an IP
+that doesn't belong to any device in this session, followed 17 seconds later by a second
+`GET /verify` from a confirmed Google IP range (`74.125.19.44`) failing with "Email link is
+invalid or has expired" (`One-time token not found`). auth.users confirms exactly one real user
+(`manu.dadubey@gmail.com`) despite the dashboard's own Users table showing "10 users (estimated)"
+— that estimate is stale Postgres statistics, not a real count; `select count(*)` gave 1.
+
+That sequence is textbook link-scanner prefetching, not a bug in the request/response handling:
+Supabase's own troubleshooting docs name this exact failure ("email scanners may scan and make a
+GET request to the... sign-up link in your email... a user who opens an email post-scan to click
+on a link will receive an error") and prescribe the fix — don't let the emailed link itself
+perform the state change; land it on a page you control that requires an explicit click first.
+`app/auth/confirm/route.ts` (an auto-verifying GET handler) was exactly the shape that's
+vulnerable, so it's gone: replaced with `app/auth/confirm/page.tsx` (renders a "Sign in" button,
+does nothing on mere GET) and `app/auth/confirm/actions.ts` (a server action, `confirmSignIn`,
+that only runs `verifyOtp` when that button is actually submitted). A scanner hitting the page now
+just renders inert HTML; nothing is consumed until a human clicks.
+
+This fix is necessary but not sufficient on its own: the email going out right now still uses
+Supabase's default template, which links straight to GoTrue's own `/verify` endpoint, not to
+`/auth/confirm` — so the exact scanner race just demonstrated will keep happening until custom
+SMTP is set up and the template is repointed (checklist item 2 above). The mechanism itself is
+confirmed working end to end at the protocol level (OTP request, mail dispatch, and server-side
+verification all succeeded); what's unproven is a human successfully completing it via a real
+email, which needs that SMTP decision first. Passkey registration and sign-in remain unverified
+for a related reason: registering one requires an existing session, and getting a session
+currently requires surviving the same scanner race.
