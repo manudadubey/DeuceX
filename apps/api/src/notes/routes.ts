@@ -9,7 +9,7 @@ import {
   QuotaExceededError,
   createNote,
   deleteNote,
-  retryTranscription,
+  retryNote,
   saveNote,
   type NotesServiceDeps,
 } from './service';
@@ -129,7 +129,7 @@ export async function registerNotesRoutes(
     const { id } = request.params as { id: string };
 
     try {
-      await retryTranscription(deps, { noteId: id, playerId });
+      await retryNote(deps, { noteId: id, playerId });
       return reply.code(202).send();
     } catch (err) {
       return handleServiceError(reply, err);

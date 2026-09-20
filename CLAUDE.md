@@ -5,7 +5,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0 and step 1.1 done and fully verified, start step 1.2
+## Status: Phase 0 and steps 1.1 to 1.2 done, start step 1.3
 
 The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -18,17 +18,21 @@ switch check and 5/20/60 minute retry schedule, all with tests (step 0.6). Match
 `notes` and `check_ins` tables, the real `/match-scribe` route (recorder, review, history,
 daily check-in), the offline queue, the Free-tier quota, and the audio lifecycle (immediate
 delete on save, a 7-day sweep as backstop) are built behind adapters for R2 and Whisper (step
-1.1). **Both vendors are now configured and verified against real infrastructure**, not just
-tested with mocks: a note recorded in a real browser session was transcribed by real Whisper
-(captured actual speech correctly, cost and language confidence recorded) and its audio
-uploaded to and deleted from a real R2 bucket (`audio-files`) on save, confirmed by querying the
-live `notes` table directly. See `.env.example` for the vars; real credentials live only in the
-owner's local, gitignored `.env`, not in this repo. PRs #4, #5 and #6 (steps 0.5, 0.6, 1.1) are
-all merged to `main`; no stacked branches remain. The next session should start at **step 1.2
-(structured extraction)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever
-architecture section it names. Check `docs/BUILD-LOG.md` for what each prior step actually did
-(including follow-ups) before assuming anything about the current state — this line is a
-pointer, not the full record.
+1.1), both configured and verified against real infrastructure. `packages/agents` has the first
+agent, `match-scribe/extract` (step 1.2): one schema-validated Anthropic call (`claude-sonnet-5`)
+with a versioned Zod schema, one corrective retry on validation failure, and a mood-confidence
+floor, wired into `apps/api` right after transcription so a saved note's result, opponent, tags,
+mood and coach summary arrive pre-filled as proposals; a `failed_extraction` state and its own
+Retry path (separate from transcription's, never re-uploading audio) cover the failure case. Not
+yet verified against a real Anthropic call — no `ANTHROPIC_API_KEY` is configured in this repo's
+environment yet, so it currently runs on a mock client in dev; `docs/BUILD-LOG.md`'s step 1.2
+entry says what to check once a real key is added. See `.env.example` for the vars; real
+credentials live only in the owner's local, gitignored `.env`, not in this repo. PRs #4, #5 and
+#6 (steps 0.5, 0.6, 1.1) are all merged to `main`; no stacked branches remain, and step 1.2 has
+not yet been opened as a PR. The next session should start at **step 1.3 (Mindset Coach)**, in
+`docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture section it names.
+Check `docs/BUILD-LOG.md` for what each prior step actually did (including follow-ups) before
+assuming anything about the current state — this line is a pointer, not the full record.
 
 ## Read before coding
 

@@ -66,6 +66,12 @@ importers:
       '@fastify/multipart':
         specifier: ^9.0.1
         version: 9.4.0
+      '@procircuit/actions':
+        specifier: workspace:*
+        version: link:../../packages/actions
+      '@procircuit/agents':
+        specifier: workspace:*
+        version: link:../../packages/agents
       '@procircuit/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -189,6 +195,12 @@ importers:
 
   packages/agents:
     dependencies:
+      '@procircuit/actions':
+        specifier: workspace:*
+        version: link:../actions
+      '@procircuit/db':
+        specifier: workspace:*
+        version: link:../db
       zod:
         specifier: ^3.23.8
         version: 3.25.76

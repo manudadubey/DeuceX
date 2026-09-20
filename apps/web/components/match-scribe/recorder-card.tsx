@@ -34,7 +34,7 @@ import { createClient } from '@/lib/supabase/client';
 import {
   QuotaExceededError,
   deleteNoteRemote,
-  retryTranscriptionRemote,
+  retryNoteRemote,
   saveNoteRemote,
   uploadNote,
 } from '@/lib/match-scribe/api';
@@ -112,7 +112,11 @@ export function RecorderCard({
       pollRef.current = setInterval(async () => {
         const row = await getNote(supabase, noteId);
         if (!row) return;
-        if (row.status === 'review' || row.status === 'failed_transcription') {
+        if (
+          row.status === 'review' ||
+          row.status === 'failed_transcription' ||
+          row.status === 'failed_extraction'
+        ) {
           stopPolling();
           loadIntoForm(row);
           setPhase('review');
@@ -254,7 +258,7 @@ export function RecorderCard({
   const handleRetry = useCallback(async () => {
     if (!note) return;
     setPhase('transcribing');
-    await retryTranscriptionRemote(supabase, note.id);
+    await retryNoteRemote(supabase, note.id);
     pollForTranscript(note.id);
   }, [note, pollForTranscript, supabase]);
 
@@ -262,7 +266,9 @@ export function RecorderCard({
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   };
 
-  const isFailed = note?.status === 'failed_transcription';
+  const isFailedTranscription = note?.status === 'failed_transcription';
+  const isFailedExtraction = note?.status === 'failed_extraction';
+  const isFailed = isFailedTranscription || isFailedExtraction;
   const badge =
     phase === 'idle'
       ? { text: 'Ready', variant: 'secondary' as const }
@@ -389,7 +395,7 @@ export function RecorderCard({
 
             {phase === 'review' && (
               <div className="flex flex-col gap-6">
-                {isFailed && (
+                {isFailedTranscription && (
                   <div className="flex items-center justify-between rounded-lg bg-warn-bg p-3">
                     <div>
                       <p className="text-sm font-medium text-warn">
@@ -397,6 +403,22 @@ export function RecorderCard({
                       </p>
                       <p className="text-[0.8125rem] text-muted-foreground">
                         The audio is still here. Type the note yourself, or try again.
+                      </p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={handleRetry}>
+                      Retry
+                    </Button>
+                  </div>
+                )}
+
+                {isFailedExtraction && (
+                  <div className="flex items-center justify-between rounded-lg bg-warn-bg p-3">
+                    <div>
+                      <p className="text-sm font-medium text-warn">
+                        We couldn&apos;t read a result from this
+                      </p>
+                      <p className="text-[0.8125rem] text-muted-foreground">
+                        Fill it in if you want the agents to have it.
                       </p>
                     </div>
                     <Button size="sm" variant="outline" onClick={handleRetry}>

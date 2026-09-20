@@ -1,10 +1,22 @@
 import { fileURLToPath } from 'node:url';
 import { createAnonClient, createServiceRoleClient } from '@procircuit/db';
+import { SupabaseAgentRunsDb } from '@procircuit/actions';
+import {
+  EXTRACTION_MODEL,
+  createAnthropicExtractionClient,
+  createMockExtractionClient,
+} from '@procircuit/agents';
 import cors from '@fastify/cors';
 import { config as loadEnv } from 'dotenv';
 import Fastify from 'fastify';
 import { registerNotesRoutes, type NotesRoutesDeps } from './notes/routes';
-import { createNotesBoss, enqueueTranscription, registerNotesWorkers } from './notes/queue';
+import {
+  createNotesBoss,
+  enqueueExtraction,
+  enqueueTranscription,
+  registerNotesWorkers,
+} from './notes/queue';
+import { runExtraction } from './notes/extraction';
 import { transcribeNote } from './notes/service';
 import { sweepExpiredAudio } from './notes/audio-lifecycle';
 import { createMemoryStorageAdapter } from './storage/memory-adapter';
@@ -87,17 +99,36 @@ async function main() {
         return createMockTranscriptionAdapter();
       })();
 
+  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+  const extraction = anthropicApiKey
+    ? createAnthropicExtractionClient({ apiKey: anthropicApiKey, model: EXTRACTION_MODEL })
+    : (() => {
+        console.warn(
+          'ANTHROPIC_API_KEY not set: falling back to the mock extraction client. Set ANTHROPIC_API_KEY for real structured extraction.',
+        );
+        return createMockExtractionClient();
+      })();
+  const agentRuns = new SupabaseAgentRunsDb(db);
+
   const boss = await createNotesBoss(dbConnectionString);
   const notesDeps: NotesRoutesDeps = {
     db,
     anonClient,
     storage,
     transcription,
+    extraction,
+    agentRuns,
     enqueueTranscription: (noteId) => enqueueTranscription(boss, noteId),
+    enqueueExtraction: (noteId) => enqueueExtraction(boss, noteId),
   };
 
   await registerNotesWorkers(boss, {
     transcribeNote: (noteId) => transcribeNote(notesDeps, noteId),
+    extractNote: (noteId) =>
+      runExtraction(
+        { db, extractionClient: extraction, agentRuns, logger: notesDeps.logger },
+        noteId,
+      ),
     sweepExpiredAudio: async () => {
       await sweepExpiredAudio({ db, storage }, new Date());
     },

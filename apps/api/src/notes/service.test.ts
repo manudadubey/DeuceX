@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@procircuit/db';
+import type { AgentRunsDb } from '@procircuit/actions';
+import { createInvalidExtractionClient, createMockExtractionClient } from '@procircuit/agents';
 import { FakeDb, makeNote } from '../test-support/fake-db';
 import { createMemoryStorageAdapter } from '../storage/memory-adapter';
 import {
@@ -13,7 +15,7 @@ import {
   QuotaExceededError,
   createNote,
   deleteNote,
-  retryTranscription,
+  retryNote,
   saveNote,
   transcribeNote,
   type NotesServiceDeps,
@@ -23,13 +25,21 @@ function asDb(fake: FakeDb): SupabaseClient<Database> {
   return fake as unknown as SupabaseClient<Database>;
 }
 
+function fakeAgentRunsDb(): AgentRunsDb {
+  return { insertAgentRun: async () => undefined };
+}
+
 function baseDeps(fake: FakeDb, overrides: Partial<NotesServiceDeps> = {}): NotesServiceDeps {
   return {
     db: asDb(fake),
     storage: createMemoryStorageAdapter(),
     transcription: createMockTranscriptionAdapter(),
+    extraction: createMockExtractionClient(),
+    agentRuns: fakeAgentRunsDb(),
     enqueueTranscription: async () => undefined,
+    enqueueExtraction: async () => undefined,
     now: () => new Date('2026-09-11T18:44:00Z'),
+    logger: { error: () => undefined },
     ...overrides,
   };
 }
@@ -158,7 +168,7 @@ describe('createNote', () => {
 });
 
 describe('transcribeNote', () => {
-  it('fills the transcript and moves the note to review on success', async () => {
+  it('fills the transcript, runs extraction and moves the note to review on success (step 1.2)', async () => {
     const storage = createMemoryStorageAdapter();
     await storage.upload({
       key: 'notes/player-1/note-1',
@@ -177,6 +187,31 @@ describe('transcribeNote', () => {
     expect(note!.transcript).toBeTruthy();
     expect(note!.transcript_raw).toBe(note!.transcript);
     expect(note!.lang).toBe('en');
+    expect(note!.result).toBe('L 6-4 3-6 6-7(5)');
+    expect(note!.opponent).toBe('Kovalenko');
+    expect(note!.mood).toBe('frustrated');
+    expect(note!.extraction).toMatchObject({ valid: true });
+  });
+
+  it('leaves result/opponent/mood untouched and marks failed_extraction when the model output never validates (S-7, S-19)', async () => {
+    const storage = createMemoryStorageAdapter();
+    await storage.upload({
+      key: 'notes/player-1/note-1',
+      body: Buffer.from('audio'),
+      contentType: 'audio/webm',
+    });
+    const fake = new FakeDb({
+      notes: [makeNote({ status: 'transcribing', transcript: null })],
+    });
+    const deps = baseDeps(fake, { storage, extraction: createInvalidExtractionClient() });
+
+    await transcribeNote(deps, 'note-1');
+
+    const [note] = fake.tables.notes!;
+    expect(note!.status).toBe('failed_extraction');
+    expect(note!.transcript).toBeTruthy();
+    expect(note!.result).toBeNull();
+    expect(note!.extraction).toMatchObject({ valid: false });
   });
 
   it('passes the fixed language preference through as an override', async () => {
@@ -217,34 +252,50 @@ describe('transcribeNote', () => {
   });
 });
 
-describe('retryTranscription', () => {
+describe('retryNote', () => {
   it('re-enqueues a failed transcription', async () => {
     const fake = new FakeDb({ notes: [makeNote({ status: 'failed_transcription' })] });
     const enqueued: string[] = [];
     const deps = baseDeps(fake, { enqueueTranscription: async (id) => void enqueued.push(id) });
 
-    await retryTranscription(deps, { noteId: 'note-1', playerId: 'player-1' });
+    await retryNote(deps, { noteId: 'note-1', playerId: 'player-1' });
 
     expect(fake.tables.notes![0]!.status).toBe('transcribing');
     expect(enqueued).toEqual(['note-1']);
   });
 
-  it('refuses to retry a note that is not in failed_transcription', async () => {
+  it('re-enqueues extraction alone for failed_extraction, without touching transcription (S-19, step 1.2)', async () => {
+    const fake = new FakeDb({ notes: [makeNote({ status: 'failed_extraction' })] });
+    const transcriptionEnqueued: string[] = [];
+    const extractionEnqueued: string[] = [];
+    const deps = baseDeps(fake, {
+      enqueueTranscription: async (id) => void transcriptionEnqueued.push(id),
+      enqueueExtraction: async (id) => void extractionEnqueued.push(id),
+    });
+
+    await retryNote(deps, { noteId: 'note-1', playerId: 'player-1' });
+
+    expect(fake.tables.notes![0]!.status).toBe('transcribing');
+    expect(extractionEnqueued).toEqual(['note-1']);
+    expect(transcriptionEnqueued).toEqual([]);
+  });
+
+  it('refuses to retry a note that has not failed', async () => {
     const fake = new FakeDb({ notes: [makeNote({ status: 'review' })] });
     const deps = baseDeps(fake);
 
-    await expect(
-      retryTranscription(deps, { noteId: 'note-1', playerId: 'player-1' }),
-    ).rejects.toThrow(InvalidNoteStateError);
+    await expect(retryNote(deps, { noteId: 'note-1', playerId: 'player-1' })).rejects.toThrow(
+      InvalidNoteStateError,
+    );
   });
 
   it('refuses a note that does not belong to the caller', async () => {
     const fake = new FakeDb({ notes: [makeNote({ status: 'failed_transcription' })] });
     const deps = baseDeps(fake);
 
-    await expect(
-      retryTranscription(deps, { noteId: 'note-1', playerId: 'someone-else' }),
-    ).rejects.toThrow(NoteNotFoundError);
+    await expect(retryNote(deps, { noteId: 'note-1', playerId: 'someone-else' })).rejects.toThrow(
+      NoteNotFoundError,
+    );
   });
 });
 

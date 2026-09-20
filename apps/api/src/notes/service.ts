@@ -6,8 +6,11 @@ import {
   type Note,
   type NoteCtx,
 } from '@procircuit/db';
+import type { AgentRunsDb } from '@procircuit/actions';
+import type { ExtractionModelClient } from '@procircuit/agents';
 import type { StorageAdapter } from '../storage/adapter';
 import type { TranscriptionAdapter } from '../transcription/adapter';
+import { runExtraction, type ExtractionLogger } from './extraction';
 
 export class QuotaExceededError extends Error {
   constructor() {
@@ -37,9 +40,14 @@ export interface NotesServiceDeps {
   db: SupabaseClient<Database>;
   storage: StorageAdapter;
   transcription: TranscriptionAdapter;
+  /** The match-scribe/extract agent's model call (step 1.2) and its agent_runs sink. */
+  extraction: ExtractionModelClient;
+  agentRuns: AgentRunsDb;
   enqueueTranscription: (noteId: string) => Promise<void>;
+  enqueueExtraction: (noteId: string) => Promise<void>;
   /** Injected for tests; defaults to the real clock. */
   now?: () => Date;
+  logger?: ExtractionLogger;
 }
 
 function clockNow(deps: Pick<NotesServiceDeps, 'now'>): Date {
@@ -136,10 +144,14 @@ export async function createNote(deps: NotesServiceDeps, input: CreateNoteInput)
   return data;
 }
 
-// The transcription queue job (S-4, S-7 partially — result/opponent/etc
-// stay null until step 1.2's extractor exists; this only fills transcript
-// and language). S-19: failure leaves the note in `failed_transcription`
-// with the audio untouched, so Retry can run again without losing it.
+// The transcription queue job (S-4). S-19: failure leaves the note in
+// `failed_transcription` with the audio untouched, so Retry can run again
+// without losing it. Extraction (step 1.2, S-7, S-8) runs immediately after
+// a successful transcription, in the same job: both have to finish before
+// the note is fit to show as Review, and running extraction as a second
+// queue hop would mean re-downloading nothing new while adding a window
+// where the note briefly reads "review" with no proposals filled in yet
+// (see runExtraction's own comment on why it never re-throws here).
 export async function transcribeNote(deps: NotesServiceDeps, noteId: string): Promise<void> {
   const { data: note, error } = await deps.db.from('notes').select('*').eq('id', noteId).single();
   if (error) throw error;
@@ -164,7 +176,6 @@ export async function transcribeNote(deps: NotesServiceDeps, noteId: string): Pr
         lang_conf: result.confidence,
         lang_source: note.lang_source ?? 'whisper',
         transcription: { model: result.model, cost: result.costUsd },
-        status: 'review',
       })
       .eq('id', noteId);
     if (updateError) throw updateError;
@@ -172,6 +183,16 @@ export async function transcribeNote(deps: NotesServiceDeps, noteId: string): Pr
     await deps.db.from('notes').update({ status: 'failed_transcription' }).eq('id', noteId);
     throw err;
   }
+
+  await runExtraction(
+    {
+      db: deps.db,
+      extractionClient: deps.extraction,
+      agentRuns: deps.agentRuns,
+      logger: deps.logger,
+    },
+    noteId,
+  );
 }
 
 export interface RetryTranscriptionInput {
@@ -179,16 +200,30 @@ export interface RetryTranscriptionInput {
   playerId: string;
 }
 
-export async function retryTranscription(
+// A single Retry action (S-19) covering both of Match Scribe's distinct
+// failure states: re-enqueues transcription for `failed_transcription`
+// (which itself re-runs extraction on success, above), or re-runs
+// extraction alone for `failed_extraction` — the transcript is already
+// durable, so there is nothing to re-download or re-transcribe.
+export async function retryNote(
   deps: NotesServiceDeps,
   input: RetryTranscriptionInput,
 ): Promise<void> {
   const note = await requireNote(deps.db, input.noteId, input.playerId);
-  if (note.status !== 'failed_transcription') {
-    throw new InvalidNoteStateError(`Cannot retry a note in status ${note.status}`);
+
+  if (note.status === 'failed_transcription') {
+    await deps.db.from('notes').update({ status: 'transcribing' }).eq('id', input.noteId);
+    await deps.enqueueTranscription(input.noteId);
+    return;
   }
-  await deps.db.from('notes').update({ status: 'transcribing' }).eq('id', input.noteId);
-  await deps.enqueueTranscription(input.noteId);
+
+  if (note.status === 'failed_extraction') {
+    await deps.db.from('notes').update({ status: 'transcribing' }).eq('id', input.noteId);
+    await deps.enqueueExtraction(input.noteId);
+    return;
+  }
+
+  throw new InvalidNoteStateError(`Cannot retry a note in status ${note.status}`);
 }
 
 export interface SaveNoteInput {
