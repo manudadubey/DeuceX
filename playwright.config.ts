@@ -8,4 +8,10 @@ export default defineConfig({
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
   },
+  webServer: {
+    command: 'pnpm --filter @procircuit/web dev',
+    url: 'http://localhost:3000/kitchen-sink',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  },
 });

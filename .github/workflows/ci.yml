@@ -34,3 +34,15 @@ jobs:
 
       - name: Unit tests
         run: pnpm test
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: E2E tests
+        run: pnpm test:e2e
+        env:
+          # apps/web's middleware refreshes the Supabase session on every request (even
+          # /kitchen-sink, which never calls Supabase itself), so it 500s without these.
+          # A real key isn't needed: the e2e suite never signs in.
+          NEXT_PUBLIC_SUPABASE_URL: 'https://placeholder.supabase.co'
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'placeholder-anon-key'
