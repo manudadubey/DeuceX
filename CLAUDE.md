@@ -5,16 +5,16 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0 step 0.1 done, start at step 0.2
+## Status: Phase 0 step 0.4 done, start at step 0.5
 
-The monorepo scaffold is built, pushed, and deploying (see Infrastructure section below for
-exact details: repo, CI, Vercel, Supabase). Nothing product-specific exists yet — every package
-is a placeholder with one smoke test, and the database has no ProCircuit tables. The next session
-should start at **step 0.2 (database, migrations, row-level security)** in
-`docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus `docs/TECH-ARCHITECTURE.md` section 2 and
-PRD-00 section 5.3, then build the first migration into `packages/db/migrations` against the
-Supabase project below. Check `docs/BUILD-LOG.md` for what step 0.1 actually did before assuming
-anything about the current state.
+The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
+(step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
+0.3); `packages/ui` has the full Baseline component set and a `/kitchen-sink` route in `apps/web`
+(step 0.4). Nothing product-specific has been built on top of any of this yet — no app shell, no
+agents, no dashboard. The next session should start at **step 0.5 (app shell and routing)** in
+`docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture section it names.
+Check `docs/BUILD-LOG.md` for what each prior step actually did (including follow-ups) before
+assuming anything about the current state — this line is a pointer, not the full record.
 
 ## Read before coding
 

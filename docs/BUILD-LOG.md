@@ -262,3 +262,75 @@ browser, to confirm — everything server-side and everything registration-side 
 Net result: magic-link sign-in is fully verified end to end against production infrastructure
 (real SMTP, real template, real click-through, real session). Passkey registration is verified.
 Passkey sign-in is implemented identically but needs a real device to finish confirming.
+
+## Step 0.4 · Design system port (Baseline) — 20 September 2026
+
+Acceptance checks restated before starting: (1) a kitchen-sink route renders every component
+in both themes and matches Baseline visually, (2) a Playwright check confirms no horizontal
+scroll at 390px.
+
+Built `packages/ui`: the Baseline tokens (`src/styles/globals.css`) copied verbatim from
+`docs/procircuit-baseline.html`'s `:root`, dark-media-query and `data-theme="dark"` blocks,
+reorganised for Tailwind v4's CSS-first theming (`@theme inline` mapping `--color-*`/
+`--radius-*`/`--font-*` onto the same runtime custom properties, the shadcn v4 idiom, since
+Baseline predates v4 and the build plan's own "Tailwind theme mapping" sample is v3-style
+JS config) — a theme flip still repaints every utility with no rebuild. The full component
+set the step names: Button, Badge, Card (header/title/description/actions/content/footer),
+PulseTile, Stat, Tabs (segmented), ToggleGroup, Switch, Input, InputGroup, Select, Textarea,
+Field, Table, Item, Empty, Progress, Spinner, Toast, Tooltip, Sheet, Confirm, the Flag SVG
+sprite (all 15 simplified flags plus the logo symbol, and `placeFlag()` for `pflag()`), and
+the chart helpers `el()` (renamed `tagChartEnter` added alongside it for the enter-motion
+tagging that was inline script in the prototype) and `axisK()` (now takes an explicit `rate`
+parameter instead of reading a global `PREFS`/`RATES`, since packages/ui can't know about
+app-level currency state). A `SampleRankChart` component demonstrates `el()`/`axisK()` with
+the same 52-week ranking line as Baseline's own doc page. Motion, reduced-motion, reduced-
+transparency and increased-contrast rules are global CSS in the same file; 44px mobile targets
+use `max-[900px]:` (Baseline's own sidebar-collapse breakpoint, not Tailwind's default `sm`).
+
+Decision: Radix UI primitives (`@radix-ui/react-*`), not Base UI — TECH-ARCHITECTURE.md
+section 1 names either as acceptable ("Base UI or Radix"); Radix is the more mature and
+documented option for the accessibility-bearing pieces (Tabs, Switch, ToggleGroup, Select,
+Tooltip, Toast, Dialog-as-Sheet) and this is a one-way choice worth not re-litigating per
+component. Styling is Tailwind utility classes plus `class-variance-authority` for variants,
+`clsx`/`tailwind-merge` for a `cn()` helper, `lucide-react` for icons (per Baseline's own
+"Lucide icons" preset note).
+
+Wired `apps/web` only (not `apps/admin`, out of scope for this step): `transpilePackages:
+['@procircuit/ui']` in `next.config.mjs`, `postcss.config.mjs` with `@tailwindcss/postcss`,
+`app/globals.css` importing the package's token file directly (`@import
+'@procircuit/ui/src/styles/globals.css'`), and `@source` directives inside that token file
+(Tailwind v4 doesn't scan `node_modules` by default, and a pnpm workspace package is reached
+through a symlinked `node_modules` entry) pointing at `packages/ui`'s own component/chart
+directories and at `apps/web/app` and `apps/admin/app`, so utility classes used in either app
+are generated. `app/layout.tsx` now loads the Geist/Geist Mono Google Fonts stylesheet and
+mounts `<FlagSprite />` once. Built `app/kitchen-sink/page.tsx`, exercising every component
+listed above in a single scrollable page with a light/dark theme toggle (same interaction as
+Baseline's own doc page: flips `documentElement[data-theme]`, eases via the `.theming` class).
+
+Also had to add `DOM`/`DOM.Iterable` to `tsconfig.base.json`'s `lib` array (was `["ES2022"]`
+only, which happened to typecheck through step 0.3 because nothing yet referenced a bare DOM
+global like `document` or `HTMLElement` directly — `next`'s own ambient types cover JSX and
+`fetch`, but not, for example, the browser APIs the chart helper and theme toggle need).
+
+Verified by hand, not just asserted: ran `apps/web` locally, screenshotted the kitchen sink in
+both themes (light/dark toggle), opened both sheet variants (notification rail from the right,
+quick actions from the bottom), confirmed the fresh-row table tint, meters, sparkline and the
+sample chart's enter motion. Added `e2e/kitchen-sink.spec.ts` (390×844 viewport, both
+`prefers-color-scheme`s) asserting `document.documentElement.scrollWidth <=
+document.documentElement.clientWidth`; both pass. Added a `webServer` block to
+`playwright.config.ts` and wired `pnpm test:e2e` into CI with placeholder
+`NEXT_PUBLIC_SUPABASE_*` env vars, because apps/web's middleware (from step 0.3) refreshes the
+Supabase session on every request, including `/kitchen-sink`, and 500s without them — confirmed
+this by hand (renamed `.env.local` away, hit the route, got the exact error, restored it, added
+placeholder values, confirmed 200) before wiring CI, rather than assuming. `next build` for
+apps/web succeeds with `/kitchen-sink` prerendered as static.
+
+Skipped, deliberately: `apps/admin` (no Tailwind/packages/ui wiring; it doesn't consume the
+design system yet and step 0.4 doesn't ask for its shell, only the shell/routing step does); a
+Storybook (the build plan offers "a Storybook or a single `/kitchen-sink` route" — chose the
+route, since it needs no new tooling and the whole team already has to run `apps/web`); a
+global toast-dispatch hook (`packages/ui` exports the Radix Toast primitives only; a `useToast`
+helper is a product-level concern for whichever step first needs to fire one); per-component
+Storybook-style prop docs beyond the source comments. `axisK()`'s home-currency conversion is
+unexercised beyond the identity rate (1) since `fx_rates_daily` reads don't exist until an
+agent needs them.
