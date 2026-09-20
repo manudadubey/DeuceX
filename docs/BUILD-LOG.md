@@ -118,3 +118,70 @@ this one. Also skipped: backfilling local migration files for the two migrations
 directly against the project (`create_match_charting_tables`, `enable_rls_existing_tables`) —
 they predate this session and are out of step 0.2's scope, but `packages/db/migrations/` and the
 project's migration history are now out of sync for those two; worth a quick fix later.
+
+## Step 0.3 · Auth: magic link and passkey — 20 September 2026
+
+Acceptance checks restated before starting: (1) a new email can sign in from a link, (2) a
+passkey can be registered and used, (3) there is no password column, field or route.
+
+Built, in `apps/web`: `lib/supabase/client.ts` (browser client, passkey opted in via
+`auth.experimental.passkey`), `lib/supabase/server.ts` (cookie-based server client for Server
+Components/actions/route handlers), `lib/supabase/middleware.ts` + root `middleware.ts` (session
+refresh on every request, following Supabase's own "don't add code between createServerClient and
+getClaims()" warning literally), `app/signin/page.tsx` matching the prototype's `#/signin` copy
+and structure exactly (logo line, email field, "Email me a sign-in link", an inline "Use a
+passkey instead", "Create an account" back to `/onboarding`), `app/signin/actions.ts` (the magic
+link server action, `signInWithOtp`), `app/auth/confirm/route.ts` (the server-side `verifyOtp`
+callback the emailed link lands on), `app/auth/signout/route.ts`, and two small client components
+(`passkey-sign-in.tsx`, `passkey-register.tsx`) since WebAuthn ceremonies only run in the
+browser. `app/page.tsx` (still the step-0.1 placeholder otherwise) now gates on a session,
+redirecting to `/signin` when there isn't one, and shows a "Register a passkey" / "Sign out" pair
+when there is — the smallest surface that makes "a passkey can be registered and used"
+demonstrable, since there's no Settings pane (PRD-12) to host that yet. Confirmed by grep: no
+"password" field, column or route exists anywhere in `apps/web` or `packages/db`.
+
+Verified: `pnpm -r typecheck`, `pnpm lint`, `pnpm format`, `pnpm -r test` all green; `next build`
+for `apps/web` compiles and correctly marks `/`, `/signin`, `/auth/confirm` and `/auth/signout` as
+dynamic, both with and without the Supabase env vars present (so a Vercel deploy won't hard-fail
+before the env vars below are set — it'll just 500 at runtime on `/signin` until they are).
+
+**Not verified, and can't be from here**: an actual magic-link email arriving, and an actual
+WebAuthn ceremony (needs a real authenticator — a phone, a platform biometric, a security key).
+Neither is something this sandbox can drive. The code follows Supabase's own documented
+server-side-flow pattern closely (fetched live from their docs this session, not from training
+data, since this area moves fast), but the end-to-end path needs a real run by a human before
+calling it done.
+
+**Genuinely blocked without the project owner**: Supabase Auth's dashboard-level settings — Site
+URL, the redirect-URL allowlist, the Magic Link email template, and the Passkey/WebAuthn Relying
+Party config — live in GoTrue's own config, not in Postgres, so no tool available in this session
+(the Supabase MCP server's tool list, or SQL) can read or write them; that needs either the
+dashboard or a Management API token this session doesn't have. Manual checklist, once `apps/web`
+has a real URL (`http://localhost:3000` for local dev; the Vercel `procircuit` URL, and later the
+production domain):
+
+1. **Auth > URL Configuration**: set Site URL to that origin; add `<origin>/auth/confirm` (or a
+   wildcard `<origin>/**`) to Redirect URLs for every environment (local, Vercel preview, prod).
+2. **Auth > Email Templates > Magic Link**: replace the default `{{ .ConfirmationURL }}` body
+   with a link to `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink` — the
+   default template does a client-side hash redirect that `app/auth/confirm/route.ts` (a
+   server-side `verifyOtp` exchange) does not use.
+3. **Auth > Passkeys**: turn on "Enable Passkey authentication"; set Relying Party Display Name
+   ("ProCircuit"), Relying Party ID (the bare domain, e.g. `procircuit.vercel.app` for now), and
+   Relying Party Origins (the exact origins above). Note: Supabase's own passkey API is marked
+   experimental ("the API may change without notice") — acceptable given the worksheet-11
+   decision explicitly wants passkey support, but worth knowing before relying on it in
+   production.
+4. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (the publishable
+   key, not the service role key) as environment variables on the `procircuit` Vercel project,
+   and in a local `.env.local` for `apps/web` — both are in `.env.example` now.
+
+Skipped, deliberately: the onboarding flow and the `players` row that would normally get created
+after a first sign-in (PRD-11, a later step) — a first-time magic-link sign-in currently leaves
+only the `auth.users` row Supabase itself manages, with no matching `players` row, since
+`players` has several NOT NULL columns (tour, country, dob, home_currency, ...) that only
+onboarding collects. Also skipped: any Settings/Account UI for managing existing passkeys (list,
+rename, delete) — PRD-12 ST-2 wants that, but PRD-12's Settings pane doesn't exist yet; the
+temporary "Register a passkey" button on the placeholder home page is scoped to proving the
+mechanism, not to replacing that later screen. Also skipped: `apps/admin`'s mandatory-passkey
+sign-in, explicitly deferred by the build plan to a later step.
