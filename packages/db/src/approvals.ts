@@ -59,5 +59,5 @@ export async function createApproval(
 
   if (error) throw error;
 
-  return { id: data.id, payloadHash: hashApprovalPayload(input.payload) };
+  return { id: data.id, payloadHash: await hashApprovalPayload(input.payload) };
 }

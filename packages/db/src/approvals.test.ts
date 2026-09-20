@@ -50,7 +50,7 @@ describe('createApproval', () => {
       payload,
     });
 
-    expect(result.payloadHash).toBe(hashApprovalPayload(payload));
+    expect(result.payloadHash).toBe(await hashApprovalPayload(payload));
   });
 
   it('throws when the insert fails (e.g. RLS rejects it)', async () => {

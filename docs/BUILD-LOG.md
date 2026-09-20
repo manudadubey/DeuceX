@@ -529,3 +529,163 @@ player-facing UI for `agent_schedules.paused` (Agent Studio, Elite, not built); 
 `confirmApproval` into any real screen (no agent has a proposal to confirm yet). Question
 raised and resolved with the owner: Supabase branching needs the Pro plan; owner chose to
 apply the migration directly to production rather than upgrade or leave it unapplied.
+
+## Step 1.1 · Notes and the recorder — 21 September 2026
+
+Acceptance checks restated before starting: a note recorded on a phone reaches R2, is
+transcribed (mock in tests, Whisper in staging), and can be edited and saved; airplane mode
+then reconnect uploads the queue; a time-travelled test proves the lifecycle job deletes audio
+at the right moment in a test; the copy says "usually within twenty seconds" and "deleted
+after 7 days".
+
+Migration (`packages/db/migrations/20260921090000_step_1_1_match_scribe.sql`, plus three
+same-day follow-ups) adds `notes` and `check_ins`. Followed PRD-02 section 6's fuller data
+dictionary rather than TECH-ARCHITECTURE.md 2.2's shorter indicative table, since PRD-02
+section 3's own "Audit" paragraph requires transcription model/version, detected language and
+confidence, extraction model/prompt/schema versions and validation result, and the player's
+edits to each proposed field to be recorded on the note — TECH-ARCHITECTURE's table is missing
+all of that. Structured-extraction columns (`result`, `opponent`, `tags`, `mood`, `summary`,
+`extraction`, `edits`) are created now even though step 1.2 (not this step) is what populates
+them as agent proposals, since PRD-02's review screen already lets the player set them by hand
+before the extractor exists, and it is the same table either way — no second migration when
+step 1.2 lands.
+
+Deletion is never a SQL `DELETE` on `notes`. S-14's "Delete this note and its audio? Agents
+lose it too" reads like a hard delete, but `audioDeleteCause`'s enum includes `playerDelete`,
+which only means something if the row survives to carry it — the same append-only-state-
+transition idiom `players.deletion_*` already uses. A note the player deletes after saving is
+soft-deleted (content and `audio_ref` cleared, `status = 'deleted'`, cause `player_delete`);
+every read path filters that status out, which is what "agents lose it too" actually requires.
+A note that never reached `saved` (Discard, or walking away mid-review) is a real row + R2
+object removal instead, in `apps/api/src/notes/service.ts`'s `discardNote()`, since S-16 is
+explicit that discarded notes were never counted and nothing else depends on them.
+
+Quota (S-16): no `note_quotas` counter table, which could drift from the notes it counts.
+`notes_saved_this_month()` computes it directly from `notes`, scoped to the player's own
+`players.timezone` so the month boundary matches their clock, not UTC. The advisor flagged two
+real problems in the first pass, both fixed same-day in
+`20260921091500_step_1_1_fix_notes_functions.sql` and
+`20260921092500_step_1_1_revoke_default_function_grants.sql`: (1) the trigger function had a
+mutable search_path, same class of bug as step 0.2's `reject_fx_rates_daily_mutation` fix; (2)
+the quota function took the player id as a caller-supplied argument while running
+`SECURITY DEFINER`, which bypasses RLS by design — any authenticated player could have passed
+another player's id and read their count over `/rest/v1/rpc/notes_saved_this_month_for`. Split
+into two functions instead: a zero-argument, `auth.uid()`-scoped one for a player's own
+browser session, and a second, explicit-id version for apps/api's service-role client (which
+has no `auth.uid()` of its own). The second migration wasn't enough on its own —
+`revoke all ... from public` doesn't touch the separate per-role `EXECUTE` grants Supabase's
+own `alter default privileges` already made to `anon`/`authenticated` at `CREATE FUNCTION`
+time, confirmed by querying `information_schema.role_routine_grants` directly, which is why a
+third migration exists revoking those grants explicitly. A fourth, small migration
+(`20260921093000_step_1_1_notes_grant_no_status.sql`) removed `status`/`deleted_at` from the
+player's own column grant on `notes`, added too generously in the first pass: Save has to
+enforce the quota and the audio-confirmed deletion through apps/api, so a player's own session
+being able to move `status` directly would have been a way around both.
+
+The player/apps/api split follows TECH-ARCHITECTURE.md section 1's own line ("Next.js server
+actions handle simple CRUD directly against the database; the Fastify service owns anything
+with an external side effect or a scheduled job") applied literally: reading history, editing
+a note's content fields while it's in review, and the quota display are direct client Supabase
+calls through RLS (`packages/db/src/notes.ts`), the same "the player's own session is the real
+authorization" pattern `confirmApproval` already established in step 0.6. Everything that
+touches R2 or Whisper, or moves `status` — upload, save, discard, delete, retry — goes through
+new `apps/api` routes (`apps/api/src/notes/routes.ts`) on the service-role client, which
+authenticates the caller itself via `supabase.auth.getUser(token)` rather than trusting a
+client-supplied player id (`apps/api/src/auth.ts`), since the service role bypasses RLS
+entirely and would otherwise have no independent check at all.
+
+Storage and transcription are both behind adapters (`apps/api/src/storage`,
+`apps/api/src/transcription`), each with a real implementation (R2 via `@aws-sdk/client-s3`,
+S3-compatible per TECH-ARCHITECTURE.md section 1; Whisper via a direct `fetch` to OpenAI's
+`audio/transcriptions` endpoint, `whisper-1`, `verbose_json`) and a fake used in tests and as
+`index.ts`'s own dev-only fallback when the real vendor's env vars aren't set, so
+`pnpm dev:api` runs the whole pipeline end to end (upload → transcribe → review → save →
+delete) without either vendor configured. **Neither vendor is actually wired up yet**: no R2
+bucket exists and no `OPENAI_API_KEY` is set anywhere. `.env.example` documents the four `R2_*`
+vars and `OPENAI_API_KEY`; the owner confirmed an OpenAI/Whisper account exists but the key
+itself was deliberately not pasted into this session (kept out of the chat transcript) — both
+need to land in a real `.env`/staging config before "real Whisper in staging" is actually true,
+which is the one acceptance check this session could not itself close out.
+
+Whisper's `verbose_json` response gives the detected language as a full name ("german"), not
+the ISO 639-1 code PRD-02's own S-AC-3 expects ("de") — `whisper-adapter.ts` hand-maps the four
+languages Preferences will actually offer (English, Chinese, Spanish, German) and falls back to
+a lowercase two-letter guess for anything else, flagged in a comment rather than silently wrong.
+It also has no per-note confidence field; `lang_conf` is estimated from the average
+`no_speech_prob` across segments, a documented proxy, not a real confidence score — matching
+PRD-02 section 12's own note that the mood-proposal confidence threshold is "a placeholder for
+review with real transcripts."
+
+The audio lifecycle (S-13, M-PRIV-1, decisions worksheet item 3 — seven days, not the
+prototype's ninety) is two code paths sharing one idea, not one scheduled sweep for everything:
+`saveNote()` in `apps/api/src/notes/service.ts` deletes the audio synchronously the moment a
+note is saved (S-AC-7's "within one minute" falls out trivially from doing it inline), writing
+cause `confirmed`; `audio-lifecycle.ts`'s `sweepExpiredAudio(deps, now)` is the seven-day
+backstop for a note that never reaches `saved`, taking `now` as a parameter rather than reading
+the clock itself so `audio-lifecycle.test.ts` can time-travel to exactly the S-AC-8 boundary
+(uploaded 5 Sep 19:15, swept 12 Sep 19:15) without mocking global `Date` or waiting a week. In
+production this runs on its own small pg-boss queue (`apps/api/src/notes/queue.ts`,
+deliberately not reusing `packages/actions`'s `AGENT_RUN_QUEUE` — that queue's shape and its
+pause/provider-switch pickup guard are built for scheduled *agent* runs, and Match Scribe
+transcription is player-triggered, not scheduled or agent-schedule-gated), scheduled hourly via
+`boss.schedule()`; nothing calls that scheduler in tests, only the pure function it wraps.
+
+The offline queue (S-18, S-AC-12) is IndexedDB via `idb` (`apps/web/lib/match-scribe/offline-
+queue.ts`), tested against `fake-indexeddb` since jsdom has no real IndexedDB implementation.
+Drains oldest-first on mount and on the browser's `online` event, stopping at the first upload
+failure rather than skipping past it (a failure almost always means "still offline", so the
+rest stay queued for the next attempt in order). The 7-day audio clock starts at the real
+upload, not at record time, which falls out for free: nothing reaches apps/api, so nothing sets
+`audio_uploaded_at`, until the queue actually drains.
+
+The recorder itself (`apps/web/components/match-scribe/`) uses `MediaRecorder` plus a Web Audio
+`AnalyserNode` feeding the waveform canvas real microphone levels rather than the prototype's
+synthetic random ones. The review screen exposes transcript, mood, result, opponent, tags and
+the coach-share switch; round and surface exist as columns (PRD-02's data dictionary) but have
+no dedicated input in this step, since the prototype only ever shows them folded into a single
+opponent line and nothing yet parses them out separately (step 1.2's job). The Conditions field
+only renders when `note.cond` is already present — PRD-08 (Conditions, step 3.3) is what
+attaches a stamp, and doesn't exist yet, so S-11 is structurally ready (the column, the
+conditional UI) but nothing produces a stamp until that step lands. The spoken-language
+preference (Preferences, PRD-12/step 2.3, not built) doesn't exist yet either, so every note
+currently records under Whisper's own auto-detection; `lang_source: 'preference'` and the
+language-override plumbing already exist end to end in the adapter and API layer for step 2.3
+to turn on without further backend changes.
+
+Found and fixed a latent bug in step 0.6's own code, not new to this step: `hashApprovalPayload`
+(`packages/shared/src/approval-hash.ts`) used `node:crypto`, which `apps/web/lib/approvals/
+confirm-approval.ts` (a client component, step 0.6) already imported transitively through
+`@procircuit/db`'s barrel export — but nothing had ever actually rendered a page that imported
+it client-side, so Next.js's client webpack bundle had never needed to resolve `node:crypto`
+and the break stayed invisible. This step's `match-scribe-client.tsx` is the first real screen
+to import anything from `@procircuit/db` into a client bundle (for `getSavedNotesThisMonth`),
+which surfaced it immediately as a hard webpack build failure. Fixed by switching to Web Crypto
+(`crypto.subtle.digest`), a Node 20+ and browser standard, making `hashApprovalPayload` async;
+updated both call sites (`packages/db/src/approvals.ts`, `packages/actions/src/gate.ts`, both
+already inside async functions) and every test that called it. Verified against the real dev
+server, not just the type checker: the match-scribe route now compiles and correctly redirects
+an unauthenticated request to `/signin` (confirmed via the browser pane), where before the fix
+it 500'd on every request with the `node:crypto` build error.
+
+Verified: `pnpm typecheck`, `pnpm lint`, `pnpm format`, `pnpm test` all green across every
+package (176 tests passing — 39 new in `apps/api`, 12 new in `packages/db`, 5 new in
+`apps/web`'s offline-queue tests, plus 13 new RLS/quota-function integration tests in
+`packages/db` that are skipped here and in CI without `SUPABASE_DB_URL`, same as every prior
+step's integration tests). Applied all four migrations to the live project via the Supabase
+MCP server (this project can't branch — see the Supabase bullet in CLAUDE.md — so straight to
+production, confirmed with the owner before each of the four applies) and re-ran the security
+advisor after each until clean of anything this step introduced. Started the real
+`apps/web` dev server in the browser pane and navigated to `/match-scribe`: compiles cleanly,
+redirects to `/signin` (no session in this sandbox), console/log output free of the earlier
+build error.
+
+Skipped, deliberately: real R2 and Whisper credentials (owner needs to provision an R2 bucket
+and add both to `.env`/staging — see above); PRD-08's Conditions stamp (step 3.3); the
+spoken-language Preferences setting (step 2.3); step 1.2's structured extraction, so mood,
+result, opponent, tags and the coach summary are entirely player-typed in this step, never
+agent-proposed; S-20 ("Good day to write", Should) and S-21 (backdating a note, Could); PRD-13
+admin ingestion of any kind; Capacitor/native background upload and push (step 5.3/5.2) — the
+offline queue here only drains while the tab is open or on the `online` event, which is the
+PWA-only ceiling TECH-ARCHITECTURE.md section 1 already documents for iOS specifically; and an
+actual live-microphone, live-Whisper, live-R2 walkthrough on a phone, which needs both vendors
+configured and a signed-in test player, neither available in this session.
