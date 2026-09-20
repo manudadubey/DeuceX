@@ -679,13 +679,84 @@ advisor after each until clean of anything this step introduced. Started the rea
 redirects to `/signin` (no session in this sandbox), console/log output free of the earlier
 build error.
 
-Skipped, deliberately: real R2 and Whisper credentials (owner needs to provision an R2 bucket
-and add both to `.env`/staging — see above); PRD-08's Conditions stamp (step 3.3); the
-spoken-language Preferences setting (step 2.3); step 1.2's structured extraction, so mood,
-result, opponent, tags and the coach summary are entirely player-typed in this step, never
-agent-proposed; S-20 ("Good day to write", Should) and S-21 (backdating a note, Could); PRD-13
-admin ingestion of any kind; Capacitor/native background upload and push (step 5.3/5.2) — the
-offline queue here only drains while the tab is open or on the `online` event, which is the
-PWA-only ceiling TECH-ARCHITECTURE.md section 1 already documents for iOS specifically; and an
-actual live-microphone, live-Whisper, live-R2 walkthrough on a phone, which needs both vendors
-configured and a signed-in test player, neither available in this session.
+Skipped, deliberately: PRD-08's Conditions stamp (step 3.3); the spoken-language Preferences
+setting (step 2.3); step 1.2's structured extraction, so mood, result, opponent, tags and the
+coach summary are entirely player-typed in this step, never agent-proposed; S-20 ("Good day to
+write", Should) and S-21 (backdating a note, Could); PRD-13 admin ingestion of any kind;
+Capacitor/native background upload and push (step 5.3/5.2) — the offline queue here only drains
+while the tab is open or on the `online` event, which is the PWA-only ceiling
+TECH-ARCHITECTURE.md section 1 already documents for iOS specifically.
+
+### Follow-up · real Whisper and R2 configured, verified end to end, same day
+
+The owner provided an OpenAI API key and, separately, a Cloudflare R2 account id, bucket name
+(`audio-files`) and API token. Wired both into the owner's local `.env` (gitignored, never this
+repo) rather than the app's own code or config.
+
+Getting `apps/api` to actually run locally needed two more real credentials neither vendor
+provided: `SUPABASE_SERVICE_ROLE_KEY` (retrieved from the dashboard's legacy API keys page,
+which still exists as a "Reveal" action) and `SUPABASE_DB_URL`, which turned out to be
+unrecoverable — Supabase never shows the database password again after creation. Reset it (owner
+approved, since nothing else was using a direct Postgres connection to this project yet); the
+new connection string uses the **session pooler** host
+(`aws-0-ap-northeast-1.pooler.supabase.com:5432`), not the direct `db.<ref>.supabase.co` host,
+because the direct host only resolves over IPv6 and that session's sandbox had none. Added
+`dotenv`-based loading of a root `.env` to `apps/api/src/index.ts` (silent no-op under
+`NODE_ENV=test` and in staging/production, where Fly.io/Render inject env vars directly) since
+nothing previously loaded one.
+
+First real transcription attempt failed with `insufficient_quota` from OpenAI (an empty credit
+balance, not a bad key — confirmed by hand with a direct `curl` to the transcription endpoint,
+since the failure was otherwise invisible: pg-boss marks a thrown job failed in its own tables
+but nothing had ever logged *why*). Fixed both problems, not just the credit balance:
+`registerNotesWorkers` now logs the note id and error before rethrowing on any job failure, and
+`createNotesBoss` listens for pg-boss's own `error` event (an `EventEmitter` error with no
+listener crashes the process rather than failing quietly) — both take an optional logger,
+`console` by default, injectable in tests (`apps/api/src/notes/queue.test.ts`, new).
+
+Also built `scripts/dev-sign-in-link.mjs` (plus a `pnpm dev:sign-in-link` root script) once
+manual magic-link testing turned out to need it: it calls Supabase's admin API
+(`/auth/v1/admin/generate_link`) to produce a sign-in link without waiting on real email
+delivery, pointed at the app's own `/auth/confirm?token_hash=...&type=magiclink` — not
+Supabase's default `action_link`, which targets its own auto-verifying `/auth/v1/verify`
+endpoint and would have skipped straight past the anti-link-scanner design from step 0.3's
+follow-up entry above. Also inserted a `players` row by hand for the owner's existing
+`auth.users` row (`0396d886-...`), since onboarding (step 1.4) doesn't exist yet to create one
+through the app.
+
+Two real recordings were made end to end from a real browser session against this real
+infrastructure: real audio, real `MediaRecorder` capture, real upload to apps/api, real Whisper
+transcription (both transcripts correctly captured genuine speech, including one about a windy
+match and lost patience, and one about a loss in China blamed on wind and humidity), player edits
+in review, Save, and immediate audio deletion — confirmed directly against `public.notes`, not
+inferred from the UI: `status = 'saved'`, `audio_ref` null, `audio_delete_cause = 'confirmed'`,
+deleted within a minute of upload. R2 connectivity was verified twice: once with a raw
+upload/download/delete round trip run directly against `createR2Adapter` (confirming the
+account id, bucket and both keys are correct and paired correctly — the pasted values were
+identified as key id vs secret purely from their length, 32 vs 64 hex characters, since the
+owner's paste didn't label which was which), and once implicitly via the two real recordings
+themselves, made while `apps/api`'s own startup log showed no "R2_* env vars not set" fallback
+warning. Six earlier `failed_transcription` rows from before credits were added were deleted
+(their audio was already unrecoverable: the in-memory storage fallback these fell back to during
+that pre-credit testing had since been wiped by later restarts) — same delete path the app's own
+Discard action takes for a never-saved note, run directly against the database rather than
+through the UI.
+
+Also discovered and fixed mid-session, unrelated to Match Scribe itself but blocking testing:
+this session's own browser-pane preview server was running `next dev` against the same
+`apps/web/.next` directory as the owner's own separately-run `pnpm dev:web`, corrupting each
+other's build cache (`missing required error components`, a stale React Client Manifest error).
+Stopped this session's own web preview and cleared `.next`; going forward, only the owner's own
+dev server should run against `apps/web` in a session where they're testing live. Separately,
+port 3000 turned out to be held by a stale, unrelated dev server left over from a different chat
+session, not the owner's — their fresh `pnpm dev:web` had silently landed on a different port
+instead, which is why an early sign-in link pointed at the wrong place and appeared to do
+nothing.
+
+Net result: step 1.1's own "Done when" criteria are now met against real infrastructure, not
+mocks — the one item the original entry above flagged as unverifiable in-session ("an actual
+live-microphone, live-Whisper, live-R2 walkthrough... needs both vendors configured and a
+signed-in test player, neither available in this session") is no longer true. Housekeeping:
+PRs #4 (step 0.5), #5 (step 0.6) and #6 (step 1.1) were merged into `main` in that order (each
+had to be retargeted from its stacked base as the one before it merged) and all three branches,
+local and remote, deleted.

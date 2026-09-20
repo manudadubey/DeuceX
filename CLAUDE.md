@@ -5,7 +5,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0 done, step 1.1 done, start step 1.2
+## Status: Phase 0 and step 1.1 done and fully verified, start step 1.2
 
 The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -17,16 +17,18 @@ the pricing table, and the pg-boss queue with its idempotency key, pickup-time p
 switch check and 5/20/60 minute retry schedule, all with tests (step 0.6). Match Scribe's
 `notes` and `check_ins` tables, the real `/match-scribe` route (recorder, review, history,
 daily check-in), the offline queue, the Free-tier quota, and the audio lifecycle (immediate
-delete on save, a 7-day sweep as backstop) are built behind adapters for R2 and Whisper, with a
-working mock/in-memory fallback for both (step 1.1) — **but neither vendor is actually
-configured yet**: no R2 bucket exists and no `OPENAI_API_KEY` is set anywhere, so nothing here
-has made a real vendor call in staging or production. Provisioning both is the first thing the
-next session (or the owner, directly) needs to do before step 1.1's "real Whisper in staging"
-acceptance check is actually true; see `.env.example` for the exact vars. The next session
-should start at **step 1.2 (structured extraction)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read
-that step plus whatever architecture section it names. Check `docs/BUILD-LOG.md` for what each
-prior step actually did (including follow-ups) before assuming anything about the current
-state — this line is a pointer, not the full record.
+delete on save, a 7-day sweep as backstop) are built behind adapters for R2 and Whisper (step
+1.1). **Both vendors are now configured and verified against real infrastructure**, not just
+tested with mocks: a note recorded in a real browser session was transcribed by real Whisper
+(captured actual speech correctly, cost and language confidence recorded) and its audio
+uploaded to and deleted from a real R2 bucket (`audio-files`) on save, confirmed by querying the
+live `notes` table directly. See `.env.example` for the vars; real credentials live only in the
+owner's local, gitignored `.env`, not in this repo. PRs #4, #5 and #6 (steps 0.5, 0.6, 1.1) are
+all merged to `main`; no stacked branches remain. The next session should start at **step 1.2
+(structured extraction)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever
+architecture section it names. Check `docs/BUILD-LOG.md` for what each prior step actually did
+(including follow-ups) before assuming anything about the current state — this line is a
+pointer, not the full record.
 
 ## Read before coding
 
@@ -78,16 +80,30 @@ state — this line is a pointer, not the full record.
   Shares the database with an unrelated pre-existing schema (`matches`, `points`, `stats_*`, from
   a different app); RLS was enabled on those 5 tables during setup (they had none before — a real
   anon-key exposure that's now closed) but they still have no policies, so only the service role
-  can reach them. ProCircuit's own schema now exists (steps 0.2 and 0.6): `players`,
+  can reach them. ProCircuit's own schema now exists (steps 0.2, 0.6, 1.1): `players`,
   `fx_rates_daily`, `agent_runs`, `approvals`, `approval_consumptions`, `agent_schedules`,
-  `provider_switches`, `admin_actions`, `notifications`, `share_links`, an empty `pgboss` schema,
-  and a `console` role with no grants yet. See `packages/db/README.md` and
+  `provider_switches`, `admin_actions`, `notifications`, `share_links`, `notes`, `check_ins`, an
+  empty `pgboss` schema, and a `console` role with no grants yet. See `packages/db/README.md` and
   `docs/BUILD-LOG.md` for how each table's design was resolved.
   **Not on the Pro plan**, discovered in step 0.6: `create_branch` fails with
   `PaymentRequiredException`. Until that changes, every migration this project runs has to go
-  straight to production — ask the owner to confirm before applying one (step 0.2 and step 0.6
-  both did; both were approved), rather than assuming the "branches only" default below still
-  applies here.
+  straight to production — ask the owner to confirm before applying one (steps 0.2, 0.6 and four
+  migrations in step 1.1 all did; all were approved), rather than assuming the "branches only"
+  default below still applies here.
+  The database password was reset during step 1.1 to get a working `SUPABASE_DB_URL` (Supabase
+  never shows it again after creation, so there was no way to recover the original) — owner
+  approved. Direct connections need IPv6, which didn't resolve in that session's sandbox, so
+  `SUPABASE_DB_URL` uses the **session pooler** host
+  (`aws-0-ap-northeast-1.pooler.supabase.com:5432`, username `postgres.gpzpmrumwaqyfkyvqbgl`)
+  instead of the direct `db.gpzpmrumwaqyfkyvqbgl.supabase.co` host; pg-boss needs a persistent
+  session connection, so it's the transaction pooler (port 6543) that would be wrong here, not
+  the session one. Switch to direct only if wherever `apps/api` actually runs has real IPv6.
+- **Cloudflare R2** (step 1.1): account id `60982ed46c948e13ef23f9e1a11c5fbe`, bucket
+  `audio-files`, for note audio (M-PRIV-1). Access key id and secret live only in the owner's
+  local `.env`, never in this repo.
+- **OpenAI** (step 1.1): a Whisper-capable API key, owner's own account, confirmed working
+  (`whisper-1`) and with credits after an initial `insufficient_quota` failure during testing.
+  Key lives only in the owner's local `.env`.
 
 ## MCP servers to connect
 
