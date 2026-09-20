@@ -5,6 +5,17 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
+## Status: Phase 0 step 0.1 done, start at step 0.2
+
+The monorepo scaffold is built, pushed, and deploying (see Infrastructure section below for
+exact details: repo, CI, Vercel, Supabase). Nothing product-specific exists yet — every package
+is a placeholder with one smoke test, and the database has no ProCircuit tables. The next session
+should start at **step 0.2 (database, migrations, row-level security)** in
+`docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus `docs/TECH-ARCHITECTURE.md` section 2 and
+PRD-00 section 5.3, then build the first migration into `packages/db/migrations` against the
+Supabase project below. Check `docs/BUILD-LOG.md` for what step 0.1 actually did before assuming
+anything about the current state.
+
 ## Read before coding
 
 - `docs/BUILD-PLAN-CLAUDE-CODE.md` (the step you are on), `docs/TECH-ARCHITECTURE.md`, the PRD
@@ -33,13 +44,30 @@ entry client or ICS. Never work around this.
 
 ## Infrastructure already in place
 
-- Supabase project **ProCircuit** (`gpzpmrumwaqyfkyvqbgl`, org `MD Labs`, `ap-northeast-1`).
-  Shares the database with an unrelated pre-existing schema (`matches`, `points`, `stats_*`); RLS
-  is enabled on those tables. ProCircuit's own schema starts at build step 0.2 — see
-  `packages/db/README.md`.
-- GitHub: `matsudadubey/ProCircuit`.
-- Vercel: not yet confirmed reachable from this session's connected account (only the "MD Labs
-  projects" team is visible there, and it does not show a ProCircuit project).
+- **GitHub**: [manudadubey/ProCircuit](https://github.com/manudadubey/ProCircuit), `main` branch,
+  public. Local git remote `origin` already points here. Push auth in a fresh shell needs
+  `gh auth login` (device flow) — the account that owns this repo is `manudadubey`, not
+  `matsudadubey` (a different, unrelated GitHub account that also happens to own a repo called
+  `ProCircuit` — don't confuse them). `gh auth setup-git` wires git to use it once logged in.
+- **CI**: `.github/workflows/ci.yml` runs install, typecheck, lint, format check and unit tests on
+  every push/PR. Passing on `main`. Needs Node **22.13+** (pnpm 11 requires it) — this bit us on
+  the first push, already fixed in the workflow, `.nvmrc` and `package.json` engines.
+- **Vercel**: team `MD Labs` (slug `md-labs`, id `team_iBqss1JOLpPgFdy5bPzOyJeW` — note this is a
+  *different* team from one also called "MD Labs projects" that a stale token scope may show
+  instead; use `md-labs`). Two projects, both linked to the GitHub repo above and auto-deploying
+  on push to `main`:
+  - `procircuit` — the player app, root directory `apps/web`, framework Next.js.
+  - `procircuit-admin` — the staff console, root directory `apps/admin`, framework Next.js.
+  Both currently deploy the placeholder pages from step 0.1; both sit behind Vercel's default SSO
+  protection (no custom domain yet). A few empty, unlinked stray projects (`procircuit-web` and an
+  earlier bare `procircuit` under the other team) were left behind during setup and can be deleted
+  from the dashboard whenever — harmless, no deployments, not referenced by anything.
+- **Supabase** project **ProCircuit** (`gpzpmrumwaqyfkyvqbgl`, org `MD Labs`, `ap-northeast-1`).
+  Shares the database with an unrelated pre-existing schema (`matches`, `points`, `stats_*`, from
+  a different app); RLS was enabled on those 5 tables during setup (they had none before — a real
+  anon-key exposure that's now closed) but they still have no policies, so only the service role
+  can reach them. ProCircuit's own schema (`players`, `fx_rates_daily`, `agent_runs`, `approvals`,
+  etc.) does not exist yet — that's step 0.2. See `packages/db/README.md`.
 
 ## MCP servers to connect
 
