@@ -71,14 +71,24 @@ assuming anything about the current state — this line is a pointer, not the fu
   Shares the database with an unrelated pre-existing schema (`matches`, `points`, `stats_*`, from
   a different app); RLS was enabled on those 5 tables during setup (they had none before — a real
   anon-key exposure that's now closed) but they still have no policies, so only the service role
-  can reach them. ProCircuit's own schema (`players`, `fx_rates_daily`, `agent_runs`, `approvals`,
-  etc.) does not exist yet — that's step 0.2. See `packages/db/README.md`.
+  can reach them. ProCircuit's own schema now exists (steps 0.2 and 0.6): `players`,
+  `fx_rates_daily`, `agent_runs`, `approvals`, `approval_consumptions`, `agent_schedules`,
+  `provider_switches`, `admin_actions`, `notifications`, `share_links`, an empty `pgboss` schema,
+  and a `console` role with no grants yet. See `packages/db/README.md` and
+  `docs/BUILD-LOG.md` for how each table's design was resolved.
+  **Not on the Pro plan**, discovered in step 0.6: `create_branch` fails with
+  `PaymentRequiredException`. Until that changes, every migration this project runs has to go
+  straight to production — ask the owner to confirm before applying one (step 0.2 and step 0.6
+  both did; both were approved), rather than assuming the "branches only" default below still
+  applies here.
 
 ## MCP servers to connect
 
 - Supabase (migrations to a branch, logs, advisors), Vercel (deployments, build logs), Stripe
   (test mode only), Sentry, GitHub. Writes through MCP go to database branches and vendor test
-  modes only, never production.
+  modes only, never production — **except this specific Supabase project**, which can't branch
+  (see the Supabase bullet above): confirm with the owner before every migration, then apply it
+  directly, same as any other production write.
 - Do not give any product agent MCP tools: agents take a pre-assembled input bundle and make one
   schema-constrained call (TECH-ARCHITECTURE.md section 3a).
 - Phase 5 adds a ProCircuit admin MCP server over the console API with the console's roles,
@@ -90,4 +100,8 @@ assuming anything about the current state — this line is a pointer, not the fu
   before finishing.
 - Append a short entry to `docs/BUILD-LOG.md` after each step: what was built, what was skipped,
   any question raised.
-- Commit messages: `step X.Y: <what>`; branch per step.
+- Commit messages: `step X.Y: <what>`; branch per step. If the previous step's PR hasn't merged
+  yet, branch off *that* branch (not `main`) and open the new PR with it as the base, rather than
+  waiting — steps 0.5 and 0.6 are stacked this way ([#4](https://github.com/manudadubey/ProCircuit/pull/4),
+  [#5](https://github.com/manudadubey/ProCircuit/pull/5)). Check open PRs at the start of a
+  session (`gh pr list`) before assuming `main` has everything prior steps built.
