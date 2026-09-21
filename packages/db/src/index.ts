@@ -69,6 +69,37 @@ export {
   type InsightFeedback,
   type MindsetBoundariesPatch,
 } from './mindset';
+export {
+  insertLedgerLine,
+  listLedgerLines,
+  getFxRate,
+  getFxRates,
+  convertAtRate,
+  convertLedgerLine,
+  InvalidLedgerAmountError,
+  MissingFxRateError,
+  MissingRateForCurrencyError,
+  type LedgerLine,
+  type LedgerCategory,
+  type LedgerSource,
+  type InsertLedgerLineInput,
+  type ListLedgerLinesFilter,
+  type FxRate,
+  type LedgerLineDisplay,
+} from './ledger';
+export {
+  getLatestReserveBalance,
+  listReserveEntries,
+  enterReserveBalance,
+  listPrizeReceivables,
+  InvalidReserveAmountError,
+  type ReserveEntry,
+  type ReserveCause,
+  type EnterReserveBalanceInput,
+  type PrizeReceivable,
+  type ReceivableEvent,
+  type ReceivableStatus,
+} from './reserves';
 
 // Two clients, deliberately: the anon-scoped client respects row-level
 // security and is what every player-facing request uses; the service-role

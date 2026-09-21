@@ -1150,3 +1150,113 @@ worksheet 1 describes — `guardian_email` and `guardian_confirmed_at` are store
 share-link/manager-invite surface built at all to hang it on (PRD-12, a later step), and inventing
 a bespoke one-off email path for just this field seemed worse than leaving the column honestly
 unconfirmed until that surface exists.
+
+## Step 2.1 · The FX archive and the ledger — 21 September 2026
+
+Read first: TECH-ARCHITECTURE section 2.1, PRD-03 sections 3, 6, 7, PRD-00 M-DATA-1, M-DATA-2,
+M-CUR-1.
+
+Built: three new tables (`ledger_lines`, `prize_receivables`, `reserve_entries`) alongside the
+`fx_rates_daily` archive step 0.2 already created, plus an additive extension of
+`approvals.action_type` to add `receivable_received` — the one transition
+TECH-ARCHITECTURE.md section 3 names explicitly, alongside the Stripe/Resend/ICS clients, as
+something only `packages/actions` may perform ("or transition a `prize_receivables` row to
+received"). `packages/db/src/ledger.ts` holds the money model's one formula (`convertAtRate`:
+original-to-EUR divided by target-to-EUR for the row's own `fx_rate_date`, never a live re-fetch)
+and `insertLedgerLine`/`listLedgerLines`/`getFxRate`/`getFxRates`; no home-currency amount is ever
+stored, only original amount, currency and the locked rate date, which is what makes a later
+currency-preference change alter zero rows. `packages/db/src/reserves.ts` holds
+`enterReserveBalance` (a plain RLS-scoped player write, same as onboarding's `finishOnboarding` —
+no vendor call, so it doesn't need the actions module) and `listPrizeReceivables`.
+`packages/actions/src/receivables.ts` holds `markReceivableReceived`, the first real caller of
+step 0.6's `runGatedAction` in this codebase: it realises the player's net share (gross ×
+`player_share`, less withholding) at the received date's archived rate and adds it onto the
+latest reserve balance with `cause='received_prize'`, a reserve-entry cause the RLS insert
+policy's own `with check` refuses a player from writing directly (only this gated action can).
+
+The daily ECB fetch lives in `apps/api/src/fx/`: `ecb-adapter.ts` calls the real, free, key-less
+`eurofxref-daily.xml` feed (a small regex parser, `parseEcbDailyXml`, rather than pulling in a
+general XML-parsing dependency for one stable, non-user-controlled format) and is the only
+production implementation, same as step 1.4's `unverified-adapter` — no fixture-vs-real branch in
+`apps/api/src/index.ts` was needed since the feed needs no credentials. `fx/service.ts`'s
+`fetchAndStoreDailyRates` is idempotent and handles PRD-03's provisional-rate failure behaviour:
+"an unpublished ECB rate saves as provisional and is re-rated once, both rates audited" — an
+hourly tick (`fx/scheduler.ts`) either finds today's row already archived (no-op), writes a
+provisional row carried forward from the last published date (before ECB's own publish time, or
+on a weekend/holiday), or writes the real `ecb` row once the feed catches up, all on a new,
+step-2.1-only pg-boss instance (`apps/api/src/money/queue.ts`) separate from packages/actions'
+`AGENT_RUN_QUEUE`, since neither this job nor the reminder below is a scheduled agent run (no LLM
+call, no `agent_runs` row).
+
+The Sunday reserve-balance reminder (PRD-03 F-4, default on) is `apps/api/src/reserves/scheduler.ts`,
+the same hourly-tick/pure-predicate shape as step 1.3's `mindset-coach/scheduler.ts`
+(`playersDueThisWeekAtHour`, day-of-week plus local hour, fully unit-tested with the same
+Sydney/Los-Angeles DST fixture style), extended to also skip a player whose `financial` agent
+schedule is paused (the pause/kill-switch check TECH-ARCHITECTURE section 3 describes at the
+job-pickup step, reused here even though this isn't an `AGENT_RUN_QUEUE` job). No per-player
+`#balRemind` toggle or quiet-hours suppression exists yet (Settings, step 2.3) — every player
+currently gets this one default, the same kind of deliberate skip step 1.3 documented for its own
+delivery-hour setting.
+
+Migration design notes (see the migration file's own header for the full write-up): `ledger_lines`
+and `prize_receivables`' `tournament_id` is a plain `uuid` with no foreign key yet, since
+`tournaments` doesn't exist until step 3.1 and migrations here are additive-only, not reorderable.
+`prize_receivables` has no insert policy for `authenticated` at all — PRD-03 F-9 says a receivable
+"is created from results," i.e. eventually the Tournament Agent (step 3.2); until then rows come
+from the service role, matching how this step's own RLS integration tests seed one. A check
+constraint (`prize_receivables_realised_fields_match_status`) ties `status = 'received'` to having
+all three `realised_*`/`received_at` fields set and vice versa, so "only a received transition
+writes the realised figures" is a database invariant, not just an application convention.
+`reserve_entries`' insert policy restricts a player-authored row to `cause = 'player'` via its own
+`with check`, structurally blocking a player from forging a `cause = 'received_prize'` row
+directly, the same "enforced by code/schema structure, not convention" ethos TECH-ARCHITECTURE
+section 3 states for the approval gate itself.
+
+Done-when checks: `packages/db/src/ledger.test.ts`'s `M-DATA-1: convertLedgerLine` block is the
+PRD's own acceptance example made literal — a €38.50 line dated 10 September converts correctly to
+both AUD and USD at that date's archived rates, computed independently from the original EUR
+amount each time (never chained through an already-converted figure), and the line's own
+`amount_original`/`currency_original`/`fx_rate_date` fields are asserted unchanged after both
+conversions, proving a currency-preference change alters no stored row.
+`packages/actions/src/receivables.test.ts` proves a receivable marked received creates exactly one
+realised reserve entry (net share × the received-date rate, added onto the latest balance) and
+never before — a not-found/already-received receivable, a missing archived rate, or a second call
+under the same approval all throw before `applyReceivedTransition` runs.
+
+**Verified against the real Supabase project** (`gpzpmrumwaqyfkyvqbgl`), not just fixtures, since
+this project can't branch (owner confirmed applying the migration directly, as every migration
+here has to): applied `step_2_1_money_model`, ran `get_advisors` (no new findings — every new
+table has an explicit RLS policy), regenerated `database.types.ts`, then wrote and ran six new
+integration tests in `packages/db/src/rls.integration.test.ts`'s `money model row-level security
+(step 2.1)` block directly against the live database (`SUPABASE_DB_URL`, not skipped): a player
+can read only their own `ledger_lines`/`prize_receivables` rows, can insert their own
+`ledger_lines` and `reserve_entries` (with `cause='player'`) rows but is refused inserting under
+another player's id or with `cause='received_prize'`, is refused inserting a `prize_receivables`
+row at all (no policy exists), and the realised-fields check constraint fires both directions. All
+six passed on the first fully-corrected run. `pnpm typecheck`, `pnpm lint`, `pnpm format` and
+`pnpm test` are all green — 254 tests passing across every package (13 new in
+`packages/db/src/ledger.test.ts`, 3 in `reserves.test.ts`, 4 in `packages/actions/src/receivables.test.ts`,
+4 in `apps/api/src/fx/ecb-adapter.test.ts`, 4 in `fx/service.test.ts`, 6 in
+`reserves/scheduler.test.ts`, plus the six live integration tests above, counted only when
+`SUPABASE_DB_URL` is set locally).
+
+**Found but not fixed, flagged as a follow-up task**: running the RLS integration suite live for
+real (apparently the first time since step 1.1, since it's normally skipped) surfaced 5
+pre-existing failures in the unrelated `notes row-level security and quota (step 1.1)` block —
+a test-only bug (the shared `asPlayer` helper always rolls back its transaction, but several notes
+tests write inside one `asPlayer` call and assert on the result in a separate later call or a raw
+query outside any `asPlayer` wrapper, so the write never actually persisted for them to see; the
+DELETE test also runs unwrapped, meaning it executes as the raw superuser connection rather than
+the `authenticated` role it means to test). Not a schema or RLS regression as far as this session's
+investigation went, and out of step 2.1's scope, so left for a follow-up session rather than fixed
+here.
+
+Skipped, deliberately: an actual gated write path (approval creation plus a Financial Agent
+"Update balance" button or a receipt-scan "mark received" action) for `enterReserveBalance` and
+`markReceivableReceived` — PRD-03's `#/agent/financial` page, its ledger card and its `#balSave`
+control are explicitly step 2.2's build items, not this step's; this step proves the gate and the
+money model with directly-inserted approvals (the same pattern `gate.test.ts` already established
+for `runGatedAction`), not a UI. Runway, net burn, the fourteen-week projection, budget versus
+actual and receipt scanning — all explicitly step 2.2 (Financial Agent). Quiet hours and the
+per-player reminder toggle — step 2.3 (Settings). The `tournaments` foreign key on `ledger_lines`
+and `prize_receivables` — step 3.1, once that table exists.

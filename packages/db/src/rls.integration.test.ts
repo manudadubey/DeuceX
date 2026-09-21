@@ -304,3 +304,184 @@ describeIfConfigured('check_ins row-level security (step 1.1)', () => {
     });
   });
 });
+
+describeIfConfigured('money model row-level security (step 2.1)', () => {
+  let client: Client;
+  const playerA = randomUUID();
+  const playerB = randomUUID();
+  let receivableA: string;
+  let ledgerLineA: string;
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
+      playerA,
+      `money-rls-a-${playerA}@procircuit.test`,
+      playerB,
+      `money-rls-b-${playerB}@procircuit.test`,
+    ]);
+    await client.query(
+      `insert into public.players
+         (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+       values
+         ($1, 'wta', 'Player A', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney'),
+         ($3, 'atp', 'Player B', $4, 'US', '2000-01-01', 'USD', 'en', 'imperial', 'America/New_York')`,
+      [
+        playerA,
+        `money-rls-a-${playerA}@procircuit.test`,
+        playerB,
+        `money-rls-b-${playerB}@procircuit.test`,
+      ],
+    );
+    const receivableInserted = await client.query(
+      `insert into public.prize_receivables
+         (player_id, event, round, gross_amount, currency, expected_date)
+       values ($1, 'singles', 'Q2', 1780, 'EUR', '2026-10-03')
+       returning id`,
+      [playerA],
+    );
+    receivableA = receivableInserted.rows[0].id;
+
+    // Seeded directly (bypassing RLS, as the schema owner) so the cross-
+    // player isolation test below has a committed row to check against —
+    // a row inserted inside asPlayer's own begin/rollback would never
+    // persist for a later, separate asPlayer call to see.
+    const ledgerInserted = await client.query(
+      `insert into public.ledger_lines
+         (player_id, date, category, what, amount_original, currency_original, fx_rate_date, source)
+       values ($1, '2026-09-10', 'food', 'Trattoria da Gino', 38.5, 'EUR', '2026-09-10', 'manual')
+       returning id`,
+      [playerA],
+    );
+    ledgerLineA = ledgerInserted.rows[0].id;
+  });
+
+  afterAll(async () => {
+    await client.query(`delete from public.reserve_entries where player_id in ($1, $2)`, [
+      playerA,
+      playerB,
+    ]);
+    await client.query(`delete from public.prize_receivables where player_id in ($1, $2)`, [
+      playerA,
+      playerB,
+    ]);
+    await client.query(`delete from public.ledger_lines where player_id in ($1, $2)`, [
+      playerA,
+      playerB,
+    ]);
+    await client.query(`delete from public.players where id in ($1, $2)`, [playerA, playerB]);
+    await client.query(`delete from auth.users where id in ($1, $2)`, [playerA, playerB]);
+    await client.end();
+  });
+
+  it("lets a player read their own ledger_lines row, never another player's", async () => {
+    await asPlayer(client, playerB, async () => {
+      const result = await client.query('select id from public.ledger_lines');
+      expect(result.rows).toEqual([]);
+    });
+    await asPlayer(client, playerA, async () => {
+      const result = await client.query('select id from public.ledger_lines where id = $1', [
+        ledgerLineA,
+      ]);
+      expect(result.rows).toEqual([{ id: ledgerLineA }]);
+    });
+  });
+
+  it('lets a player insert their own ledger_lines row (read-your-own-write within the same session)', async () => {
+    await asPlayer(client, playerA, async () => {
+      const inserted = await client.query(
+        `insert into public.ledger_lines
+           (player_id, date, category, what, amount_original, currency_original, fx_rate_date, source)
+         values ($1, '2026-09-11', 'coaching', 'Session with Marko', 60, 'EUR', '2026-09-11', 'manual')
+         returning what`,
+        [playerA],
+      );
+      expect(inserted.rows).toEqual([{ what: 'Session with Marko' }]);
+    });
+  });
+
+  it("refuses a player inserting a ledger_lines row under someone else's player_id", async () => {
+    await asPlayer(client, playerB, async () => {
+      await expect(
+        client.query(
+          `insert into public.ledger_lines
+             (player_id, date, category, what, amount_original, currency_original, fx_rate_date, source)
+           values ($1, '2026-09-11', 'coaching', 'Forged line', 60, 'EUR', '2026-09-11', 'manual')`,
+          [playerA],
+        ),
+      ).rejects.toThrow(/row-level security/);
+    });
+  });
+
+  it("lets a player read their own prize_receivables row (service-role-created), never another player's, and refuses a direct player insert", async () => {
+    await asPlayer(client, playerB, async () => {
+      const result = await client.query('select id from public.prize_receivables');
+      expect(result.rows).toEqual([]);
+    });
+    await asPlayer(client, playerA, async () => {
+      const result = await client.query('select id from public.prize_receivables where id = $1', [
+        receivableA,
+      ]);
+      expect(result.rows).toEqual([{ id: receivableA }]);
+
+      // PRD-03 F-9: a receivable "is created from results," not by the
+      // player directly — no insert policy exists at all for authenticated.
+      await expect(
+        client.query(
+          `insert into public.prize_receivables
+             (player_id, event, round, gross_amount, currency, expected_date)
+           values ($1, 'singles', 'R1', 500, 'EUR', '2026-11-01')`,
+          [playerA],
+        ),
+      ).rejects.toThrow(/row-level security/);
+    });
+  });
+
+  it('refuses a receivable row that claims status=received without the realised fields, and vice versa', async () => {
+    await expect(
+      client.query(
+        `insert into public.prize_receivables
+           (player_id, event, round, gross_amount, currency, expected_date, status)
+         values ($1, 'singles', 'R1', 500, 'EUR', '2026-11-01', 'received')`,
+        [playerA],
+      ),
+    ).rejects.toThrow(/prize_receivables_realised_fields_match_status/);
+
+    await expect(
+      client.query(
+        `insert into public.prize_receivables
+           (player_id, event, round, gross_amount, currency, expected_date, status, received_at, realised_rate, realised_home_currency)
+         values ($1, 'singles', 'R1', 500, 'EUR', '2026-11-01', 'pending', now(), 1.65, 'AUD')`,
+        [playerA],
+      ),
+    ).rejects.toThrow(/prize_receivables_realised_fields_match_status/);
+  });
+
+  it("lets a player insert their own reserve_entries row with cause='player', but refuses cause='received_prize' directly", async () => {
+    await asPlayer(client, playerA, async () => {
+      await client.query(
+        `insert into public.reserve_entries (player_id, amount, currency, cause) values ($1, 9450, 'AUD', 'player')`,
+        [playerA],
+      );
+      const result = await client.query(
+        'select amount from public.reserve_entries where player_id = $1',
+        [playerA],
+      );
+      expect(result.rows).toEqual([{ amount: '9450' }]);
+
+      // Only the receivable-received gated action (service role) may write
+      // this cause — see the migration's own design note.
+      await expect(
+        client.query(
+          `insert into public.reserve_entries (player_id, amount, currency, cause) values ($1, 12000, 'AUD', 'received_prize')`,
+          [playerA],
+        ),
+      ).rejects.toThrow(/row-level security/);
+    });
+    await asPlayer(client, playerB, async () => {
+      const result = await client.query('select id from public.reserve_entries');
+      expect(result.rows).toEqual([]);
+    });
+  });
+});
