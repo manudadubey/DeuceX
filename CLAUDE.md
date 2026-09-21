@@ -28,11 +28,9 @@ path (separate from transcription's, never re-uploading audio) cover the failure
 against the real OpenAI API**, not just mocks: the Kovalenko fixture transcript produced a
 correct, valid extraction on the first call (no retry needed), for about $0.00025. See
 `docs/BUILD-LOG.md`'s step 1.2 entry for detail. See `.env.example` for the vars; real
-credentials live only in the owner's local, gitignored `.env`, not in this repo. PRs #4, #5 and
-#6 (steps 0.5, 0.6, 1.1) are all merged to `main`; step 1.2 is [PR #7](https://github.com/manudadubey/ProCircuit/pull/7)
-(branch `step-1.2-structured-extraction`), open and passing CI but not yet merged. If it still
-isn't merged next session, branch step 1.3 off it rather than off `main`, the same stacking
-step 0.5/0.6 used. The next session should start at **step 1.3 (Mindset Coach)**, in
+credentials live only in the owner's local, gitignored `.env`, not in this repo. PRs #4, #5, #6
+and #7 (steps 0.5, 0.6, 1.1, 1.2) are all merged to `main`; no stacked branches remain. The next
+session should start at **step 1.3 (Mindset Coach)**, in
 `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture section it names.
 Check `docs/BUILD-LOG.md` for what each prior step actually did (including follow-ups) before
 assuming anything about the current state — this line is a pointer, not the full record.
