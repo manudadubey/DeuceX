@@ -65,7 +65,8 @@ new RLS integration tests run against it, not just fixtures. See `docs/BUILD-LOG
 entry for the full design reasoning, what it deliberately skipped (an actual gated UI for
 balance updates or marking a receivable received — that's step 2.2's Financial Agent page), and a
 pre-existing, unrelated step 1.1 test bug it found but left for a follow-up session (spawned as
-its own task) rather than fixing here. The next session should start at **step 2.2 (Financial
+its own task) rather than fixing here. Step 2.1 is [PR #10](https://github.com/manudadubey/ProCircuit/pull/10),
+open against `main`, not yet merged. The next session should start at **step 2.2 (Financial
 Agent)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture section
 it names. Check `docs/BUILD-LOG.md` for what each prior step actually did (including follow-ups)
 before assuming anything about the current state — this line is a pointer, not the full record.
