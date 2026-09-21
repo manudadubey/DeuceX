@@ -79,7 +79,10 @@ export async function deleteNoteRemote(
   if (!res.ok && res.status !== 404) throw new ApiError(`Delete failed: ${res.status}`);
 }
 
-export async function retryTranscriptionRemote(
+// Covers both of Match Scribe's distinct failure states (S-19): apps/api's
+// retryNote inspects the note's own status server-side and re-runs
+// transcription or extraction accordingly.
+export async function retryNoteRemote(
   supabase: SupabaseClient<Database>,
   noteId: string,
 ): Promise<void> {

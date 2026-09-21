@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@procircuit/db';
+import type { AgentRunsDb } from '@procircuit/actions';
+import { createMockExtractionClient } from '@procircuit/agents';
 import Fastify from 'fastify';
 import { FakeDb, makeNote } from '../test-support/fake-db';
 import { createMemoryStorageAdapter } from '../storage/memory-adapter';
 import { createMockTranscriptionAdapter } from '../transcription/mock-adapter';
 import { registerNotesRoutes, type NotesRoutesDeps } from './routes';
+
+function fakeAgentRunsDb(): AgentRunsDb {
+  return { insertAgentRun: async () => undefined };
+}
 
 function fakeAnonClient(validToken: string, playerId: string): SupabaseClient<Database> {
   return {
@@ -50,7 +56,10 @@ async function buildApp(fake: FakeDb, overrides: Partial<NotesRoutesDeps> = {}) 
     anonClient: fakeAnonClient('good-token', 'player-1'),
     storage: createMemoryStorageAdapter(),
     transcription: createMockTranscriptionAdapter(),
+    extraction: createMockExtractionClient(),
+    agentRuns: fakeAgentRunsDb(),
     enqueueTranscription: async () => undefined,
+    enqueueExtraction: async () => undefined,
     now: () => new Date('2026-09-11T18:44:00Z'),
     ...overrides,
   };
@@ -188,6 +197,20 @@ describe('DELETE /notes/:id', () => {
 describe('POST /notes/:id/retry', () => {
   it('re-enqueues a failed transcription', async () => {
     const fake = new FakeDb({ notes: [makeNote({ status: 'failed_transcription' })] });
+    const app = await buildApp(fake);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/notes/note-1/retry',
+      headers: { authorization: 'Bearer good-token' },
+    });
+
+    expect(res.statusCode).toBe(202);
+    expect(fake.tables.notes![0]!.status).toBe('transcribing');
+  });
+
+  it('re-runs extraction for a note stuck in failed_extraction (S-19, step 1.2)', async () => {
+    const fake = new FakeDb({ notes: [makeNote({ status: 'failed_extraction' })] });
     const app = await buildApp(fake);
 
     const res = await app.inject({

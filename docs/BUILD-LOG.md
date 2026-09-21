@@ -760,3 +760,109 @@ signed-in test player, neither available in this session") is no longer true. Ho
 PRs #4 (step 0.5), #5 (step 0.6) and #6 (step 1.1) were merged into `main` in that order (each
 had to be retargeted from its stacked base as the one before it merged) and all three branches,
 local and remote, deleted.
+
+## Step 1.2 · Structured extraction — 21 September 2026
+
+Acceptance checks restated before starting: a transcript fixture produces a valid extraction in
+tests with a recorded mock response; an invalid model response is retried once then fails
+cleanly with the note left in review; cost is recorded on the run.
+
+Built the first agent, `packages/agents/src/match-scribe/` (`extract.ts`, `schema.ts`,
+`prompt.ts`, `model-client.ts`, `mock-client.ts`): one Anthropic call (`claude-sonnet-5`, the
+only model family `packages/actions`' pricing table already knows, matching its own
+`record-run.test.ts` fixture) made via a plain `fetch` against the Messages API with tool use
+forced to a fixed input schema, the same "adapter over a raw vendor call" shape
+`transcription/whisper-adapter.ts` already established rather than adding an SDK dependency. A
+Zod schema (version `v1`) validates the response — result against the "W/L, sets, optional
+tiebreak" grammar, tags against the player's own vocabulary (a `.refine()`, since the vocabulary
+is per-player, not static), mood plus the extractor's self-reported confidence — with exactly
+one corrective retry on failure (both attempts' token usage summed onto the single `agent_runs`
+row `packages/actions`' `recordRun()` writes) before throwing `AgentValidationError`. Result,
+opponent, round and surface are only ever kept for a Match note (S-3) regardless of what the
+model returned; mood is only kept at or above the 0.6 confidence placeholder (PRD-02 section 7,
+same number the decisions worksheet already flags as needing review against real transcripts).
+
+Two inputs PRD-02 section 3 lists — the current Entered event (for round/surface) and PRD-08's
+forecast/fact sheet (for the conditions stamp) — don't exist yet (Tournament Agent is step 3.2,
+Conditions is step 3.3), the same gap step 1.1 already hit for the stamp column. Skipped the
+same way: the schema carries a `conditions` field that this agent always sets to `null`
+(reserved, backfilled once step 3.3 exists), and round/surface are only ever filled from what
+the model reads directly in the transcript, never enriched from event data.
+
+Wired into `apps/api`: `notes/extraction.ts`'s `runExtraction()` calls the agent right after
+`transcribeNote()`'s own transcription succeeds (`notes/service.ts`), in the same job, and
+merges the proposal onto the note (`result`, `opponent`, `round`, `surface`, `tags`, `mood`,
+`summary`, `extraction`) before setting `status: 'review'`. `collectTagVocabulary()` unions the
+starter set with every tag the player has already used on their own notes, there being no
+separate vocabulary table. A failure — validation or a real vendor/infra error alike — sets
+`status: 'failed_extraction'` (already a distinct value in step 1.1's status enum, anticipating
+this) and is logged but deliberately never rethrown: rethrowing from inside the note-transcribe
+job would misreport an extraction failure as a transcription one in that job's own log line, and
+the note row is already the correct outcome for the player to act on (S-19, S-7's "We couldn't
+read a result from this" case).
+
+S-19 ("transcription failure and extraction failure are distinct states with Retry that never
+lose the audio or typed text") needed a second failure mode `apps/web`'s recorder card didn't
+have yet: added the `failed_extraction` banner with PRD-02's own copy, and a `note-extract`
+pg-boss queue separate from `note-transcribe` so retrying a stuck extraction re-runs only the
+agent against the already-durable transcript, never re-downloads or re-transcribes audio.
+`retryTranscription` became `retryNote`, a single dispatcher both the route and the client call
+regardless of which of the two states a note is in, rather than two client-visible endpoints.
+
+Skipped, deliberately: the two upstream inputs above (Entered event, Conditions stamp); a
+dedicated "Extracting" UI state (the retry path reuses the existing "Transcribing" badge/spinner
+rather than adding a new one, a minor label mismatch traded for not touching more of the
+recorder card than necessary); "Good day to write" (S-20, PRD-02 itself asks whether it belongs
+here or in Mindset Coach); a persisted per-player tag-vocabulary table (vocabulary is derived
+from prior notes' `tags` at call time instead).
+
+Verified: `pnpm typecheck`, `pnpm lint`, `pnpm format` and `pnpm test` are all green across every
+package — 74 new or updated tests (22 in `packages/agents` covering the schema, the proposal
+merge and the retry-once orchestration against a scripted mock model client; the rest in
+`apps/api` covering `runExtraction`, the tag-vocabulary query, the `note-extract` queue and
+`retryNote`'s two branches). Started this session's own `apps/web` and `apps/api` dev servers
+against the real Supabase, R2 and Whisper infrastructure step 1.1 already configured (this
+session's `apps/api` correctly logged "ANTHROPIC_API_KEY not set: falling back to the mock
+extraction client", confirming the fallback wiring) and, signed in via a dev sign-in link, loaded
+`/match-scribe` cleanly against the two real notes from step 1.1's own live verification, no
+console errors. Did not attempt a live Anthropic-backed extraction end to end: no
+`ANTHROPIC_API_KEY` is configured in this session's `.env`, and this sandbox has no real
+microphone to record a fresh note through the browser regardless — the same category of gap step
+1.1's first pass flagged before its own same-day follow-up. Whoever adds a real Anthropic key
+should re-verify a live note against it, the way step 1.1's follow-up did for Whisper and R2.
+
+### Follow-up · switched the extraction agent from Anthropic to OpenAI, verified live, same day
+
+The owner asked why the agent used Anthropic when `OPENAI_API_KEY` was already configured and
+paying for Whisper — the earlier choice had no real basis (nothing in the PRDs or
+`TECH-ARCHITECTURE.md` names a vendor; `packages/actions/src/pricing.ts` just happened to only
+have Claude entries from step 0.6, before any agent existed). The prototype's own reference
+copy for comparable structured-extraction tasks (PRD-03's receipt scanning, PRD-07's menu
+scanning) names "GPT-4o mini · structured extraction" specifically, not the heavier model those
+same PRDs use for a whole agent's scheduled run — `match-scribe/extract` is the same shape of
+task (a small transcript in, a small JSON object out), so `gpt-4o-mini` follows that precedent
+rather than picking arbitrarily.
+
+Changed `packages/agents/src/match-scribe/model-client.ts` from an Anthropic tool-use call to
+OpenAI's Chat Completions API with `response_format: { type: 'json_schema', strict: true }`
+(the same hand-written JSON Schema as before, `additionalProperties: false` and everything in
+`required`, which strict mode needs); `EXTRACTION_MODEL` in `extract.ts` from `claude-sonnet-5`
+to `gpt-4o-mini`; added a `gpt-4o-mini` row to `packages/actions/src/pricing.ts`. Simplified
+`apps/api/src/index.ts` to reuse the same `OPENAI_API_KEY` and `openaiApiKey` variable already
+wired for Whisper, rather than a second env var — one OpenAI account now covers both vendor
+calls this step needed, no `ANTHROPIC_API_KEY` anywhere any more. Nothing else changed: the Zod
+schema, the retry-once orchestration, the note-merge logic and every test that isn't
+model-client-specific are all vendor-agnostic by design (the whole point of the
+`ExtractionModelClient` boundary), so none of that needed touching.
+
+Verified live this time, unlike the first pass: `OPENAI_API_KEY` is already configured in this
+session's `.env` (it was already there for Whisper), so a small one-off script (run via
+`apps/api`'s own `tsx`, deleted after use) called the real `extractMatchNote()` against the real
+OpenAI API with the same Kovalenko fixture transcript service.test.ts already uses. It produced
+a correct, schema-valid extraction on the first attempt, no corrective retry needed: result
+`"L 6-4 3-6 6-7(5)"`, opponent `"Kovalenko"`, tags `["Second serve", "Tiebreak"]`, mood
+`"frustrated"` (above the 0.6 confidence floor), and a sensible one-line coach summary, for 1,049
+input and 153 output tokens — about $0.00025 at the table's own rate, comfortably inside PRD-02's
+combined under-$0.05-per-note target alongside transcription's own ~$0.006. `pnpm typecheck`,
+`pnpm lint`, `pnpm format` and `pnpm test` all still green (added one pricing-table test case for
+`gpt-4o-mini`; every other test file needed no changes, confirming the adapter boundary held).

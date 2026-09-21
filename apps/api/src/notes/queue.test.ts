@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { PgBoss } from 'pg-boss';
-import { NOTE_AUDIO_LIFECYCLE_QUEUE, NOTE_TRANSCRIBE_QUEUE, registerNotesWorkers } from './queue';
+import {
+  NOTE_AUDIO_LIFECYCLE_QUEUE,
+  NOTE_EXTRACT_QUEUE,
+  NOTE_TRANSCRIBE_QUEUE,
+  registerNotesWorkers,
+} from './queue';
 
 // A minimal fake of the one pg-boss method registerNotesWorkers calls
 // (.work(queueName, handler)), capturing each handler so the test can
@@ -16,17 +21,25 @@ function fakeBoss() {
   return { boss: { work } as unknown as PgBoss, handlers };
 }
 
+function baseDeps(overrides: Partial<Parameters<typeof registerNotesWorkers>[1]> = {}) {
+  return {
+    transcribeNote: vi.fn(),
+    extractNote: vi.fn(),
+    sweepExpiredAudio: vi.fn(),
+    ...overrides,
+  };
+}
+
 describe('registerNotesWorkers', () => {
   it('logs the note id and rethrows when transcribeNote fails', async () => {
     const { boss, handlers } = fakeBoss();
     const error = new Error('insufficient_quota');
     const logger = { error: vi.fn() };
 
-    await registerNotesWorkers(boss, {
-      transcribeNote: vi.fn().mockRejectedValue(error),
-      sweepExpiredAudio: vi.fn(),
-      logger,
-    });
+    await registerNotesWorkers(
+      boss,
+      baseDeps({ transcribeNote: vi.fn().mockRejectedValue(error), logger }),
+    );
 
     const transcribeHandler = handlers.get(NOTE_TRANSCRIBE_QUEUE)!;
     await expect(transcribeHandler([{ data: { noteId: 'note-1' } }])).rejects.toThrow(
@@ -40,11 +53,10 @@ describe('registerNotesWorkers', () => {
     const { boss, handlers } = fakeBoss();
     const logger = { error: vi.fn() };
 
-    await registerNotesWorkers(boss, {
-      transcribeNote: vi.fn().mockResolvedValue(undefined),
-      sweepExpiredAudio: vi.fn(),
-      logger,
-    });
+    await registerNotesWorkers(
+      boss,
+      baseDeps({ transcribeNote: vi.fn().mockResolvedValue(undefined), logger }),
+    );
 
     const transcribeHandler = handlers.get(NOTE_TRANSCRIBE_QUEUE)!;
     await transcribeHandler([{ data: { noteId: 'note-1' } }]);
@@ -52,16 +64,32 @@ describe('registerNotesWorkers', () => {
     expect(logger.error).not.toHaveBeenCalled();
   });
 
+  it('registers extractNote against note-extract and rethrows on failure (step 1.2)', async () => {
+    const { boss, handlers } = fakeBoss();
+    const error = new Error('extraction blew up');
+    const logger = { error: vi.fn() };
+
+    await registerNotesWorkers(
+      boss,
+      baseDeps({ extractNote: vi.fn().mockRejectedValue(error), logger }),
+    );
+
+    const extractHandler = handlers.get(NOTE_EXTRACT_QUEUE)!;
+    await expect(extractHandler([{ data: { noteId: 'note-1' } }])).rejects.toThrow(
+      'extraction blew up',
+    );
+    expect(logger.error).toHaveBeenCalledWith('[note-extract] job failed for note note-1:', error);
+  });
+
   it('logs and rethrows when the audio lifecycle sweep fails', async () => {
     const { boss, handlers } = fakeBoss();
     const error = new Error('db unreachable');
     const logger = { error: vi.fn() };
 
-    await registerNotesWorkers(boss, {
-      transcribeNote: vi.fn(),
-      sweepExpiredAudio: vi.fn().mockRejectedValue(error),
-      logger,
-    });
+    await registerNotesWorkers(
+      boss,
+      baseDeps({ sweepExpiredAudio: vi.fn().mockRejectedValue(error), logger }),
+    );
 
     const sweepHandler = handlers.get(NOTE_AUDIO_LIFECYCLE_QUEUE)!;
     await expect(sweepHandler([])).rejects.toThrow('db unreachable');
@@ -72,10 +100,10 @@ describe('registerNotesWorkers', () => {
     const { boss, handlers } = fakeBoss();
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    await registerNotesWorkers(boss, {
-      transcribeNote: vi.fn().mockRejectedValue(new Error('boom')),
-      sweepExpiredAudio: vi.fn(),
-    });
+    await registerNotesWorkers(
+      boss,
+      baseDeps({ transcribeNote: vi.fn().mockRejectedValue(new Error('boom')) }),
+    );
 
     const transcribeHandler = handlers.get(NOTE_TRANSCRIBE_QUEUE)!;
     await expect(transcribeHandler([{ data: { noteId: 'note-2' } }])).rejects.toThrow('boom');

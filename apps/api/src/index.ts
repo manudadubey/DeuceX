@@ -1,10 +1,22 @@
 import { fileURLToPath } from 'node:url';
 import { createAnonClient, createServiceRoleClient } from '@procircuit/db';
+import { SupabaseAgentRunsDb } from '@procircuit/actions';
+import {
+  EXTRACTION_MODEL,
+  createMockExtractionClient,
+  createOpenAIExtractionClient,
+} from '@procircuit/agents';
 import cors from '@fastify/cors';
 import { config as loadEnv } from 'dotenv';
 import Fastify from 'fastify';
 import { registerNotesRoutes, type NotesRoutesDeps } from './notes/routes';
-import { createNotesBoss, enqueueTranscription, registerNotesWorkers } from './notes/queue';
+import {
+  createNotesBoss,
+  enqueueExtraction,
+  enqueueTranscription,
+  registerNotesWorkers,
+} from './notes/queue';
+import { runExtraction } from './notes/extraction';
 import { transcribeNote } from './notes/service';
 import { sweepExpiredAudio } from './notes/audio-lifecycle';
 import { createMemoryStorageAdapter } from './storage/memory-adapter';
@@ -87,17 +99,37 @@ async function main() {
         return createMockTranscriptionAdapter();
       })();
 
+  // Same OpenAI account and key as Whisper transcription above — one vendor
+  // for both, per the step 1.2 follow-up that moved extraction off Claude.
+  const extraction = openaiApiKey
+    ? createOpenAIExtractionClient({ apiKey: openaiApiKey, model: EXTRACTION_MODEL })
+    : (() => {
+        console.warn(
+          'OPENAI_API_KEY not set: falling back to the mock extraction client. Set OPENAI_API_KEY for real structured extraction.',
+        );
+        return createMockExtractionClient();
+      })();
+  const agentRuns = new SupabaseAgentRunsDb(db);
+
   const boss = await createNotesBoss(dbConnectionString);
   const notesDeps: NotesRoutesDeps = {
     db,
     anonClient,
     storage,
     transcription,
+    extraction,
+    agentRuns,
     enqueueTranscription: (noteId) => enqueueTranscription(boss, noteId),
+    enqueueExtraction: (noteId) => enqueueExtraction(boss, noteId),
   };
 
   await registerNotesWorkers(boss, {
     transcribeNote: (noteId) => transcribeNote(notesDeps, noteId),
+    extractNote: (noteId) =>
+      runExtraction(
+        { db, extractionClient: extraction, agentRuns, logger: notesDeps.logger },
+        noteId,
+      ),
     sweepExpiredAudio: async () => {
       await sweepExpiredAudio({ db, storage }, new Date());
     },
