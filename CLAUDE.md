@@ -49,10 +49,11 @@ including what each step deliberately skipped (step 1.3: the memory quote, the c
 view, a per-player delivery-hour setting; step 1.4: the six-step spotlight walkthrough tour, the
 public profile editor, real Stripe trial creation, the guardian-confirmation email itself, and
 more). See `.env.example` for the vars; real credentials live only in the owner's local,
-gitignored `.env`, not in this repo. PRs #4 through #9 (steps 0.5, 0.6, 1.1, 1.2, 1.3, 1.4) are
-merged to `main`. Step 1.4's live browser verification (guardian gate, ranking-lookup graceful
-degrade, first-week dashboard) happened as a follow-up against a real signed-in session once a
-dev-server slot freed up; see `docs/BUILD-LOG.md`'s step 1.4 entry for what it actually confirmed.
+gitignored `.env`, not in this repo. PRs #4 through #10 (steps 0.5, 0.6, 1.1, 1.2, 1.3, 1.4, 2.1)
+are merged to `main` — no open or stacked branches. Step 1.4's live browser verification (guardian
+gate, ranking-lookup graceful degrade, first-week dashboard) happened as a follow-up against a
+real signed-in session once a dev-server slot freed up; see `docs/BUILD-LOG.md`'s step 1.4 entry
+for what it actually confirmed.
 Step 2.1 (the FX archive and the ledger) added `ledger_lines`, `prize_receivables` and
 `reserve_entries` (`fx_rates_daily` already existed from step 0.2), a new `receivable_received`
 approval action type — the one transition TECH-ARCHITECTURE.md section 3 names as gated the same
@@ -62,13 +63,15 @@ the first real caller of `runGatedAction` in this codebase. A real, key-less ECB
 new step-2.1-only pg-boss instance. Verified live against the real Supabase project (this project
 still can't branch, so the migration went straight to production, owner-confirmed), including six
 new RLS integration tests run against it, not just fixtures. See `docs/BUILD-LOG.md`'s step 2.1
-entry for the full design reasoning, what it deliberately skipped (an actual gated UI for
-balance updates or marking a receivable received — that's step 2.2's Financial Agent page), and a
-pre-existing, unrelated step 1.1 test bug it found but left for a follow-up session (spawned as
-its own task) rather than fixing here. Step 2.1 is [PR #10](https://github.com/manudadubey/ProCircuit/pull/10),
-open against `main`, not yet merged. The next session should start at **step 2.2 (Financial
-Agent)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture section
-it names. Check `docs/BUILD-LOG.md` for what each prior step actually did (including follow-ups)
+entry for the full design reasoning and what it deliberately skipped (an actual gated UI for
+balance updates or marking a receivable received — that's step 2.2's Financial Agent page). A
+pre-existing, unrelated step 1.1 bug in `rls.integration.test.ts` (the "notes" RLS block, a test
+helper always rolling back so several tests asserted on state that never persisted) was found
+while live-testing step 2.1 and fixed in a follow-up commit on the same
+[PR #10](https://github.com/manudadubey/ProCircuit/pull/10), which is merged. The next session
+should start at **step 2.2 (Financial Agent)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that
+step plus whatever architecture section it names. Check `docs/BUILD-LOG.md` for what each prior
+step actually did (including follow-ups)
 before assuming anything about the current state — this line is a pointer, not the full record.
 
 ## Read before coding
