@@ -50,16 +50,15 @@ view, a per-player delivery-hour setting; step 1.4: the six-step spotlight walkt
 public profile editor, real Stripe trial creation, the guardian-confirmation email itself, and
 more). See `.env.example` for the vars; real credentials live only in the owner's local,
 gitignored `.env`, not in this repo. PRs #4 through #8 (steps 0.5, 0.6, 1.1, 1.2, 1.3) are merged
-to `main`; the step 1.4 branch (`step-1.4-onboarding-first-week`) is pushed but its PR had not
-been opened as of this note — open it before starting the next step. The next session should
-start at **step 2.1 (The FX archive and the ledger)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`, once
-step 1.4's PR is merged: read that step plus whatever architecture section it names. Note step
-1.4's build log flagged one gap worth a human look before merging: it was not verified live in a
-browser (this session's dev-server slots were already at capacity from another concurrent
-session), so the next session or the owner should load `/onboarding` and `/` once against a real
-signed-in session first. Check `docs/BUILD-LOG.md` for what each prior step actually did
-(including follow-ups) before assuming anything about the current state — this line is a pointer,
-not the full record.
+to `main`; [PR #9](https://github.com/manudadubey/ProCircuit/pull/9) (step 1.4) is open, based on
+`main`, not yet merged — no other stacked branches. The next session should start at **step 2.1
+(The FX archive and the ledger)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`, once PR #9 is merged: read
+that step plus whatever architecture section it names. Note step 1.4's build log flagged one gap
+worth a human look before merging: it was not verified live in a browser (this session's
+dev-server slots were already at capacity from another concurrent session), so the next session
+or the owner should load `/onboarding` and `/` once against a real signed-in session first.
+Check `docs/BUILD-LOG.md` for what each prior step actually did (including follow-ups) before
+assuming anything about the current state — this line is a pointer, not the full record.
 
 ## Read before coding
 
