@@ -5,7 +5,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0 and steps 1.1 to 1.3 done, start step 1.4
+## Status: Phase 0 and steps 1.1 to 1.4 done, start step 2.1
 
 The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -33,20 +33,33 @@ run on step 0.6's `AGENT_RUN_QUEUE`, with its own hourly scheduler. New tables `
 `insights`, `mindset_boundaries`, `cases`; the full `/agent/mindset` route and the dashboard
 mood row. Also fixed a latent step 1.1 bug (`saveCheckIn`'s upsert touched ungranted columns,
 failing every same-day re-save) found while live-testing this step's shared check-in card.
-**Verified against the real OpenAI API**, not just mocks, both steps: step 1.2's Kovalenko
+**Verified against the real OpenAI API**, not just mocks, both agent steps: step 1.2's Kovalenko
 fixture transcript produced a correct, valid extraction on the first call for about $0.00025;
 step 1.3's fixture notes correctly flagged the tiebreak/second-serve pattern and produced a
-valid, tone-clean insight for about $0.0001. See `docs/BUILD-LOG.md`'s step 1.2 and 1.3 entries
-for detail, including what step 1.3 deliberately skipped (the memory quote, the coach-link share
-view, a per-player delivery-hour setting, and more). See `.env.example` for the vars; real
-credentials live only in the owner's local, gitignored `.env`, not in this repo. PRs #4, #5, #6
-and #7 (steps 0.5, 0.6, 1.1, 1.2) are merged to `main`; [PR #8](https://github.com/manudadubey/ProCircuit/pull/8)
-(step 1.3) is open, based on `main`, not yet merged — no other stacked branches. The next
-session should start at **step 1.4 (First-week dashboard and onboarding without feeds)**, in
-`docs/BUILD-PLAN-CLAUDE-CODE.md`, once PR #8 is merged: read that step plus whatever architecture
-section it names. Check `docs/BUILD-LOG.md` for what each prior step actually did (including
-follow-ups) before assuming anything about the current state — this line is a pointer, not the
-full record.
+valid, tone-clean insight for about $0.0001. Step 1.4 (First-week dashboard and onboarding
+without feeds) built the four-step onboarding wizard (guardian branch for under-18s per M-ID-3,
+an ATP/WTA tour toggle, the ranking lookup behind a new `apps/api/src/rankings` adapter, the
+ambiguous-match chooser and unverified badge per M-ID-2, stage detection and override) and the
+first-week dashboard (`/` now branches on the new `players.dashboard_state`), plus a migration
+giving `players` its first-ever INSERT policy — nothing before this step ever wrote a player's
+own row. The ranking adapter's only production implementation always returns `unverified` (real
+ATP/WTA/ITF feeds arrive with step 3.1); the `verified`/`ambiguous` paths are proven by a fixture
+adapter in tests only. See `docs/BUILD-LOG.md`'s step 1.2 through 1.4 entries for detail,
+including what each step deliberately skipped (step 1.3: the memory quote, the coach-link share
+view, a per-player delivery-hour setting; step 1.4: the six-step spotlight walkthrough tour, the
+public profile editor, real Stripe trial creation, the guardian-confirmation email itself, and
+more). See `.env.example` for the vars; real credentials live only in the owner's local,
+gitignored `.env`, not in this repo. PRs #4 through #8 (steps 0.5, 0.6, 1.1, 1.2, 1.3) are merged
+to `main`; the step 1.4 branch (`step-1.4-onboarding-first-week`) is pushed but its PR had not
+been opened as of this note — open it before starting the next step. The next session should
+start at **step 2.1 (The FX archive and the ledger)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`, once
+step 1.4's PR is merged: read that step plus whatever architecture section it names. Note step
+1.4's build log flagged one gap worth a human look before merging: it was not verified live in a
+browser (this session's dev-server slots were already at capacity from another concurrent
+session), so the next session or the owner should load `/onboarding` and `/` once against a real
+signed-in session first. Check `docs/BUILD-LOG.md` for what each prior step actually did
+(including follow-ups) before assuming anything about the current state — this line is a pointer,
+not the full record.
 
 ## Read before coding
 

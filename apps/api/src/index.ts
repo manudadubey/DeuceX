@@ -23,6 +23,8 @@ import { runExtraction } from './notes/extraction';
 import { transcribeNote } from './notes/service';
 import { sweepExpiredAudio } from './notes/audio-lifecycle';
 import { registerMindsetCoach } from './mindset-coach/worker';
+import { registerRankingsRoutes, type RankingsRoutesDeps } from './rankings/routes';
+import { createUnverifiedRankingAdapter } from './rankings/unverified-adapter';
 import { createMemoryStorageAdapter } from './storage/memory-adapter';
 import { createR2Adapter } from './storage/r2-adapter';
 import { createMockTranscriptionAdapter } from './transcription/mock-adapter';
@@ -42,17 +44,26 @@ if (process.env.NODE_ENV !== 'test') {
   loadEnv({ path: fileURLToPath(new URL('../../../.env', import.meta.url)) });
 }
 
-export function buildServer(notesDeps?: NotesRoutesDeps) {
+export function buildServer(notesDeps?: NotesRoutesDeps, rankingsDeps?: RankingsRoutesDeps) {
   const app = Fastify({ logger: true });
 
   app.get('/health', async () => ({ status: 'ok' }));
 
-  if (notesDeps) {
+  if (notesDeps || rankingsDeps) {
     void app.register(cors, {
       origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000').split(','),
     });
+  }
+
+  if (notesDeps) {
     void app.register(async (instance) => {
       await registerNotesRoutes(instance, notesDeps);
+    });
+  }
+
+  if (rankingsDeps) {
+    void app.register(async (instance) => {
+      await registerRankingsRoutes(instance, rankingsDeps);
     });
   }
 
@@ -153,7 +164,14 @@ async function main() {
     },
   });
 
-  const app = buildServer(notesDeps);
+  const rankingsDeps: RankingsRoutesDeps = {
+    anonClient,
+    // The only production ranking adapter until step 3.1 (Rankings and
+    // calendars) wires up a real ATP/WTA/ITF feed — see rankings/adapter.ts.
+    ranking: createUnverifiedRankingAdapter(),
+  };
+
+  const app = buildServer(notesDeps, rankingsDeps);
   const port = Number(process.env.PORT ?? 8787);
   await app.listen({ port, host: '0.0.0.0' });
 }

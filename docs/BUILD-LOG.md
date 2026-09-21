@@ -1013,3 +1013,125 @@ and ready for that step to read. A per-player delivery-hour setting (Settings > 
 02:00 UTC nightly pattern-detection cron (see above for why). Real Stripe-backed "Start Pro
 trial." A named personal contact and a sourced per-country crisis line on the someone-to-call
 card (needs Settings > Connections, PRD-12).
+
+## Step 1.4 · First-week dashboard and onboarding without feeds — 21 September 2026
+
+Built the four-step onboarding wizard (`#/onboarding`) and the first-week dashboard (`#/`) from
+PRD-11, PRD-00 section 3 (stage detection) and section 5.2 (M-ID-2, M-ID-3), and decisions
+worksheet 1 and 2 — the two decisions PRD-11 section 12 flagged as unbuilt in the prototype
+(the guardian branch, the ambiguous-match chooser and the unverified path) were the actual scope
+of this step, not the prototype's own markup, which has neither.
+
+A migration (`packages/db/migrations/20260921120000_step_1_4_onboarding.sql`, applied to
+production per the owner's confirmation — this project still can't branch, step 0.6's note
+stands) added the wizard's fields to `players` (`handed`, `tour_player_id`, `itf_id`, ranking
+fields named `tour_rank`/`tour_points` rather than `atp_rank`/`atp_points` per M-STG-3, `stage`
+inputs, `target_rank`, `key_tournaments`, `surfaces`, `weekly_budget`, `blocked_dates`,
+`billing_cycle`, `dashboard_state`, the two onboarding timestamps) and, more structurally,
+`players`' first-ever INSERT policy: step 0.2 wrote `players_select_own`/`update_own` but nothing
+before this step ever created a player's own row (auth, step 0.3, only creates `auth.users`).
+Also added `agent_schedules_insert_own`/`update_own` (previously select-only) so step 4's agent
+toggles can write `agent_schedules.paused` directly rather than needing a new column — "off" in
+step 4 becomes a `paused: true` row for that agent, "on" leaves no row, matching step 0.6's own
+documented "no row = not paused" default. Deliberately did **not** add a `ranking_snapshots`
+table even though TECH-ARCHITECTURE.md 2.2 describes one: that table is "one row per weekly
+refresh," fed by a real feed and a Monday job neither of which exists until step 3.1: the ranking
+values this step actually needs (onboarding's one-time lookup, stage detection off it) live
+directly on `players` instead, additive to extend later. `database.types.ts` regenerated from the
+live schema via the Supabase MCP server.
+
+The ranking lookup itself is the one call with a real (eventual) vendor side effect, so it got the
+same adapter treatment as R2/Whisper/OpenAI (`apps/api/src/rankings`): a three-way
+`RankingLookupResult` (`verified` | `ambiguous` | `unverified`) behind a `RankingLookupAdapter`
+interface, a `POST /rankings/lookup` route, and — unlike those three adapters — no real
+implementation at all yet. The only one registered in `apps/api/src/index.ts` is
+`createUnverifiedRankingAdapter`, which always returns `unverified`: the build plan's own words
+for this step ("the ranking lookup behind an adapter that returns 'unverified' until step 3.1
+exists"). A `createFixtureRankingAdapter` proves the `verified` and `ambiguous` shapes are correct
+now, ahead of step 3.1 giving the adapter something real to call — exercised by
+`apps/api/src/rankings/routes.test.ts` and, on the client side, by the ambiguous-match-chooser
+test in `onboarding-wizard.test.tsx`, injected via the wizard's `lookupRankingFn` prop.
+
+`packages/db/src/players.ts` holds the pure logic: `detectStage` (PRD-00 section 3's thresholds,
+read off a plain tour-agnostic rank per M-STG-3), `ageFromDob`/`isMinor`/
+`requireGuardianEmailIfMinor` (a hard blocker per decisions worksheet 1, checked again
+server-side even though the wizard also blocks it client-side), `canPublishProfile` (the pure
+predicate a later public-profile-editor step gates on — no editor exists yet, so this is proven
+by fixture test only), `countryDefaults` (fixes the PRD-11 section 12 inconsistency: the country
+select "wired to nothing" — home currency, timezone and app language now really do come from the
+country chosen in step 1, for the seven countries the step 1 form offers; unlisted countries fall
+back to AUD/UTC/en, the same effective default Preferences already used), and `finishOnboarding`,
+onboarding's single write. It is an `upsert` keyed on `id`, not a plain insert: OB-17's "Replay
+setup" reopens onboarding "without discarding existing answers" for a player who already
+finished it once, and since every column the function writes is listed explicitly, the generated
+`ON CONFLICT DO UPDATE` never touches `guardian_confirmed_at` or the `deletion_*` audit columns.
+`agent_schedules` writes are upserted the same way for the same reason, with one known gap noted
+in the code: replaying onboarding and switching a previously-off agent back on does not un-pause
+its existing row, since nothing in this build has a pause/resume surface to do that (Agent
+Studio, Elite-only, a later phase).
+
+The wizard itself (`apps/web/components/onboarding/onboarding-wizard.tsx`) lives in a new
+`(onboarding)` route group rather than the existing `(bare)` one signin and the coach view use:
+the prototype's onboarding column is 760px and left-aligned content, `(bare)`'s `BareShell` is a
+400px centred column built for signin, and reshaping a shared shell for one route risked
+regressing the other two for no benefit — a sibling route group keeps the URL (`/onboarding`) and
+the auth-gate-in-the-layout pattern `(app)/layout.tsx` already established, without touching
+either. All four steps' fields come from PRD-11 section 6's data dictionary, not the prototype's
+own step 1 markup verbatim — the prototype's step 1 also has dietary-rules and food-budget fields
+that belong to Fuel (PRD-11 doesn't list them at all), left out. The tour toggle (ATP/WTA) and a
+single tour-agnostic ID field are new relative to the prototype, which only ever shows "ATP player
+ID" (PRD-11 section 12 flags this as unbuilt too). No answer is persisted before step 4 finishes
+(PRD-11 section 3's own stated design), so the whole wizard is client component state until one
+Server Action call (`app/(onboarding)/onboarding/actions.ts`) does the real write via RLS.
+
+The dashboard (`apps/web/app/(app)/page.tsx`) now branches on `players.dashboard_state`: a
+player who has finished onboarding (`'first'`) renders `FirstWeekDashboard`
+(`apps/web/components/dashboard/first-week-dashboard.tsx`) instead of the pre-onboarding empty
+shell, which now only covers "no players row exists yet." The hero, checklist and Mindset Coach
+progress read real data (`player.verification`/`tour_rank`/`stage`, a notes count via the already-
+tested `listNotes`); Runway, the Tournament Agent shortlist and Patrons keep the same honest
+zero-state tiles step 0.5 shipped, since the Financial, Tournament and Fans agents that would fill
+them don't exist until Phase 2 to 4 — this step's own title ("without feeds") is exactly that
+scope line.
+
+Done-when checks: a fixture test (`players.test.ts`) proves `finishOnboarding` throws
+`GuardianEmailRequiredError` before writing anything for an under-18 player with no guardian
+email, and a component test (`onboarding-wizard.test.tsx`, real DOM interaction via
+`@testing-library/react`) proves the wizard itself blocks "Continue" past step 1 for the same
+case and unblocks it the moment a guardian email is typed. `canPublishProfile` is fixture-tested
+false for `verification: 'unverified'` (M-ID-2) and false for a verified minor with no confirmed
+guardian (M-ID-3) — no publish surface exists yet to wire it into, so this is the acceptance bar
+this step can actually clear. The ambiguous-match chooser and the unverified badge are both
+proven via the same component test file, since the production adapter cannot currently produce
+either verified or ambiguous results itself.
+
+Verified: `pnpm typecheck`, `pnpm lint`, `pnpm format` and `pnpm test` all green — 220 tests total
+across every package (20 new in `packages/db`'s `players.test.ts`, 5 new in `apps/api`'s
+`rankings/routes.test.ts`, 4 new in `apps/web`'s `onboarding-wizard.test.tsx`). **Not** verified
+live in the browser this step: this session's dev-server slots in this project directory were
+already at capacity from another concurrent Claude Code session, and stopping another session's
+server to reclaim one risked interfering with its work, so live click-through verification against
+`localhost` did not happen here — flagged explicitly rather than claimed. The next session (or the
+owner, before merging) should load `/onboarding` and `/` once against a real signed-in session to
+confirm the wizard and first-week dashboard actually render as designed, since only the component-
+level DOM tests above have exercised the real markup so far.
+
+Skipped, deliberately: the six-step spotlight walkthrough tour (`TOUR` in the prototype) — the
+build plan's own step 1.4 line lists "the tour toggle (ATP, WTA)" among what to build, which is
+the ATP/WTA tour selector, not the walkthrough; the walkthrough itself is absent from that line
+and from this step's Done-when criteria. The public profile editor (`#/profile`) — PRD-11 owns it
+but the build plan never schedules it under step 1.4 (it stays the same placeholder step 0.5
+left), so `canPublishProfile` exists now with no editor yet to call it. Photo upload in step 1 (no
+acceptance criterion needs it; the prototype's field is a hardcoded base64 sample image with no
+real storage behind it). Real Stripe trial creation in step 3/4 — `tier`/`tier_status` are set
+directly (`trialing` for Pro/Elite, `free` for Free) with no Stripe API call, the same stubbing
+pattern this step's own ranking adapter uses, since Phase 2 is where Stripe gets wired up. The
+"Show me a full season instead" sample-season toggle — nothing exists yet to populate a full
+season with (Tournament, Financial and Fans agents are all later phases), so `dashboard_state`
+never reaches `'full'` in this build. Onboarding's guardian-confirmation email itself (the
+guardian receiving and clicking a confirm link) and the 14-day-unconfirmed admin case decisions
+worksheet 1 describes — `guardian_email` and `guardian_confirmed_at` are stored and
+`canPublishProfile` already gates on the latter, but nothing sends that email yet: there is no
+share-link/manager-invite surface built at all to hang it on (PRD-12, a later step), and inventing
+a bespoke one-off email path for just this field seemed worse than leaving the column honestly
+unconfirmed until that surface exists.
