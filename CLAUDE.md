@@ -5,7 +5,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0 and steps 1.1 to 1.4 done, start step 2.1
+## Status: Phase 0, Phase 1 and step 2.1 done, start step 2.2
 
 The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -50,14 +50,26 @@ view, a per-player delivery-hour setting; step 1.4: the six-step spotlight walkt
 public profile editor, real Stripe trial creation, the guardian-confirmation email itself, and
 more). See `.env.example` for the vars; real credentials live only in the owner's local,
 gitignored `.env`, not in this repo. PRs #4 through #9 (steps 0.5, 0.6, 1.1, 1.2, 1.3, 1.4) are
-merged to `main` — no open or stacked branches. Step 1.4's live browser verification (guardian
-gate, ranking-lookup graceful degrade, first-week dashboard) happened as a follow-up against a
-real signed-in session once a dev-server slot freed up; see `docs/BUILD-LOG.md`'s step 1.4 entry
-for what it actually confirmed. The next session should start at **step 2.1 (The FX archive and
-the ledger)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture
-section it names. Check `docs/BUILD-LOG.md` for what each prior step actually did (including
-follow-ups) before assuming anything about the current state — this line is a pointer, not the
-full record.
+merged to `main`. Step 1.4's live browser verification (guardian gate, ranking-lookup graceful
+degrade, first-week dashboard) happened as a follow-up against a real signed-in session once a
+dev-server slot freed up; see `docs/BUILD-LOG.md`'s step 1.4 entry for what it actually confirmed.
+Step 2.1 (the FX archive and the ledger) added `ledger_lines`, `prize_receivables` and
+`reserve_entries` (`fx_rates_daily` already existed from step 0.2), a new `receivable_received`
+approval action type — the one transition TECH-ARCHITECTURE.md section 3 names as gated the same
+as a Stripe/Resend/ICS call — and `packages/actions/src/receivables.ts`'s `markReceivableReceived`,
+the first real caller of `runGatedAction` in this codebase. A real, key-less ECB daily-rate fetch
+(`apps/api/src/fx`) and a Sunday reserve-balance reminder (`apps/api/src/reserves`) both run on a
+new step-2.1-only pg-boss instance. Verified live against the real Supabase project (this project
+still can't branch, so the migration went straight to production, owner-confirmed), including six
+new RLS integration tests run against it, not just fixtures. See `docs/BUILD-LOG.md`'s step 2.1
+entry for the full design reasoning, what it deliberately skipped (an actual gated UI for
+balance updates or marking a receivable received — that's step 2.2's Financial Agent page), and a
+pre-existing, unrelated step 1.1 test bug it found but left for a follow-up session (spawned as
+its own task) rather than fixing here. Step 2.1 is [PR #10](https://github.com/manudadubey/ProCircuit/pull/10),
+open against `main`, not yet merged. The next session should start at **step 2.2 (Financial
+Agent)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture section
+it names. Check `docs/BUILD-LOG.md` for what each prior step actually did (including follow-ups)
+before assuming anything about the current state — this line is a pointer, not the full record.
 
 ## Read before coding
 

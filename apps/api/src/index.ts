@@ -27,6 +27,10 @@ import { registerRankingsRoutes, type RankingsRoutesDeps } from './rankings/rout
 import { createUnverifiedRankingAdapter } from './rankings/unverified-adapter';
 import { createMemoryStorageAdapter } from './storage/memory-adapter';
 import { createR2Adapter } from './storage/r2-adapter';
+import { createMoneyBoss } from './money/queue';
+import { registerFxScheduler } from './fx/scheduler';
+import { createEcbAdapter } from './fx/ecb-adapter';
+import { registerReserveReminderScheduler } from './reserves/scheduler';
 import { createMockTranscriptionAdapter } from './transcription/mock-adapter';
 import { createWhisperAdapter } from './transcription/whisper-adapter';
 
@@ -141,6 +145,14 @@ async function main() {
   // comment gives: different job shape, different pickup rules.
   const actionsBoss = await createBoss(dbConnectionString);
   await registerMindsetCoach(actionsBoss, { db, client: insightClient, agentRuns });
+
+  // Step 2.1's own boss (money/queue.ts): the daily ECB fetch and the
+  // Sunday reserve-balance reminder, neither of which is a scheduled agent
+  // run in the AGENT_RUN_QUEUE sense above.
+  const moneyBoss = await createMoneyBoss(dbConnectionString);
+  await registerFxScheduler(moneyBoss, { db, adapter: createEcbAdapter() });
+  await registerReserveReminderScheduler(moneyBoss, { db });
+
   const notesDeps: NotesRoutesDeps = {
     db,
     anonClient,

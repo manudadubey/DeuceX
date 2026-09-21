@@ -55,6 +55,17 @@ export {
   type EnqueueAgentRunInput,
 } from './queue/queue';
 
+export {
+  markReceivableReceived,
+  SupabaseReceivablesDb,
+  ReceivableNotFoundOrAlreadyReceivedError,
+  MissingReceivedDateRateError,
+  type ReceivablesDb,
+  type PendingReceivable,
+  type ReceivedReceivableResult,
+  type MarkReceivableReceivedInput,
+} from './receivables';
+
 export { buildAgentJobSingletonKey, type AgentJobKeyInput } from './queue/idempotency-key';
 export {
   evaluatePickup,

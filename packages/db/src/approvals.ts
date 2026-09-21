@@ -15,7 +15,8 @@ export type ApprovalActionType =
   | 'content_publish'
   | 'sponsor_send'
   | 'retract'
-  | 'tier_change';
+  | 'tier_change'
+  | 'receivable_received';
 
 export interface CreateApprovalInput {
   playerId: string;
