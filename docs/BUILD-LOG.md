@@ -1260,3 +1260,29 @@ for `runGatedAction`), not a UI. Runway, net burn, the fourteen-week projection,
 actual and receipt scanning — all explicitly step 2.2 (Financial Agent). Quiet hours and the
 per-player reminder toggle — step 2.3 (Settings). The `tournaments` foreign key on `ledger_lines`
 and `prize_receivables` — step 3.1, once that table exists.
+
+## Step 1.1 follow-up: fixed the notes RLS integration test bugs flagged during step 2.1
+
+**Found and fixed a latent bug from step 1.1**, not new to this step: the 5 pre-existing failures
+in `rls.integration.test.ts`'s `notes row-level security and quota (step 1.1)` block, flagged but
+left unfixed at the end of step 2.1 (see that step's entry above). Root cause confirmed exactly as
+suspected: the shared `asPlayer(client, playerId, fn)` helper always `rollback`s at the end of
+every call, so a write made inside one `asPlayer` call was never actually visible to a later,
+separate `asPlayer` call or a raw query outside any wrapper. Fixed each affected test by either (a)
+reading its own write back inside the same `asPlayer` call — the same read-your-own-write pattern
+the `money model row-level security (step 2.1)` block already uses — for "lets a player edit
+review-state content fields on their own note", or (b) seeding the committed state directly via the
+raw superuser `client` first, the same way the file's own `prize_receivables`/`ledger_lines`
+fixtures are seeded, for "refuses a player editing someone else's note" (which genuinely needs to
+prove committed-state visibility across two different simulated player sessions, not just within
+one). Also split "refuses a player setting status or deleted_at directly" into two separate
+`asPlayer` calls: both assertions were sharing one Postgres transaction, so the first rejected query
+left it aborted and the second failed with "current transaction is aborted" instead of the
+"permission denied" the test was actually checking for. And rewrapped "never allows a SQL DELETE on
+notes for any role" inside `asPlayer` — it had been running as the raw `SUPABASE_DB_URL` connection
+(the schema owner, not the `authenticated` role), so the delete it meant to prove impossible was
+silently succeeding, deleting `noteA` out from under the tests that ran after it. Test-only change;
+no schema, RLS policy or grant needed to change. Confirmed live against the real project
+(`gpzpmrumwaqyfkyvqbgl`), not just inferred: all 19 tests in `rls.integration.test.ts` (the notes
+block's 7, plus every other block including step 2.1's money model block) now pass against
+`SUPABASE_DB_URL`.

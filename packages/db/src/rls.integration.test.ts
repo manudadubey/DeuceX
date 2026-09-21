@@ -198,23 +198,32 @@ describeIfConfigured('notes row-level security and quota (step 1.1)', () => {
   });
 
   it('lets a player edit review-state content fields on their own note', async () => {
+    // Read-your-own-write within the same uncommitted transaction, since
+    // asPlayer always rolls back at the end of the call (see the "money
+    // model" describe block below for the same pattern).
     await asPlayer(client, playerA, async () => {
       await client.query(
         `update public.notes set mood = 'confident', transcript = $1 where id = $2`,
         ['Lost in a breaker.', noteA],
       );
+      const result = await client.query('select mood, transcript from public.notes where id = $1', [
+        noteA,
+      ]);
+      expect(result.rows[0]).toEqual({ mood: 'confident', transcript: 'Lost in a breaker.' });
     });
-    const result = await client.query('select mood, transcript from public.notes where id = $1', [
-      noteA,
-    ]);
-    expect(result.rows[0]).toEqual({ mood: 'confident', transcript: 'Lost in a breaker.' });
   });
 
   it('refuses a player setting status or deleted_at directly (apps/api-only columns)', async () => {
+    // Each rejected query aborts its Postgres transaction, so a second query
+    // in the same asPlayer call would fail with "current transaction is
+    // aborted" instead of the permission error under test. Use a separate
+    // asPlayer call (a fresh transaction) per rejected query.
     await asPlayer(client, playerA, async () => {
       await expect(
         client.query(`update public.notes set status = 'saved' where id = $1`, [noteA]),
       ).rejects.toThrow(/permission denied/);
+    });
+    await asPlayer(client, playerA, async () => {
       await expect(
         client.query(`update public.notes set deleted_at = now() where id = $1`, [noteA]),
       ).rejects.toThrow(/permission denied/);
@@ -222,6 +231,12 @@ describeIfConfigured('notes row-level security and quota (step 1.1)', () => {
   });
 
   it("refuses a player editing someone else's note", async () => {
+    // Seeded directly (bypassing RLS, as the schema owner) so this checks
+    // committed state, not a value written inside a different asPlayer
+    // call's own transaction, which always rolls back and so was never
+    // actually visible here.
+    await client.query(`update public.notes set mood = 'confident' where id = $1`, [noteA]);
+
     await asPlayer(client, playerB, async () => {
       await client.query(`update public.notes set mood = 'flat' where id = $1`, [noteA]);
       // RLS silently filters the row out of the UPDATE's WHERE clause rather
@@ -232,9 +247,14 @@ describeIfConfigured('notes row-level security and quota (step 1.1)', () => {
   });
 
   it('never allows a SQL DELETE on notes for any role (soft delete only)', async () => {
-    await expect(client.query(`delete from public.notes where id = $1`, [noteA])).rejects.toThrow(
-      /permission denied/,
-    );
+    // Must run as `authenticated` (via asPlayer), not the raw superuser
+    // connection: the underlying SUPABASE_DB_URL role owns the table and
+    // isn't subject to the grant restrictions this test is checking.
+    await asPlayer(client, playerA, async () => {
+      await expect(client.query(`delete from public.notes where id = $1`, [noteA])).rejects.toThrow(
+        /permission denied/,
+      );
+    });
   });
 
   it("notes_saved_this_month() only ever counts the calling player's own saved notes", async () => {
