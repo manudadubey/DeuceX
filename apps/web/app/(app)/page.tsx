@@ -7,8 +7,10 @@ import {
   PulseTileSub,
   PulseTileValue,
 } from '@procircuit/ui';
+import { listNotes } from '@procircuit/db';
 import { createClient } from '@/lib/supabase/server';
 import { CheckInCard } from '@/components/mindset/check-in-card';
+import { FirstWeekDashboard } from '@/components/dashboard/first-week-dashboard';
 
 // The "three answers" dashboard (PROCIRCUIT-CONTEXT.md 5.1), with honest empty states:
 // no ranking, agent or fan data exists yet (that's Phase 1 onward), so every tile says so
@@ -32,21 +34,35 @@ const TILES = [
   },
 ] as const;
 
-// The mood row (build plan step 1.3: "the dashboard mood row") is the one
-// piece of the real three-answers dashboard this step adds; the rest of
-// this page's wiring to real player data is step 1.4's job (First-week
-// dashboard and onboarding).
+// Step 1.4 (First-week dashboard and onboarding): a player who has finished
+// onboarding (a players row exists) lands on FirstWeekDashboard instead of
+// this empty-shell view, which now only covers the "hasn't onboarded at
+// all" case. dashboard_state only ever reaches 'first' in this build — the
+// populated "full" state this falls through to needs the Tournament,
+// Financial and Fans agents this step deliberately doesn't build (Phase 2
+// to 4), so it keeps the same honest zero-state tiles step 0.5 shipped.
 export default async function DashboardPage() {
   const supabase = createClient();
   const { data } = await supabase.auth.getClaims();
   const playerId = typeof data?.claims.sub === 'string' ? data.claims.sub : undefined;
+  const email = typeof data?.claims.email === 'string' ? data.claims.email : undefined;
   if (!playerId) redirect('/signin');
 
   const { data: player } = await supabase
     .from('players')
-    .select('id, timezone')
+    .select('*')
     .eq('id', playerId)
     .maybeSingle();
+
+  if (player && player.dashboard_state === 'first') {
+    // A wide, practically-unbounded window rather than a new "total notes"
+    // query: the first-week checklist just needs to know whether any note
+    // exists yet, and listNotes is already RLS-scoped and tested.
+    const notes = await listNotes(supabase, { sinceDays: 3650 });
+    return (
+      <FirstWeekDashboard player={player} notesCount={notes.length} playerEmail={email ?? ''} />
+    );
+  }
 
   return (
     <>
