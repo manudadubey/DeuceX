@@ -866,3 +866,150 @@ input and 153 output tokens — about $0.00025 at the table's own rate, comforta
 combined under-$0.05-per-note target alongside transcription's own ~$0.006. `pnpm typecheck`,
 `pnpm lint`, `pnpm format` and `pnpm test` all still green (added one pricing-table test case for
 `gpt-4o-mini`; every other test file needed no changes, confirming the adapter boundary held).
+
+## Step 1.3 · Mindset Coach — 21 September 2026
+
+Acceptance checks restated before starting: with five fixture notes the pattern "After a
+tiebreak loss, you write about rushing the second serve" appears with 3 of 4 evidence; a note
+matching the distress lexicon shows the card and writes a `cases` row; the insight is not
+regenerated when nothing changed; the copy never uses clinical language (a test greps the
+prompt output against a blocklist); the route matches the prototype at `#/agent/mindset`.
+
+Migration (`packages/db/migrations/20260921110000_step_1_3_mindset_coach.sql`) adds `patterns`,
+`insights`, `mindset_boundaries` and `cases`. `patterns` is keyed on `(player_id, rule_key)`
+rather than freely created per run — PRD-06 section 7's three worked examples read like a small,
+fixed catalogue of candidate statements a detector evaluates each run, not open-ended text
+generation, so a pattern's identity is the rule that produced it, which is also what makes
+dismiss-then-re-raise (MC-11) an update to the same row rather than a duplicate. `cases` is
+TECH-ARCHITECTURE.md 2.4's admin table, built now (ahead of the admin console itself, PRD-13
+Phase 5) because M-PRIV-3/MC-16 require the distress card to open a case from week one; no role
+has a select grant on it, since a player must never see their own case row. `mindset_boundaries`
+is a dedicated table rather than a reuse of `agent_schedules.paused`: that column is the generic
+admin/Elite-Studio kill switch the queue's pickup guard already reads for every agent, a
+different concern from a player's own "Pause for a week" (MC-15), which needs a resume date and
+"resumes automatically, deletes nothing." Applied to the live project via the Supabase MCP server
+after the owner confirmed (this project can't branch); the security advisor's only new finding
+was the intentional no-policy state on `cases`, everything else pre-existing. Regenerated
+`packages/db/src/database.types.ts` from the live schema afterward.
+
+Built the second agent, `packages/agents/src/mindset-coach/` (`rules.ts`, `merge-patterns.ts`,
+`distress.ts`, `schema.ts`, `prompt.ts`, `model-client.ts`, `mock-client.ts`,
+`generate-insight.ts`). The pattern detector is deterministic, not LLM-driven: PRD-06's three
+worked examples key off structured columns step 1.2's extractor already fills in (result grammar,
+tags, ctx, mood), so `rules.ts` is a small catalogue of rules over those columns rather than a
+semantic-clustering pipeline — cheaper, auditable, testable without a model in the loop. The
+generative model's only job is the morning's 1-3 sentence prose plus a focus sentence, given
+counts and flags the caller already computed; it never invents a pattern statement, a re-raise
+sentence or a dismissal notice, all of which are deterministic, player-visible UI copy driven
+directly by pattern-row state. Three rule types: `tiebreak_loss_second_serve` (a losing tiebreak
+set + the `Second serve` tag), `travel_next_day_flat` (a note the local calendar day after a
+Travel note + `flat` mood), and `conditions_first_serve_drop` (the physical/Conditions kind,
+reading `notes.cond` — always null until PRD-08/step 3.3 exists, so this rule is structurally
+real but never actually fires in production yet, exercised only by `rules.test.ts`'s own fixture
+with a stamp shape this step defines, since PRD-08 doesn't exist to define one). A fourth worked
+example from the PRD, "you skip writing after wins," was deliberately not built: it needs known
+match results outside notes (`entry_decisions`/tournaments, step 3.2), which don't exist yet — the
+same category of upstream-input gap steps 1.1/1.2 already hit for the Entered event and the
+Conditions stamp, handled the same way (documented, not faked). The distress rule
+(`distress.ts`, M-PRIV-3) is a deterministic evaluator, not a model call: an English-only lexicon
+(PRD-06 section 12 flags per-language review as an open question, not something to guess at
+here), three consecutive check-ins of 1, or five of the last seven notes Frustrated/Flat with
+`Sleep` tagged on at least three. `generate-insight.ts` is the orchestrator: evaluates distress
+first and unconditionally (pre-empting everything else, no model call), then quiet-match-morning
+(MC-14, structurally real but never triggered today since `hasMatchToday` has no real input until
+the Tournament Agent, step 3.2), then runs the pattern detector, builds the prompt (light-morning
+and feedback-adaptation flags per section 7), and calls the model with the same one-corrective-
+retry-then-`AgentValidationError` shape step 1.2 established, plus a second, independent
+regenerate-once-then-withhold path for a tone-check failure (AC-11) — two different retry
+policies for two different failure classes, not one generic retry loop. `gpt-4o-mini`, the same
+OpenAI account as Whisper and match-scribe/extract; the page's own badge reads "Drafting model ·
+06:00 your time," not the prototype's literal "Claude Sonnet" copy, since CLAUDE.md's "no model
+provider names in the interface" rule supersedes that pre-decision prototype text.
+
+MC-18's memory quote (semantic similarity over embeddings) is out of scope for this step and not
+in the build plan's own "Done when" list: it needs an embeddings call and a vector index
+(pgvector), a distinct vertical slice this step didn't touch — `memory` is always null, the same
+"wire the field, defer the real value" pattern already used for `rankingDelta`/`nextEvent`
+(step 3.1/3.2 inputs that don't exist yet either).
+
+Wired into `apps/api/src/mindset-coach/`: `service.ts` (DB reads/writes on the service role),
+`run.ts` (`runMindsetCoach`: loads the player, checks `mindset_boundaries.paused_until` *before*
+loading anything else — a paused player gets no insight row at all this morning, not a row that
+says "paused," matching "deletes nothing" — computes the inputs hash for MC-1's caching, then
+wraps `generateInsight` in `recordRun()`, writes the insight/pattern rows, opens a `cases` row on
+distress, and sends at most one notification), `scheduler.ts` (the hourly tick that finds players
+due for their delivery hour — a fixed 06:00 default, since Settings > Agents' own cadence picker
+doesn't exist yet, PRD-12 step 2.3 — and enqueues onto `packages/actions`' `AGENT_RUN_QUEUE`), and
+`worker.ts` (registers the pickup-guard-aware worker). Mindset Coach is the **first agent to
+actually run on the `AGENT_RUN_QUEUE`/`registerAgentWorker` infrastructure** step 0.6 built ahead
+of any agent needing it — match-scribe/extract runs inline in the note-transcribe job instead,
+never touching that queue. The nightly 02:00 UTC overnight pattern-detection run PRD-06 section 3
+separately mentions was not built as its own cron: pattern detection is cheap (no model call) and
+already runs fresh inside every daily insight run, so a second scheduled pass would only
+duplicate work for no player-visible difference — a deliberate simplification, not an oversight.
+
+UI: `apps/web/app/(app)/agent/mindset/` (`page.tsx`, `mindset-client.tsx`) and
+`apps/web/components/mindset/` (`today-card.tsx`, `boundaries-card.tsx`, `patterns-card.tsx`,
+`mood-chart.tsx`, `recent-mornings-card.tsx`, `someone-to-call-card.tsx`). Extracted
+`check-in-card.tsx` as the one shared implementation of MC-5's "saved from the Mindset page, the
+dashboard or Match Scribe" — `match-scribe/daily-checkin-card.tsx` (step 1.1) is now a five-line
+wrapper over it, and the dashboard (`apps/web/app/(app)/page.tsx`) gained the mood row this step's
+own build-plan line names ("The dashboard mood row"), converted to an async server component that
+fetches the player row the same way `match-scribe/page.tsx` already does — the rest of the real
+three-answers dashboard wiring stays step 1.4's job, untouched here. `mood-chart.tsx` reuses
+`packages/ui`'s `el()`/`axisK()` chart helpers (`sample-rank-chart.tsx`'s own pattern) but is
+deliberately narrower than the prototype's `drawMood()`: no shaded tournament weeks and no
+pattern-callout dashed lines, both needing Entered-event and pattern-to-chart-date linkage that
+don't exist yet. Free-tier locking (MC-20) dims patterns/chart/boundaries/recent-mornings with a
+"Start Pro trial" placeholder action (no real Stripe trial flow exists yet, Phase 4) —
+`players.tier` is nullable free text with nothing populating it before onboarding (step 1.4), so
+`null` reads as Free, the safer default. `someone-to-call-card.tsx` deliberately does **not**
+hardcode a phone number for the ATP Player Assistance line or any crisis line: a guessed or
+unverified number on a card a player in genuine distress might call is actively dangerous, worse
+than an honest gap (M-PRIV-5's real-person-governance principle applied here) — it names the
+resources without inventing digits for them, flagged with an explicit comment not to fill one in
+without confirming it against the real program and the player's own country.
+
+**Found and fixed a latent bug from step 1.1**, not new to this step: `saveCheckIn()`
+(`packages/db/src/notes.ts`) used `.upsert()` on `(player_id, date)`, which PostgREST turns into
+`INSERT ... ON CONFLICT (player_id, date) DO UPDATE SET <every column in the payload>` — including
+`player_id` and `date` themselves, even though their values never change on a same-day re-save.
+The step 1.1 migration deliberately never grants `authenticated` UPDATE on those two columns
+(only `value`, `sentence`, `source`), so the upsert failed with "permission denied for table
+check_ins" the moment a second check-in save happened on the same day. Never caught before now
+because nothing had actually exercised a same-day re-save against production live: step 1.1's own
+match-scribe check-in card existed but this is the first time this step's shared
+`check-in-card.tsx` got a real, repeated, live-browser click test. Confirmed live against the
+project (not just inferred): the first save 403'd with exactly that error; fixed by rewriting
+`saveCheckIn` as an update-then-insert-if-missing (two statements matching the grant exactly,
+instead of relying on upsert's broader generated SQL) and re-verified — a second save on the same
+day correctly updated the existing row (`4` → `3`) with no new row and no error. Updated
+`notes.test.ts`'s `saveCheckIn` tests to match (they'd mocked `.upsert()` directly, which no
+longer exists in the implementation).
+
+Verified: `pnpm typecheck`, `pnpm lint`, `pnpm format` and `pnpm test` all green — 216 tests total
+across every package (54 in `packages/agents` covering the pattern rules, the merge/re-raise
+logic, the distress lexicon and thresholds, the tone-check blocklist and the full orchestrator
+including MC-AC-1/3/8/10/11-style fixture scenarios; 59 in `apps/api` including `run.test.ts` and
+`scheduler.test.ts`, new; 24 in `packages/db` including `mindset.test.ts`, new). Verified against
+the real OpenAI API, not just mocks, the same standard step 1.2 set: a one-off script (deleted
+after use) called `generateInsight()` with a real `createOpenAIInsightClient` against four
+in-memory fixture notes (three tiebreak losses, two tagged `Second serve`) — it produced a valid,
+tone-clean insight and focus on the first attempt, correctly flagged
+`tiebreak_loss_second_serve` as new at Strong confidence (3 of 3), for 542 input and 32 output
+tokens (about $0.0001, comfortably under the A$0.08 target). Also verified live in the browser
+against the real deployed project, signed in via a dev sign-in link: the dashboard's mood row and
+the full `/agent/mindset` route (empty "starts after your third note" state, dimmed Free-tier
+sections, the mood chart, boundaries, patterns and recent-mornings cards) all rendered correctly
+in both a fresh load and after the check-in bug fix above; no console errors after the fix.
+
+Skipped, deliberately: the memory quote (MC-18, needs embeddings/pgvector, its own vertical
+slice); the "you skip writing after wins" pattern (needs `entry_decisions`, step 3.2); the
+Coach view's patterns section (`#/coach`) and any share-link auth — `share_links` exists as a
+table (step 0.2) but nothing yet issues or resolves a token (PRD-12, step 2.3), and the route is
+still the same "not built yet" placeholder step 0.5 left it as; `patterns.coach_share` is wired
+and ready for that step to read. A per-player delivery-hour setting (Settings > Agents' 06:00/
+07:00/Evenings picker) — every player currently gets the one hardcoded 06:00 default. A separate
+02:00 UTC nightly pattern-detection cron (see above for why). Real Stripe-backed "Start Pro
+trial." A named personal contact and a sourced per-country crisis line on the someone-to-call
+card (needs Settings > Connections, PRD-12).

@@ -165,6 +165,22 @@ export async function getSavedNotesThisMonth(client: SupabaseClient<Database>): 
 
 export const FREE_TIER_MONTHLY_NOTE_LIMIT = 10;
 
+// Read-only, RLS-scoped (Mindset Coach's mood chart, MC-6): the player's own
+// check-ins over a window, most recent first.
+export async function listCheckIns(
+  client: SupabaseClient<Database>,
+  sinceDays = 90,
+): Promise<CheckIn[]> {
+  const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const { data, error } = await client
+    .from('check_ins')
+    .select('*')
+    .gte('date', since)
+    .order('date', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
 export interface SaveCheckInInput {
   playerId: string;
   /** Player's local calendar date, YYYY-MM-DD. */
@@ -177,24 +193,45 @@ export interface SaveCheckInInput {
 // One check-in per player per local day (S-4.4): a second save the same day
 // replaces the first via the unique (player_id, date) index rather than
 // adding a row.
+//
+// This is an update-then-insert-if-missing, not `.upsert()`: PostgREST's
+// upsert issues `INSERT ... ON CONFLICT (player_id, date) DO UPDATE SET
+// <every column in the payload>`, which includes `player_id` and `date`
+// themselves even though their values never actually change on a same-day
+// re-save — and the step 1.1 migration deliberately never grants
+// `authenticated` UPDATE on those two columns (only `value`, `sentence`,
+// `source`), the same narrowing notes.ts's own updateNoteContent relies on
+// elsewhere. An upsert therefore fails with "permission denied for table
+// check_ins" the moment a real player saves a second check-in on the same
+// day — caught live against the production project while verifying step
+// 1.3's mood check-in card, not by inspection. Two real statements instead:
+// try the update first (the common case, since MC-5's whole point is a
+// later save replacing the earlier one), and only insert when no row for
+// today existed yet.
 export async function saveCheckIn(
   client: SupabaseClient<Database>,
   input: SaveCheckInInput,
 ): Promise<CheckIn> {
-  const { data, error } = await client
+  const patch = {
+    value: input.value,
+    sentence: input.sentence ?? null,
+    source: input.source,
+  };
+
+  const { data: updated, error: updateError } = await client
     .from('check_ins')
-    .upsert(
-      {
-        player_id: input.playerId,
-        date: input.date,
-        value: input.value,
-        sentence: input.sentence ?? null,
-        source: input.source,
-      },
-      { onConflict: 'player_id,date' },
-    )
+    .update(patch)
+    .eq('player_id', input.playerId)
+    .eq('date', input.date)
+    .select('*');
+  if (updateError) throw updateError;
+  if (updated && updated.length > 0) return updated[0]!;
+
+  const { data: inserted, error: insertError } = await client
+    .from('check_ins')
+    .insert({ player_id: input.playerId, date: input.date, ...patch })
     .select('*')
     .single();
-  if (error) throw error;
-  return data;
+  if (insertError) throw insertError;
+  return inserted;
 }

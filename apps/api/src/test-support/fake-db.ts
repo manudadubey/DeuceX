@@ -15,6 +15,9 @@ class TableQuery implements PromiseLike<{ data: any; error: any }> {
   private pendingInsert?: Row;
   private pendingUpdate?: Row;
   private pendingDelete = false;
+  private pendingUpsert?: { row: Row; onConflict: string | undefined };
+  private orderSpec?: { col: string; ascending: boolean };
+  private limitCount?: number;
 
   constructor(
     private readonly db: FakeDb,
@@ -50,6 +53,31 @@ class TableQuery implements PromiseLike<{ data: any; error: any }> {
     return this;
   }
 
+  gte(col: string, value: string | number): this {
+    // Mirrors lte() above: date-aware when both sides parse as one.
+    this.filters.push((row) => {
+      const left = row[col];
+      if (left == null) return false;
+      const leftDate = new Date(left as string).getTime();
+      const rightDate = new Date(value).getTime();
+      if (!Number.isNaN(leftDate) && !Number.isNaN(rightDate)) return leftDate >= rightDate;
+      return left >= value;
+    });
+    return this;
+  }
+
+  lt(col: string, value: string | number): this {
+    this.filters.push((row) => {
+      const left = row[col];
+      if (left == null) return false;
+      const leftDate = new Date(left as string).getTime();
+      const rightDate = new Date(value).getTime();
+      if (!Number.isNaN(leftDate) && !Number.isNaN(rightDate)) return leftDate < rightDate;
+      return left < value;
+    });
+    return this;
+  }
+
   not(col: string, op: string, value: unknown): this {
     if (op === 'is' && value === null) {
       this.filters.push((row) => row[col] != null);
@@ -57,7 +85,13 @@ class TableQuery implements PromiseLike<{ data: any; error: any }> {
     return this;
   }
 
-  order(): this {
+  order(col: string, opts?: { ascending?: boolean }): this {
+    this.orderSpec = { col, ascending: opts?.ascending ?? true };
+    return this;
+  }
+
+  limit(count: number): this {
+    this.limitCount = count;
     return this;
   }
 
@@ -71,6 +105,14 @@ class TableQuery implements PromiseLike<{ data: any; error: any }> {
     return this;
   }
 
+  // A minimal upsert: matches an existing row on the onConflict columns
+  // (comma-separated, matching supabase-js's own string form) and merges
+  // over it, or inserts a new row when none matches.
+  upsert(row: Row, opts?: { onConflict?: string }): this {
+    this.pendingUpsert = { row, onConflict: opts?.onConflict };
+    return this;
+  }
+
   delete(): this {
     this.pendingDelete = true;
     return this;
@@ -78,13 +120,36 @@ class TableQuery implements PromiseLike<{ data: any; error: any }> {
 
   private matched(): Row[] {
     const table = this.db.tables[this.tableName] ?? [];
-    return table.filter((row) => this.filters.every((f) => f(row)));
+    let rows = table.filter((row) => this.filters.every((f) => f(row)));
+    if (this.orderSpec) {
+      const { col, ascending } = this.orderSpec;
+      rows = [...rows].sort((a, b) => {
+        if (a[col] === b[col]) return 0;
+        const cmp = a[col] < b[col] ? -1 : 1;
+        return ascending ? cmp : -cmp;
+      });
+    }
+    if (this.limitCount !== undefined) rows = rows.slice(0, this.limitCount);
+    return rows;
   }
 
   private async resolve(): Promise<{ data: any; error: any }> {
     if (this.pendingInsert) {
-      const row = { ...this.pendingInsert };
+      const row = { id: `row-${Math.random().toString(36).slice(2)}`, ...this.pendingInsert };
       (this.db.tables[this.tableName] ??= []).push(row);
+      return { data: [row], error: null };
+    }
+    if (this.pendingUpsert) {
+      const { row: patch, onConflict } = this.pendingUpsert;
+      const conflictCols = (onConflict ?? 'id').split(',');
+      const table = (this.db.tables[this.tableName] ??= []);
+      const existing = table.find((row) => conflictCols.every((col) => row[col] === patch[col]));
+      if (existing) {
+        Object.assign(existing, patch);
+        return { data: [existing], error: null };
+      }
+      const row = { id: `row-${Math.random().toString(36).slice(2)}`, ...patch };
+      table.push(row);
       return { data: [row], error: null };
     }
     if (this.pendingUpdate) {
