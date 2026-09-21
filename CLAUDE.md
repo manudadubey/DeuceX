@@ -5,7 +5,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0 and steps 1.1 to 1.2 done, start step 1.3
+## Status: Phase 0 and steps 1.1 to 1.3 done, start step 1.4
 
 The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -24,16 +24,29 @@ same OpenAI account and `OPENAI_API_KEY` as Whisper transcription, not a second 
 versioned Zod schema, one corrective retry on validation failure, and a mood-confidence floor,
 wired into `apps/api` right after transcription so a saved note's result, opponent, tags, mood
 and coach summary arrive pre-filled as proposals; a `failed_extraction` state and its own Retry
-path (separate from transcription's, never re-uploading audio) cover the failure case. **Verified
-against the real OpenAI API**, not just mocks: the Kovalenko fixture transcript produced a
-correct, valid extraction on the first call (no retry needed), for about $0.00025. See
-`docs/BUILD-LOG.md`'s step 1.2 entry for detail. See `.env.example` for the vars; real
+path (separate from transcription's, never re-uploading audio) cover the failure case. The
+second agent, `mindset-coach` (step 1.3): a deterministic pattern detector over structured note
+columns (no model in the detection loop), a distress evaluator (M-PRIV-3, opens a `cases` row),
+and an orchestrator generating the daily insight via `gpt-4o-mini` with a schema-corrective
+retry and a separate tone-check regenerate-once-then-withhold path — the first agent to actually
+run on step 0.6's `AGENT_RUN_QUEUE`, with its own hourly scheduler. New tables `patterns`,
+`insights`, `mindset_boundaries`, `cases`; the full `/agent/mindset` route and the dashboard
+mood row. Also fixed a latent step 1.1 bug (`saveCheckIn`'s upsert touched ungranted columns,
+failing every same-day re-save) found while live-testing this step's shared check-in card.
+**Verified against the real OpenAI API**, not just mocks, both steps: step 1.2's Kovalenko
+fixture transcript produced a correct, valid extraction on the first call for about $0.00025;
+step 1.3's fixture notes correctly flagged the tiebreak/second-serve pattern and produced a
+valid, tone-clean insight for about $0.0001. See `docs/BUILD-LOG.md`'s step 1.2 and 1.3 entries
+for detail, including what step 1.3 deliberately skipped (the memory quote, the coach-link share
+view, a per-player delivery-hour setting, and more). See `.env.example` for the vars; real
 credentials live only in the owner's local, gitignored `.env`, not in this repo. PRs #4, #5, #6
-and #7 (steps 0.5, 0.6, 1.1, 1.2) are all merged to `main`; no stacked branches remain. The next
-session should start at **step 1.3 (Mindset Coach)**, in
-`docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture section it names.
-Check `docs/BUILD-LOG.md` for what each prior step actually did (including follow-ups) before
-assuming anything about the current state — this line is a pointer, not the full record.
+and #7 (steps 0.5, 0.6, 1.1, 1.2) are merged to `main`; [PR #8](https://github.com/manudadubey/ProCircuit/pull/8)
+(step 1.3) is open, based on `main`, not yet merged — no other stacked branches. The next
+session should start at **step 1.4 (First-week dashboard and onboarding without feeds)**, in
+`docs/BUILD-PLAN-CLAUDE-CODE.md`, once PR #8 is merged: read that step plus whatever architecture
+section it names. Check `docs/BUILD-LOG.md` for what each prior step actually did (including
+follow-ups) before assuming anything about the current state — this line is a pointer, not the
+full record.
 
 ## Read before coding
 

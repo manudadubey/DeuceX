@@ -1,10 +1,13 @@
 import { fileURLToPath } from 'node:url';
 import { createAnonClient, createServiceRoleClient } from '@procircuit/db';
-import { SupabaseAgentRunsDb } from '@procircuit/actions';
+import { SupabaseAgentRunsDb, createBoss } from '@procircuit/actions';
 import {
   EXTRACTION_MODEL,
+  INSIGHT_MODEL,
   createMockExtractionClient,
+  createMockInsightClient,
   createOpenAIExtractionClient,
+  createOpenAIInsightClient,
 } from '@procircuit/agents';
 import cors from '@fastify/cors';
 import { config as loadEnv } from 'dotenv';
@@ -19,6 +22,7 @@ import {
 import { runExtraction } from './notes/extraction';
 import { transcribeNote } from './notes/service';
 import { sweepExpiredAudio } from './notes/audio-lifecycle';
+import { registerMindsetCoach } from './mindset-coach/worker';
 import { createMemoryStorageAdapter } from './storage/memory-adapter';
 import { createR2Adapter } from './storage/r2-adapter';
 import { createMockTranscriptionAdapter } from './transcription/mock-adapter';
@@ -109,9 +113,23 @@ async function main() {
         );
         return createMockExtractionClient();
       })();
+  // Same OpenAI account again for the Mindset Coach's daily insight (step 1.3).
+  const insightClient = openaiApiKey
+    ? createOpenAIInsightClient({ apiKey: openaiApiKey, model: INSIGHT_MODEL })
+    : (() => {
+        console.warn(
+          'OPENAI_API_KEY not set: falling back to the mock insight client. Set OPENAI_API_KEY for a real Mindset Coach.',
+        );
+        return createMockInsightClient();
+      })();
   const agentRuns = new SupabaseAgentRunsDb(db);
 
   const boss = await createNotesBoss(dbConnectionString);
+  // packages/actions' own boss (step 0.6's AGENT_RUN_QUEUE, gate/pause/retry
+  // infra), separate from the notes boss above for the same reason its own
+  // comment gives: different job shape, different pickup rules.
+  const actionsBoss = await createBoss(dbConnectionString);
+  await registerMindsetCoach(actionsBoss, { db, client: insightClient, agentRuns });
   const notesDeps: NotesRoutesDeps = {
     db,
     anonClient,

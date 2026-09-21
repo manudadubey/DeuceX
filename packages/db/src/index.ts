@@ -10,6 +10,7 @@ export {
   updateNoteContent,
   getSavedNotesThisMonth,
   saveCheckIn,
+  listCheckIns,
   FREE_TIER_MONTHLY_NOTE_LIMIT,
   INITIAL_TAG_VOCABULARY,
   type Note,
@@ -22,6 +23,26 @@ export {
   type NoteContentPatch,
   type SaveCheckInInput,
 } from './notes';
+export {
+  listPatterns,
+  setPatternDismissed,
+  setPatternCoachShare,
+  listRecentInsights,
+  getInsightByDate,
+  setInsightFocusDone,
+  setInsightFeedback,
+  getMindsetBoundaries,
+  updateMindsetBoundaries,
+  pauseOneWeekFrom,
+  type Pattern,
+  type Insight,
+  type MindsetBoundaries,
+  type PatternKind,
+  type PatternConfidence,
+  type InsightDelivery,
+  type InsightFeedback,
+  type MindsetBoundariesPatch,
+} from './mindset';
 
 // Two clients, deliberately: the anon-scoped client respects row-level
 // security and is what every player-facing request uses; the service-role

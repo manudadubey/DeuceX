@@ -141,30 +141,64 @@ describe('getSavedNotesThisMonth', () => {
 });
 
 describe('saveCheckIn', () => {
-  it('upserts on (player_id, date) so a second save the same day replaces the first', async () => {
-    const single = vi.fn().mockResolvedValue({ data: { id: 'checkin-1' }, error: null });
-    const select = vi.fn().mockReturnValue({ single });
-    const upsert = vi.fn().mockReturnValue({ select });
+  // Not `.upsert()`: PostgREST's generated ON CONFLICT DO UPDATE SET would
+  // touch the player_id/date columns authenticated is deliberately never
+  // granted UPDATE on (notes.ts's own comment on saveCheckIn has the
+  // production failure this replaced). update-then-insert-if-missing
+  // instead, matching the grant exactly.
+  it('updates the existing row for (player_id, date) when one already exists', async () => {
+    const updateSelect = vi
+      .fn()
+      .mockResolvedValue({ data: [{ id: 'checkin-1', value: 4 }], error: null });
+    const eq2 = vi.fn().mockReturnValue({ select: updateSelect });
+    const eq1 = vi.fn().mockReturnValue({ eq: eq2 });
+    const update = vi.fn().mockReturnValue({ eq: eq1 });
+    const insert = vi.fn();
     const client = {
-      from: vi.fn().mockReturnValue({ upsert }),
+      from: vi.fn().mockReturnValue({ update, insert }),
     } as unknown as SupabaseClient<Database>;
 
-    await saveCheckIn(client, {
+    const result = await saveCheckIn(client, {
       playerId: 'player-1',
       date: '2026-09-21',
       value: 4,
       source: 'scribe',
     });
 
-    expect(upsert).toHaveBeenCalledWith(
-      {
-        player_id: 'player-1',
-        date: '2026-09-21',
-        value: 4,
-        sentence: null,
-        source: 'scribe',
-      },
-      { onConflict: 'player_id,date' },
-    );
+    expect(update).toHaveBeenCalledWith({ value: 4, sentence: null, source: 'scribe' });
+    expect(eq1).toHaveBeenCalledWith('player_id', 'player-1');
+    expect(eq2).toHaveBeenCalledWith('date', '2026-09-21');
+    expect(insert).not.toHaveBeenCalled();
+    expect(result).toEqual({ id: 'checkin-1', value: 4 });
+  });
+
+  it('inserts a new row when no check-in exists yet for that day', async () => {
+    const updateSelect = vi.fn().mockResolvedValue({ data: [], error: null });
+    const eq2 = vi.fn().mockReturnValue({ select: updateSelect });
+    const eq1 = vi.fn().mockReturnValue({ eq: eq2 });
+    const update = vi.fn().mockReturnValue({ eq: eq1 });
+    const single = vi.fn().mockResolvedValue({ data: { id: 'checkin-2' }, error: null });
+    const insertSelect = vi.fn().mockReturnValue({ single });
+    const insert = vi.fn().mockReturnValue({ select: insertSelect });
+    const client = {
+      from: vi.fn().mockReturnValue({ update, insert }),
+    } as unknown as SupabaseClient<Database>;
+
+    const result = await saveCheckIn(client, {
+      playerId: 'player-1',
+      date: '2026-09-21',
+      value: 2,
+      sentence: 'Tired.',
+      source: 'mindset',
+    });
+
+    expect(insert).toHaveBeenCalledWith({
+      player_id: 'player-1',
+      date: '2026-09-21',
+      value: 2,
+      sentence: 'Tired.',
+      source: 'mindset',
+    });
+    expect(result).toEqual({ id: 'checkin-2' });
   });
 });
