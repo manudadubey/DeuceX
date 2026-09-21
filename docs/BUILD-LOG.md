@@ -1107,14 +1107,29 @@ either verified or ambiguous results itself.
 
 Verified: `pnpm typecheck`, `pnpm lint`, `pnpm format` and `pnpm test` all green — 220 tests total
 across every package (20 new in `packages/db`'s `players.test.ts`, 5 new in `apps/api`'s
-`rankings/routes.test.ts`, 4 new in `apps/web`'s `onboarding-wizard.test.tsx`). **Not** verified
-live in the browser this step: this session's dev-server slots in this project directory were
-already at capacity from another concurrent Claude Code session, and stopping another session's
-server to reclaim one risked interfering with its work, so live click-through verification against
-`localhost` did not happen here — flagged explicitly rather than claimed. The next session (or the
-owner, before merging) should load `/onboarding` and `/` once against a real signed-in session to
-confirm the wizard and first-week dashboard actually render as designed, since only the component-
-level DOM tests above have exercised the real markup so far.
+`rankings/routes.test.ts`, 4 new in `apps/web`'s `onboarding-wizard.test.tsx`).
+
+**Follow-up verified live in the browser**, in the merge-review pass after the dev-server slot
+freed up: reused the already-running `web` dev server (`apps/api` still could not be started —
+slots stayed at capacity — so the ranking lookup itself was exercised against a genuinely dead
+API, not a mock). Against the owner's own real signed-in session (`manu.dadubey@gmail.com`, an
+existing players row from earlier manual testing, country Italy): `/onboarding` rendered the
+wizard correctly with that row's data prefilled, including the "Unverified" badge and Continue
+button already resolved from a prior real lookup attempt against the same dead API (a live,
+unplanned confirmation that the `catch` block's graceful-degrade-to-unverified path works, not
+just the fixture-adapter test of it). Changed the date of birth live to a minor date: the guardian
+email field appeared with the exact copy above and the Continue button's `disabled` flipped to
+`true` (confirmed via direct DOM inspection, not just visual read); typing a guardian email
+flipped it back to `false`. Neither of these touched the database (client-only state before step
+4's submit), so the account's real data was left untouched — deliberately did not click "Open my
+dashboard" with placeholder test data to avoid overwriting it. Then loaded `/` fresh: the
+first-week dashboard rendered correctly against that same real row — Stage 1 · Building, the
+Unverified badge and "Verify your ranking" link, the three pulse tiles, a "2 of 4 done" checklist
+(ranking/Tournament-Agent and the first note both correctly ticked off from real data, balance and
+public-page correctly still pending), and all three agent cards including a working Mindset Coach
+check-in card reading "2 of 3 notes." No console errors beyond a benign favicon 404 and the
+expected `apps/api`-is-down connection-refused (surfaced exactly where expected: the ranking
+lookup call, nowhere else).
 
 Skipped, deliberately: the six-step spotlight walkthrough tour (`TOUR` in the prototype) — the
 build plan's own step 1.4 line lists "the tour toggle (ATP, WTA)" among what to build, which is
