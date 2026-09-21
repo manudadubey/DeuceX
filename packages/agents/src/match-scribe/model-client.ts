@@ -2,7 +2,8 @@ import type { TokenUsage } from '@procircuit/actions';
 import type { ExtractionPrompt } from './prompt';
 
 // A plain fetch against the vendor's REST API, the same style as
-// apps/api/src/transcription/whisper-adapter.ts, rather than an SDK
+// apps/api/src/transcription/whisper-adapter.ts (also OpenAI, same
+// OPENAI_API_KEY — one vendor account for both), rather than an SDK
 // dependency — TECH-ARCHITECTURE.md section 3a: this is the agent itself
 // making its one schema-constrained call, not a restricted vendor client
 // (that restriction is Stripe/Resend/ICS/entry, packages/actions' alone).
@@ -12,18 +13,19 @@ export interface ExtractionModelClient {
 
 export class ExtractionModelCallError extends Error {}
 
-const ANTHROPIC_API_VERSION = '2023-06-01';
-const EXTRACTION_TOOL_NAME = 'record_match_note_extraction';
+const EXTRACTION_RESPONSE_SCHEMA_NAME = 'match_note_extraction';
 const MAX_OUTPUT_TOKENS = 1024;
 
 // Hand-written rather than derived from schema.ts's Zod schema (no
 // zod-to-json-schema dependency for one small, stable shape): forces the
-// model to answer through tool use instead of free-form JSON, which is
-// Claude's structured-output mechanism. schema.ts's Zod schema is still the
+// model to answer through OpenAI's strict Structured Outputs mode, which
+// requires every property listed in `required` (no optional fields) and
+// `additionalProperties: false`. schema.ts's Zod schema is still the
 // authority validating what comes back — this only shapes what the model is
 // asked for.
-const EXTRACTION_TOOL_INPUT_SCHEMA = {
+const EXTRACTION_JSON_SCHEMA = {
   type: 'object',
+  additionalProperties: false,
   properties: {
     ctx: { type: 'string', enum: ['match', 'practice', 'travel', 'other'] },
     result: { type: ['string', 'null'] },
@@ -51,46 +53,42 @@ const EXTRACTION_TOOL_INPUT_SCHEMA = {
   ],
 } as const;
 
-interface AnthropicContentBlock {
-  type: string;
-  input?: unknown;
+interface OpenAIChatCompletionResponse {
+  choices: Array<{ message: { content: string | null } }>;
+  usage: { prompt_tokens: number; completion_tokens: number };
 }
 
-interface AnthropicMessageResponse {
-  content: AnthropicContentBlock[];
-  usage: { input_tokens: number; output_tokens: number };
-}
-
-export interface AnthropicExtractionClientConfig {
+export interface OpenAIExtractionClientConfig {
   apiKey: string;
   model: string;
 }
 
-export function createAnthropicExtractionClient(
-  config: AnthropicExtractionClientConfig,
+export function createOpenAIExtractionClient(
+  config: OpenAIExtractionClientConfig,
 ): ExtractionModelClient {
   return {
     async complete({ system, user }): Promise<{ raw: unknown; usage: TokenUsage }> {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'x-api-key': config.apiKey,
-          'anthropic-version': ANTHROPIC_API_VERSION,
+          Authorization: `Bearer ${config.apiKey}`,
           'content-type': 'application/json',
         },
         body: JSON.stringify({
           model: config.model,
           max_tokens: MAX_OUTPUT_TOKENS,
-          system,
-          messages: [{ role: 'user', content: user }],
-          tools: [
-            {
-              name: EXTRACTION_TOOL_NAME,
-              description: 'Record the structured extraction of the match note.',
-              input_schema: EXTRACTION_TOOL_INPUT_SCHEMA,
-            },
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
           ],
-          tool_choice: { type: 'tool', name: EXTRACTION_TOOL_NAME },
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: EXTRACTION_RESPONSE_SCHEMA_NAME,
+              strict: true,
+              schema: EXTRACTION_JSON_SCHEMA,
+            },
+          },
         }),
       });
 
@@ -100,17 +98,17 @@ export function createAnthropicExtractionClient(
         );
       }
 
-      const body = (await response.json()) as AnthropicMessageResponse;
-      const toolUse = body.content.find((block) => block.type === 'tool_use');
-      if (!toolUse) {
-        throw new ExtractionModelCallError('Extraction model response had no tool_use block');
+      const body = (await response.json()) as OpenAIChatCompletionResponse;
+      const content = body.choices[0]?.message.content;
+      if (!content) {
+        throw new ExtractionModelCallError('Extraction model response had no content');
       }
 
       return {
-        raw: toolUse.input,
+        raw: JSON.parse(content),
         usage: {
-          inputTokens: body.usage.input_tokens,
-          outputTokens: body.usage.output_tokens,
+          inputTokens: body.usage.prompt_tokens,
+          outputTokens: body.usage.completion_tokens,
         },
       };
     },

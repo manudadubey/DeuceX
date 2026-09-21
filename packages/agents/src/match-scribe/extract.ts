@@ -8,9 +8,15 @@ import {
 } from './schema';
 import type { ExtractionModelClient } from './model-client';
 
-// The pricing table (packages/actions/src/pricing.ts) only prices Claude
-// model names; recordRun() looks the run's cost up by this string.
-export const EXTRACTION_MODEL = 'claude-sonnet-5';
+// The same vendor as transcription (apps/api/src/transcription/
+// whisper-adapter.ts): one OpenAI account and one OPENAI_API_KEY cover both
+// Whisper and this agent's structured extraction. gpt-4o-mini, not gpt-4o,
+// matching the prototype's own naming for comparable per-item extraction
+// (PRD-03's receipt scanning, PRD-07's menu scanning both say "GPT-4o
+// mini · structured extraction") rather than the heavier model those PRDs
+// use for a whole agent's scheduled run. recordRun() looks the run's cost
+// up in packages/actions/src/pricing.ts by this string.
+export const EXTRACTION_MODEL = 'gpt-4o-mini';
 
 export interface ExtractMatchNoteInput {
   ctx: NoteCtx;

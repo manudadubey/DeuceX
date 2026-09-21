@@ -30,7 +30,7 @@ const DEFAULT_FIXTURE: MockExtractionFixture = {
 // The mock extraction model client (PRD-02, build plan step 1.2: "a
 // transcript fixture produces a valid extraction in tests with a recorded
 // mock response"), also usable as apps/api's dev-only fallback when
-// ANTHROPIC_API_KEY is not set.
+// OPENAI_API_KEY is not set.
 export function createMockExtractionClient(
   fixture: MockExtractionFixture = DEFAULT_FIXTURE,
 ): ExtractionModelClient {

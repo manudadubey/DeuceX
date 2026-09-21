@@ -830,3 +830,39 @@ console errors. Did not attempt a live Anthropic-backed extraction end to end: n
 microphone to record a fresh note through the browser regardless — the same category of gap step
 1.1's first pass flagged before its own same-day follow-up. Whoever adds a real Anthropic key
 should re-verify a live note against it, the way step 1.1's follow-up did for Whisper and R2.
+
+### Follow-up · switched the extraction agent from Anthropic to OpenAI, verified live, same day
+
+The owner asked why the agent used Anthropic when `OPENAI_API_KEY` was already configured and
+paying for Whisper — the earlier choice had no real basis (nothing in the PRDs or
+`TECH-ARCHITECTURE.md` names a vendor; `packages/actions/src/pricing.ts` just happened to only
+have Claude entries from step 0.6, before any agent existed). The prototype's own reference
+copy for comparable structured-extraction tasks (PRD-03's receipt scanning, PRD-07's menu
+scanning) names "GPT-4o mini · structured extraction" specifically, not the heavier model those
+same PRDs use for a whole agent's scheduled run — `match-scribe/extract` is the same shape of
+task (a small transcript in, a small JSON object out), so `gpt-4o-mini` follows that precedent
+rather than picking arbitrarily.
+
+Changed `packages/agents/src/match-scribe/model-client.ts` from an Anthropic tool-use call to
+OpenAI's Chat Completions API with `response_format: { type: 'json_schema', strict: true }`
+(the same hand-written JSON Schema as before, `additionalProperties: false` and everything in
+`required`, which strict mode needs); `EXTRACTION_MODEL` in `extract.ts` from `claude-sonnet-5`
+to `gpt-4o-mini`; added a `gpt-4o-mini` row to `packages/actions/src/pricing.ts`. Simplified
+`apps/api/src/index.ts` to reuse the same `OPENAI_API_KEY` and `openaiApiKey` variable already
+wired for Whisper, rather than a second env var — one OpenAI account now covers both vendor
+calls this step needed, no `ANTHROPIC_API_KEY` anywhere any more. Nothing else changed: the Zod
+schema, the retry-once orchestration, the note-merge logic and every test that isn't
+model-client-specific are all vendor-agnostic by design (the whole point of the
+`ExtractionModelClient` boundary), so none of that needed touching.
+
+Verified live this time, unlike the first pass: `OPENAI_API_KEY` is already configured in this
+session's `.env` (it was already there for Whisper), so a small one-off script (run via
+`apps/api`'s own `tsx`, deleted after use) called the real `extractMatchNote()` against the real
+OpenAI API with the same Kovalenko fixture transcript service.test.ts already uses. It produced
+a correct, schema-valid extraction on the first attempt, no corrective retry needed: result
+`"L 6-4 3-6 6-7(5)"`, opponent `"Kovalenko"`, tags `["Second serve", "Tiebreak"]`, mood
+`"frustrated"` (above the 0.6 confidence floor), and a sensible one-line coach summary, for 1,049
+input and 153 output tokens — about $0.00025 at the table's own rate, comfortably inside PRD-02's
+combined under-$0.05-per-note target alongside transcription's own ~$0.006. `pnpm typecheck`,
+`pnpm lint`, `pnpm format` and `pnpm test` all still green (added one pricing-table test case for
+`gpt-4o-mini`; every other test file needed no changes, confirming the adapter boundary held).

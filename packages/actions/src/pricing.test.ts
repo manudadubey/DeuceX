@@ -20,4 +20,10 @@ describe('calculateCost', () => {
       { amount: 0, currency: 'USD' },
     );
   });
+
+  it("prices gpt-4o-mini, match-scribe/extract's model (step 1.2)", () => {
+    const cost = calculateCost('gpt-4o-mini', { inputTokens: 1_000_000, outputTokens: 1_000_000 });
+    // 1M input @ $0.15/M + 1M output @ $0.60/M = $0.15 + $0.60 = $0.75
+    expect(cost).toEqual({ amount: 0.75, currency: 'USD' });
+  });
 });

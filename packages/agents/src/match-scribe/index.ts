@@ -23,8 +23,8 @@ export {
 } from './schema';
 export {
   ExtractionModelCallError,
-  createAnthropicExtractionClient,
-  type AnthropicExtractionClientConfig,
+  createOpenAIExtractionClient,
+  type OpenAIExtractionClientConfig,
   type ExtractionModelClient,
 } from './model-client';
 export {

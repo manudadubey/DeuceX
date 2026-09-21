@@ -19,14 +19,15 @@ switch check and 5/20/60 minute retry schedule, all with tests (step 0.6). Match
 daily check-in), the offline queue, the Free-tier quota, and the audio lifecycle (immediate
 delete on save, a 7-day sweep as backstop) are built behind adapters for R2 and Whisper (step
 1.1), both configured and verified against real infrastructure. `packages/agents` has the first
-agent, `match-scribe/extract` (step 1.2): one schema-validated Anthropic call (`claude-sonnet-5`)
-with a versioned Zod schema, one corrective retry on validation failure, and a mood-confidence
-floor, wired into `apps/api` right after transcription so a saved note's result, opponent, tags,
-mood and coach summary arrive pre-filled as proposals; a `failed_extraction` state and its own
-Retry path (separate from transcription's, never re-uploading audio) cover the failure case. Not
-yet verified against a real Anthropic call — no `ANTHROPIC_API_KEY` is configured in this repo's
-environment yet, so it currently runs on a mock client in dev; `docs/BUILD-LOG.md`'s step 1.2
-entry says what to check once a real key is added. See `.env.example` for the vars; real
+agent, `match-scribe/extract` (step 1.2): one schema-validated OpenAI call (`gpt-4o-mini`, the
+same OpenAI account and `OPENAI_API_KEY` as Whisper transcription, not a second vendor) with a
+versioned Zod schema, one corrective retry on validation failure, and a mood-confidence floor,
+wired into `apps/api` right after transcription so a saved note's result, opponent, tags, mood
+and coach summary arrive pre-filled as proposals; a `failed_extraction` state and its own Retry
+path (separate from transcription's, never re-uploading audio) cover the failure case. **Verified
+against the real OpenAI API**, not just mocks: the Kovalenko fixture transcript produced a
+correct, valid extraction on the first call (no retry needed), for about $0.00025. See
+`docs/BUILD-LOG.md`'s step 1.2 entry for detail. See `.env.example` for the vars; real
 credentials live only in the owner's local, gitignored `.env`, not in this repo. PRs #4, #5 and
 #6 (steps 0.5, 0.6, 1.1) are all merged to `main`; step 1.2 is [PR #7](https://github.com/manudadubey/ProCircuit/pull/7)
 (branch `step-1.2-structured-extraction`), open and passing CI but not yet merged. If it still

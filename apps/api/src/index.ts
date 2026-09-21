@@ -3,8 +3,8 @@ import { createAnonClient, createServiceRoleClient } from '@procircuit/db';
 import { SupabaseAgentRunsDb } from '@procircuit/actions';
 import {
   EXTRACTION_MODEL,
-  createAnthropicExtractionClient,
   createMockExtractionClient,
+  createOpenAIExtractionClient,
 } from '@procircuit/agents';
 import cors from '@fastify/cors';
 import { config as loadEnv } from 'dotenv';
@@ -99,12 +99,13 @@ async function main() {
         return createMockTranscriptionAdapter();
       })();
 
-  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-  const extraction = anthropicApiKey
-    ? createAnthropicExtractionClient({ apiKey: anthropicApiKey, model: EXTRACTION_MODEL })
+  // Same OpenAI account and key as Whisper transcription above — one vendor
+  // for both, per the step 1.2 follow-up that moved extraction off Claude.
+  const extraction = openaiApiKey
+    ? createOpenAIExtractionClient({ apiKey: openaiApiKey, model: EXTRACTION_MODEL })
     : (() => {
         console.warn(
-          'ANTHROPIC_API_KEY not set: falling back to the mock extraction client. Set ANTHROPIC_API_KEY for real structured extraction.',
+          'OPENAI_API_KEY not set: falling back to the mock extraction client. Set OPENAI_API_KEY for real structured extraction.',
         );
         return createMockExtractionClient();
       })();
