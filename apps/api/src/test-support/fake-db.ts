@@ -115,6 +115,14 @@ class TableQuery implements PromiseLike<{ data: any; error: any }> {
     return this;
   }
 
+  // Step 3.3 addition: conditions/*.ts and tournament/run.ts's own
+  // conditions wiring both match tournaments by a set of ids.
+  in(col: string, values: readonly unknown[]): this {
+    const set = new Set(values);
+    this.filters.push((row) => set.has(row[col]));
+    return this;
+  }
+
   ilike(col: string, pattern: string): this {
     const needle = pattern.toLowerCase();
     this.filters.push((row) => String(row[col] ?? '').toLowerCase() === needle);

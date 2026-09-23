@@ -64,6 +64,22 @@ export async function updatePreferences(
   if (error) throw error;
 }
 
+// PRD-08 CE-17: the kg/lb control in the Conditions brief and the Equipment
+// pane both need to write players.units without touching Preferences' other
+// fields (updatePreferences above writes all of them at once, which would
+// silently blank the rest) — a narrow single-column update, same shape as
+// updateAccount above.
+export async function updateUnits(
+  client: SupabaseClient<Database>,
+  input: { playerId: string; units: Units },
+): Promise<void> {
+  const { error } = await client
+    .from('players')
+    .update({ units: input.units })
+    .eq('id', input.playerId);
+  if (error) throw error;
+}
+
 export type NotificationChannel = 'in_app' | 'email' | 'push';
 export type NotificationCategory = 'for_you' | 'fyi';
 export const NOTIFICATION_AGENTS = [

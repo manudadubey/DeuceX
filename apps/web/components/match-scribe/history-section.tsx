@@ -14,8 +14,12 @@ import {
   Input,
   ToggleGroup,
   ToggleGroupItem,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from '@procircuit/ui';
 import { listNotes, type Note, type NoteCtx } from '@procircuit/db';
+import { isStampChipAt } from '@procircuit/agents';
 import { createClient } from '@/lib/supabase/client';
 import { deleteNoteRemote } from '@/lib/match-scribe/api';
 
@@ -137,6 +141,31 @@ export function HistorySection({
                     </Badge>
                   ))}
                 </div>
+              )}
+
+              {Array.isArray(note.cond) && note.cond.length > 0 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex flex-wrap items-center gap-1">
+                      {(note.cond as string[]).map((chip, i) => (
+                        <span
+                          key={`${chip}-${i}`}
+                          className={`rounded px-1.5 py-0.5 font-mono text-[0.6875rem] ${
+                            isStampChipAt(note.cond as string[], i)
+                              ? 'bg-warn-bg text-warn'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {chip}
+                        </span>
+                      ))}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Attached automatically from the venue forecast and the tournament fact sheet at
+                    match time.
+                  </TooltipContent>
+                </Tooltip>
               )}
 
               {confirmingId === note.id ? (

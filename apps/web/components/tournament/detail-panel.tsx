@@ -13,11 +13,12 @@ import {
   TableRow,
   TableWrap,
 } from '@procircuit/ui';
-import { computeRunwayWeeks } from '@procircuit/agents';
+import { computeRunwayWeeks, type Unit } from '@procircuit/agents';
 import { createClient } from '@/lib/supabase/client';
 import { daysUntil, type TournamentCandidateView } from '@/lib/tournament/load';
 import { useEntryActions } from './use-entry-actions';
 import { LockedSection } from './locked-section';
+import { ConditionsBrief } from './conditions-brief';
 
 function formatMoney(amount: number, currency: string): string {
   return new Intl.NumberFormat('en-AU', {
@@ -39,6 +40,10 @@ export function DetailPanel({
   reserves,
   netBurn,
   isFree,
+  unit,
+  onUnitChange,
+  equipmentMainsKg,
+  equipmentCrossesKg,
   onDone,
   onStartTrial,
   onToast,
@@ -49,6 +54,10 @@ export function DetailPanel({
   reserves: number;
   netBurn: number;
   isFree: boolean;
+  unit: Unit;
+  onUnitChange: (unit: Unit) => void;
+  equipmentMainsKg: number;
+  equipmentCrossesKg: number;
   onDone: () => void;
   onStartTrial: () => void;
   onToast: (title: string) => void;
@@ -262,6 +271,18 @@ export function DetailPanel({
       </div>
 
       <p className="text-sm">{candidate.why}</p>
+
+      {candidate.conditions && (
+        <ConditionsBrief
+          conditions={candidate.conditions}
+          mainsKg={equipmentMainsKg}
+          crossesKg={equipmentCrossesKg}
+          isFree={isFree}
+          unit={unit}
+          onUnitChange={onUnitChange}
+          onStartTrial={onStartTrial}
+        />
+      )}
 
       {isFree ? (
         <LockedSection onStartTrial={onStartTrial}>

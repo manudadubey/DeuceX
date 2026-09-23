@@ -15,6 +15,14 @@ export const ACCOUNT_DELETION_SWEEP_QUEUE = 'account-deletion-sweep';
 // window" is a plain periodic check (no LLM call, no agent_runs row), not a
 // scheduled agent run.
 export const FEED_WINDOW_CHECK_QUEUE = 'feed-window-check';
+// Step 3.3's own addition, same connection-budget reason: PRD-08 section 7's
+// "Refresh" rule (daily inside an Entered event's travel window) and CE-11's
+// "backfilled within 24 hours" sweep are both plain periodic checks over
+// existing rows, not a scheduled *agent* run in the AGENT_RUN_QUEUE sense —
+// the refresh tick's own occasional prose call still goes through
+// packages/actions' recordRun and agent_runs, same as the initial run.
+export const CONDITIONS_REFRESH_QUEUE = 'conditions-refresh';
+export const CONDITIONS_STAMP_BACKFILL_QUEUE = 'conditions-stamp-backfill';
 
 export interface MoneyQueueLogger {
   error(...args: unknown[]): void;
@@ -40,9 +48,13 @@ export async function createMoneyBoss(
   await boss.createQueue(RESERVE_REMINDER_QUEUE);
   await boss.createQueue(ACCOUNT_DELETION_SWEEP_QUEUE);
   await boss.createQueue(FEED_WINDOW_CHECK_QUEUE);
+  await boss.createQueue(CONDITIONS_REFRESH_QUEUE);
+  await boss.createQueue(CONDITIONS_STAMP_BACKFILL_QUEUE);
   await boss.schedule(FX_DAILY_FETCH_QUEUE, '0 * * * *', {});
   await boss.schedule(RESERVE_REMINDER_QUEUE, '0 * * * *', {});
   await boss.schedule(ACCOUNT_DELETION_SWEEP_QUEUE, '0 * * * *', {});
   await boss.schedule(FEED_WINDOW_CHECK_QUEUE, '0 * * * *', {});
+  await boss.schedule(CONDITIONS_REFRESH_QUEUE, '0 * * * *', {});
+  await boss.schedule(CONDITIONS_STAMP_BACKFILL_QUEUE, '0 * * * *', {});
   return boss;
 }

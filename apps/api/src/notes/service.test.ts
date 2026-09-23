@@ -5,6 +5,7 @@ import type { AgentRunsDb } from '@procircuit/actions';
 import { createInvalidExtractionClient, createMockExtractionClient } from '@procircuit/agents';
 import { FakeDb, makeNote } from '../test-support/fake-db';
 import { createMemoryStorageAdapter } from '../storage/memory-adapter';
+import { createFixtureWeatherAdapter } from '../conditions/fixture-adapter';
 import {
   createFailingTranscriptionAdapter,
   createMockTranscriptionAdapter,
@@ -36,6 +37,11 @@ function baseDeps(fake: FakeDb, overrides: Partial<NotesServiceDeps> = {}): Note
     transcription: createMockTranscriptionAdapter(),
     extraction: createMockExtractionClient(),
     agentRuns: fakeAgentRunsDb(),
+    // Returns no forecast by default — most of this test file's fixtures
+    // have no Entered tournament/equipment profile at all, so a stamp would
+    // never attach regardless; individual tests override this when they
+    // want to exercise the stamp path.
+    weatherAdapter: createFixtureWeatherAdapter(null),
     enqueueTranscription: async () => undefined,
     enqueueExtraction: async () => undefined,
     now: () => new Date('2026-09-11T18:44:00Z'),

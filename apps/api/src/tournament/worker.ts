@@ -2,9 +2,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@procircuit/db';
 import type { PgBoss } from 'pg-boss';
 import type { AgentRunsDb, ProviderState } from '@procircuit/actions';
+import type { ProseModelClient } from '@procircuit/agents';
 import { registerAgentWorker, type AgentJobData } from '@procircuit/actions/queue';
 import { TOURNAMENT_AGENT_NAME, runTournamentAgent, type TournamentRunLogger } from './run';
 import { registerTournamentScheduler, type TournamentSchedulerLogger } from './scheduler';
+import type { WeatherAdapter } from '../conditions/adapter';
 
 // No model call this step (see run.ts's own comment), so this agent depends
 // on no external provider at all — the pause/provider-switch pickup guard
@@ -49,6 +51,8 @@ async function getProviderStates(
 export interface TournamentAgentDeps {
   db: SupabaseClient<Database>;
   agentRuns: AgentRunsDb;
+  weatherAdapter: WeatherAdapter;
+  proseClient: ProseModelClient;
   logger?: TournamentRunLogger & TournamentSchedulerLogger;
 }
 
@@ -73,7 +77,13 @@ export async function registerTournamentAgent(
     runAgent: async (job: AgentJobData) => {
       if (job.agentName !== TOURNAMENT_AGENT_NAME) return;
       await runTournamentAgent(
-        { db: deps.db, agentRuns: deps.agentRuns, logger },
+        {
+          db: deps.db,
+          agentRuns: deps.agentRuns,
+          weatherAdapter: deps.weatherAdapter,
+          proseClient: deps.proseClient,
+          logger,
+        },
         job.playerId,
         job.triggerType,
       );
