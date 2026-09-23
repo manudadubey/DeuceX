@@ -236,3 +236,41 @@ describe('POST /notes/:id/retry', () => {
     expect(res.statusCode).toBe(409);
   });
 });
+
+describe('POST /notes/audio/delete-all', () => {
+  it('deletes every remaining audio_ref for the player with cause player_delete', async () => {
+    const storage = createMemoryStorageAdapter();
+    await storage.upload({
+      key: 'notes/player-1/note-1',
+      body: Buffer.from('audio'),
+      contentType: 'audio/webm',
+    });
+    const fake = new FakeDb({
+      notes: [
+        makeNote({ id: 'note-1', audio_ref: 'notes/player-1/note-1' }),
+        makeNote({ id: 'note-2', audio_ref: null }),
+      ],
+    });
+    const app = await buildApp(fake, { storage });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/notes/audio/delete-all',
+      headers: { authorization: 'Bearer good-token' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ deletedCount: 1 });
+    const note1 = fake.tables.notes!.find((n) => n['id'] === 'note-1');
+    expect(note1!['audio_ref']).toBeNull();
+    expect(note1!['audio_delete_cause']).toBe('player_delete');
+  });
+
+  it('refuses an unauthenticated request', async () => {
+    const app = await buildApp(new FakeDb());
+
+    const res = await app.inject({ method: 'POST', url: '/notes/audio/delete-all' });
+
+    expect(res.statusCode).toBe(401);
+  });
+});

@@ -5,7 +5,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1, step 2.1 and step 2.2 done, start step 2.3
+## Status: Phase 0, Phase 1, step 2.1 through step 2.3 done, start step 3.1
 
 The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -99,12 +99,36 @@ break requiring a `@procircuit/actions/queue` export split, and a shared dev ser
 cache was corrupted by running a production build against it mid-session) and what it deliberately
 skipped (scenario tabs pending step 3.2's Tournament Agent, the six-month P&L chart and month
 selector, receipt rendition/redaction pending an image-processing dependency, patron MRR pending
-step 4.1). [PR #11](https://github.com/manudadubey/ProCircuit/pull/11) is merged. The next session
-should start at **step 2.3 (Settings, preferences, sharing)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`:
-read that step plus whatever architecture section it names — it's also where the Sunday
-balance-reminder's quiet hours and per-player toggle, deferred since step 2.1, finally land. Check
-`docs/BUILD-LOG.md` for what each prior step actually did (including follow-ups)
-before assuming anything about the current state — this line is a pointer, not the full record.
+step 4.1). [PR #11](https://github.com/manudadubey/ProCircuit/pull/11) is merged.
+Step 2.3 (Settings, preferences, sharing) built the nine Settings panes, closed step 0.2's own
+flagged gap (a column-level grant lockdown on `players`, scoped to exactly the new
+deletion/export columns, verified live to leave every existing write path, including onboarding's
+replay flow, untouched), and finally closed the Sunday balance-reminder quiet-hours/per-player-
+toggle follow-up both step 2.1 and step 2.2 flagged by name. It's the first step to make a real
+Resend call (`packages/actions/src/resend-client.ts`, gated behind `requestAccountDeletion` and
+`requestDataExport`, both wired through `runGatedAction` exactly like step 2.1's
+`markReceivableReceived`) and the first to add a fully unauthenticated route
+(`GET /sharing/:token`, apps/api's `sharing` module), since a coach or manager link visitor has no
+Supabase session — RLS can't apply to that path at all, so the service role and a hand-built,
+field-by-field DTO are what keep a coach link from ever seeing money and a manager link from ever
+seeing notes. `/coach/[token]` (a step-0.5 stub since the beginning) and the account-deletion
+confirm page (`apps/web/app/account/delete/confirm`, mirroring `auth/confirm`'s link-scanner-safe
+GET-then-server-action shape) are both real now. Verified against the real Supabase project
+(migration owner-confirmed before applying, same as every prior step) and against a real signed-in
+session end to end: created and revoked a real coach and a real manager link, ran the full
+account-deletion request → emailed-confirm → 14-day-scheduled → cancel cycle, and sent a real
+export email — all three of which surfaced real bugs (an `Infinity`-over-JSON crash in the manager
+view, an empty-CSV attachment Resend refused, an unverified sending domain, and a fourth `pg-boss`
+instance that tipped the session pooler's connection cap over) fixed the same session, not just
+noted; see `docs/BUILD-LOG.md`'s step 2.3 entry for all four and for what it deliberately skipped
+(real Stripe Billing, Equipment pane content which is step 3.3's own job, most of Connections,
+direct coach accounts). [PR #12](https://github.com/manudadubey/ProCircuit/pull/12) is open. The
+next session should start at **step 3.1 (Rankings and calendars)**, in
+`docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture section it names, and
+check `gh pr list` first — if #12 hasn't merged yet, branch off it rather than `main`, the same
+stacking step 0.5/0.6 used. Check `docs/BUILD-LOG.md` for what each prior step actually did
+(including follow-ups) before assuming anything about the current state — this line is a pointer,
+not the full record.
 
 ## Read before coding
 
@@ -180,6 +204,13 @@ before assuming anything about the current state — this line is a pointer, not
 - **OpenAI** (step 1.1): a Whisper-capable API key, owner's own account, confirmed working
   (`whisper-1`) and with credits after an initial `insufficient_quota` failure during testing.
   Key lives only in the owner's local `.env`.
+- **Resend** (step 2.3): a working API key, owner's own account, confirmed sending real email
+  (account-deletion confirmation and data-export delivery). The `procircuit.app` sending domain is
+  **not verified yet** — a real send against it fails with a 403, discovered live while building
+  step 2.3 — so `apps/api` defaults to Resend's own sandbox sender (`onboarding@resend.dev`, no
+  verification needed) unless `RESEND_FROM_ADDRESS` is set. Verify a real domain at
+  resend.com/domains and set that env var before this needs to reach a real patron inbox (step
+  4.2, Content Agent). Key lives only in the owner's local `.env`.
 
 ## MCP servers to connect
 

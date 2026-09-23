@@ -7,7 +7,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./queue": "./src/queue/queue.ts"
+    "./queue": "./src/queue/queue.ts",
+    "./account": "./src/account-entry.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -22,6 +23,7 @@
     "@procircuit/db": "workspace:*",
     "@procircuit/shared": "workspace:*",
     "@supabase/supabase-js": "^2.116.0",
-    "pg-boss": "^12.33.2"
+    "pg-boss": "^12.33.2",
+    "resend": "^6.28.1"
   }
 }

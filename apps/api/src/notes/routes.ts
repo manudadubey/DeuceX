@@ -13,6 +13,7 @@ import {
   saveNote,
   type NotesServiceDeps,
 } from './service';
+import { deleteAllAudioForPlayer } from './audio-lifecycle';
 
 export interface NotesRoutesDeps extends NotesServiceDeps {
   anonClient: SupabaseClient<Database>;
@@ -134,5 +135,17 @@ export async function registerNotesRoutes(
     } catch (err) {
       return handleServiceError(reply, err);
     }
+  });
+
+  // Data & safety's "Delete all audio now" (PRD-12 ST-18): an immediate,
+  // player-triggered deletion distinct from the 7-day sweep
+  // (audio-lifecycle.ts's sweepExpiredAudio) — same table, cause
+  // 'player_delete' rather than 'expired'.
+  app.post('/notes/audio/delete-all', async (request, reply) => {
+    const playerId = await requirePlayerId(deps, request, reply);
+    if (!playerId) return;
+
+    const result = await deleteAllAudioForPlayer(deps, playerId, new Date());
+    return reply.send(result);
   });
 }

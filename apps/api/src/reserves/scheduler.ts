@@ -4,17 +4,60 @@ import type { PgBoss } from 'pg-boss';
 import { RESERVE_REMINDER_QUEUE } from '../money/queue';
 
 // PRD-03 F-4: "A Sunday 20:00 local FYI reminder to update the balance,
-// default on." No per-player toggle exists yet (that's the `#balRemind`
-// switch on the Financial Agent page, step 2.2) and quiet hours aren't
-// wired up either (Settings > Notifications, step 2.3) — same kind of
-// deliberate skip mindset-coach's scheduler documented for its own
-// delivery-hour setting. Every player currently gets this one default.
+// default on." The per-player toggle (players.reserve_reminder_enabled) and
+// quiet hours (players.quiet_hours_start/end) both land here in step 2.3,
+// closing the follow-up both step 2.1 and step 2.2's BUILD-LOG entries
+// flagged by name.
 export const DEFAULT_REMINDER_DAY_OF_WEEK = 0; // Sunday
 export const DEFAULT_REMINDER_HOUR = 20; // 20:00 local
 
 export interface ReminderEligiblePlayer {
   id: string;
   timezone: string;
+  quietHoursStartHour: number;
+  quietHoursEndHour: number;
+}
+
+function parseHour(time: string): number {
+  return Number(time.split(':')[0] ?? '0');
+}
+
+// PRD-12 section 7: "a notification queued between quiet hours is held
+// until [quiet hours end]." The reserve reminder is always FYI, so unlike
+// an entry-deadline notification it never bypasses quiet hours — it is
+// held, not dropped. A zero-length window (start === end) is treated as
+// quiet hours effectively off, since there is no way to distinguish that
+// from "always quiet" otherwise.
+export function isWithinQuietHours(
+  hour: number,
+  quietStartHour: number,
+  quietEndHour: number,
+): boolean {
+  if (quietStartHour === quietEndHour) return false;
+  if (quietStartHour < quietEndHour) return hour >= quietStartHour && hour < quietEndHour;
+  return hour >= quietStartHour || hour < quietEndHour; // wraps past midnight, e.g. 22 -> 7
+}
+
+// The day/hour this player actually gets the reminder, after quiet hours:
+// unchanged from the Sunday 20:00 default unless that moment falls inside
+// this player's own quiet hours, in which case delivery moves to the
+// moment quiet hours end — the next calendar day if the quiet window wraps
+// past midnight and the base hour was on the "before midnight" side of it.
+export function effectiveReminderTarget(
+  quietHoursStartHour: number,
+  quietHoursEndHour: number,
+  baseDayOfWeek: number = DEFAULT_REMINDER_DAY_OF_WEEK,
+  baseHour: number = DEFAULT_REMINDER_HOUR,
+): { dayOfWeek: number; hour: number } {
+  if (!isWithinQuietHours(baseHour, quietHoursStartHour, quietHoursEndHour)) {
+    return { dayOfWeek: baseDayOfWeek, hour: baseHour };
+  }
+  const wrapsPastMidnight = quietHoursStartHour > quietHoursEndHour;
+  const heldPastMidnight = wrapsPastMidnight && baseHour >= quietHoursStartHour;
+  return {
+    dayOfWeek: heldPastMidnight ? (baseDayOfWeek + 1) % 7 : baseDayOfWeek,
+    hour: quietHoursEndHour,
+  };
 }
 
 function localWeekdayAndHour(now: Date, timezone: string): { dayOfWeek: number; hour: number } {
@@ -35,17 +78,15 @@ function localWeekdayAndHour(now: Date, timezone: string): { dayOfWeek: number; 
 
 // Pure so it's testable without a clock or a database, mirroring
 // mindset-coach/scheduler.ts's playersDueThisHour, just with a day-of-week
-// check added on top.
+// check (and, since step 2.3, each player's own quiet-hours-adjusted
+// target) added on top.
 export function playersDueThisWeekAtHour(
   players: readonly ReminderEligiblePlayer[],
   now: Date,
-  target: { dayOfWeek: number; hour: number } = {
-    dayOfWeek: DEFAULT_REMINDER_DAY_OF_WEEK,
-    hour: DEFAULT_REMINDER_HOUR,
-  },
 ): ReminderEligiblePlayer[] {
   return players.filter((p) => {
     const local = localWeekdayAndHour(now, p.timezone);
+    const target = effectiveReminderTarget(p.quietHoursStartHour, p.quietHoursEndHour);
     return local.dayOfWeek === target.dayOfWeek && local.hour === target.hour;
   });
 }
@@ -70,14 +111,21 @@ async function isFinancialAgentPaused(
 export async function listReminderEligiblePlayers(
   db: SupabaseClient<Database>,
 ): Promise<ReminderEligiblePlayer[]> {
-  const { data, error } = await db.from('players').select('id, timezone');
+  const { data, error } = await db
+    .from('players')
+    .select('id, timezone, quiet_hours_start, quiet_hours_end, reserve_reminder_enabled');
   if (error) throw error;
 
   const eligible: ReminderEligiblePlayer[] = [];
   for (const player of data ?? []) {
-    if (!(await isFinancialAgentPaused(db, player.id))) {
-      eligible.push({ id: player.id, timezone: player.timezone });
-    }
+    if (player.reserve_reminder_enabled === false) continue;
+    if (await isFinancialAgentPaused(db, player.id)) continue;
+    eligible.push({
+      id: player.id,
+      timezone: player.timezone,
+      quietHoursStartHour: parseHour(player.quiet_hours_start),
+      quietHoursEndHour: parseHour(player.quiet_hours_end),
+    });
   }
   return eligible;
 }
