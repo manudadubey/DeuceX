@@ -18,6 +18,7 @@ import {
   PulseTileValue,
 } from '@procircuit/ui';
 import type { Player } from '@procircuit/db';
+import { showDoublesChip } from '@procircuit/db';
 import { CheckInCard } from '@/components/mindset/check-in-card';
 import { RunwayPulseTile } from '@/components/financial/runway-pulse-tile';
 
@@ -33,10 +34,13 @@ export function FirstWeekDashboard({
   player,
   notesCount,
   playerEmail,
+  doublesRank = null,
 }: {
   player: Player;
   notesCount: number;
   playerEmail: string;
+  /** Latest ranking_snapshots.tour_doubles_rank (M-STG-4: shown when inside 500). */
+  doublesRank?: number | null;
 }) {
   const stageLabel =
     player.stage === '1' ? 'Building' : player.stage === '2' ? 'Emerging' : 'Established';
@@ -55,9 +59,14 @@ export function FirstWeekDashboard({
             </Badge>
           </div>
           {verified ? (
-            <div className="font-mono text-4xl font-medium">
-              <small className="mr-0.5 text-2xl text-muted-foreground">#</small>
-              {player.tour_rank}
+            <div className="flex items-baseline gap-3">
+              <div className="font-mono text-4xl font-medium">
+                <small className="mr-0.5 text-2xl text-muted-foreground">#</small>
+                {player.tour_rank}
+              </div>
+              {showDoublesChip(doublesRank) && (
+                <Badge variant="secondary">Doubles #{doublesRank}</Badge>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-2">

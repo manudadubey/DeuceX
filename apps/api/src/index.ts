@@ -33,7 +33,9 @@ import { registerMindsetCoach } from './mindset-coach/worker';
 import { registerFinancialRoutes, type FinancialRoutesDeps } from './financial/routes';
 import { registerFinancialAgent, enqueueFinancialRecompute } from './financial/worker';
 import { registerRankingsRoutes, type RankingsRoutesDeps } from './rankings/routes';
-import { createUnverifiedRankingAdapter } from './rankings/unverified-adapter';
+import { createDirectoryRankingAdapter } from './rankings/directory-adapter';
+import { registerAdminRankingsRoutes, type AdminRankingsRoutesDeps } from './rankings/admin-routes';
+import { registerFeedWindowScheduler } from './rankings/feed-monitor';
 import { createMemoryStorageAdapter } from './storage/memory-adapter';
 import { createR2Adapter } from './storage/r2-adapter';
 import { createMoneyBoss } from './money/queue';
@@ -71,12 +73,20 @@ export function buildServer(
   financialDeps?: FinancialRoutesDeps,
   accountDeps?: AccountRoutesDeps,
   sharingDeps?: SharingRoutesDeps,
+  adminRankingsDeps?: AdminRankingsRoutesDeps,
 ) {
   const app = Fastify({ logger: true });
 
   app.get('/health', async () => ({ status: 'ok' }));
 
-  if (notesDeps || rankingsDeps || financialDeps || accountDeps || sharingDeps) {
+  if (
+    notesDeps ||
+    rankingsDeps ||
+    financialDeps ||
+    accountDeps ||
+    sharingDeps ||
+    adminRankingsDeps
+  ) {
     void app.register(cors, {
       origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000').split(','),
     });
@@ -91,6 +101,13 @@ export function buildServer(
   if (rankingsDeps) {
     void app.register(async (instance) => {
       await registerRankingsRoutes(instance, rankingsDeps);
+    });
+  }
+
+  // Unauthenticated for this step; see admin-routes.ts's own design note.
+  if (adminRankingsDeps) {
+    void app.register(async (instance) => {
+      await registerAdminRankingsRoutes(instance, adminRankingsDeps);
     });
   }
 
@@ -225,6 +242,7 @@ async function main() {
     db: new SupabaseAccountDeletionSweepDb(db),
     storage,
   });
+  await registerFeedWindowScheduler(moneyBoss, { db });
 
   const resendApiKey = process.env.RESEND_API_KEY;
   const resendFromAddress = process.env.RESEND_FROM_ADDRESS;
@@ -271,10 +289,15 @@ async function main() {
 
   const rankingsDeps: RankingsRoutesDeps = {
     anonClient,
-    // The only production ranking adapter until step 3.1 (Rankings and
-    // calendars) wires up a real ATP/WTA/ITF feed — see rankings/adapter.ts.
-    ranking: createUnverifiedRankingAdapter(),
+    // Step 3.1's real adapter: matches against the ranking_snapshots
+    // directory a CSV import builds up, rather than always returning
+    // "unverified" (createUnverifiedRankingAdapter, kept in
+    // rankings/unverified-adapter.ts as the pre-step-3.1 fallback and in
+    // tests). See rankings/directory-adapter.ts.
+    ranking: createDirectoryRankingAdapter(db),
   };
+
+  const adminRankingsDeps: AdminRankingsRoutesDeps = { db };
 
   const financialDeps: FinancialRoutesDeps = {
     db,
@@ -288,7 +311,14 @@ async function main() {
   const accountDeps: AccountRoutesDeps = { db, anonClient, email, appBaseUrl };
   const sharingDeps: SharingRoutesDeps = { db: new SupabaseSharingDb(db) };
 
-  const app = buildServer(notesDeps, rankingsDeps, financialDeps, accountDeps, sharingDeps);
+  const app = buildServer(
+    notesDeps,
+    rankingsDeps,
+    financialDeps,
+    accountDeps,
+    sharingDeps,
+    adminRankingsDeps,
+  );
   const port = Number(process.env.PORT ?? 8787);
   await app.listen({ port, host: '0.0.0.0' });
 }

@@ -7,7 +7,7 @@ import {
   PulseTileSub,
   PulseTileValue,
 } from '@procircuit/ui';
-import { listNotes } from '@procircuit/db';
+import { getLatestRankingSnapshotForPlayer, listNotes } from '@procircuit/db';
 import { createClient } from '@/lib/supabase/server';
 import { CheckInCard } from '@/components/mindset/check-in-card';
 import { FirstWeekDashboard } from '@/components/dashboard/first-week-dashboard';
@@ -59,8 +59,17 @@ export default async function DashboardPage() {
     // query: the first-week checklist just needs to know whether any note
     // exists yet, and listNotes is already RLS-scoped and tested.
     const notes = await listNotes(supabase, { sinceDays: 3650 });
+    // Step 3.1: the doubles chip (M-STG-4) reads the player's latest
+    // ranking_snapshots row, not players.tour_rank — doubles rank has no
+    // home on players itself, only on the weekly snapshot history.
+    const latestSnapshot = await getLatestRankingSnapshotForPlayer(supabase, playerId);
     return (
-      <FirstWeekDashboard player={player} notesCount={notes.length} playerEmail={email ?? ''} />
+      <FirstWeekDashboard
+        player={player}
+        notesCount={notes.length}
+        playerEmail={email ?? ''}
+        doublesRank={latestSnapshot?.tour_doubles_rank ?? null}
+      />
     );
   }
 
