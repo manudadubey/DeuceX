@@ -5,7 +5,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1, step 2.1 through step 2.3 done, start step 3.1
+## Status: Phase 0, Phase 1, step 2.1 through step 3.1 done, start step 3.2
 
 The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -122,13 +122,48 @@ view, an empty-CSV attachment Resend refused, an unverified sending domain, and 
 instance that tipped the session pooler's connection cap over) fixed the same session, not just
 noted; see `docs/BUILD-LOG.md`'s step 2.3 entry for all four and for what it deliberately skipped
 (real Stripe Billing, Equipment pane content which is step 3.3's own job, most of Connections,
-direct coach accounts). [PR #12](https://github.com/manudadubey/ProCircuit/pull/12) is open. The
-next session should start at **step 3.1 (Rankings and calendars)**, in
-`docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture section it names, and
-check `gh pr list` first — if #12 hasn't merged yet, branch off it rather than `main`, the same
-stacking step 0.5/0.6 used. Check `docs/BUILD-LOG.md` for what each prior step actually did
-(including follow-ups) before assuming anything about the current state — this line is a pointer,
-not the full record.
+direct coach accounts). [PR #12](https://github.com/manudadubey/ProCircuit/pull/12) is merged.
+Step 3.1 (Rankings and calendars, with the manual path first) added `ranking_snapshots` (doubling
+as both the per-player weekly history and the onboarding lookup's own matching directory,
+`player_id` nullable — a real ambiguity in TECH-ARCHITECTURE.md's own schema description, resolved
+this session rather than left for later), `tournaments`, and PRD-13's ops tables (`feed_status`,
+`snapshot_imports`, `fact_corrections`, a minimal `alerts`); a CSV-backed feed adapter and import
+service (`apps/api/src/rankings`) that matches rows to existing players, runs `detectStage` on
+every refresh while respecting a pinned stage (M-STG-2), and reports a stage-change count (AD-18);
+the real production `RankingLookupAdapter` (`directory-adapter.ts`, replacing step 1.4's
+always-unverified stub) that verifies a new sign-up against that same directory; the dashboard's
+doubles chip (M-STG-4) and a real stage-pin control on the still-otherwise-placeholder `/profile`
+route (M-STG-2); and a genuinely new admin ingestion page in `apps/admin` (feed status with an
+overdue badge, CSV import preview/apply, deadline entry, fact-sheet corrections) — the first real
+page that app has had since its step-0.1 placeholder, and it ships with **no staff auth of its
+own**, an explicit, owner-confirmed sequencing call (staff sign-in/roles/`admin_users` are step
+5.1's job, two phases later than the build plan's own step numbering implies it needs to exist by
+now) rather than either blocking the UI on that or bolting on a throwaway auth scheme. Also
+deliberately not done, both flagged by name for a later step: the `players` column-grant lockdown
+on `verification`/`tour_rank`/`tour_points`/`itf_rank`/`wtn` that step 2.3's own migration comment
+called this step's job (needs `finishOnboarding`'s ranking writes moved server-side first, a real
+refactor); and reconciling `ledger_lines.tournament_id` (currently `budget_estimates.id`) against
+the real `tournaments` table (deferred again, now to step 3.2, since nothing creates a
+tournament-linked ledger line until that step's Tournament Agent exists). **Verified against the
+real Supabase project**, both migrations owner-confirmed before applying, including six new live
+RLS integration tests, and a full live browser round trip through the actual `apps/admin` page
+against production (not a curl): a real CSV import for the real "Jannik Sinner" fixture player
+correctly diffed and applied, confirmed in the database across all four write paths (player cache,
+snapshot row, feed status, import record). One item left for the owner: the test import changed
+that player's live `tour_rank`/`stage`, and reverting it needed a raw SQL write this session's own
+auto-mode classifier declined outside the confirmed-migration path — see `docs/BUILD-LOG.md`'s
+step 3.1 entry for the exact statement to run if wanted. See that same entry for the full design
+reasoning, two bugs found and fixed (a partial-unique-index `ON CONFLICT` limitation worked around
+before it ever hit the live database, and four `FakeDb` test-support gaps), and everything else
+deliberately skipped (a real licensed ATP/WTA/ITF feed, AD-20/AD-21's shortlist re-run since no
+shortlist exists until step 3.2, a 52-week ranking chart, `apps/admin`'s real design system).
+[PR #13](https://github.com/manudadubey/ProCircuit/pull/13) is open. The next session should
+start at **step 3.2 (Tournament Agent)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step
+plus whatever architecture section it names, and check `gh pr list` first — if #13 hasn't merged
+yet, branch off it rather than `main`, the same stacking step 0.5/0.6 used. Check
+`docs/BUILD-LOG.md` for what each prior
+step actually did (including follow-ups) before assuming anything about the current state — this
+line is a pointer, not the full record.
 
 ## Read before coding
 

@@ -1571,3 +1571,146 @@ the notification matrix used the two-category For-you/FYI shape (decisions works
 per-event matrix the prototype shows.
 
 [PR #12](https://github.com/manudadubey/ProCircuit/pull/12) is open.
+
+## Step 3.1 · Rankings and calendars, with the manual path first — 23 September 2026
+
+Source: TECH-ARCHITECTURE.md section 4 and section 10 (risk list), PRD-13 section 4.5 and AD-17
+to AD-21, PRD-00 section 3 (M-STG-1 to M-STG-4).
+
+**A real sequencing gap surfaced before any code, and the owner picked the resolution.** The build
+plan asks this step to build "the admin ingestion page" inside `apps/admin`, but staff sign-in,
+roles, `admin_users` and `admin_actions` attribution are step 5.1's job (Phase 5), and `apps/admin`
+was still the step-0.1 placeholder with zero auth. Asked the owner: ship the ingestion page now
+with no staff auth of its own, relying on Vercel's existing account-level SSO protection on the
+deployment (the same interim posture the placeholder already had) and flag the gap for step 5.1 to
+close, rather than defer the whole UI or pull forward a throwaway auth scheme. Owner picked the
+first option; `apps/api/src/rankings/admin-routes.ts` carries the design note explaining why.
+
+**Schema** (new migration): `ranking_snapshots` doubles as two things TECH-ARCHITECTURE.md 2.2
+needs it to be — the per-player weekly history (`player_id` set) and the onboarding lookup's own
+matching directory (`player_id` null for a person the CSV/feed knows about who hasn't signed up
+yet). This wasn't spelled out explicitly in the architecture doc; resolved by making `player_id`
+nullable rather than inventing a second directory table, since a brand-new sign-up has no
+`players` row to hang a snapshot off (step 1.4's own first-ever INSERT policy) but still needs
+matching by `tour_player_id`/`itf_id`/name+country. `tournaments` (shared reference, not
+per-player, read policy for every signed-in player, writes service-role only), `feed_status`,
+`snapshot_imports`, `fact_corrections` (PRD-13 2.4's staff/ops tables — RLS enabled, deliberately
+zero policies for `anon`/`authenticated`, so the service role is the only path in until step 5.1's
+`console` role exists) and a minimal `alerts` table (just enough for AD-17's missed-window alert;
+the full alerts sheet is step 5.2). Seeded `feed_status` with the four ranking feeds
+(`atp_rankings`, `wta_rankings`, `itf_men_rankings`, `itf_women_rankings`) in a second small
+migration, since without a row per feed there's nothing for the missed-window check to compare
+against. Deliberately **not** done: locking down `players.verification`/`tour_rank`/`tour_points`/
+`itf_rank`/`wtn` to server-only, which step 2.3's own migration comment named as this step's job.
+Doing it correctly means moving `finishOnboarding`'s ranking-field writes server-side (through the
+service role, right after a legitimate `/rankings/lookup` call) rather than trusting the
+client-submitted onboarding payload — a real refactor of the onboarding write path, not a
+column-grant one-liner, and risky to rush inside an already-large step. Flagged as a named
+follow-up. Also deliberately not done: reconciling `ledger_lines.tournament_id` (which currently
+points at `budget_estimates.id`, a player's free-text trip) against the new real `tournaments`
+table — step 2.1 deferred that FK to this step, step 2.2 flagged it as "this step's problem," but
+nothing actually creates a tournament-linked ledger line until step 3.2's Tournament Agent exists,
+so forcing a reconciliation now would either break `budget_estimates`' existing use of the column
+or add a constraint nothing yet exercises. Deferred again, now to step 3.2 by name.
+
+**Feed adapters and CSV import** (`apps/api/src/rankings`): a hand-rolled RFC4180-ish CSV parser
+(`csv.ts`, same "no external dependency" call `packages/agents/src/financial/export-csv.ts` already
+made for the writing direction), a pure `planRankingImport` (`import-service.ts`) that matches
+rows to existing players by `tour_player_id`/`itf_id`, runs `detectStage` (reused from
+`packages/db/src/players.ts`, unchanged) on every matched row, and respects `stage_pinned`
+(M-STG-2) before ever proposing a stage change — proven with a dedicated test asserting a pinned
+player's stage never moves even when the detected stage differs. `applyRankingImport` writes the
+snapshot rows, updates the matched players' cached `tour_rank`/`stage`, advances `feed_status`, and
+records a `snapshot_imports` row; idempotency is at the file-hash level (a duplicate exact-file
+submission is refused with `DuplicateRankingImportError`) rather than via `ON CONFLICT`, because
+`ranking_snapshots`' uniqueness is two *partial* indexes (a person may carry only one of
+`tour_player_id`/`itf_id`) and Postgres can't target a partial unique index from a plain
+`ON CONFLICT (columns)` clause the way `supabase-js`'s `upsert()` exposes it — found this the hard
+way mid-session (see "found and fixed" below) and switched to plain inserts behind the file-hash
+check instead of fighting it.
+
+**The real onboarding ranking adapter** (`directory-adapter.ts`) replaces
+`createUnverifiedRankingAdapter` (step 1.4's placeholder, which stays in the codebase as the
+pre-step-3.1 fallback and in tests) as the production `RankingLookupAdapter`: an exact
+`tour_player_id`/`itf_id` match against the latest week's snapshot rows is `verified`; a name
+match with a country mismatch or more than one candidate is `ambiguous` (decisions worksheet 2's
+own reason for existing: "common surnames, a lagging ITF feed"); no match at all is `unverified`.
+`wtn` is always returned `null` — no WTN feed exists yet, only the ranking CSV this step builds,
+an honest gap rather than a fabricated figure. It's read-only: a newly onboarded player's own
+`tour_rank`/`stage` (written by `finishOnboarding` from this same lookup result, unchanged this
+step) is what's correct until the *next* CSV import links their history — same reasoning as the
+column-grant deferral above.
+
+**M-STG-4's doubles chip and M-STG-2's stage pin**: the dashboard (`FirstWeekDashboard`) now reads
+the player's latest `ranking_snapshots` row for `tour_doubles_rank` (no home for doubles rank on
+`players` itself) and shows a "Doubles #N" chip beside singles when inside 500
+(`showDoublesChip`, `packages/db/src/rankings.ts`). The stage pin got the smallest slice of the
+still-placeholder `/profile` route that this step actually owns: a `StagePinCard` (stage buttons
+plus a Switch, `setStagePinned`) — the rest of the public-profile editor (bio, goals, media kit,
+social links) stays `PlaceholderPage`, unrelated to this step.
+
+**Admin ingestion page** (`apps/admin/app/ingestion`, plus a home-page link): feed cards with an
+Attention badge for an overdue feed, a CSV paste-and-preview-then-apply flow showing the
+per-player before/after diff and stage-change count (AD-18), a missing-deadline tournament list
+with a date-entry action (AD-21 — the "re-runs shortlists" half doesn't apply yet, since no
+shortlist exists until step 3.2), and fact-sheet correction propose/apply/reject with a
+before/after diff (AD-20). `apps/admin` had zero styling or path-alias infrastructure (still the
+step-0.1 placeholder); added a plain `globals.css` (explicitly not `@procircuit/ui` — wiring the
+full design system into a bare Next.js app is its own yak-shave step 5.1 should do properly, not a
+corner of this step) and the `@/*` path alias plus `next-env.d.ts` apps/web already had. Missed
+feed windows raise an `alerts` row via a pure `findOverdueFeeds` plus `checkFeedWindows`
+(`feed-monitor.ts`), idempotent per feed (no second alert while one is unacknowledged), on a new
+hourly `feed-window-check` queue added to step 2.1's shared `moneyBoss` rather than a new pg-boss
+instance — the session-pooler connection cap step 2.3 hit live is exactly why that boss is shared
+in the first place.
+
+**Found and fixed, this session**: (1) the partial-unique-index `ON CONFLICT` limitation above,
+found by TypeScript-then-runtime reasoning before it ever hit the live database — switched to
+file-hash idempotency before the first real test ran, not after a live failure. (2) `FakeDb`
+(`apps/api/src/test-support/fake-db.ts`) didn't support `.ilike()`, `.is()`, `.or()`, or a bulk
+array `.insert()` — all four needed by this step's own tests and genuinely reusable, not
+narrowly scoped; added with comments naming exactly the subset each supports (`or()` in particular
+is not a general PostgREST parser, just the one clause shape `loadExistingPlayers` uses).
+
+**Verified against the real Supabase project** (`gpzpmrumwaqyfkyvqbgl`), both migrations
+owner-confirmed before applying. Six new RLS integration tests run live, not just fixtures: a
+player reads only their own `ranking_snapshots` row and never an unmatched directory row; a direct
+player insert into `ranking_snapshots` throws `row-level security` (a failed `WITH CHECK`); any
+signed-in player can read `tournaments`; a direct player update to `tournaments` silently matches
+zero rows rather than throwing (no update policy at all is a `USING`-clause visibility filter, not
+a grant-level denial — different from the insert case, and the test asserts the right thing for
+each); `feed_status`/`snapshot_imports`/`fact_corrections` are invisible to a signed-in player
+entirely. Then a full live round trip through the actual browser and the actual admin page against
+production, not a curl: started `apps/api` and the new `apps/admin` dev servers, hit a CORS gap
+(`apps/admin`'s port 3001 wasn't in `CORS_ORIGIN`, fixed in `.env` and documented in
+`.env.example`), pasted a real CSV row for the real "Jannik Sinner" fixture player (`tour_rank`
+null → 1, `stage` "1" → "3"), previewed it (correct before/after diff, 1 stage change), applied it,
+and confirmed in the database that all four write paths actually landed: `players.tour_rank`/
+`stage`, a new `ranking_snapshots` row, `feed_status.atp_rankings` advanced
+(`last_run_at`/`row_count`/`next_expected_at`), and a `snapshot_imports` row. Left the
+`ranking_snapshots`/`snapshot_imports`/`feed_status` audit rows in place afterward (that's the
+legitimate trail this feature exists to produce) but did not revert the player's `tour_rank`/
+`stage` back to their pre-test values — a Bash SQL write to shared production data was denied by
+this session's own auto-mode classifier ("Modify Shared Resources") outside the confirmed-migration
+path, so it's flagged here for the owner to revert by hand if wanted (`update players set
+tour_rank = null, stage = '1' where id = '0396d886-f646-4ad0-9491-20743bfa0fc2'` — note `tour_rank
+= 1` is arguably *more* correct than null for the real Jannik Sinner anyway). `pnpm typecheck`,
+`pnpm lint` and `pnpm format` are clean across all nine packages; 410 tests pass without a live DB
+connection (6 `packages/shared`, 3 `packages/ui`, 84 `packages/db`, 52 `packages/actions`, 98
+`packages/agents`, 152 `apps/api`, 15 `apps/web`) plus all 26 `packages/db` RLS blocks (six new)
+passing live against the real project (436 total). 35 of the new tests are this step's own (29
+`apps/api`: CSV parsing, the pure import planner including a 342-fixture-player scenario matching
+the build plan's own acceptance number, the directory adapter, the feed-window monitor, the admin
+routes; 6 live RLS).
+
+Skipped, deliberately (beyond the column-grant and `ledger_lines.tournament_id` deferrals above):
+staff auth/roles/`admin_users`/`admin_actions` attribution for the ingestion page itself (step
+5.1's own job, see the sequencing note above); a real licensed ATP/WTA/ITF feed (TECH-ARCHITECTURE
+section 4's own honest risk statement — the CSV path is the whole point of "the manual path
+first"); AD-21's shortlist re-run on a deadline change and AD-20's fact-correction-triggered
+shortlist re-run (no shortlist exists until step 3.2's Tournament Agent); a 52-week ranking chart
+on the dashboard (mentioned in PRD-00's tier table but not in this step's own "Build" list, and no
+general "full" dashboard exists yet to hang it on — still `FirstWeekDashboard` only); apps/admin's
+real design system (`@procircuit/ui`/Tailwind wiring, plain CSS instead, see above).
+
+[PR #13](https://github.com/manudadubey/ProCircuit/pull/13) is open.

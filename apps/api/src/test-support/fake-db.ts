@@ -14,7 +14,7 @@ type Row = Record<string, any>;
 
 class TableQuery implements PromiseLike<{ data: any; error: any }> {
   private filters: Array<(row: Row) => boolean> = [];
-  private pendingInsert?: Row;
+  private pendingInsert?: Row | Row[];
   private pendingUpdate?: Row;
   private pendingDelete = false;
   private pendingUpsert?: { row: Row; onConflict: string | undefined };
@@ -100,6 +100,44 @@ class TableQuery implements PromiseLike<{ data: any; error: any }> {
     return this;
   }
 
+  // Step 3.1 additions, for rankings/feed-monitor.test.ts and
+  // rankings/directory-adapter.test.ts. Kept minimal on purpose: `is` only
+  // ever needs the null/not-null case this codebase actually calls, and
+  // `ilike` only needs case-insensitive equality (this codebase never
+  // builds a `%wildcard%` pattern for it, since directory-adapter.ts passes
+  // an already-trimmed full name, not a partial search term).
+  is(col: string, value: unknown): this {
+    if (value === null) {
+      this.filters.push((row) => row[col] == null);
+    } else {
+      this.filters.push((row) => row[col] === value);
+    }
+    return this;
+  }
+
+  ilike(col: string, pattern: string): this {
+    const needle = pattern.toLowerCase();
+    this.filters.push((row) => String(row[col] ?? '').toLowerCase() === needle);
+    return this;
+  }
+
+  // A small subset of PostgREST's or() syntax: comma-separated
+  // `<col>.not.is.null` clauses, OR'd together — exactly what
+  // import-service.ts's loadExistingPlayers uses, not a general parser.
+  or(expr: string): this {
+    const clauses = expr.split(',').map((c) => c.trim());
+    const checks = clauses.map((clause) => {
+      const parts = clause.split('.');
+      const col = parts[0]!;
+      if (parts[1] === 'not' && parts[2] === 'is' && parts[3] === 'null') {
+        return (row: Row) => row[col] != null;
+      }
+      throw new Error(`FakeDb.or(): unsupported clause "${clause}"`);
+    });
+    this.filters.push((row) => checks.some((check) => check(row)));
+    return this;
+  }
+
   order(col: string, opts?: { ascending?: boolean }): this {
     this.orderSpec = { col, ascending: opts?.ascending ?? true };
     return this;
@@ -110,7 +148,7 @@ class TableQuery implements PromiseLike<{ data: any; error: any }> {
     return this;
   }
 
-  insert(row: Row): this {
+  insert(row: Row | Row[]): this {
     this.pendingInsert = row;
     return this;
   }
@@ -150,9 +188,13 @@ class TableQuery implements PromiseLike<{ data: any; error: any }> {
 
   private async resolve(): Promise<{ data: any; error: any }> {
     if (this.pendingInsert) {
-      const row = { id: `row-${Math.random().toString(36).slice(2)}`, ...this.pendingInsert };
-      (this.db.tables[this.tableName] ??= []).push(row);
-      return { data: [row], error: null };
+      const inputs = Array.isArray(this.pendingInsert) ? this.pendingInsert : [this.pendingInsert];
+      const rows = inputs.map((input) => ({
+        id: `row-${Math.random().toString(36).slice(2)}`,
+        ...input,
+      }));
+      (this.db.tables[this.tableName] ??= []).push(...rows);
+      return { data: rows, error: null };
     }
     if (this.pendingUpsert) {
       const { row: patch, onConflict } = this.pendingUpsert;

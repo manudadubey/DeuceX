@@ -10,6 +10,11 @@ export const RESERVE_REMINDER_QUEUE = 'reserve-reminder-scheduler';
 // over. The sweep is exactly the same "not a scheduled agent run" category
 // this file's own comment already describes, so it belongs here.
 export const ACCOUNT_DELETION_SWEEP_QUEUE = 'account-deletion-sweep';
+// Step 3.1's own addition to this same boss, for the same connection-budget
+// reason: PRD-13 AD-17's "raises an alert when a feed misses its expected
+// window" is a plain periodic check (no LLM call, no agent_runs row), not a
+// scheduled agent run.
+export const FEED_WINDOW_CHECK_QUEUE = 'feed-window-check';
 
 export interface MoneyQueueLogger {
   error(...args: unknown[]): void;
@@ -34,8 +39,10 @@ export async function createMoneyBoss(
   await boss.createQueue(FX_DAILY_FETCH_QUEUE);
   await boss.createQueue(RESERVE_REMINDER_QUEUE);
   await boss.createQueue(ACCOUNT_DELETION_SWEEP_QUEUE);
+  await boss.createQueue(FEED_WINDOW_CHECK_QUEUE);
   await boss.schedule(FX_DAILY_FETCH_QUEUE, '0 * * * *', {});
   await boss.schedule(RESERVE_REMINDER_QUEUE, '0 * * * *', {});
   await boss.schedule(ACCOUNT_DELETION_SWEEP_QUEUE, '0 * * * *', {});
+  await boss.schedule(FEED_WINDOW_CHECK_QUEUE, '0 * * * *', {});
   return boss;
 }

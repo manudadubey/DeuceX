@@ -565,3 +565,124 @@ describeIfConfigured('settings row-level security (step 2.3)', () => {
     }
   });
 });
+
+describeIfConfigured('rankings and calendars row-level security (step 3.1)', () => {
+  let client: Client;
+  const playerA = randomUUID();
+  const playerB = randomUUID();
+  let tournamentId: string;
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
+      playerA,
+      `rankings-rls-a-${playerA}@procircuit.test`,
+      playerB,
+      `rankings-rls-b-${playerB}@procircuit.test`,
+    ]);
+    await client.query(
+      `insert into public.players
+         (id, tour, name, email, country, dob, home_currency, app_language, units, timezone,
+          tour_player_id)
+       values
+         ($1, 'atp', 'Player A', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney', $5),
+         ($3, 'wta', 'Player B', $4, 'US', '2000-01-01', 'USD', 'en', 'imperial', 'America/New_York', null)`,
+      [
+        playerA,
+        `rankings-rls-a-${playerA}@procircuit.test`,
+        playerB,
+        `rankings-rls-b-${playerB}@procircuit.test`,
+        `rls-test-${playerA}`,
+      ],
+    );
+    await client.query(
+      `insert into public.ranking_snapshots
+         (player_id, tour, tour_player_id, name, country, week_start, tour_singles_rank)
+       values
+         ($1, 'atp', $2, 'Player A', 'AU', '1901-01-01', 500),
+         (null, 'atp', $3, 'Nobody Signed Up', 'FR', '1901-01-01', 900)`,
+      [playerA, `rls-test-${playerA}`, `unmatched-${playerA}`],
+    );
+    const tournamentResult = await client.query(
+      `insert into public.tournaments (tour, name, start_date, end_date)
+       values ('atp', 'RLS Test Open', '1901-01-01', '1901-01-08')
+       returning id`,
+    );
+    tournamentId = tournamentResult.rows[0].id;
+  });
+
+  afterAll(async () => {
+    await client.query(
+      `delete from public.ranking_snapshots
+       where player_id in ($1, $2) or tour_player_id in ($3, $4)`,
+      [playerA, playerB, `rls-test-${playerA}`, `unmatched-${playerA}`],
+    );
+    await client.query(`delete from public.tournaments where id = $1`, [tournamentId]);
+    await client.query(`delete from public.players where id in ($1, $2)`, [playerA, playerB]);
+    await client.query(`delete from auth.users where id in ($1, $2)`, [playerA, playerB]);
+    await client.end();
+  });
+
+  it("lets a player read only their own ranking_snapshots row, never another player's and never an unmatched directory row", async () => {
+    await asPlayer(client, playerA, async () => {
+      const result = await client.query(
+        'select player_id, tour_singles_rank from public.ranking_snapshots order by tour_singles_rank',
+      );
+      expect(result.rows).toEqual([{ player_id: playerA, tour_singles_rank: 500 }]);
+    });
+    await asPlayer(client, playerB, async () => {
+      const result = await client.query('select id from public.ranking_snapshots');
+      expect(result.rows).toEqual([]);
+    });
+  });
+
+  it('refuses a player writing to ranking_snapshots directly (CSV/feed import is service-role only)', async () => {
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query(
+          `insert into public.ranking_snapshots
+             (player_id, tour, tour_player_id, name, country, week_start, tour_singles_rank)
+           values ($1, 'atp', 'forged', 'Player A', 'AU', '1901-01-02', 1)`,
+          [playerA],
+        ),
+      ).rejects.toThrow(/row-level security/);
+    });
+  });
+
+  it('lets any signed-in player read tournaments (shared reference data, not per-player)', async () => {
+    await asPlayer(client, playerB, async () => {
+      const result = await client.query('select id from public.tournaments where id = $1', [
+        tournamentId,
+      ]);
+      expect(result.rows).toEqual([{ id: tournamentId }]);
+    });
+  });
+
+  it('refuses a player writing to tournaments directly (ops/feed only)', async () => {
+    await asPlayer(client, playerA, async () => {
+      // No update policy exists for authenticated, so this isn't a thrown
+      // RLS violation (that's specific to a failed WITH CHECK on insert,
+      // proven above for ranking_snapshots) — the row is simply invisible
+      // to the update's own USING clause, so it matches and changes nothing.
+      const result = await client.query(
+        `update public.tournaments set name = 'Hacked' where id = $1`,
+        [tournamentId],
+      );
+      expect(result.rowCount).toBe(0);
+      const check = await client.query('select name from public.tournaments where id = $1', [
+        tournamentId,
+      ]);
+      expect(check.rows).toEqual([{ name: 'RLS Test Open' }]);
+    });
+  });
+
+  it('refuses a signed-in player from reading feed_status, snapshot_imports or fact_corrections (staff/ops only, PRD-13 2.4)', async () => {
+    await asPlayer(client, playerA, async () => {
+      for (const table of ['feed_status', 'snapshot_imports', 'fact_corrections']) {
+        const result = await client.query(`select id from public.${table}`);
+        expect(result.rows).toEqual([]);
+      }
+    });
+  });
+});

@@ -147,6 +147,15 @@ export {
   type ShareLink,
   type CreateShareLinkInput,
 } from './sharing';
+export {
+  getLatestRankingSnapshotForPlayer,
+  showDoublesChip,
+  setStagePinned,
+  type RankingSnapshot,
+  type Tournament,
+  type FeedStatus,
+  type FactCorrection,
+} from './rankings';
 
 // Two clients, deliberately: the anon-scoped client respects row-level
 // security and is what every player-facing request uses; the service-role
