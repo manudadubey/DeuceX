@@ -1713,4 +1713,4 @@ on the dashboard (mentioned in PRD-00's tier table but not in this step's own "B
 general "full" dashboard exists yet to hang it on — still `FirstWeekDashboard` only); apps/admin's
 real design system (`@procircuit/ui`/Tailwind wiring, plain CSS instead, see above).
 
-No open or stacked PR from this step yet.
+[PR #13](https://github.com/manudadubey/ProCircuit/pull/13) is open.

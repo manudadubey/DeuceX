@@ -156,11 +156,12 @@ step 3.1 entry for the exact statement to run if wanted. See that same entry for
 reasoning, two bugs found and fixed (a partial-unique-index `ON CONFLICT` limitation worked around
 before it ever hit the live database, and four `FakeDb` test-support gaps), and everything else
 deliberately skipped (a real licensed ATP/WTA/ITF feed, AD-20/AD-21's shortlist re-run since no
-shortlist exists until step 3.2, a 52-week ranking chart, `apps/admin`'s real design system). No
-open or stacked PR from this step yet. The next session should start at **step 3.2 (Tournament
-Agent)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture section
-it names, and check `gh pr list` first — if step 3.1's PR hasn't merged yet, branch off it rather
-than `main`, the same stacking step 0.5/0.6 used. Check `docs/BUILD-LOG.md` for what each prior
+shortlist exists until step 3.2, a 52-week ranking chart, `apps/admin`'s real design system).
+[PR #13](https://github.com/manudadubey/ProCircuit/pull/13) is open. The next session should
+start at **step 3.2 (Tournament Agent)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step
+plus whatever architecture section it names, and check `gh pr list` first — if #13 hasn't merged
+yet, branch off it rather than `main`, the same stacking step 0.5/0.6 used. Check
+`docs/BUILD-LOG.md` for what each prior
 step actually did (including follow-ups) before assuming anything about the current state — this
 line is a pointer, not the full record.
 
