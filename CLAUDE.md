@@ -5,7 +5,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1 and step 2.1 done, start step 2.2
+## Status: Phase 0, Phase 1, step 2.1 and step 2.2 done, start step 2.3
 
 The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -49,7 +49,7 @@ including what each step deliberately skipped (step 1.3: the memory quote, the c
 view, a per-player delivery-hour setting; step 1.4: the six-step spotlight walkthrough tour, the
 public profile editor, real Stripe trial creation, the guardian-confirmation email itself, and
 more). See `.env.example` for the vars; real credentials live only in the owner's local,
-gitignored `.env`, not in this repo. PRs #4 through #10 (steps 0.5, 0.6, 1.1, 1.2, 1.3, 1.4, 2.1)
+gitignored `.env`, not in this repo. PRs #4 through #11 (steps 0.5, 0.6, 1.1, 1.2, 1.3, 1.4, 2.1, 2.2)
 are merged to `main` — no open or stacked branches. Step 1.4's live browser verification (guardian
 gate, ranking-lookup graceful degrade, first-week dashboard) happened as a follow-up against a
 real signed-in session once a dev-server slot freed up; see `docs/BUILD-LOG.md`'s step 1.4 entry
@@ -68,10 +68,42 @@ balance updates or marking a receivable received — that's step 2.2's Financial
 pre-existing, unrelated step 1.1 bug in `rls.integration.test.ts` (the "notes" RLS block, a test
 helper always rolling back so several tests asserted on state that never persisted) was found
 while live-testing step 2.1 and fixed in a follow-up commit on the same
-[PR #10](https://github.com/manudadubey/ProCircuit/pull/10), which is merged. The next session
-should start at **step 2.2 (Financial Agent)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that
-step plus whatever architecture section it names. Check `docs/BUILD-LOG.md` for what each prior
-step actually did (including follow-ups)
+[PR #10](https://github.com/manudadubey/ProCircuit/pull/10), which is merged.
+Step 2.2 (Financial Agent) added the deterministic runway/burn/fourteen-week-projection engine,
+budget vs actual, monthly P&L (decisions worksheet 7's pending-receivable fix made structural: the
+P&L function has no parameter a pending receivable could even be passed through), and a ranked
+"one thing to do this week" action, all in `packages/agents/src/financial`, plus a receipt-scanning
+agent (a vision-model sibling of `match-scribe/extract`). Expense and balance writes stay plain
+RLS-scoped CRUD (`insertLedgerLine`, `enterReserveBalance`, both already built in step 2.1) rather
+than gated actions, since TECH-ARCHITECTURE section 3's hard actions-module list is exactly
+Stripe/Resend/ICS/entry-client plus two named DB transitions and neither is on it; marking a prize
+receivable received is on it, so it's this step's one real `runGatedAction` caller, wired end to
+end for the first time (`apps/web`'s `confirmApproval`, prepared but unused since step 0.6, is now
+called for real). New migration adds `budget_estimates` (a player's own named trip budgets,
+standing in for a real tournament reference until step 3.1) and `financial_action_snoozes`; no new
+column on `players` needed since `weekly_budget` already existed from step 1.4's onboarding wizard.
+The new `/agent/financial` route and the dashboard's Runway tile compute their figures live and
+directly from the ledger on every read (`apps/web/lib/financial/load.ts`) rather than caching them;
+only the phrased "one thing" sentence is cached, keyed on the winning candidate's own hash, which
+is what "live runs recompute figures without regenerating the action" actually means in code.
+**Verified against the real Supabase project**, migration owner-confirmed before applying, and
+against a real signed-in session in the browser (not deferred, unlike step 1.4): a balance update
+and a manual expense entry both persisted and recomputed the KPI row, chart and budget bar
+correctly; test rows deleted afterward. The build was also checked field by field against
+`docs/procircuit-dashboard-neumayer.html`'s own `#/agent/financial` prototype, which surfaced real
+gaps (the milestone progress bar, the three runway summary tiles, CSV export, the ledger's
+footer row) fixed the same session, not just noted. See `docs/BUILD-LOG.md`'s step 2.2 entry for
+the full design reasoning, four bugs found and fixed (a with-pending chart line that was silently
+never fed pending receivables, an unhandled promise rejection, a `pg-boss`-in-the-browser-bundle
+break requiring a `@procircuit/actions/queue` export split, and a shared dev server whose build
+cache was corrupted by running a production build against it mid-session) and what it deliberately
+skipped (scenario tabs pending step 3.2's Tournament Agent, the six-month P&L chart and month
+selector, receipt rendition/redaction pending an image-processing dependency, patron MRR pending
+step 4.1). [PR #11](https://github.com/manudadubey/ProCircuit/pull/11) is merged. The next session
+should start at **step 2.3 (Settings, preferences, sharing)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`:
+read that step plus whatever architecture section it names — it's also where the Sunday
+balance-reminder's quiet hours and per-player toggle, deferred since step 2.1, finally land. Check
+`docs/BUILD-LOG.md` for what each prior step actually did (including follow-ups)
 before assuming anything about the current state — this line is a pointer, not the full record.
 
 ## Read before coding
