@@ -8,8 +8,14 @@
 // (step 2.2), is really two: a deterministic runway/burn/projection/budget
 // engine with one short model call to phrase its "one thing" action, and a
 // separate event-triggered receipt-extraction call (mirroring
-// match-scribe/extract, not the scheduled half).
+// match-scribe/extract, not the scheduled half). The fourth, tournament
+// (step 3.2), is fully deterministic — no model call at all: the shortlist
+// ranking, cost model and why-text are all pure functions over the input
+// bundle (see docs/BUILD-LOG.md's step 3.2 entry for why an LLM-authored
+// why paragraph and recommendation memo are deliberately out of scope this
+// step).
 
 export * from './match-scribe';
 export * from './mindset-coach';
 export * from './financial';
+export * from './tournament';

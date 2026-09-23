@@ -65,6 +65,21 @@ export {
   type MarkReceivableReceivedInput,
 } from './receivables';
 
+export {
+  confirmEntry,
+  withdrawEntry,
+  SupabaseEntriesDb,
+  EntryNotAvailableError,
+  EntryNotEnteredError,
+  EntryDeadlinePassedError,
+  type EntriesDb,
+  type EntryContext,
+  type ConfirmEntryInput,
+  type ConfirmEntryResult,
+  type WithdrawEntryInput,
+  type WithdrawEntryResult,
+} from './entries';
+
 // requestAccountDeletion/requestDataExport (account.ts) and
 // createResendEmailClient (resend-client.ts) live at the
 // '@procircuit/actions/account' subpath, not here, same reasoning as the
