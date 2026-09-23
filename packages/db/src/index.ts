@@ -156,6 +156,15 @@ export {
   type FeedStatus,
   type FactCorrection,
 } from './rankings';
+export {
+  listShortlistCandidates,
+  listEntryDecisions,
+  skipCandidate,
+  undoSkip,
+  type EntryDecision,
+  type EntryDecisionStatus,
+  type ShortlistCandidateRow,
+} from './tournament';
 
 // Two clients, deliberately: the anon-scoped client respects row-level
 // security and is what every player-facing request uses; the service-role

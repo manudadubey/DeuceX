@@ -32,6 +32,8 @@ import { sweepExpiredAudio } from './notes/audio-lifecycle';
 import { registerMindsetCoach } from './mindset-coach/worker';
 import { registerFinancialRoutes, type FinancialRoutesDeps } from './financial/routes';
 import { registerFinancialAgent, enqueueFinancialRecompute } from './financial/worker';
+import { registerTournamentRoutes, type TournamentRoutesDeps } from './tournament/routes';
+import { registerTournamentAgent } from './tournament/worker';
 import { registerRankingsRoutes, type RankingsRoutesDeps } from './rankings/routes';
 import { createDirectoryRankingAdapter } from './rankings/directory-adapter';
 import { registerAdminRankingsRoutes, type AdminRankingsRoutesDeps } from './rankings/admin-routes';
@@ -74,6 +76,7 @@ export function buildServer(
   accountDeps?: AccountRoutesDeps,
   sharingDeps?: SharingRoutesDeps,
   adminRankingsDeps?: AdminRankingsRoutesDeps,
+  tournamentDeps?: TournamentRoutesDeps,
 ) {
   const app = Fastify({ logger: true });
 
@@ -85,7 +88,8 @@ export function buildServer(
     financialDeps ||
     accountDeps ||
     sharingDeps ||
-    adminRankingsDeps
+    adminRankingsDeps ||
+    tournamentDeps
   ) {
     void app.register(cors, {
       origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000').split(','),
@@ -114,6 +118,12 @@ export function buildServer(
   if (financialDeps) {
     void app.register(async (instance) => {
       await registerFinancialRoutes(instance, financialDeps);
+    });
+  }
+
+  if (tournamentDeps) {
+    void app.register(async (instance) => {
+      await registerTournamentRoutes(instance, tournamentDeps);
     });
   }
 
@@ -226,6 +236,7 @@ async function main() {
   const actionsBoss = await createBoss(dbConnectionString);
   await registerMindsetCoach(actionsBoss, { db, client: insightClient, agentRuns });
   await registerFinancialAgent(actionsBoss, { db, client: financialActionClient, agentRuns });
+  await registerTournamentAgent(actionsBoss, { db, agentRuns });
 
   // Step 2.1's own boss (money/queue.ts): the daily ECB fetch, the Sunday
   // reserve-balance reminder and (step 2.3) the fourteen-day account-
@@ -310,6 +321,7 @@ async function main() {
   const appBaseUrl = process.env.APP_BASE_URL ?? 'http://localhost:3000';
   const accountDeps: AccountRoutesDeps = { db, anonClient, email, appBaseUrl };
   const sharingDeps: SharingRoutesDeps = { db: new SupabaseSharingDb(db) };
+  const tournamentDeps: TournamentRoutesDeps = { db, anonClient };
 
   const app = buildServer(
     notesDeps,
@@ -318,6 +330,7 @@ async function main() {
     accountDeps,
     sharingDeps,
     adminRankingsDeps,
+    tournamentDeps,
   );
   const port = Number(process.env.PORT ?? 8787);
   await app.listen({ port, host: '0.0.0.0' });

@@ -1714,3 +1714,190 @@ general "full" dashboard exists yet to hang it on — still `FirstWeekDashboard`
 real design system (`@procircuit/ui`/Tailwind wiring, plain CSS instead, see above).
 
 [PR #13](https://github.com/manudadubey/ProCircuit/pull/13) is open.
+
+## Step 3.2 · Tournament Agent — 23 September 2026
+
+Source: PRD-01 (all), PRD-00 section 3, decisions worksheet 14, TECH-ARCHITECTURE.md section 2.2
+(`entry_decisions`' own already-specified shape) and section 3 (the actions-module gate).
+
+**Scoping decision, made before writing code: no model call this step.** Every prior agent step
+(1.2, 1.3, 2.2) named an explicit LLM call in its build-plan bullet; step 3.2's does not — it lists
+the cost model, ratio, outcomes, the detail panel, the two gated actions, Skip, Withdraw, the
+calendar tab, the dashboard card and the Free-tier lock, nothing about a why-paragraph or the
+300–500 word recommendation memo PRD-01 section 4.1 describes. Read literally, this makes the whole
+Tournament Agent deterministic: `packages/agents/src/tournament` has no `model-client.ts`, no
+`mock-client.ts`, no schema-corrective-retry loop — the shortlist run still goes through
+`recordRun` (an `agent_runs` row every run, `model: 'deterministic-v1'`, `cost: null`) for the same
+audit-trail reason every other scheduled agent does, but there is nothing to retry. The "why"
+paragraph is a deterministic template (`why-text.ts`) built to satisfy T-4's one hard content
+requirement (a defence week's why paragraph names the points and the places at risk) exactly,
+rather than checking an LLM's prose against it after the fact. The LLM-authored why paragraph and
+the recommendation memo card are a named follow-up, not attempted here.
+
+**A real inconsistency in the prototype, found before writing the fixture test, not after.**
+`docs/procircuit-dashboard-neumayer.html`'s own `#/agent/tournament` mock data ranks Poznań first
+(ratio 0.42) ahead of Bratislava (ratio 0.36), even though PRD-01 T-3 says ranking is by ratio
+ascending (lower is better) with only a defence week getting a force-include exception — Bratislava
+is not a defence week. The prototype's own numbers do not satisfy its own stated rule; it reads as
+hand-authored narrative copy, not the output of an algorithm. Implementing T-3/T-4 literally and
+checking the result against T-AC-1's actual (narrower, formal) assertion — five events, none in the
+blocked week, none over budget excluding the defence week, top pick ranked first — rather than
+against the prototype's exact row order was the more defensible target; `shortlist.test.ts`'s own
+"Arya" fixture is built from scratch (Poznań/Sibiu/Bratislava/Lisbon/Biella-named, PRD-01-shaped
+numbers) to prove this, and documents the discrepancy inline rather than silently diverging from
+the prototype.
+
+**Schema** (new migration): `entry_decisions` matches TECH-ARCHITECTURE.md 2.2's own field list
+verbatim — it was named, unbuilt, since the very first architecture pass. Only two of its four
+status transitions are player-direct: Skip (`none`→`skipped`) and Undo (`skipped`→`none`), via an
+`UPDATE` policy whose `WITH CHECK` only ever admits `status in ('none','skipped')` with
+`planned_expense_id` staying null — no trigger, just a policy a player session cannot get around
+however the request is shaped. Accept entry (→`entered`) and Withdraw (→`withdrawn`) are the
+actions-module's job: section 3 names "write an entry_decisions row to entered" as gated exactly
+like a Stripe/Resend/ICS call, and `approvals.action_type` has carried `entry_confirm` and
+`retract` unused since the step 0.2 migration for exactly this — no check-constraint change needed
+this step. A row is created (`status='none'`) for every shortlisted candidate by the scheduled run
+itself (service role) before the player ever sees it, so there is no player-direct `INSERT` policy
+either. `shortlist_candidates` is the persisted numeric output of the latest run per candidate
+(cost breakdown, ratio, outcome rounds, expected/worst/best net, why text) — needed because T-14
+requires a decision and its supporting numbers to survive a Sunday re-rank, and there is no live
+"recompute the cost model on every page load" the way the Financial Agent recomputes runway from
+the ledger; the shortlist run is the only writer of these numbers at all. One row per
+`(player_id, tournament_id)`, upserted every run; `current=false` marks a candidate a later run
+dropped but that still carries a non-`none` decision (T-14's "excluded next week" note), never
+deleted. `ledger_lines.tournament_id` stays exactly as step 2.2 left it (pointing at
+`budget_estimates.id`, a player's free-text trip) — repointing its *semantics* would be a breaking,
+non-additive change to every existing reader (the Financial Agent's budget-vs-actual, P&L
+labelling). Added a second, purpose-built `real_tournament_id` column instead, set only by
+`confirmEntry`'s planned line; full reconciliation (budget-vs-actual joining through real
+tournaments too) stays a named follow-up, not solved here. `players` gains `home_airport`,
+`coach_weekly_fee`, `coach_travels` — plain player-set facts the cost model and the detail panel's
+route line need and that genuinely didn't exist anywhere (`blocked_dates`, added step 1.4, is a
+single free-text field, not these); all three joined the step 2.3 column-grant lockdown's list.
+
+**The cost model is named, tunable platform-median constants, not a real pricing API** — there is
+no flights/accommodation integration on TECH-ARCHITECTURE.md section 4's own list, so
+`cost-model.ts` buckets a tournament's tier into `itf`/`challenger`/`wta125`/`tour_qualifying` and
+applies a flat per-bucket flight estimate and nightly accommodation rate, the same "named,
+tunable placeholder" spirit as PRD-01's own A$60-per-point constant (`expected-value.ts`'s
+`POINTS_VALUE_PER_POINT_AUD`). T-19's "learn from the player's own ledger after three trips" stays
+unimplemented — a real follow-up, not faked. Round-reach probabilities are a platform-prior-only
+model (`BASE_ROUND_WIN_PROBABILITY` by acceptance confidence, geometric decay) rather than the
+player's real twelve-month tier-and-surface record PRD-01 section 7 asks for: no structured,
+aggregated surface/tier win-loss record exists anywhere in this codebase yet (Match Scribe's
+`notes.res` is free text per note, not an aggregate), so this is the same "platform prior alone,
+real learning is a named follow-up" shape as the cost model. `players.blocked_dates` (step 1.4) is
+free text, not a structured date range, so `parseBlockedDateRanges`
+(`packages/agents/src/tournament/blocked-dates.ts`, shared between `apps/api`'s input assembly and
+the web calendar tab's shading) is a best-effort "D Mon – D Mon" parser that returns no ranges
+rather than guessing wrong when it can't confidently parse — a real structured blocked-dates table
+is a named follow-up. `tournaments.prize_table`/`points_table` (step 3.1) carry no currency column
+of their own and nothing had ever populated or read them before this step; this step's own
+convention decision is that they're EUR-denominated at the source (mirroring `fx_rates_daily`'s own
+ECB-archive currency) and converted to the player's home currency at run time — documented inline
+in `apps/api/src/tournament/service.ts` since it wasn't specified anywhere and needed deciding.
+`tournaments` also has no entry-fee field yet, so T-5's "Entry fee when non-zero" line stays 0 for
+every real candidate until one exists.
+
+**The two gated actions** (`packages/actions/src/entries.ts`): `confirmEntry`/`withdrawEntry`
+follow `receivables.ts`'s exact shape (a narrow `EntriesDb` interface, `runGatedAction`, a
+Supabase-backed real implementation plus a test that needs no live Postgres connection) —
+including its one important discipline: the planned amount always comes from the server's own
+current `shortlist_candidates` row (`getEntryContext`), never trusted from the approval's payload,
+which carries only `{tournamentId}`. `withdrawEntry` additionally refuses once the tournament's
+entry deadline has passed (`EntryDeadlinePassedError`), server-side, not just in the UI copy — the
+approvals gate is exactly the place a stale client should not be trusted. Skip and Undo are plain,
+RLS-scoped `packages/db` calls (`skipCandidate`/`undoSkip`), no gate needed, matching the build
+plan's own implied split (Accept entry "as a confirm through the actions module," Skip and Undo
+not named that way).
+
+**Scheduler**: `apps/api/src/tournament/{scheduler,worker,run,service}.ts` register on the shared
+`actionsBoss` (step 0.6's `AGENT_RUN_QUEUE`), the same pattern as `financial/scheduler.ts` — an
+hourly tick filtered to a fixed instant (PRD-01 section 3: "Sunday 20:00 UTC," confirmed against
+the prototype's own "Ran Sun 6 Sep 20:00 UTC" copy, a single fixed UTC moment like the Financial
+Agent's 07:00 UTC, not per-player local time like Mindset Coach's). Deliberately *not* on the
+`moneyBoss` shared instance (step 2.1's reserve reminder, the FX fetch, the account-deletion sweep,
+the feed-window check): those are explicitly "not a scheduled agent run... no `agent_runs` row" per
+that boss's own file comment, and this genuinely is one (`recordRun` writes a row every time, even
+with no model call), so `actionsBoss` — where Financial and Mindset Coach already live — is the
+correct queue, not a fifth pg-boss instance.
+
+**apps/web**: the dashboard's static "Decision required" tile (a step-1.4 placeholder,
+`first-week-dashboard.tsx`) is now `DecisionTile`, a live client tile matching `RunwayPulseTile`'s
+own pattern exactly. A new `DecisionCardSlot`/`DecisionCard` pair adds PRD-01 section 4.2's full
+decision card (cost, outcome, runway-if-you-lose/reach tiles, the two-step Accept confirm using
+`packages/ui`'s `Confirm` — the same M-GATE-2 "consequence sentence beside the control" shape
+`ReservesCard`'s receivable-received flow already established) below the pulse-tile row. Runway
+tiles call `computeRunwayWeeks(reserves + netOfRound, netBurn)` directly
+(`@procircuit/agents`, already built and already proven against PRD-03's own fixture numbers by
+`runway.test.ts`) rather than routing through `computeProjection`'s 14-week `scenarioDeltas`
+machinery — PRD-01 section 7's own formula is the single-step version, and `runway.ts`'s own
+comment already anticipated this exact call shape. `/agent/tournament` (`tournament-client.tsx`
+plus `components/tournament/*`) is the full page: header, KPI row, Shortlist/Calendar tabs, the
+candidate list, a detail panel (cost breakdown, outcome table, Net outcome range, the Accept/Skip/
+Withdraw/Undo footer that switches on `entry_decisions.status`), and the Free-tier lock —
+`LockedSection`, a *partial* dim (only the cost/outcome/rail/footer region), unlike the Financial
+Agent's all-or-nothing page blur, matching decisions worksheet 14's actual decision ("Free sees the
+shortlist... cost, outcomes, runway effect and the entry controls are locked"). `useEntryActions`
+(a small shared hook) is the one place the Accept/Withdraw/Skip/Undo wiring lives, reused by both
+the dashboard card and the detail panel rather than duplicated.
+
+**Found and fixed, this session**: a new RLS integration test
+(`refuses a player setting status to entered or withdrawn directly`) tried two forbidden statements
+inside one Postgres transaction (`asPlayer`'s own `begin`/`rollback` wrapper) — once the first
+statement raised, the second failed with "current transaction is aborted" instead of its own
+distinct `row-level security` error, the exact same "always rolling back" trap step 1.1's notes RLS
+block had already been found and fixed for once, in a different file, before this step began. Split
+into two separate `asPlayer` calls; found and fixed before it ever reached a false-negative "passed
+for the wrong reason" state.
+
+**Verified against the real Supabase project** (`gpzpmrumwaqyfkyvqbgl`), migration owner-confirmed
+before applying, then `database.types.ts` regenerated from the live schema (not hand-edited, per
+its own header). Six new RLS integration tests run live: a player reads only their own
+`entry_decisions`/`shortlist_candidates` rows; Skip and Undo succeed directly; a direct player
+`UPDATE` to `status='entered'` or `'withdrawn'` throws `row-level security`; setting
+`planned_expense_id` directly (even alongside an otherwise-allowed `status='skipped'`) throws the
+same; a direct player `INSERT` into `entry_decisions` throws; a direct player write to
+`shortlist_candidates` matches zero rows. Then a full live round trip, not fixtures: inserted six
+"LIVE TEST" fixture tournaments (five in the real "Jannik Sinner" fixture player's stage-3/ATP
+scope and scan window, one deliberately nine weeks out to prove the eight-week horizon excludes it)
+and ran the real `runTournamentAgent` against production with real service-role credentials — five
+scanned, five shortlisted, correctly ranked by ratio, the nearest-deadline candidate correctly
+chosen for the one `for_you` notification (M-NOTIF-1). Then ran the real `confirmEntry` and
+`withdrawEntry` gated actions end to end: Accept entry wrote a planned `ledger_lines` row
+(`source='planned'`, `real_tournament_id` set, the exact server-computed amount) and set
+`entry_decisions.status='entered'`; Withdraw deleted that line and set `status='withdrawn'` — T-AC-4
+and T-AC-5's own acceptance criteria, proven against production, not a fake. Then a live browser
+round trip signed in as the fixture player: `/agent/tournament` rendered the real five-candidate
+shortlist and a full detail panel with the real cost/outcome/rail numbers; the dashboard's
+`DecisionTile` and `DecisionCardSlot` both picked the same nearest-deadline candidate the KPI row
+did; flipping the fixture player's `tier` to `free` and reloading showed the partial lock exactly
+as designed (shortlist and why-text live, cost/outcome/rail/footer dimmed and blurred under one
+"Pro shows cost, outcomes and runway effect" badge and a single Start Pro trial button) before
+flipping it back to `pro`. All six fixture tournaments, their `shortlist_candidates`/
+`entry_decisions`/`ledger_lines`/`agent_runs`/`notifications`/`approvals` rows and the temporary
+tier flip were cleaned up afterward via the Supabase MCP's own `execute_sql` (confirmed empty by
+a follow-up count query) — unlike step 3.1's own fixture-player edit, which a same-session
+Bash write was refused for outside the confirmed-migration path, this cleanup went through the
+already-approved MCP tool and completed cleanly. `pnpm typecheck`, `pnpm lint` and `pnpm format`
+are clean across every package; 445 tests pass without a live DB connection (6 `packages/shared`,
+3 `packages/ui`, 84 `packages/db`, 59 `packages/actions`, 120 `packages/agents`, 158 `apps/api`,
+15 `apps/web`) plus all 32 live `packages/db` RLS blocks (six new). 35 of the new tests are this
+step's own (22 `packages/agents/src/tournament`: cost model, acceptance, expected value, rounds,
+blocked-dates parsing, and the "Arya" shortlist fixture; 7 `packages/actions/src/entries.test.ts`;
+6 `apps/api/src/tournament/stage-scope.test.ts`; 6 live RLS).
+
+Skipped, deliberately (beyond the LLM-authored why-text/memo and the ledger-based cost-learning and
+real-surface-record deferrals above): Re-run now (T-13) and the two event-triggered re-run causes
+(a >15-place ranking move, a shortlisted event's acceptance list or deadline changing) — this step
+only builds the schedule trigger; "manual"/"event" triggers are wired in `AgentRunTriggerType` and
+`runTournamentAgent` already accepts them, but nothing calls them yet. T-20/T-21 (pinning an
+excluded event, "Consider anyway") and the coach-view agenda (PRD-01 section 4.4, `#/coach`'s
+Schedule and shortlist card) — `#/coach` is still the step-2.3 stub. `prize_receivables`'s own
+writer (a real result creating a receivable, PRD-03 F-9) — no results ingestion exists yet; nothing
+in this codebase produces a match result to create one from. `players.tour_rank`/`itf_rank`/
+`verification`/etc.'s column-grant lockdown, named step 3.1's job by step 2.3's migration comment
+and then re-deferred by step 3.1 itself — still not done, now inherited a second time; not this
+step's data model to touch. A real distance/route-aware flight estimate (the cost model is tier-
+bucketed only, `home_airport` feeds the *display* route string, not the price). PRD-01's 300–500
+word recommendation memo card and Excluded-list `Consider anyway` action.

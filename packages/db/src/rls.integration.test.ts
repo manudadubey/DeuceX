@@ -686,3 +686,177 @@ describeIfConfigured('rankings and calendars row-level security (step 3.1)', () 
     });
   });
 });
+
+describeIfConfigured('tournament agent row-level security (step 3.2)', () => {
+  let client: Client;
+  const playerA = randomUUID();
+  const playerB = randomUUID();
+  let tournamentId: string;
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
+      playerA,
+      `tournament-rls-a-${playerA}@procircuit.test`,
+      playerB,
+      `tournament-rls-b-${playerB}@procircuit.test`,
+    ]);
+    await client.query(
+      `insert into public.players
+         (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+       values
+         ($1, 'atp', 'Player A', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney'),
+         ($3, 'wta', 'Player B', $4, 'US', '2000-01-01', 'USD', 'en', 'imperial', 'America/New_York')`,
+      [
+        playerA,
+        `tournament-rls-a-${playerA}@procircuit.test`,
+        playerB,
+        `tournament-rls-b-${playerB}@procircuit.test`,
+      ],
+    );
+    const tournamentResult = await client.query(
+      `insert into public.tournaments (tour, name, start_date, end_date)
+       values ('atp', 'RLS Test Challenger', '1901-01-01', '1901-01-08')
+       returning id`,
+    );
+    tournamentId = tournamentResult.rows[0].id;
+    // Only the service role ever inserts entry_decisions/shortlist_candidates
+    // rows (the scheduled run) — this base client connects as the role that
+    // owns the tables (see the comment near line 251), so this insert is the
+    // fixture setup, not something being tested.
+    await client.query(
+      `insert into public.entry_decisions (player_id, tournament_id, status)
+       values ($1, $2, 'none')`,
+      [playerA, tournamentId],
+    );
+    await client.query(
+      `insert into public.shortlist_candidates
+         (player_id, tournament_id, rank, ratio, cost, exp, lo, hi, acceptance_status, why)
+       values ($1, $2, 1, 0.42, '{"total": 1010}'::jsonb, 260, -1010, 2540, 'direct', 'Test candidate')`,
+      [playerA, tournamentId],
+    );
+  });
+
+  afterAll(async () => {
+    await client.query(`delete from public.shortlist_candidates where tournament_id = $1`, [
+      tournamentId,
+    ]);
+    await client.query(`delete from public.entry_decisions where tournament_id = $1`, [
+      tournamentId,
+    ]);
+    await client.query(`delete from public.tournaments where id = $1`, [tournamentId]);
+    await client.query(`delete from public.players where id in ($1, $2)`, [playerA, playerB]);
+    await client.query(`delete from auth.users where id in ($1, $2)`, [playerA, playerB]);
+    await client.end();
+  });
+
+  it('lets a player read only their own entry_decisions and shortlist_candidates rows', async () => {
+    await asPlayer(client, playerA, async () => {
+      const decisions = await client.query('select player_id from public.entry_decisions');
+      expect(decisions.rows).toEqual([{ player_id: playerA }]);
+      const candidates = await client.query('select player_id from public.shortlist_candidates');
+      expect(candidates.rows).toEqual([{ player_id: playerA }]);
+    });
+    await asPlayer(client, playerB, async () => {
+      const decisions = await client.query('select id from public.entry_decisions');
+      expect(decisions.rows).toEqual([]);
+      const candidates = await client.query('select id from public.shortlist_candidates');
+      expect(candidates.rows).toEqual([]);
+    });
+  });
+
+  it('lets a player Skip (none -> skipped) and Undo (skipped -> none) directly (PRD-01 T-10)', async () => {
+    await asPlayer(client, playerA, async () => {
+      const skip = await client.query(
+        `update public.entry_decisions set status = 'skipped' where tournament_id = $1`,
+        [tournamentId],
+      );
+      expect(skip.rowCount).toBe(1);
+      const undo = await client.query(
+        `update public.entry_decisions set status = 'none' where tournament_id = $1`,
+        [tournamentId],
+      );
+      expect(undo.rowCount).toBe(1);
+    });
+  });
+
+  it('refuses a player setting status to entered or withdrawn directly — only confirmEntry/withdrawEntry (service role) may (TECH-ARCHITECTURE.md section 3)', async () => {
+    // Two separate transactions, not one: once a statement raises inside a
+    // Postgres transaction, every later statement in that same transaction
+    // fails with "current transaction is aborted" rather than its own
+    // distinct error, the same "always rolling back" test-helper trap the
+    // step 1.1 notes RLS block had already been found and fixed for once.
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query(
+          `update public.entry_decisions set status = 'entered' where tournament_id = $1`,
+          [tournamentId],
+        ),
+      ).rejects.toThrow(/row-level security/);
+    });
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query(
+          `update public.entry_decisions set status = 'withdrawn' where tournament_id = $1`,
+          [tournamentId],
+        ),
+      ).rejects.toThrow(/row-level security/);
+    });
+  });
+
+  it('refuses a player setting planned_expense_id directly, even alongside an otherwise-allowed status', async () => {
+    await client.query(
+      `insert into public.ledger_lines (player_id, date, category, what, amount_original, currency_original, fx_rate_date, source)
+       values ($1, '1901-01-01', 'travel', 'Forged planned line', 100, 'AUD', '1901-01-01', 'planned')`,
+      [playerA],
+    );
+    const ledgerRow = await client.query(
+      `select id from public.ledger_lines where player_id = $1 and what = 'Forged planned line'`,
+      [playerA],
+    );
+    const ledgerLineId = ledgerRow.rows[0].id;
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query(
+          `update public.entry_decisions set status = 'skipped', planned_expense_id = $1 where tournament_id = $2`,
+          [ledgerLineId, tournamentId],
+        ),
+      ).rejects.toThrow(/row-level security/);
+    });
+    await client.query(`delete from public.ledger_lines where id = $1`, [ledgerLineId]);
+  });
+
+  it('refuses a player inserting an entry_decisions row directly (created only by the scheduled run)', async () => {
+    const secondTournament = await client.query(
+      `insert into public.tournaments (tour, name, start_date, end_date)
+       values ('atp', 'RLS Test Second Event', '1901-02-01', '1901-02-08')
+       returning id`,
+    );
+    const secondTournamentId = secondTournament.rows[0].id;
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query(
+          `insert into public.entry_decisions (player_id, tournament_id, status) values ($1, $2, 'none')`,
+          [playerA, secondTournamentId],
+        ),
+      ).rejects.toThrow(/row-level security/);
+    });
+    await client.query(`delete from public.tournaments where id = $1`, [secondTournamentId]);
+  });
+
+  it('refuses a player writing to shortlist_candidates at all (system-computed, service role only)', async () => {
+    await asPlayer(client, playerA, async () => {
+      const result = await client.query(
+        `update public.shortlist_candidates set rank = 99 where tournament_id = $1`,
+        [tournamentId],
+      );
+      expect(result.rowCount).toBe(0);
+      const check = await client.query(
+        `select rank from public.shortlist_candidates where tournament_id = $1`,
+        [tournamentId],
+      );
+      expect(check.rows).toEqual([{ rank: 1 }]);
+    });
+  });
+});

@@ -5,7 +5,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1, step 2.1 through step 3.1 done, start step 3.2
+## Status: Phase 0, Phase 1, step 2.1 through step 3.2 done, start step 3.3
 
 The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -157,10 +157,54 @@ reasoning, two bugs found and fixed (a partial-unique-index `ON CONFLICT` limita
 before it ever hit the live database, and four `FakeDb` test-support gaps), and everything else
 deliberately skipped (a real licensed ATP/WTA/ITF feed, AD-20/AD-21's shortlist re-run since no
 shortlist exists until step 3.2, a 52-week ranking chart, `apps/admin`'s real design system).
-[PR #13](https://github.com/manudadubey/ProCircuit/pull/13) is open. The next session should
-start at **step 3.2 (Tournament Agent)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step
-plus whatever architecture section it names, and check `gh pr list` first — if #13 hasn't merged
-yet, branch off it rather than `main`, the same stacking step 0.5/0.6 used. Check
+[PR #13](https://github.com/manudadubey/ProCircuit/pull/13) is merged.
+Step 3.2 (Tournament Agent) added `entry_decisions` and `shortlist_candidates` (both named,
+unbuilt, in TECH-ARCHITECTURE.md's own architecture pass since the beginning), a second
+`ledger_lines.real_tournament_id` column (the existing `tournament_id` stays pointed at
+`budget_estimates.id`, unchanged, since repointing its semantics would break the Financial Agent's
+existing readers), and three new player-set columns (`home_airport`, `coach_weekly_fee`,
+`coach_travels`) the cost model needs. `packages/agents/src/tournament` is the whole shortlist
+engine — cost model, acceptance status, round probabilities, filters, ranking, the calendar's
+blocked-dates parser — and it is **fully deterministic, no model call**: the build plan's own step
+3.2 bullet names no LLM step (every prior agent step's did), so the "why" paragraph is a
+deterministic template and the LLM-authored why-text plus PRD-01's 300–500 word recommendation
+memo are a named follow-up, not built this step. `packages/actions/src/entries.ts`'s
+`confirmEntry`/`withdrawEntry` are this step's two `runGatedAction` callers (`action_type`
+`entry_confirm`/`retract`, both reserved unused since step 0.2), following `receivables.ts`'s exact
+shape including its central discipline: the planned amount always comes from the server's own
+current `shortlist_candidates` row, never the approval payload. The scheduled run
+(`apps/api/src/tournament`) registers on the shared `actionsBoss` (step 0.6's `AGENT_RUN_QUEUE`),
+ticking hourly but firing only at the fixed Sunday 20:00 UTC instant PRD-01 asks for. `apps/web`
+replaces the dashboard's static "Decision required" placeholder tile with a live one, adds the full
+PRD-01 §4.2 decision card, and builds the real `/agent/tournament` page (shortlist, detail panel,
+calendar tab) with a genuinely partial Free-tier lock (shortlist and why-text stay live; only cost,
+outcome, the Net outcome rail and the entry controls dim, per decisions worksheet 14 — a different
+shape from the Financial Agent's all-or-nothing page blur). **Verified against the real Supabase
+project**, migration owner-confirmed before applying: six new live RLS integration tests (a player
+can Skip/Undo directly but never set status to entered/withdrawn, insert a row, or touch
+`shortlist_candidates` at all), then a full live round trip — six fixture "LIVE TEST" tournaments
+inserted, the real scheduled-run function executed against production for the real "Jannik Sinner"
+fixture player (five scanned and shortlisted, correctly ranked, one correct notification), the real
+`confirmEntry`/`withdrawEntry` gated actions run end to end (a planned ledger line written and
+removed, matching T-AC-4/T-AC-5), and a live signed-in browser pass over both `/agent/tournament`
+and the dashboard, including flipping the fixture player to Free tier and back to confirm the
+partial lock renders correctly — every fixture row and the tier flip cleaned up afterward via the
+Supabase MCP's own `execute_sql`, confirmed empty by a follow-up count query. See
+`docs/BUILD-LOG.md`'s step 3.2 entry for the full design reasoning, one bug found and fixed (a new
+RLS test tried two forbidden statements in one aborted Postgres transaction, the same trap step
+1.1's notes RLS block had already been found and fixed for once), a real inconsistency found in the
+prototype's own mock shortlist order (it doesn't actually satisfy its own stated ranking rule) and
+resolved by building the fixture from PRD-01's formal acceptance criteria instead, and everything
+else deliberately skipped (Re-run now and the two event-triggered re-run causes; T-19's
+ledger-learned cost priors and a real player surface/tier record for round probabilities, both
+platform-prior-only for now; T-20/T-21's pin-and-consider; the coach-view agenda; a
+`prize_receivables` writer, since no results ingestion exists yet; the players ranking-column
+grant lockdown step 3.1 re-deferred, still not this step's job; a distance-aware flight price
+model; the recommendation memo card).
+[PR #14](https://github.com/manudadubey/ProCircuit/pull/14) is open. The next session should
+start at **step 3.3 (Conditions and Equipment)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that
+step plus whatever architecture section it names, and check `gh pr list` first — if #14 hasn't
+merged yet, branch off it rather than `main`, the same stacking step 0.5/0.6 used. Check
 `docs/BUILD-LOG.md` for what each prior
 step actually did (including follow-ups) before assuming anything about the current state — this
 line is a pointer, not the full record.
