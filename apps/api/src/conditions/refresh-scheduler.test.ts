@@ -131,7 +131,7 @@ describe('registerConditionsRefreshScheduler · CE-AC-14', () => {
     expect(notifications).toHaveLength(1);
     expect(notifications[0]!.title).toBe('Lisboa brief refreshed');
 
-    const brief = fake.tables.conditions_briefs.find((b) => b.tournament_id === 'lisboa');
+    const brief = (fake.tables.conditions_briefs ?? []).find((b) => b.tournament_id === 'lisboa');
     expect(brief!.tension).toBe(true);
     expect(brief!.temp_max).toBe(30);
   });
@@ -184,7 +184,7 @@ describe('registerConditionsRefreshScheduler · CE-AC-14', () => {
     await workFn!();
 
     expect(fake.tables.notifications ?? []).toHaveLength(0);
-    const brief = fake.tables.conditions_briefs.find((b) => b.tournament_id === 'lisboa');
+    const brief = (fake.tables.conditions_briefs ?? []).find((b) => b.tournament_id === 'lisboa');
     expect(brief!.diff).toBe('kept diff');
   });
 });

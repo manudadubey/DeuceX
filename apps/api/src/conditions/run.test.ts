@@ -104,7 +104,7 @@ describe('runConditionsForCandidates', () => {
     );
 
     expect(calls).toBe(2); // 5 + 2
-    expect(fake.tables.conditions_briefs).toHaveLength(7);
+    expect(fake.tables.conditions_briefs ?? []).toHaveLength(7);
   });
 
   it('does nothing for an empty candidate list', async () => {

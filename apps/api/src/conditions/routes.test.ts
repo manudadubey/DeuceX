@@ -92,7 +92,8 @@ describe('POST /conditions/re-run', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ refreshed: 1 });
-    expect(fake.tables.conditions_briefs).toHaveLength(1);
-    expect(fake.tables.conditions_briefs[0]!.tournament_id).toBe('poznan');
+    const briefs = fake.tables.conditions_briefs ?? [];
+    expect(briefs).toHaveLength(1);
+    expect(briefs[0]!.tournament_id).toBe('poznan');
   });
 });
