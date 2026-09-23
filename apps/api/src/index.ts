@@ -1,13 +1,20 @@
 import { fileURLToPath } from 'node:url';
 import { createAnonClient, createServiceRoleClient } from '@procircuit/db';
-import { SupabaseAgentRunsDb, createBoss } from '@procircuit/actions';
+import { SupabaseAgentRunsDb } from '@procircuit/actions';
+import { createBoss } from '@procircuit/actions/queue';
 import {
   EXTRACTION_MODEL,
+  FINANCIAL_ACTION_MODEL,
   INSIGHT_MODEL,
+  RECEIPT_EXTRACTION_MODEL,
   createMockExtractionClient,
+  createMockFinancialActionClient,
   createMockInsightClient,
+  createMockReceiptExtractionClient,
   createOpenAIExtractionClient,
+  createOpenAIFinancialActionClient,
   createOpenAIInsightClient,
+  createOpenAIReceiptExtractionClient,
 } from '@procircuit/agents';
 import cors from '@fastify/cors';
 import { config as loadEnv } from 'dotenv';
@@ -23,6 +30,8 @@ import { runExtraction } from './notes/extraction';
 import { transcribeNote } from './notes/service';
 import { sweepExpiredAudio } from './notes/audio-lifecycle';
 import { registerMindsetCoach } from './mindset-coach/worker';
+import { registerFinancialRoutes, type FinancialRoutesDeps } from './financial/routes';
+import { registerFinancialAgent, enqueueFinancialRecompute } from './financial/worker';
 import { registerRankingsRoutes, type RankingsRoutesDeps } from './rankings/routes';
 import { createUnverifiedRankingAdapter } from './rankings/unverified-adapter';
 import { createMemoryStorageAdapter } from './storage/memory-adapter';
@@ -48,12 +57,16 @@ if (process.env.NODE_ENV !== 'test') {
   loadEnv({ path: fileURLToPath(new URL('../../../.env', import.meta.url)) });
 }
 
-export function buildServer(notesDeps?: NotesRoutesDeps, rankingsDeps?: RankingsRoutesDeps) {
+export function buildServer(
+  notesDeps?: NotesRoutesDeps,
+  rankingsDeps?: RankingsRoutesDeps,
+  financialDeps?: FinancialRoutesDeps,
+) {
   const app = Fastify({ logger: true });
 
   app.get('/health', async () => ({ status: 'ok' }));
 
-  if (notesDeps || rankingsDeps) {
+  if (notesDeps || rankingsDeps || financialDeps) {
     void app.register(cors, {
       origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000').split(','),
     });
@@ -68,6 +81,12 @@ export function buildServer(notesDeps?: NotesRoutesDeps, rankingsDeps?: Rankings
   if (rankingsDeps) {
     void app.register(async (instance) => {
       await registerRankingsRoutes(instance, rankingsDeps);
+    });
+  }
+
+  if (financialDeps) {
+    void app.register(async (instance) => {
+      await registerFinancialRoutes(instance, financialDeps);
     });
   }
 
@@ -137,6 +156,25 @@ async function main() {
         );
         return createMockInsightClient();
       })();
+  // Same OpenAI account again for the Financial Agent's "one thing" action
+  // sentence (step 2.2).
+  const financialActionClient = openaiApiKey
+    ? createOpenAIFinancialActionClient({ apiKey: openaiApiKey, model: FINANCIAL_ACTION_MODEL })
+    : (() => {
+        console.warn(
+          'OPENAI_API_KEY not set: falling back to the mock financial action client. Set OPENAI_API_KEY for a real Financial Agent.',
+        );
+        return createMockFinancialActionClient();
+      })();
+  // Same OpenAI account, vision-capable, for receipt scanning (step 2.2).
+  const receiptExtractionClient = openaiApiKey
+    ? createOpenAIReceiptExtractionClient({ apiKey: openaiApiKey, model: RECEIPT_EXTRACTION_MODEL })
+    : (() => {
+        console.warn(
+          'OPENAI_API_KEY not set: falling back to the mock receipt extraction client. Set OPENAI_API_KEY for real receipt scanning.',
+        );
+        return createMockReceiptExtractionClient();
+      })();
   const agentRuns = new SupabaseAgentRunsDb(db);
 
   const boss = await createNotesBoss(dbConnectionString);
@@ -145,6 +183,7 @@ async function main() {
   // comment gives: different job shape, different pickup rules.
   const actionsBoss = await createBoss(dbConnectionString);
   await registerMindsetCoach(actionsBoss, { db, client: insightClient, agentRuns });
+  await registerFinancialAgent(actionsBoss, { db, client: financialActionClient, agentRuns });
 
   // Step 2.1's own boss (money/queue.ts): the daily ECB fetch and the
   // Sunday reserve-balance reminder, neither of which is a scheduled agent
@@ -183,7 +222,15 @@ async function main() {
     ranking: createUnverifiedRankingAdapter(),
   };
 
-  const app = buildServer(notesDeps, rankingsDeps);
+  const financialDeps: FinancialRoutesDeps = {
+    db,
+    anonClient,
+    extractionClient: receiptExtractionClient,
+    agentRuns,
+    enqueueRecompute: (playerId) => enqueueFinancialRecompute(actionsBoss, playerId),
+  };
+
+  const app = buildServer(notesDeps, rankingsDeps, financialDeps);
   const port = Number(process.env.PORT ?? 8787);
   await app.listen({ port, host: '0.0.0.0' });
 }

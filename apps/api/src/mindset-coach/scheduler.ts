@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@procircuit/db';
 import type { PgBoss } from 'pg-boss';
-import { enqueueAgentRun } from '@procircuit/actions';
+import { enqueueAgentRun } from '@procircuit/actions/queue';
 import { countLifetimeSavedNotes } from './service';
 
 export const MINDSET_SCHEDULER_QUEUE = 'mindset-coach-scheduler';

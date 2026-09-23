@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@procircuit/agents": "workspace:*",
     "@procircuit/db": "workspace:*",
     "@procircuit/ui": "workspace:*",
     "@supabase/ssr": "^0.7.0",

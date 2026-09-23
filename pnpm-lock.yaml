@@ -103,6 +103,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@procircuit/agents':
+        specifier: workspace:*
+        version: link:../../packages/agents
       '@procircuit/db':
         specifier: workspace:*
         version: link:../../packages/db
