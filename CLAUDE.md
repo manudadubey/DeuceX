@@ -201,10 +201,10 @@ platform-prior-only for now; T-20/T-21's pin-and-consider; the coach-view agenda
 `prize_receivables` writer, since no results ingestion exists yet; the players ranking-column
 grant lockdown step 3.1 re-deferred, still not this step's job; a distance-aware flight price
 model; the recommendation memo card).
-[PR #14](https://github.com/manudadubey/ProCircuit/pull/14) is open. The next session should
+[PR #14](https://github.com/manudadubey/ProCircuit/pull/14) is merged. The next session should
 start at **step 3.3 (Conditions and Equipment)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that
-step plus whatever architecture section it names, and check `gh pr list` first — if #14 hasn't
-merged yet, branch off it rather than `main`, the same stacking step 0.5/0.6 used. Check
+step plus whatever architecture section it names, and check `gh pr list` first — if a later PR
+hasn't merged yet, branch off it rather than `main`, the same stacking step 0.5/0.6 used. Check
 `docs/BUILD-LOG.md` for what each prior
 step actually did (including follow-ups) before assuming anything about the current state — this
 line is a pointer, not the full record.
