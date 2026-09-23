@@ -1569,3 +1569,5 @@ in code, not silently picked: patron-update language stayed singular (decisions 
 already superseded PRD-12 §4.3's multi-select prose; the schema was already built singular) and
 the notification matrix used the two-category For-you/FYI shape (decisions worksheet 13), not the
 per-event matrix the prototype shows.
+
+[PR #12](https://github.com/manudadubey/ProCircuit/pull/12) is open.

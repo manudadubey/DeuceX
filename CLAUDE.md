@@ -122,10 +122,13 @@ view, an empty-CSV attachment Resend refused, an unverified sending domain, and 
 instance that tipped the session pooler's connection cap over) fixed the same session, not just
 noted; see `docs/BUILD-LOG.md`'s step 2.3 entry for all four and for what it deliberately skipped
 (real Stripe Billing, Equipment pane content which is step 3.3's own job, most of Connections,
-direct coach accounts). The next session should start at **step 3.1 (Rankings and calendars)**, in
-`docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture section it names. Check
-`docs/BUILD-LOG.md` for what each prior step actually did (including follow-ups)
-before assuming anything about the current state — this line is a pointer, not the full record.
+direct coach accounts). [PR #12](https://github.com/manudadubey/ProCircuit/pull/12) is open. The
+next session should start at **step 3.1 (Rankings and calendars)**, in
+`docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever architecture section it names, and
+check `gh pr list` first — if #12 hasn't merged yet, branch off it rather than `main`, the same
+stacking step 0.5/0.6 used. Check `docs/BUILD-LOG.md` for what each prior step actually did
+(including follow-ups) before assuming anything about the current state — this line is a pointer,
+not the full record.
 
 ## Read before coding
 
@@ -201,6 +204,13 @@ before assuming anything about the current state — this line is a pointer, not
 - **OpenAI** (step 1.1): a Whisper-capable API key, owner's own account, confirmed working
   (`whisper-1`) and with credits after an initial `insufficient_quota` failure during testing.
   Key lives only in the owner's local `.env`.
+- **Resend** (step 2.3): a working API key, owner's own account, confirmed sending real email
+  (account-deletion confirmation and data-export delivery). The `procircuit.app` sending domain is
+  **not verified yet** — a real send against it fails with a 403, discovered live while building
+  step 2.3 — so `apps/api` defaults to Resend's own sandbox sender (`onboarding@resend.dev`, no
+  verification needed) unless `RESEND_FROM_ADDRESS` is set. Verify a real domain at
+  resend.com/domains and set that env var before this needs to reach a real patron inbox (step
+  4.2, Content Agent). Key lives only in the owner's local `.env`.
 
 ## MCP servers to connect
 
