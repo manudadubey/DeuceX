@@ -65,6 +65,15 @@ export {
   type MarkReceivableReceivedInput,
 } from './receivables';
 
+// requestAccountDeletion/requestDataExport (account.ts) and
+// createResendEmailClient (resend-client.ts) live at the
+// '@procircuit/actions/account' subpath, not here, same reasoning as the
+// './queue' split above: resend-client.ts imports the real 'resend' SDK,
+// and packages/agents' financial module already imports symbols from this
+// main barrel for apps/web's own client bundle (AgentValidationError,
+// TokenUsage) — keeping a vendor SDK off this path is what keeps that
+// bundle clean. apps/api is the only real consumer of the account subpath.
+
 export { buildAgentJobSingletonKey, type AgentJobKeyInput } from './queue/idempotency-key';
 export {
   evaluatePickup,

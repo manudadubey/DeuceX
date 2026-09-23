@@ -114,6 +114,39 @@ export {
   type CreateBudgetEstimateInput,
   type SnoozeFinancialActionInput,
 } from './budgets';
+export {
+  updateAccount,
+  updatePreferences,
+  updateNotificationPrefs,
+  isNotificationChannelEnabled,
+  hasAtLeastOneChannel,
+  setAgentPaused,
+  updateEmergencyContact,
+  downgradeToFree,
+  NOTIFICATION_AGENTS,
+  type AppLanguage,
+  type HomeCurrency,
+  type SpokenLanguage,
+  type Units,
+  type DateFormat,
+  type NotificationChannel,
+  type NotificationCategory,
+  type NotificationAgent,
+  type NotificationPrefs,
+  type UpdateAccountInput,
+  type UpdatePreferencesInput,
+  type UpdateNotificationPrefsInput,
+  type UpdateEmergencyContactInput,
+} from './settings';
+export {
+  createShareLink,
+  listShareLinks,
+  revokeShareLink,
+  renewShareLink,
+  type ShareScope,
+  type ShareLink,
+  type CreateShareLinkInput,
+} from './sharing';
 
 // Two clients, deliberately: the anon-scoped client respects row-level
 // security and is what every player-facing request uses; the service-role

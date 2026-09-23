@@ -47,3 +47,38 @@ export async function sweepExpiredAudio(deps: AudioLifecycleDeps, now: Date): Pr
 
   return { deletedCount };
 }
+
+// PRD-12 ST-18 / §4.10's "Delete all audio now": a player-triggered
+// immediate deletion, distinct from the 7-day sweep above (same table,
+// same cause enum — 'player_delete' rather than 'expired', so the audit
+// trail on notes.audio_delete_cause always says which path removed a given
+// clip).
+export async function deleteAllAudioForPlayer(
+  deps: AudioLifecycleDeps,
+  playerId: string,
+  now: Date,
+): Promise<SweepResult> {
+  const { data: rows, error } = await deps.db
+    .from('notes')
+    .select('id, audio_ref')
+    .eq('player_id', playerId)
+    .not('audio_ref', 'is', null);
+  if (error) throw error;
+
+  let deletedCount = 0;
+  for (const row of rows ?? []) {
+    if (!row.audio_ref) continue;
+    await deps.storage.delete(row.audio_ref).catch(() => undefined);
+    const { error: updateError } = await deps.db
+      .from('notes')
+      .update({
+        audio_ref: null,
+        audio_deleted_at: now.toISOString(),
+        audio_delete_cause: 'player_delete',
+      })
+      .eq('id', row.id);
+    if (!updateError) deletedCount++;
+  }
+
+  return { deletedCount };
+}

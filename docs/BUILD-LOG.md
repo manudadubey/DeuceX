@@ -1413,3 +1413,159 @@ Agent's cost model, step 3.2; the Sunday reminder's quiet hours and per-player t
 built-in browser only executes JS for `file://` prototypes when served, not opened directly) to
 check the build against it field by field; the milestone bar and the three runway summary tiles
 were real gaps found this way and fixed, not just noted.
+
+## Step 2.3 · Settings, preferences, sharing — 23 September 2026
+
+Read first: PRD-12 (all), decisions worksheet 4, 12, 13.
+
+Built the nine Settings panes (`apps/web/app/(app)/settings`): a hand-rolled vertical `#stNav`
+(no existing component fit; adapted from the onboarding wizard's step-pill idiom) driving nine
+pane components under `settings/panes/`. Account (name, read-only email, the existing
+`PasskeyRegister`, time zone tied explicitly to the Mindset Coach's run time); Preferences (app
+language, home currency, spoken language, units, date format, all `ToggleGroup`s, one Save);
+Notifications (a hand-built `Table`-based matrix, five agents × {for_you, fyi} × {in_app, email,
+push}, quiet hours, the reserve-reminder toggle); Agents (Mindset/Financial real pause switches
+against `agent_schedules`, Tournament/Content shown dimmed with "arrives with step 3.x" rather
+than hidden, Sponsor/Fan as static Elite previews); Equipment and most of Connections are honest
+stubs (see Skipped, below); Sharing (create/copy/renew/revoke, the scope checklist, wired for
+real); Data & safety (audio deletion, export, emergency contact, provider list, the delete-account
+danger zone). `packages/db/src/settings.ts` (`updateAccount`, `updatePreferences`,
+`updateNotificationPrefs` plus `isNotificationChannelEnabled`/`hasAtLeastOneChannel`,
+`setAgentPaused`, `updateEmergencyContact`, `downgradeToFree`) and `sharing.ts`
+(`createShareLink`/`listShareLinks`/`revokeShareLink`/`renewShareLink`) hold every plain
+RLS-scoped write; all of it is direct client Supabase calls, no apps/api round trip, same split
+every prior step's simple-CRUD has used.
+
+The migration (`20260923090000_step_2_3_settings.sql`) adds eleven `players` columns
+(`spoken_language`, `date_format`, `quiet_hours_start/end`, `notification_prefs` jsonb,
+`emergency_contact`, `reserve_reminder_enabled`, `deletion_confirmation_token/sent_at`,
+`export_requested_at/delivered_at`) and finally closes step 0.2's own flagged gap: `players` had
+no column-level grant restriction at all until now. `revoke update ... ; grant update (<every
+column except the five deletion/export ones>)` — verified safe first against `finishOnboarding`'s
+own write list (nothing it touches is excluded), then verified live after applying (queried
+`information_schema.column_privileges` directly: `authenticated` has `UPDATE` on
+`quiet_hours_start`, not on `deletion_effective_at`). `verification`/`tier` stay player-writable;
+locking those down belongs to step 3.1 and the billing step respectively. `approvals.action_type`
+gets two additive values, `account_deletion_request` and `data_export_request` — the only two
+Settings writes with a real vendor side effect, matching TECH-ARCHITECTURE section 3's hard list.
+
+**The first real Resend integration.** `packages/actions/src/resend-client.ts` is the only file
+outside `packages/actions` allowed to `import 'resend'` (the lint rule already covered it); its
+`createResendEmailClient` and `account.ts`'s `requestAccountDeletion`/`confirmAccountDeletion`/
+`cancelAccountDeletion`/`requestDataExport` live at a new `@procircuit/actions/account` subpath,
+not the main barrel, for the exact `pg-boss`-in-the-client-bundle reason step 2.2's own BUILD-LOG
+entry already documents — apps/web's client bundle already pulls symbols from the main barrel
+transitively, and a real vendor SDK must never ride along. `requestAccountDeletion` and
+`requestDataExport` are this step's two `runGatedAction` callers (mirroring `receivables.ts`'s
+shape exactly): the player's own tap creates the approval row (`confirmApproval`, prepared since
+step 0.6), then `apps/api/src/account/routes.ts`'s `/account/delete/request` and
+`/account/export/request` consume it on the service-role client. `confirmAccountDeletion` (sets
+`deletion_effective_at` fourteen days out, clears the token) and `cancelAccountDeletion` are not
+gated — no vendor call — but only ever run through apps/api, never a path apps/web could call
+directly, which is what actually keeps `deletion_effective_at` closed off in practice on top of
+the column-grant lockdown. `apps/web/app/account/delete/confirm` mirrors `auth/confirm` exactly
+(a GET-only page behind a server-action form, never auto-confirming on load, for the same
+link-scanner-safety reason that page's own comment gives).
+
+**The other new architectural piece: `apps/api/src/sharing`.** `GET /sharing/:token` is the only
+fully unauthenticated route in the whole API besides `/health` — a coach or manager visitor has
+no Supabase session, so the token is the only credential there is. `service.ts`'s
+`resolveShareLink` checks `revoked`/`expires_at` fresh on every single request (nothing cached,
+which is what actually makes ST-15's one-minute revocation bound trivially true — the very next
+request already fails), bumps `open_count`/`last_opened_at`, then branches to a scope-specific
+DTO built by hand, field by field, never a row spread: `CoachViewData` (recent `coach_share`
+match notes — result, opponent, tags, summary, never transcript/audio/mood — plus non-dismissed,
+`coach_share` patterns; Tournament shortlist and Conditions sections read as honest "not
+available yet," matching steps 3.2/3.3 not existing) and `ManagerViewData` (runway/burn/reserves/
+P&L/expenses, reusing `packages/agents/src/financial`'s pure functions directly rather than
+apps/web's own `load.ts`, since that file lives in apps/web and computes several fields PRD-12
+explicitly excludes from the manager scope — the budget bar, milestone, the "one thing" sentence,
+all "agent outputs"). `apps/web/app/(bare)/coach/[token]/page.tsx` replaces the step-0.5 stub with
+a server-fetched (no CORS, no client bundle) render of whichever DTO comes back, or the generic
+"isn't valid or has expired" for a 404.
+
+`apps/api/src/reserves/scheduler.ts` gained `isWithinQuietHours`/`effectiveReminderTarget`
+(handles a quiet window that wraps midnight, and shifts the held delivery to the next calendar
+day when it does) and `listReminderEligiblePlayers` now reads `reserve_reminder_enabled` — closing
+the follow-up both step 2.1 and step 2.2 flagged by name. `apps/api/src/notes/audio-lifecycle.ts`
+gained `deleteAllAudioForPlayer` (ST-18's "Delete all audio now," cause `player_delete`, same
+table the 7-day sweep already writes `cause: 'expired'` to) behind a new
+`POST /notes/audio/delete-all` route. `apps/api/src/account/scheduler.ts`'s `sweepDueDeletions`
+is the finalising half of the fourteen-day cooling-off — audio deleted first, then
+`auth.admin.deleteUser` cascades through every FK'd table (confirmed by reading every migration:
+all `on delete cascade` from `players` except `admin_actions.player_id`, which has no cascade or
+set-null behaviour at all, a real gap flagged for step 5.1 to resolve since `admin_actions` has to
+survive deletion for M-GATE-4, arguing against cascade there specifically) — unit-tested against
+fakes only, never run against the real project this session.
+
+Done-when checks (the build plan's own three): revoking a share link fails the next request
+immediately (well inside the one-minute bound — verified live, see below); the delete flow sets
+`deletion_effective_at` fourteen days out and Cancel clears it (verified live); the export job
+produces `data.json`, `expenses.csv`, `notes.csv` and `transcripts.txt` (verified live, with a
+real email actually sent).
+
+**Verified against the real Supabase project** (`gpzpmrumwaqyfkyvqbgl`), migration applied directly
+(owner confirmed first, same as every prior step): `get_advisors` afterward showed no new
+findings, `database.types.ts` regenerated and reformatted to match house style. New RLS
+integration tests run live: `authenticated` can update `quiet_hours_start` on their own row but is
+refused on `deletion_effective_at` (`permission denied`, the column-grant lockdown actually
+holds), and a direct `anon`-role select on `share_links` returns zero rows (RLS with no `anon`
+policy, not a permission error — confirmed `anon` does hold the table-level grant, so this is
+genuinely RLS filtering, not a lucky accident of a missing grant). `pnpm typecheck`, `pnpm lint`
+and `pnpm format` are clean across all nine packages; 381 tests pass without a live DB connection
+(6 `packages/shared`, 3 `packages/ui`, 84 `packages/db`, 52 `packages/actions`, 98
+`packages/agents`, 123 `apps/api`, 15 `apps/web`) plus all 21 `packages/db` RLS blocks passing
+live (402 total), plus 14 `e2e` Playwright tests including three new ones for the coach/account-
+delete-confirm bare routes.
+
+Then real live browser verification against the real signed-in session
+(`manu.dadubey@gmail.com`), not deferred: walked all nine Settings panes: changed home currency to
+CNY and back (persisted both ways, `Saved` toast); the Notifications matrix, Agents pane (correctly
+read Mindset Coach as paused, Financial as active, from the real `agent_schedules` rows) and
+Connections all rendered real data. Sharing: created a real coach link (`expires 22 Dec 2026`,
+correct scope strip), opened `/coach/<token>` in a second tab (real match results and the correct
+"Never money, never mood-by-date" copy), confirmed `open_count` incremented in the database,
+revoked it from Settings, confirmed the same URL immediately started returning "isn't valid or has
+expired." Created a real manager link the same way; the `/coach/<token>` manager view is what
+surfaced this step's one genuine bug (below), then verified clean and revoked. Data & safety: a
+real Export request (below), then the full delete-account cycle — "Delete account" → emailed
+confirm link → opened it → `deletion_effective_at` set to exactly fourteen days out, Settings
+showed "Scheduled" with the real date → Cancel → confirmed cleared in the database. The account
+was left in a clean, untouched state afterward (currency reverted, both test share links revoked,
+deletion cancelled); "Delete all audio now" was deliberately not fired against the real account
+live (real, possibly-unconfirmed audio would be genuinely and irreversibly deleted) — it is fully
+covered by unit and route tests instead.
+
+**Found and fixed, all this session**: (1) `computeRunwayWeeks` returns `Infinity` for a zero net
+burn, and `JSON.stringify` silently turns `Infinity` into `null` — the manager coach view crashed
+live (`Cannot read properties of null (reading 'toFixed')`) the first time a real player with no
+ledger lines opened it. Fixed by converting `Infinity` to an explicit `null` server-side
+(`ManagerViewData.runwayWeeks: number | null`) and checking for `null` client-side instead of
+`Infinity`, with a regression test asserting the real JSON-round-tripped value. (2) Resend refused
+the export email outright the first time it ran against a real account with zero expenses yet:
+`toCsv` returned an empty string for zero rows, and Resend's attachment validation treats an
+empty-string `content` as missing entirely ("must have either a `content` or `path`"). Fixed by
+passing CSV headers explicitly rather than inferring them from `rows[0]`, so a header-only CSV is
+always non-empty. (3) The real `RESEND_API_KEY` this session's owner supplied sends from an
+unverified `procircuit.app` domain, which Resend refuses with a 403 — switched the default sender
+to Resend's own sandbox address (`onboarding@resend.dev`, no verification needed) behind a new
+optional `RESEND_FROM_ADDRESS` env var, so the real domain can be swapped in the moment it's
+verified. (4) A fourth `pg-boss` instance (this step's own, for the deletion sweep) tipped the
+session pooler's 15-client cap over (`EMAXCONNSESSION` on startup, live, this session) —
+apps/api already runs three boss instances (notes, actions, money); fixed by adding the sweep's
+queue to the existing `money` boss instead of a fourth instance, and documented the connection
+budget explicitly in both files so a future step doesn't repeat it.
+
+Skipped, deliberately: real Stripe Billing (no subscription object exists yet — Plan & billing
+reads real `tier`/`billing_cycle` but the card-on-file and invoice history are honest empty
+states, and "Downgrade to Free" applies immediately rather than at a real period end, flagged
+inline in `settings.ts`); Equipment pane content (build-plan step 3.3's own job, per its "Build:"
+line and PRD-12 §4.7's "referenced not duplicated"); most of Connections (ATP, ITF, Stripe Connect
+Express, Resend-for-patron-email, calendar feed — none has a genuine per-player connection yet,
+each pane row says exactly which step lands it); the six-step tour walkthrough (still disabled,
+unrelated to this step); direct coach accounts (M-SHARE-4, Release 2 per PRD-00 section 8); custom
+share-link scopes beyond the fixed coach/manager sets. Two PRD-vs-schema inconsistencies resolved
+in code, not silently picked: patron-update language stayed singular (decisions worksheet 9
+already superseded PRD-12 §4.3's multi-select prose; the schema was already built singular) and
+the notification matrix used the two-category For-you/FYI shape (decisions worksheet 13), not the
+per-event matrix the prototype shows.

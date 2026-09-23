@@ -505,3 +505,63 @@ describeIfConfigured('money model row-level security (step 2.1)', () => {
     });
   });
 });
+
+describeIfConfigured('settings row-level security (step 2.3)', () => {
+  let client: Client;
+  const playerA = randomUUID();
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2)`, [
+      playerA,
+      `settings-rls-a-${playerA}@procircuit.test`,
+    ]);
+    await client.query(
+      `insert into public.players
+         (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+       values
+         ($1, 'wta', 'Player A', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney')`,
+      [playerA, `settings-rls-a-${playerA}@procircuit.test`],
+    );
+  });
+
+  afterAll(async () => {
+    await client.query(`delete from public.share_links where player_id = $1`, [playerA]);
+    await client.query(`delete from public.players where id = $1`, [playerA]);
+    await client.query(`delete from auth.users where id = $1`, [playerA]);
+    await client.end();
+  });
+
+  it('lets a player update their own quiet_hours_start, but refuses deletion_effective_at directly (column-grant lockdown)', async () => {
+    await asPlayer(client, playerA, async () => {
+      await client.query(`update public.players set quiet_hours_start = '21:00' where id = $1`, [
+        playerA,
+      ]);
+      const result = await client.query(
+        'select quiet_hours_start from public.players where id = $1',
+        [playerA],
+      );
+      expect(result.rows).toEqual([{ quiet_hours_start: '21:00:00' }]);
+
+      await expect(
+        client.query(`update public.players set deletion_effective_at = now() where id = $1`, [
+          playerA,
+        ]),
+      ).rejects.toThrow(/permission denied/);
+    });
+  });
+
+  it('refuses a direct anon select on share_links (the service-role bypass in apps/api/src/sharing is the only real read path)', async () => {
+    await client.query('begin');
+    try {
+      await client.query('set local role anon');
+      const result = await client.query('select id from public.share_links where player_id = $1', [
+        playerA,
+      ]);
+      expect(result.rows).toEqual([]);
+    } finally {
+      await client.query('rollback');
+    }
+  });
+});

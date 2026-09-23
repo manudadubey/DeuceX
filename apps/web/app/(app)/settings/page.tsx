@@ -1,24 +1,34 @@
-import { Empty } from '@procircuit/ui';
-import { PasskeyRegister } from './passkey-register';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { SettingsShell } from './settings-shell';
 
-// Billing, notifications, agent scheduling and API connections all belong to PRD-12, not
-// yet built. The passkey control lives here (not on the dashboard, where step 0.3 put it
-// only because there was nowhere else) since this is now that "somewhere else".
-export default function SettingsPage() {
+// Session already gated by (app)/layout.tsx. Settings reads the whole
+// players row (every pane needs a slice of it) plus agent_schedules and
+// share_links once, here, the same "one server read, client owns the rest"
+// split every other route in this app already uses (financial/page.tsx,
+// mindset/page.tsx).
+export default async function SettingsPage() {
+  const supabase = createClient();
+  const { data } = await supabase.auth.getClaims();
+  const playerId = typeof data?.claims.sub === 'string' ? data.claims.sub : undefined;
+  if (!playerId) redirect('/signin');
+
+  const [{ data: player }, { data: agentSchedules }, { data: shareLinks }] = await Promise.all([
+    supabase.from('players').select('*').eq('id', playerId).single(),
+    supabase.from('agent_schedules').select('*').eq('player_id', playerId),
+    supabase
+      .from('share_links')
+      .select('*')
+      .eq('player_id', playerId)
+      .order('created_at', { ascending: false }),
+  ]);
+  if (!player) redirect('/onboarding');
+
   return (
-    <>
-      <div className="rounded-xl bg-card p-6 shadow-[0_0_0_1px_var(--border),0_1px_2px_rgba(0,0,0,.05)]">
-        <h2 className="text-base font-medium">Passkeys</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Register a passkey to sign in without a magic-link email.
-        </p>
-        <div className="mt-4">
-          <PasskeyRegister />
-        </div>
-      </div>
-      <Empty title="Nothing else here yet">
-        Billing, notifications, agent scheduling and API connections arrive with PRD-12.
-      </Empty>
-    </>
+    <SettingsShell
+      player={player}
+      agentSchedules={agentSchedules ?? []}
+      shareLinks={shareLinks ?? []}
+    />
   );
 }

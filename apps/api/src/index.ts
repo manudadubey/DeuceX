@@ -42,6 +42,14 @@ import { createEcbAdapter } from './fx/ecb-adapter';
 import { registerReserveReminderScheduler } from './reserves/scheduler';
 import { createMockTranscriptionAdapter } from './transcription/mock-adapter';
 import { createWhisperAdapter } from './transcription/whisper-adapter';
+import { registerAccountRoutes, type AccountRoutesDeps } from './account/routes';
+import {
+  registerAccountDeletionScheduler,
+  SupabaseAccountDeletionSweepDb,
+} from './account/scheduler';
+import { registerSharingRoutes, type SharingRoutesDeps } from './sharing/routes';
+import { SupabaseSharingDb } from './sharing/service';
+import { createResendEmailClient, type EmailClient } from '@procircuit/actions/account';
 
 // This service owns anything with an external side effect or a scheduled
 // job (webhooks, the queue worker, structured-output calls). Simple CRUD
@@ -61,12 +69,14 @@ export function buildServer(
   notesDeps?: NotesRoutesDeps,
   rankingsDeps?: RankingsRoutesDeps,
   financialDeps?: FinancialRoutesDeps,
+  accountDeps?: AccountRoutesDeps,
+  sharingDeps?: SharingRoutesDeps,
 ) {
   const app = Fastify({ logger: true });
 
   app.get('/health', async () => ({ status: 'ok' }));
 
-  if (notesDeps || rankingsDeps || financialDeps) {
+  if (notesDeps || rankingsDeps || financialDeps || accountDeps || sharingDeps) {
     void app.register(cors, {
       origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000').split(','),
     });
@@ -87,6 +97,21 @@ export function buildServer(
   if (financialDeps) {
     void app.register(async (instance) => {
       await registerFinancialRoutes(instance, financialDeps);
+    });
+  }
+
+  if (accountDeps) {
+    void app.register(async (instance) => {
+      await registerAccountRoutes(instance, accountDeps);
+    });
+  }
+
+  // Unauthenticated on purpose (sharing/routes.ts's own comment): a coach
+  // or manager visitor has no Supabase session, so this is registered
+  // outside the bearer-token deps grouped above.
+  if (sharingDeps) {
+    void app.register(async (instance) => {
+      await registerSharingRoutes(instance, sharingDeps);
     });
   }
 
@@ -185,12 +210,41 @@ async function main() {
   await registerMindsetCoach(actionsBoss, { db, client: insightClient, agentRuns });
   await registerFinancialAgent(actionsBoss, { db, client: financialActionClient, agentRuns });
 
-  // Step 2.1's own boss (money/queue.ts): the daily ECB fetch and the
-  // Sunday reserve-balance reminder, neither of which is a scheduled agent
-  // run in the AGENT_RUN_QUEUE sense above.
+  // Step 2.1's own boss (money/queue.ts): the daily ECB fetch, the Sunday
+  // reserve-balance reminder and (step 2.3) the fourteen-day account-
+  // deletion sweep — none of which is a scheduled agent run in the
+  // AGENT_RUN_QUEUE sense above. All three share this one boss instance
+  // rather than each getting its own: SUPABASE_DB_URL is the session
+  // pooler, capped at 15 clients, and a separate PgBoss instance per job
+  // was found live, this session, to tip that cap over (EMAXCONNSESSION on
+  // startup) — see money/queue.ts's own comment.
   const moneyBoss = await createMoneyBoss(dbConnectionString);
   await registerFxScheduler(moneyBoss, { db, adapter: createEcbAdapter() });
   await registerReserveReminderScheduler(moneyBoss, { db });
+  await registerAccountDeletionScheduler(moneyBoss, {
+    db: new SupabaseAccountDeletionSweepDb(db),
+    storage,
+  });
+
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const resendFromAddress = process.env.RESEND_FROM_ADDRESS;
+  const email: EmailClient = resendApiKey
+    ? createResendEmailClient({
+        apiKey: resendApiKey,
+        ...(resendFromAddress ? { from: resendFromAddress } : {}),
+      })
+    : (() => {
+        console.warn(
+          'RESEND_API_KEY not set: falling back to a logging email client. Account-deletion and export emails will only be logged, never sent. Set RESEND_API_KEY for real delivery.',
+        );
+        return {
+          async sendEmail(input) {
+            console.log(
+              `[email:mock] to=${input.to} subject=${input.subject} attachments=${input.attachments?.map((a) => a.filename).join(',') ?? 'none'}`,
+            );
+          },
+        };
+      })();
 
   const notesDeps: NotesRoutesDeps = {
     db,
@@ -230,7 +284,11 @@ async function main() {
     enqueueRecompute: (playerId) => enqueueFinancialRecompute(actionsBoss, playerId),
   };
 
-  const app = buildServer(notesDeps, rankingsDeps, financialDeps);
+  const appBaseUrl = process.env.APP_BASE_URL ?? 'http://localhost:3000';
+  const accountDeps: AccountRoutesDeps = { db, anonClient, email, appBaseUrl };
+  const sharingDeps: SharingRoutesDeps = { db: new SupabaseSharingDb(db) };
+
+  const app = buildServer(notesDeps, rankingsDeps, financialDeps, accountDeps, sharingDeps);
   const port = Number(process.env.PORT ?? 8787);
   await app.listen({ port, host: '0.0.0.0' });
 }
