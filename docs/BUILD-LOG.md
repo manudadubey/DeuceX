@@ -1286,3 +1286,130 @@ no schema, RLS policy or grant needed to change. Confirmed live against the real
 (`gpzpmrumwaqyfkyvqbgl`), not just inferred: all 19 tests in `rls.integration.test.ts` (the notes
 block's 7, plus every other block including step 2.1's money model block) now pass against
 `SUPABASE_DB_URL`.
+
+## Step 2.2 · Financial Agent — 22 September 2026
+
+Read first: PRD-03 (all), decisions worksheet 5, 6, 7.
+
+Built: the deterministic engine lives in `packages/agents/src/financial` — `runway.ts`
+(`computeBurnState`, `computeRunwayWeeks`, the fourteen-week `computeProjection` with a cash-only
+and a with-pending line, `zeroDate`, `weeksUntilRed`), `pnl.ts` (`computeMonthlyPnl`, structurally
+unable to take a pending receivable as an argument at all, which is what makes decisions
+worksheet 7's fix "not really a decision" true in code, not just in the PRD), `budget.ts`
+(`computeBudgetVsActual`, `computeWeeklyBudgetBar`), `milestone.ts` (`computeMilestone`, integer-
+percent stepping to dodge float drift at exact thresholds), and `action-candidates.ts`
+(`rankActionCandidates` over three buildable candidates — `update_balance`, `chase_overdue_receivable`,
+`trim_weekly_overspend` — with `update_balance` always present so F-18's "exactly one action" holds
+even with nothing else to flag). Two agent halves sit alongside: `generate-action.ts` phrases the
+winning candidate into the "one thing" sentence (`gpt-4o-mini`, one schema-constrained call, one
+corrective retry, the same shape as every prior agent), and `extract-receipt.ts` is a vision-input
+sibling of `match-scribe/extract.ts` for receipt scanning, both with mock clients and real OpenAI
+clients. `packages/db/src/budgets.ts` adds `createBudgetEstimate`/`listCurrentBudgetEstimates`,
+`setWeeklyBudget`, and `snoozeFinancialAction`/`listActiveFinancialActionSnoozes`.
+
+`apps/api/src/financial` runs the scheduled-and-event half on packages/actions' `AGENT_RUN_QUEUE`
+(`scheduler.ts` ticks hourly but only fires at the fixed 07:00 UTC hour PRD-03 asks for, no per-
+player timezone lookup needed unlike Mindset Coach's own scheduler; `worker.ts` registers it the
+same pause/provider-switch/retry-schedule way every prior scheduled agent does). `run.ts` hashes
+only the winning candidate's own facts (not the whole input bundle) and reuses the last phrased
+action from `agent_runs` when that hash is unchanged, which is the actual mechanism behind PRD-03's
+"live runs recompute figures without regenerating the action" — the deterministic KPI numbers
+themselves are never cached at all; apps/web recomputes them live, on every read, straight from
+`ledger_lines`/`reserve_entries`/`prize_receivables` (`apps/web/lib/financial/load.ts`), the same
+"conversion is a view" rule `ledger.ts` already enforces for currency. `receipts.ts` holds the one
+real vendor call this step has outside the scheduled run (an OpenAI vision call) behind
+`/financial/receipts`; `receivables.ts` and its `/financial/receivables/:id/receive` route are the
+one genuinely gated write this step adds — `markReceivableReceived` running on the service-role
+client after `apps/web`'s own `confirmApproval` (step 0.6's prepared-but-unused helper, its first
+real caller) creates the approval row through the player's session, shown beside a `Confirm`
+consequence sentence (M-GATE-2) rather than a second dialog.
+
+`apps/web`'s `/agent/financial` page replaces the step-0.5 placeholder: a KPI row, a hand-drawn SVG
+runway chart (`components/financial/runway-chart.tsx`, the same `el`/`tagChartEnter` idiom
+`mood-chart.tsx` established) with the "Reserves reach zero / With pending prize / If nothing
+changes" tile row underneath, the One Thing card with its milestone progress bar, Budget vs actual,
+Reserves (balance update plus the mark-received `Confirm`), this month's P&L, and the Ledger card
+(manual entry, a client-driven sequential receipt-scan queue over the synchronous
+`/financial/receipts` call — "Receipt 1 of 3", Skip, Cancel, Check badges on low-confidence
+fields — and a CSV export). The first-week dashboard's Runway tile
+(`components/financial/runway-pulse-tile.tsx`) is now live, matching real reserves/burn once a
+balance exists, "Not set up" until then.
+
+Design decisions worth recording: `expense_save` and `balance_update` stay plain RLS-scoped writes
+(`insertLedgerLine`, `enterReserveBalance`, both already built in step 2.1) rather than routed
+through `runGatedAction` — TECH-ARCHITECTURE section 3's hard actions-module list is exactly
+Stripe/Resend/ICS/entry-client plus two named DB transitions, and neither expense saves nor balance
+updates are on it; `receivable_received` is the one that is, so it alone goes through the gate. New
+migration `20260922090000_step_2_2_financial_agent.sql` adds exactly two tables:
+`budget_estimates` (a player's own named trip budgets — F-16's "per estimated tournament" with no
+real tournament to reference until step 3.1, so a budget estimate's own row id doubles as
+`ledger_lines.tournament_id`, append-only, no update policy, a revision is a new row) and
+`financial_action_snoozes` (append-only "Not this week" log, latest row per candidate key wins).
+No new column on `players`: `weekly_budget` already exists from step 1.4's onboarding wizard
+(default 1,200, the same number PRD-03's own example uses), discovered before writing a duplicate.
+
+Done-when checks: `packages/agents/src/financial/runway.test.ts`'s Arya fixture reproduces PRD-03
+F-AC-1 exactly — reserves 9,450, gross spend 1,281, MRR 612 → 8.3 weeks, amber, 1,140/wk net burn,
+11% coverage — proving the formula independently of the real production MRR input, which is always
+0 until step 4.1's patrons/payouts tables exist (documented inline, the same "not yet" idiom
+`mindset-coach`'s `hasMatchToday` stub already established). `pnl.test.ts` reproduces decisions
+worksheet 7's fix: September reads 612 in with the Genoa receivable excluded entirely while
+pending. `extract-receipt.test.ts` reproduces F-AC-5 and F-AC-6 against the Trattoria da Gino and
+Farmacia Centrale fixtures — merchant, amount, currency, category all extracted, one low-confidence
+field flagged without blocking Save. The route matches `#/agent/financial`, checked directly
+against `docs/procircuit-dashboard-neumayer.html`'s own prototype (see below).
+
+**Verified against the real Supabase project** (`gpzpmrumwaqyfkyvqbgl`), not just fixtures, since
+this project can't branch (owner confirmed applying the migration directly): applied
+`step_2_2_financial_agent`, ran `get_advisors` (no new findings — both new tables have explicit
+`select`/`insert own` policies), hand-verified `database.types.ts` against the migration's own
+column list (the MCP type-generation call was blocked by the sandbox's permission classifier;
+`tsc --noEmit` across every package confirms the hand-written types match what the code actually
+uses). Then did real live browser verification against a real signed-in session
+(`manu.dadubey@gmail.com`) rather than deferring it as step 1.4 had to: entered a real balance
+update (persisted, `Update your balance` recomputed the KPI row and the chart live), saved a real
+manual expense (`Test lunch`, €45 — runway, net burn, the weekly budget bar and the month's P&L all
+recomputed correctly and matched the pure-function math by hand), then deleted both test rows
+afterward via `execute_sql` once confirmed to be the only rows on that player (nothing pre-existing
+was touched). `pnpm typecheck`, `pnpm lint`, `pnpm format` and `pnpm test` are all green — 320
+tests passing across every package (98 in `packages/agents` including the new `financial/` suite,
+15 in `apps/web` unchanged, 92 in `apps/api` including 18 new `financial/` tests, plus 21 skipped
+integration tests unaffected by this step).
+
+**Found and fixed, all this session**: (1) `apps/web`'s own `computeProjection` call never actually
+passed `pendingReceivables` in, so the chart's dashed "with pending" line was silently identical to
+the cash-only line — found by checking the build against the prototype, not by a test, since
+nothing exercised a player with a pending receivable end to end; fixed, and `zeroWeekWithPending`
+added to `runway.ts` with its own tests so the "With pending prize" tile has a real number. (2)
+`requestFinancialRecompute`'s fire-and-forget call to `apps/api` threw an unhandled promise
+rejection whenever the API wasn't reachable (visible as a real Next.js dev-overlay error caught
+live in the browser), fixed by catching and logging it as a non-fatal warning, matching what its own
+comment already claimed it did. (3) `@procircuit/actions`'s single barrel export unconditionally
+pulled `pg-boss` (and so the real `pg` driver — `fs`/`net`/`tls`/`dns`) into `apps/web`'s client
+bundle the moment `packages/agents/financial` needed `AgentValidationError`/`TokenUsage` from it,
+breaking `next build` outright; fixed by splitting the queue-dependent exports
+(`createBoss`/`registerAgentWorker`/`enqueueAgentRun`/`AGENT_RUN_QUEUE`) onto a
+`@procircuit/actions/queue` subpath (a new `exports` map in its `package.json`) that only
+`apps/api` imports, leaving the main package entry browser-safe. (4) Running `pnpm build` against
+`apps/web` while its dev server was live corrupted the dev server's shared `.next` cache (a
+production `BUILD_ID` colliding with the dev server's own manifest format), breaking the page for
+every session sharing that server; fixed by clearing the cache and restarting the dev server — a
+process lesson (don't run a production build against a directory a dev server is actively serving
+from) rather than a code bug.
+
+Skipped, deliberately, checked against the prototype and left as real, documented gaps rather than
+faked: the scenario tabs (No entry / Poznań lose R1 / reach QF) — genuinely blocked on step 3.2's
+Tournament Agent, and PRD-03's own failure-behaviour text ("If no top pick is undecided, the
+scenario control collapses to No entry") is what this collapses to, not a deviation; the six-month
+P&L chart and the month/season selector — this build shows the current month only; a receipt's
+rendition/thumbnail and F-15's card-number redaction — no image-processing dependency exists to do
+either safely, so the photo is held in memory for one extraction call and never written to storage
+at all (stricter than F-15's letter, not weaker: nothing unredacted is ever persisted, but a scanned
+ledger line's receipt-button expansion has nothing to show); patron MRR and payouts — always 0,
+step 4.1; F-21's "the agent learns from the gap" cost-prior adjustment — needs the Tournament
+Agent's cost model, step 3.2; the Sunday reminder's quiet hours and per-player toggle — step 2.3
+(Settings), as step 2.1's entry already flagged. `docs/procircuit-dashboard-neumayer.html`'s own
+`#/agent/financial` view was read directly (served over a local static HTTP server, since the
+built-in browser only executes JS for `file://` prototypes when served, not opened directly) to
+check the build against it field by field; the milestone bar and the three runway summary tiles
+were real gaps found this way and fixed, not just noted.

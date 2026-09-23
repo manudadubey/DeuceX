@@ -1,7 +1,9 @@
 // A minimal in-memory fake of the slice of the supabase-js query builder
-// notes/service.ts and notes/audio-lifecycle.ts actually call
-// (.from().select/insert/update/delete().eq/neq/lte/not().single/maybeSingle(),
-// plus .rpc()) — not a real PostgREST client. Real filtering and RLS
+// notes/service.ts, mindset-coach's own service.ts/run.ts and
+// financial/service.ts/run.ts actually call
+// (.from().select/insert/update/delete().eq/neq/lte/gte/lt/gt/not().order()
+// .limit().single/maybeSingle(), plus .rpc()) — not a real PostgREST
+// client. Real filtering and RLS
 // behaviour is proven against the live project by
 // packages/db/src/rls.integration.test.ts; this exists so the service
 // layer's own logic (quota gating, status-transition guards, which rows a
@@ -74,6 +76,19 @@ class TableQuery implements PromiseLike<{ data: any; error: any }> {
       const rightDate = new Date(value).getTime();
       if (!Number.isNaN(leftDate) && !Number.isNaN(rightDate)) return leftDate < rightDate;
       return left < value;
+    });
+    return this;
+  }
+
+  gt(col: string, value: string | number): this {
+    // Mirrors lt() above: date-aware when both sides parse as one.
+    this.filters.push((row) => {
+      const left = row[col];
+      if (left == null) return false;
+      const leftDate = new Date(left as string).getTime();
+      const rightDate = new Date(value).getTime();
+      if (!Number.isNaN(leftDate) && !Number.isNaN(rightDate)) return leftDate > rightDate;
+      return left > value;
     });
     return this;
   }

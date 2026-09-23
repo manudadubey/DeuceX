@@ -19,6 +19,7 @@ import {
 } from '@procircuit/ui';
 import type { Player } from '@procircuit/db';
 import { CheckInCard } from '@/components/mindset/check-in-card';
+import { RunwayPulseTile } from '@/components/financial/runway-pulse-tile';
 
 const MINDSET_STARTS_AFTER_NOTES = 3;
 
@@ -70,21 +71,11 @@ export function FirstWeekDashboard({
       </Card>
 
       <section aria-label="Pulse" className="grid grid-cols-3 gap-4 max-[900px]:grid-cols-1">
-        <Link
-          href="/agent/financial"
-          className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 rounded-xl bg-card p-5 text-left text-card-foreground no-underline shadow-[0_0_0_1px_var(--border),0_1px_2px_rgba(0,0,0,.05)] transition-shadow hover:shadow-[0_0_0_1px_var(--ring),0_1px_2px_rgba(0,0,0,.05)] max-sm:p-4"
-        >
-          <PulseTileLabel>Runway</PulseTileLabel>
-          <PulseTileBadge>
-            <Badge variant="secondary">Not set up</Badge>
-          </PulseTileBadge>
-          <PulseTileValue className="text-muted-foreground">
-            – <small>weeks</small>
-          </PulseTileValue>
-          <PulseTileSub>
-            Enter today&apos;s cash balance and the Financial Agent runs tomorrow at 07:00.
-          </PulseTileSub>
-        </Link>
+        <RunwayPulseTile
+          playerId={player.id}
+          homeCurrency={player.home_currency}
+          weeklyBudget={player.weekly_budget}
+        />
         <Link
           href="/agent/tournament"
           className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 rounded-xl bg-card p-5 text-left text-card-foreground no-underline shadow-[0_0_0_1px_var(--border),0_1px_2px_rgba(0,0,0,.05)] transition-shadow hover:shadow-[0_0_0_1px_var(--ring),0_1px_2px_rgba(0,0,0,.05)] max-sm:p-4"

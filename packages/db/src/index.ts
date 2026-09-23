@@ -100,6 +100,20 @@ export {
   type ReceivableEvent,
   type ReceivableStatus,
 } from './reserves';
+export {
+  createBudgetEstimate,
+  listCurrentBudgetEstimates,
+  setWeeklyBudget,
+  snoozeFinancialAction,
+  listActiveFinancialActionSnoozes,
+  InvalidBudgetEstimateAmountError,
+  InvalidWeeklyBudgetAmountError,
+  type BudgetEstimate,
+  type BudgetEstimateStatus,
+  type FinancialActionSnooze,
+  type CreateBudgetEstimateInput,
+  type SnoozeFinancialActionInput,
+} from './budgets';
 
 // Two clients, deliberately: the anon-scoped client respects row-level
 // security and is what every player-facing request uses; the service-role

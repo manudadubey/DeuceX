@@ -45,15 +45,14 @@ export {
   type TokenUsage,
 } from './pricing';
 
-export {
-  AGENT_RUN_QUEUE,
-  createBoss,
-  enqueueAgentRun,
-  registerAgentWorker,
-  type AgentJobData,
-  type AgentWorkerDeps,
-  type EnqueueAgentRunInput,
-} from './queue/queue';
+// AGENT_RUN_QUEUE/createBoss/enqueueAgentRun/registerAgentWorker live at the
+// '@procircuit/actions/queue' subpath, not here, because './queue/queue.ts'
+// imports pg-boss, which imports the real `pg` driver (fs/net/tls/dns —
+// Node built-ins with no browser shim). Everything below this comment has
+// no such dependency, which is what lets packages/agents' financial module
+// (step 2.2) import AgentValidationError/TokenUsage for apps/web's own
+// client-bundle use without dragging a Postgres driver into the browser.
+// apps/api is the only real consumer of the queue subpath.
 
 export {
   markReceivableReceived,

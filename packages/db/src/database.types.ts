@@ -255,6 +255,47 @@ export type Database = {
           },
         ];
       };
+      budget_estimates: {
+        Row: {
+          created_at: string;
+          currency: string;
+          estimate_amount: number;
+          estimated_at: string;
+          id: string;
+          label: string;
+          player_id: string;
+          status: string;
+        };
+        Insert: {
+          created_at?: string;
+          currency: string;
+          estimate_amount: number;
+          estimated_at?: string;
+          id?: string;
+          label: string;
+          player_id: string;
+          status?: string;
+        };
+        Update: {
+          created_at?: string;
+          currency?: string;
+          estimate_amount?: number;
+          estimated_at?: string;
+          id?: string;
+          label?: string;
+          player_id?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'budget_estimates_player_id_fkey';
+            columns: ['player_id'];
+            isOneToOne: false;
+            referencedRelation: 'players';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       cases: {
         Row: {
           due_at: string | null;
@@ -333,6 +374,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'check_ins_player_id_fkey';
+            columns: ['player_id'];
+            isOneToOne: false;
+            referencedRelation: 'players';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      financial_action_snoozes: {
+        Row: {
+          candidate_key: string;
+          created_at: string;
+          id: string;
+          player_id: string;
+          snoozed_until: string;
+        };
+        Insert: {
+          candidate_key: string;
+          created_at?: string;
+          id?: string;
+          player_id: string;
+          snoozed_until: string;
+        };
+        Update: {
+          candidate_key?: string;
+          created_at?: string;
+          id?: string;
+          player_id?: string;
+          snoozed_until?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'financial_action_snoozes_player_id_fkey';
             columns: ['player_id'];
             isOneToOne: false;
             referencedRelation: 'players';
