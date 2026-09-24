@@ -12,10 +12,6 @@ import {
   ItemMedia,
   ItemTitle,
   Progress,
-  PulseTileBadge,
-  PulseTileLabel,
-  PulseTileSub,
-  PulseTileValue,
 } from '@procircuit/ui';
 import type { Player } from '@procircuit/db';
 import { showDoublesChip } from '@procircuit/db';
@@ -23,14 +19,15 @@ import { CheckInCard } from '@/components/mindset/check-in-card';
 import { RunwayPulseTile } from '@/components/financial/runway-pulse-tile';
 import { DecisionTile } from '@/components/tournament/decision-tile';
 import { DecisionCardSlot } from '@/components/tournament/decision-card-slot';
+import { PatronsCard, PatronsPulseTile } from '@/components/fans/patrons-dashboard';
 
 const MINDSET_STARTS_AFTER_NOTES = 3;
 
 // The prototype's `#/first-week` state (PRD-11 section 4.2), wired to real
 // player data (build plan step 1.4). Runway and the Tournament Agent
-// shortlist are both real now (steps 2.2 and 3.2); Fans/patrons still has
-// nothing real to show (that agent arrives in Phase 4), so its tile keeps
-// the same honest zero-state dashboard page.tsx already used pre-onboarding.
+// shortlist are both real now (steps 2.2 and 3.2), and so are the Patrons
+// tile and card (step 4.1), which keep the first-week zero state until the
+// patron page is live.
 export function FirstWeekDashboard({
   player,
   notesCount,
@@ -48,6 +45,7 @@ export function FirstWeekDashboard({
   const verified = player.verification === 'verified';
   const noteDone = notesCount > 0;
   const doneCount = 1 + (noteDone ? 1 : 0);
+  const plan = player.tier === 'pro' || player.tier === 'elite' ? player.tier : 'free';
 
   return (
     <>
@@ -91,19 +89,7 @@ export function FirstWeekDashboard({
           homeCurrency={player.home_currency}
           weeklyBudget={player.weekly_budget}
         />
-        <Link
-          href="/profile"
-          className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 rounded-xl bg-card p-5 text-left text-card-foreground no-underline shadow-[0_0_0_1px_var(--border),0_1px_2px_rgba(0,0,0,.05)] transition-shadow hover:shadow-[0_0_0_1px_var(--ring),0_1px_2px_rgba(0,0,0,.05)] max-sm:p-4"
-        >
-          <PulseTileLabel>Patrons</PulseTileLabel>
-          <PulseTileBadge>
-            <Badge variant="secondary">Page not live</Badge>
-          </PulseTileBadge>
-          <PulseTileValue className="text-muted-foreground">
-            0 <small>patrons</small>
-          </PulseTileValue>
-          <PulseTileSub>Build your public page and switch on the tiers.</PulseTileSub>
-        </Link>
+        <PatronsPulseTile playerId={player.id} plan={plan} homeCurrency={player.home_currency} />
       </section>
 
       <DecisionCardSlot
@@ -188,13 +174,7 @@ export function FirstWeekDashboard({
           }
         />
 
-        <Card id="fwPatron">
-          <CardHeader>
-            <CardTitle>Patrons</CardTitle>
-            <CardDescription>Page not live</CardDescription>
-          </CardHeader>
-          <Empty title="No patrons yet">Build your page and switch on the tiers.</Empty>
-        </Card>
+        <PatronsCard playerId={player.id} plan={plan} homeCurrency={player.home_currency} />
       </section>
 
       {notesCount < MINDSET_STARTS_AFTER_NOTES && (

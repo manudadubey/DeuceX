@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Badge, Button, Card, CardHeader, CardTitle, Confirm, Empty } from '@procircuit/ui';
+import { PatronPayoutsItem } from '@/components/fans/patron-settings';
 import { downgradeToFree, type Player } from '@procircuit/db';
 import { createClient } from '@/lib/supabase/client';
 
@@ -69,6 +70,8 @@ export function BillingPane({
         No card on file yet. Real Stripe billing lands in a later build step — nothing here charges
         a card today.
       </div>
+
+      <PatronPayoutsItem playerId={player.id} plan={plan} />
 
       <Empty title="No invoices yet">Invoices appear here once billing is wired up.</Empty>
 

@@ -22,7 +22,8 @@ export interface AgentJobData {
 }
 
 export async function createBoss(connectionString: string): Promise<PgBoss> {
-  const boss = new PgBoss(connectionString);
+  // Pool capped (step 4.1): see apps/api/src/money/queue.ts's note on the session pooler's 15-client limit.
+  const boss = new PgBoss({ connectionString, max: 3 });
   await boss.start();
   // retryLimit: 0 — pg-boss's own retry counter is unused; retries are
   // scheduled manually below via sendAfter, on the 5/20/60 minute schedule

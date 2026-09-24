@@ -5,7 +5,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1, step 2.1 through step 3.3 done, start step 4.1
+## Status: Phase 0, Phase 1, step 2.1 through step 4.1 done, start step 4.2
 
 The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -230,8 +230,27 @@ integration tests instead. See `docs/BUILD-LOG.md`'s step 3.3 entry for the full
 and everything else deliberately skipped (CE-21's post-event check-in, CE-22's order-of-play
 forecast, a real climate-normals data source, a distinct day-before-travel refresh mechanism, the
 players ranking-column grant lockdown deferred a third time now).
-[PR #15](https://github.com/manudadubey/ProCircuit/pull/15) is merged. The next session should
-start at **step 4.1 (Fans)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever
+[PR #15](https://github.com/manudadubey/ProCircuit/pull/15) is merged.
+Step 4.1 (Fans) built the patron programme on Stripe Connect Express: a migration adding
+`patron_programmes`, `patron_tiers`, `patrons`, `patron_events`, `payouts` (net = gross − fee −
+Stripe as a check constraint, a paid row immutable by trigger), `patron_waitlist`,
+`patron_note_drafts`, `patron_notes_sent` and a service-role-only `stripe_webhook_events`, plus the
+`connect_onboard` and `waitlist_invite` action types; `packages/agents/src/fans` (all of PRD-04
+section 7's arithmetic, deterministic, plus a small drafting call for patron notes);
+`packages/actions/src/stripe-client.ts` (now the only file importing `stripe`, reached through the
+`@procircuit/actions/fans` subpath) and four gated actions in `fans.ts`; `apps/api/src/fans`
+(webhook applier, checkout-return reconcile, public page, waitlist, 06:00 attention pass, on-tap
+draft); and the real `/fans` page, the public `/p/<slug>` page, the dashboard Patrons tile and card,
+patron income in the Financial Agent, and patron health on the manager link. Four owner decisions
+made this session and recorded in `docs/BUILD-LOG.md`: direct charges, the player confirms each
+waitlist invite, tier prices are grandfathered, and patron notes are drafted now by a Fans-owned
+call. Verified with live RLS tests and a seeded, cleaned-up browser pass against production. **The
+live Stripe round trip is still pending the owner's sandbox key** (`STRIPE_SECRET_KEY` in `.env`;
+`STRIPE_WEBHOOK_SECRET` optional). **P-17 (the Stripe customer portal) and P-18 (pausing patron
+billing on a downgrade to Free) are launch blockers**, not built this step. Also found and fixed
+live: pg-boss's default 10-connection pool per instance tipped the session pooler's 15-client cap;
+all three instances now set `max`. The next session should
+start at **step 4.2 (Content Agent)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever
 architecture section it names, and check `gh pr list` first — if a later PR hasn't merged yet,
 branch off it rather than `main`, the same stacking step 0.5/0.6 used. Check
 `docs/BUILD-LOG.md` for what each prior

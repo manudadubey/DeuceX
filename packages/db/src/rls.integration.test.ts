@@ -860,3 +860,168 @@ describeIfConfigured('tournament agent row-level security (step 3.2)', () => {
     });
   });
 });
+
+describeIfConfigured('fans row-level security (step 4.1)', () => {
+  let client: Client;
+  const playerA = randomUUID();
+  const playerB = randomUUID();
+  const slug = `rls-fans-${playerA.slice(0, 8)}`;
+  const eventId = `evt_rls_${playerA.slice(0, 8)}`;
+  let tierId: string;
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
+      playerA,
+      `fans-rls-a-${playerA}@procircuit.test`,
+      playerB,
+      `fans-rls-b-${playerB}@procircuit.test`,
+    ]);
+    await client.query(
+      `insert into public.players
+         (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+       values
+         ($1, 'wta', 'Player A', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney'),
+         ($3, 'atp', 'Player B', $4, 'US', '2000-01-01', 'USD', 'en', 'imperial', 'America/New_York')`,
+      [
+        playerA,
+        `fans-rls-a-${playerA}@procircuit.test`,
+        playerB,
+        `fans-rls-b-${playerB}@procircuit.test`,
+      ],
+    );
+    // Fixture setup as the table owner (the service role's equivalent):
+    // every one of these rows is written by apps/api in production, never
+    // by a player.
+    await client.query(
+      `insert into public.patron_programmes (player_id, slug, stripe_account_id, kyc_status)
+       values ($1, $2, $3, 'complete')`,
+      [playerA, slug, `acct_rls_${playerA.slice(0, 8)}`],
+    );
+    const tier = await client.query(
+      `insert into public.patron_tiers (player_id, position, name, price, currency)
+       values ($1, 1, 'Courtside', 29, 'AUD') returning id`,
+      [playerA],
+    );
+    tierId = tier.rows[0].id;
+    await client.query(
+      `insert into public.patrons (player_id, tier_id, stripe_subscription_id, name, email, price, currency)
+       values ($1, $2, $3, 'Mira Kovac', 'mira@procircuit.test', 29, 'AUD')`,
+      [playerA, tierId, `sub_rls_${playerA.slice(0, 8)}`],
+    );
+    await client.query(
+      `insert into public.payouts
+         (player_id, stripe_payout_id, friday, gross, platform_fee, platform_fee_rate, stripe_fee, net, currency, status)
+       values ($1, $2, '1901-01-04', 612, 48.96, 0.08, 14.34, 548.70, 'AUD', 'paid')`,
+      [playerA, `po_rls_${playerA.slice(0, 8)}`],
+    );
+    await client.query(
+      `insert into public.stripe_webhook_events (id, type) values ($1, 'payout.paid')`,
+      [eventId],
+    );
+  });
+
+  afterAll(async () => {
+    await client.query(`delete from public.stripe_webhook_events where id = $1`, [eventId]);
+    // The paid payout is immutable to everyone, including this owner
+    // connection, so it goes with its player via the cascade the trigger
+    // does allow: disable the trigger for this fixture's own teardown only.
+    await client.query(`alter table public.payouts disable trigger payouts_paid_immutable`);
+    await client.query(`delete from public.payouts where player_id = $1`, [playerA]);
+    await client.query(`alter table public.payouts enable trigger payouts_paid_immutable`);
+    await client.query(`delete from public.approvals where player_id = $1`, [playerA]);
+    await client.query(`delete from public.patrons where player_id = $1`, [playerA]);
+    await client.query(`delete from public.patron_tiers where player_id = $1`, [playerA]);
+    await client.query(`delete from public.patron_programmes where player_id = $1`, [playerA]);
+    await client.query(`delete from public.players where id in ($1, $2)`, [playerA, playerB]);
+    await client.query(`delete from auth.users where id in ($1, $2)`, [playerA, playerB]);
+    await client.end();
+  });
+
+  it('lets a player read only their own programme, tiers, patrons and payouts', async () => {
+    await asPlayer(client, playerA, async () => {
+      expect((await client.query('select slug from public.patron_programmes')).rows).toEqual([
+        { slug },
+      ]);
+      expect((await client.query('select name from public.patron_tiers')).rows).toEqual([
+        { name: 'Courtside' },
+      ]);
+      expect((await client.query('select name from public.patrons')).rows).toEqual([
+        { name: 'Mira Kovac' },
+      ]);
+      expect((await client.query('select status from public.payouts')).rows).toEqual([
+        { status: 'paid' },
+      ]);
+    });
+    await asPlayer(client, playerB, async () => {
+      for (const table of ['patron_programmes', 'patron_tiers', 'patrons', 'payouts']) {
+        expect((await client.query(`select 1 from public.${table}`)).rows, table).toEqual([]);
+      }
+    });
+  });
+
+  it('lets a player flip the Patron names switch, and nothing else on the programme row (P-19)', async () => {
+    await asPlayer(client, playerA, async () => {
+      const result = await client.query(
+        `update public.patron_programmes set names_line_enabled = true where player_id = $1`,
+        [playerA],
+      );
+      expect(result.rowCount).toBe(1);
+    });
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query(`update public.patron_programmes set kyc_status = 'complete', slug = 'x-y-z'`),
+      ).rejects.toThrow(/permission denied/);
+    });
+  });
+
+  it('refuses a player inserting or changing a patron or a payout directly (Stripe webhooks only)', async () => {
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query(
+          `insert into public.patrons (player_id, tier_id, stripe_subscription_id, name, price, currency)
+           values ($1, $2, 'sub_forged', 'Forged', 1, 'AUD')`,
+          [playerA, tierId],
+        ),
+      ).rejects.toThrow(/row-level security/);
+    });
+    await asPlayer(client, playerA, async () => {
+      const patron = await client.query(`update public.patrons set status = 'left'`);
+      expect(patron.rowCount).toBe(0);
+      const payout = await client.query(`update public.payouts set net = 1`);
+      expect(payout.rowCount).toBe(0);
+    });
+  });
+
+  it('keeps the Stripe webhook log invisible to players', async () => {
+    await asPlayer(client, playerA, async () => {
+      expect((await client.query('select id from public.stripe_webhook_events')).rows).toEqual([]);
+    });
+  });
+
+  it('makes a paid payout immutable even to the service role, and enforces net = gross - fee - Stripe (M-GATE-3)', async () => {
+    await expect(
+      client.query(`update public.payouts set status = 'failed' where player_id = $1`, [playerA]),
+    ).rejects.toThrow(/cannot be changed or removed/);
+    await expect(
+      client.query(
+        `insert into public.payouts
+           (player_id, stripe_payout_id, friday, gross, platform_fee, platform_fee_rate, stripe_fee, net, currency, status)
+         values ($1, 'po_bad_net', '1901-01-11', 612, 48.96, 0.08, 14.34, 551, 'AUD', 'scheduled')`,
+        [playerA],
+      ),
+    ).rejects.toThrow(/payouts_net_check/);
+  });
+
+  it('accepts the two new gated action types from the player themselves', async () => {
+    await asPlayer(client, playerA, async () => {
+      const result = await client.query(
+        `insert into public.approvals (player_id, approved_by, action_type, payload)
+         values ($1, $1, 'connect_onboard', '{}'::jsonb), ($1, $1, 'waitlist_invite', '{"entryId":"x"}'::jsonb)`,
+        [playerA],
+      );
+      expect(result.rowCount).toBe(2);
+    });
+  });
+});

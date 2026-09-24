@@ -18,7 +18,9 @@ export type ApprovalActionType =
   | 'tier_change'
   | 'receivable_received'
   | 'account_deletion_request'
-  | 'data_export_request';
+  | 'data_export_request'
+  | 'connect_onboard'
+  | 'waitlist_invite';
 
 export interface CreateApprovalInput {
   playerId: string;

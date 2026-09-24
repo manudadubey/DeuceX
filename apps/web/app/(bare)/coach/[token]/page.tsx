@@ -1,4 +1,5 @@
 import { Badge, Card, CardHeader, CardTitle, Empty } from '@procircuit/ui';
+import { formatPatronMoney } from '@procircuit/agents';
 
 // PRD-12 §4.9/§10, M-SHARE-1/M-SHARE-2. Server-fetched (no client bundle,
 // no CORS concern — this is server-to-server, not a browser request): the
@@ -47,6 +48,24 @@ interface ManagerViewData {
   netBurn: number;
   monthlyPnl: { income: number; spend: number; net: number };
   expenses: ManagerExpenseLine[];
+  /** Step 4.1 (PRD-04 section 10, M-SHARE-2): patron health and payouts, never drafted notes or the open strip. */
+  patrons: {
+    active: number;
+    byTier: Array<{ name: string; count: number }>;
+    retentionPercent: number | null;
+    averageTenureMonths: number | null;
+    mrr: number;
+    events: Array<{ kind: string; at: string; title: string }>;
+    payouts: Array<{
+      friday: string;
+      gross: number;
+      platformFee: number;
+      stripeFee: number;
+      net: number;
+      currency: string;
+      status: string;
+    }>;
+  };
 }
 
 type ShareViewData = CoachViewData | ManagerViewData;
@@ -191,6 +210,61 @@ function ManagerView({ data }: { data: ManagerViewData }) {
                   {e.date} · {e.what}
                 </span>
                 <span className="font-mono">{formatMoney(e.amountHome, data.homeCurrency)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="gap-3 p-4">
+        <CardHeader className="p-0">
+          <CardTitle>Patrons</CardTitle>
+        </CardHeader>
+        <div className="text-sm">
+          {data.patrons.active} active
+          {data.patrons.byTier.length
+            ? ` · ${data.patrons.byTier.map((t) => `${t.name} ${t.count}`).join(' · ')}`
+            : ''}
+        </div>
+        <div className="text-sm text-muted-foreground">
+          Kept over 12 months{' '}
+          {data.patrons.retentionPercent === null ? '–' : `${data.patrons.retentionPercent}%`} ·
+          average{' '}
+          {data.patrons.averageTenureMonths === null
+            ? '–'
+            : data.patrons.averageTenureMonths.toFixed(1)}{' '}
+          months · MRR {formatPatronMoney(data.patrons.mrr, data.homeCurrency)} gross
+        </div>
+        {data.patrons.events.length ? (
+          <div className="flex flex-col gap-1 text-sm">
+            {data.patrons.events.map((e) => (
+              <div key={`${e.at}-${e.title}`} className="flex justify-between gap-2">
+                <span>{e.title}</span>
+                <span className="font-mono text-muted-foreground">{e.at.slice(0, 10)}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </Card>
+
+      <Card className="gap-3 p-4">
+        <CardHeader className="p-0">
+          <CardTitle>Payouts</CardTitle>
+        </CardHeader>
+        {data.patrons.payouts.length === 0 ? (
+          <Empty title="No payouts yet" />
+        ) : (
+          <div className="flex flex-col gap-1.5 text-sm">
+            {data.patrons.payouts.map((p) => (
+              <div key={p.friday} className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">
+                  {p.friday} · {formatPatronMoney(p.gross, p.currency)} gross, −
+                  {formatPatronMoney(p.platformFee, p.currency)} fee, −
+                  {formatPatronMoney(p.stripeFee, p.currency)} Stripe
+                </span>
+                <span className="font-mono">
+                  {formatPatronMoney(p.net, p.currency)} · {p.status}
+                </span>
               </div>
             ))}
           </div>

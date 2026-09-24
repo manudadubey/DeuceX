@@ -23,6 +23,10 @@ export const FEED_WINDOW_CHECK_QUEUE = 'feed-window-check';
 // packages/actions' recordRun and agent_runs, same as the initial run.
 export const CONDITIONS_REFRESH_QUEUE = 'conditions-refresh';
 export const CONDITIONS_STAMP_BACKFILL_QUEUE = 'conditions-stamp-backfill';
+// Step 4.1's own addition, same connection-budget reason: PRD-04 P-9's daily
+// 06:00-local attention pass is deterministic flag arithmetic over existing
+// patron rows (no model call; a note is drafted only when the player taps).
+export const FANS_ATTENTION_QUEUE = 'fans-attention-pass';
 
 export interface MoneyQueueLogger {
   error(...args: unknown[]): void;
@@ -41,7 +45,13 @@ export async function createMoneyBoss(
   connectionString: string,
   logger: MoneyQueueLogger = console,
 ): Promise<PgBoss> {
-  const boss = new PgBoss(connectionString);
+  // Step 4.1: an explicit pool cap. pg-boss defaults to 10 connections per
+  // instance, and three instances (notes, actions, money) against the
+  // session pooler's 15-client limit was found live, this session, to hit
+  // EMAXCONNSESSION once this boss's seventh queue (fans-attention-pass)
+  // added one more concurrent poller. 4 + 3 + 3 leaves headroom for tests
+  // and scripts sharing the same pooler.
+  const boss = new PgBoss({ connectionString, max: 4 });
   boss.on('error', (err) => logger.error('[pg-boss:money]', err));
   await boss.start();
   await boss.createQueue(FX_DAILY_FETCH_QUEUE);
@@ -50,11 +60,13 @@ export async function createMoneyBoss(
   await boss.createQueue(FEED_WINDOW_CHECK_QUEUE);
   await boss.createQueue(CONDITIONS_REFRESH_QUEUE);
   await boss.createQueue(CONDITIONS_STAMP_BACKFILL_QUEUE);
+  await boss.createQueue(FANS_ATTENTION_QUEUE);
   await boss.schedule(FX_DAILY_FETCH_QUEUE, '0 * * * *', {});
   await boss.schedule(RESERVE_REMINDER_QUEUE, '0 * * * *', {});
   await boss.schedule(ACCOUNT_DELETION_SWEEP_QUEUE, '0 * * * *', {});
   await boss.schedule(FEED_WINDOW_CHECK_QUEUE, '0 * * * *', {});
   await boss.schedule(CONDITIONS_REFRESH_QUEUE, '0 * * * *', {});
   await boss.schedule(CONDITIONS_STAMP_BACKFILL_QUEUE, '0 * * * *', {});
+  await boss.schedule(FANS_ATTENTION_QUEUE, '0 * * * *', {});
   return boss;
 }
