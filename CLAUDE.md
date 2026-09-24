@@ -230,10 +230,10 @@ integration tests instead. See `docs/BUILD-LOG.md`'s step 3.3 entry for the full
 and everything else deliberately skipped (CE-21's post-event check-in, CE-22's order-of-play
 forecast, a real climate-normals data source, a distinct day-before-travel refresh mechanism, the
 players ranking-column grant lockdown deferred a third time now).
-[PR #15](https://github.com/manudadubey/ProCircuit/pull/15) is open, not yet merged. The next
-session should start at **step 4.1 (Fans)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step
-plus whatever architecture section it names, and check `gh pr list` first — if PR #15 hasn't merged
-yet, branch off it rather than `main`, the same stacking step 0.5/0.6 used. Check
+[PR #15](https://github.com/manudadubey/ProCircuit/pull/15) is merged. The next session should
+start at **step 4.1 (Fans)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever
+architecture section it names, and check `gh pr list` first — if a later PR hasn't merged yet,
+branch off it rather than `main`, the same stacking step 0.5/0.6 used. Check
 `docs/BUILD-LOG.md` for what each prior
 step actually did (including follow-ups) before assuming anything about the current state — this
 line is a pointer, not the full record.
