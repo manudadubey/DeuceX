@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge, Button, Card, CardHeader, CardTitle, Confirm, Empty } from '@procircuit/ui';
 import { PatronPayoutsItem } from '@/components/fans/patron-settings';
 import { downgradeToFree, type Player } from '@procircuit/db';
+import { billingPauseNotice } from '@procircuit/shared';
 import { createClient } from '@/lib/supabase/client';
+import { confirmApproval } from '@/lib/approvals/confirm-approval';
+import { pausePatronBilling } from '@/lib/fans/api';
 
 const PLAN_PRICE: Record<string, string> = {
   pro: 'A$49 a month',
@@ -35,16 +38,56 @@ export function BillingPane({
 }) {
   const [confirming, setConfirming] = useState(false);
   const [downgrading, setDowngrading] = useState(false);
+  const [payingPatrons, setPayingPatrons] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const plan = player.tier ?? 'free';
+  const notice = billingPauseNotice({ playerName: player.name });
 
+  // Step 4.1b · P-18: how many patrons a downgrade would stop charging.
+  useEffect(() => {
+    if (!confirming) return;
+    void createClient()
+      .from('patrons')
+      .select('id', { count: 'exact', head: true })
+      .eq('player_id', player.id)
+      .in('status', ['active', 'past_due'])
+      .then(({ count }) => setPayingPatrons(count ?? 0));
+  }, [confirming, player.id]);
+
+  // P-18 / M-TIER-2: patron billing pauses first, through its own gated
+  // action, and the plan changes only once every paying patron is paused,
+  // so a Free account never keeps charging anyone.
   async function handleDowngrade() {
     setDowngrading(true);
+    setError(null);
     try {
       const supabase = createClient();
+      let unnotified = 0;
+      if (payingPatrons > 0) {
+        const approval = await confirmApproval({
+          playerId: player.id,
+          actionType: 'patron_billing_pause',
+          payload: {},
+        });
+        const result = await pausePatronBilling(supabase, approval.id);
+        if (result.failed.length > 0) {
+          setError(
+            `Stripe couldn't pause ${result.failed.length === 1 ? '1 patron' : `${result.failed.length} patrons`}, so you're still on ${plan}. Try again in a moment.`,
+          );
+          return;
+        }
+        unnotified = result.unnotified.length;
+      }
       await downgradeToFree(supabase, player.id);
       onPlayerChange({ tier: 'free', tier_status: 'free' });
       setConfirming(false);
-      onToast('Downgraded to Free');
+      onToast(
+        payingPatrons > 0
+          ? `Downgraded to Free · billing paused for ${payingPatrons === 1 ? '1 patron' : `${payingPatrons} patrons`}${unnotified > 0 ? ` · ${unnotified} didn't get the email` : ''}`
+          : 'Downgraded to Free',
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'The downgrade did not go through.');
     } finally {
       setDowngrading(false);
     }
@@ -83,7 +126,30 @@ export function BillingPane({
           (confirming ? (
             <Confirm
               title={`Downgrade to Free, effective ${nextMonthFirst()}?`}
-              description="Financial and Mindset pause. Nothing is deleted — patrons, ledger and notes are retained."
+              description={
+                <>
+                  Financial and Mindset pause. Nothing is deleted: patrons, ledger and notes are
+                  retained.
+                  {payingPatrons > 0 ? (
+                    <>
+                      {' '}
+                      Patron billing pauses now for{' '}
+                      {payingPatrons === 1 ? '1 patron' : `${payingPatrons} patrons`}: nothing more
+                      is charged, and each gets this email from you. It resumes at the same price,
+                      without re-signup, if you come back to Pro.
+                      <span className="mt-2 block rounded-md border border-border p-2 text-xs">
+                        <span className="block font-medium">{notice.subject}</span>
+                        {notice.paragraphs.map((p) => (
+                          <span key={p} className="mt-1 block">
+                            {p}
+                          </span>
+                        ))}
+                      </span>
+                    </>
+                  ) : null}
+                  {error ? <span className="mt-2 block text-danger">{error}</span> : null}
+                </>
+              }
               actions={
                 <>
                   <Button size="sm" disabled={downgrading} onClick={handleDowngrade}>

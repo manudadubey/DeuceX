@@ -82,6 +82,9 @@ function StateBadge({ patron }: { patron: FansPatronView }) {
   if (patron.status === 'left' && patron.leftAt) {
     return <Badge variant="secondary">Left {dayMonth(patron.leftAt)}</Badge>;
   }
+  if (patron.status === 'paused') {
+    return <Badge variant="secondary">Paused</Badge>;
+  }
   if (patron.flag === 'card') {
     return (
       <Badge variant="danger">

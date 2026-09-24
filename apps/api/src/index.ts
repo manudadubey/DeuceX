@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createAnonClient, createServiceRoleClient } from '@procircuit/db';
 import { SupabaseAgentRunsDb } from '@procircuit/actions';
@@ -421,6 +422,13 @@ async function main() {
     noteClient,
     agentRuns,
     appBaseUrl,
+    // Step 4.1b: the HMAC key for patrons' emailed manage links. Set
+    // PATRON_LINK_SECRET in production; locally it falls back to a key
+    // derived from the service-role key, which is server-only too, so links
+    // still can't be forged without it.
+    linkSecret:
+      process.env.PATRON_LINK_SECRET ??
+      createHash('sha256').update(`patron-link:${serviceRoleKey}`).digest('hex'),
   };
 
   const app = buildServer(

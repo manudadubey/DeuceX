@@ -2168,3 +2168,67 @@ Deliberately skipped, each for a named reason:
   endpoints, and patron-list/payout export (M-PRIV-2; step 2.3's export predates these tables).
 - A real verified sending domain: patron notes go from Resend's sandbox sender with the player's
   name on the From line and the player's own address as Reply-To.
+
+## Step 4.1b · Fans launch blockers (P-17, P-18) — 25 September 2026
+
+Closed the two gaps step 4.1 flagged as launch blockers, before any real patron is charged.
+
+**P-17, the Stripe customer portal.** Patrons have no ProCircuit login, so owning the email
+address is the credential. The public `/p/<slug>` page gains "Already backing <name>? Change
+tier, update your card or cancel", a form that emails a one-hour link. `/p/<slug>/manage` swaps
+that link's token for a Stripe customer-portal session on the player's connected account, where
+the patron can switch tier (every tier's current price, no proration), update the card, see
+invoices, or cancel at period end with Stripe's reason picker. The token is stateless:
+`<patronId>.<expiry>.<HMAC-SHA256>` under `PATRON_LINK_SECRET`. Locally, when that's unset, the
+key is derived from the service-role key, which is also server-only. So there's no token table and
+no migration for it. The form answers the same whether or not the email backs the player, and a
+Resend failure (which only happens when it does) is logged, never shown, so the form can't be used
+to find out who's a patron. Like `createPatronCheckout`, this is the patron's own request about
+their own membership, so no player approval stands behind it. The leave event now records the
+reason picked in the portal when the patron writes no comment (`cancellationReason`, e.g. "Too
+expensive"), which completes P-17's "records a reason when the patron gives one".
+
+**P-18 / M-TIER-2, pausing patron billing on a downgrade to Free.** "Downgrade to Free" in Plan &
+billing now counts the paying patrons, and the confirm step states the count and prints the exact
+email each will get (P-18's "a notice the player has seen first"). Confirming runs a new gated
+action, `patron_billing_pause`, *before* the plan change: it sets Stripe `pause_collection`
+(`behavior: void`, so nothing accrues while paused) on every active or past-due subscription,
+marks each patron `paused`, and emails each the notice with a 30-day manage link. The plan change
+only happens once every pause succeeded; a failed Stripe call leaves that patron untouched and
+stops the downgrade. A failed or missing email never undoes or halts a billing change, it's
+reported back as "not notified". Back on Pro or Elite, `/fans` shows "Patron billing is paused ·
+N patrons" with a gated `patron_billing_resume` (refused on Free) that restarts those same
+subscriptions at their original price, no re-signup, with its own notice shown in the confirm step
+first. Patron rows get a Paused badge, and the webhook keeps `paused` in sync if it's changed in
+Stripe directly. The notice texts live in `packages/shared` (`patron-notices.ts`) so the confirm
+step and the email print identical words; `packages/agents` couldn't host them without an
+import cycle, since agents depends on actions.
+
+One migration (`20260924170000_step_4_1b_patron_billing.sql`, owner-confirmed, applied to
+production): two additive `approvals.action_type` values. No table or column changes.
+
+Verified: 8 new actions tests (token signing, tamper and expiry; no-probe behaviour; the portal
+only for a valid token, with every tier switchable; pause and resume refused without an approval;
+the exact notice text in the email; a Stripe failure leaving that patron untouched; an email
+failure not stopping the rest; resume refused on Free), 2 new API tests (paused-state sync, the
+portal's reason code), and a live pass against the sandbox with the real test patron from step
+4.1:
+- the manage form answered neutrally while Resend refused `mira@example.com` (logged, not shown);
+- a link minted with the API's own key opened Stripe's real portal for her Courtside subscription,
+  with Update subscription, Cancel, her card and her invoice, and a forged link was refused;
+- "Downgrade to Free" showed "pauses now for 1 patron" plus the notice, then set
+  `pause_collection: void` on her real subscription, marked her paused, and moved the player to
+  Free;
+- back on Pro, `/fans` showed the paused card and badge, and Resume cleared `pause_collection` and
+  set her active again. The player was left on Pro and Mira active, as before.
+
+Not done, deliberately:
+- **Pause expiry after 90 days** (P-18's "if the player returns within 90 days"). A paused
+  membership currently stays paused indefinitely: no charge, but no automatic cancellation either.
+  That needs a scheduled sweep with its own notice.
+- **An in-app route back to Pro.** The Resume card appears whenever the plan is Pro or Elite with
+  paused patrons, but there's still no in-app upgrade (real Stripe Billing for the player's own
+  plan is a later step), so this run set the tier directly.
+- A welcome email, and a manage link in every patron update's footer (step 4.2, with the Content
+  Agent's emails).
+- A verified Resend sending domain, still needed before any of these emails reach a real patron.

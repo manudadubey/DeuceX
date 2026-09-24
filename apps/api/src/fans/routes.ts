@@ -11,6 +11,11 @@ import {
 import type { EmailClient } from '@procircuit/actions/account';
 import {
   createPatronCheckout,
+  ManageLinkInvalidError,
+  openPatronPortal,
+  pausePatronBilling,
+  requestPatronManageLink,
+  resumePatronBilling,
   FansProgrammeMissingError,
   InvalidTierInputError,
   inviteFromWaitlist,
@@ -51,6 +56,8 @@ export interface FansRoutesDeps {
   noteClient: PatronNoteModelClient;
   agentRuns: AgentRunsDb;
   appBaseUrl: string;
+  /** Step 4.1b: HMAC key for patrons' emailed manage links (P-17). Server-only. */
+  linkSecret: string;
 }
 
 const NOTE_KINDS: readonly PatronNoteKind[] = ['thanks', 'nudge', 'checkin', 'welcome'];
@@ -94,6 +101,7 @@ function mapError(err: unknown, reply: FastifyReply): FastifyReply | undefined {
   ) {
     return reply.code(422).send({ error: err.message });
   }
+  if (err instanceof ManageLinkInvalidError) return reply.code(410).send({ error: err.message });
   if (err instanceof StripeCallFailedError) return reply.code(502).send({ error: err.message });
   return undefined;
 }
@@ -340,6 +348,81 @@ export async function registerFansRoutes(
         tierName: joined.tier.name,
         firstName: joined.patron.name.split(/\s+/)[0],
       });
+    } catch (err) {
+      const mapped = mapError(err, reply);
+      if (mapped) return mapped;
+      throw err;
+    }
+  });
+
+  // ---- step 4.1b: pause and resume patron billing (P-18) ------------------
+
+  for (const [path, action] of [
+    ['/fans/billing/pause', pausePatronBilling],
+    ['/fans/billing/resume', resumePatronBilling],
+  ] as const) {
+    app.post(path, async (request, reply) => {
+      const playerId = await requirePlayerId(deps, request, reply);
+      if (!playerId) return;
+      const stripe = stripeOr503(deps, reply);
+      if (!stripe) return;
+      const { approvalId } = (request.body ?? {}) as { approvalId?: string };
+      if (!approvalId) return reply.code(400).send({ error: 'Missing approvalId' });
+      try {
+        const result = await action(gateDb(), actionsDb(), stripe, deps.email, {
+          approvalId,
+          playerId,
+          appBaseUrl: deps.appBaseUrl,
+          linkSecret: deps.linkSecret,
+        });
+        return reply.send(result);
+      } catch (err) {
+        const mapped = mapError(err, reply);
+        if (mapped) return mapped;
+        throw err;
+      }
+    });
+  }
+
+  // ---- step 4.1b: the patron manage link and Stripe portal (P-17) ---------
+
+  // Same answer whether or not the email backs this player, so the form
+  // can't be used to find out who does.
+  app.post('/public/p/:slug/manage', async (request, reply) => {
+    const { slug } = request.params as { slug: string };
+    const { email } = (request.body ?? {}) as { email?: string };
+    if (!email || !EMAIL_PATTERN.test(email.trim()) || email.length > 254) {
+      return reply.code(400).send({ error: 'Enter a valid email address' });
+    }
+    try {
+      await requestPatronManageLink(actionsDb(), deps.email, {
+        slug,
+        email,
+        appBaseUrl: deps.appBaseUrl,
+        linkSecret: deps.linkSecret,
+      });
+    } catch (err) {
+      // A send failure happens only when the email IS a patron, so
+      // answering differently would reveal exactly that. Logged, not shown.
+      request.log.error({ err }, 'patron manage link failed to send');
+    }
+    return reply.send({ ok: true });
+  });
+
+  app.post('/public/p/:slug/portal', async (request, reply) => {
+    const stripe = stripeOr503(deps, reply);
+    if (!stripe) return;
+    const { slug } = request.params as { slug: string };
+    const { token } = (request.body ?? {}) as { token?: string };
+    if (!token) return reply.code(400).send({ error: 'Missing token' });
+    try {
+      const { url } = await openPatronPortal(actionsDb(), stripe, {
+        slug,
+        token,
+        appBaseUrl: deps.appBaseUrl,
+        linkSecret: deps.linkSecret,
+      });
+      return reply.send({ url });
     } catch (err) {
       const mapped = mapError(err, reply);
       if (mapped) return mapped;

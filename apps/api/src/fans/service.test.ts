@@ -113,6 +113,8 @@ function subscription(overrides: Partial<SubscriptionSummary> = {}): Subscriptio
     cancellationFeedback: null,
     endedAt: null,
     canceledAt: null,
+    paused: false,
+    cancelAtPeriodEnd: false,
     ...overrides,
   };
 }
@@ -166,6 +168,12 @@ function fakeStripe(overrides: Partial<FansStripeClient> = {}): FansStripeClient
       return [];
     },
     verifyWebhook() {
+      throw new Error('unused');
+    },
+    async createPortalSession() {
+      throw new Error('unused');
+    },
+    async setSubscriptionPaused() {
       throw new Error('unused');
     },
     ...overrides,
@@ -571,5 +579,49 @@ describe('drafting a note on tap (P-10, P-AC-5)', () => {
       'tom',
     );
     expect(result).toEqual({ kind: 'checkin', text: null });
+  });
+});
+
+describe('step 4.1b · webhook sync for the portal and the pause', () => {
+  it('marks a patron paused when Stripe reports paused billing, and active again on resume', async () => {
+    store.patrons.push(
+      patron({ id: 'mira', name: 'Mira Kovac', stripeSubscriptionId: 'sub_mira' }),
+    );
+    let paused = true;
+    const stripe = fakeStripe({
+      async retrieveSubscription() {
+        return subscription({ paused });
+      },
+    });
+    await applyStripeEvent(
+      { store, stripe, now: () => NOW },
+      event('customer.subscription.updated', { id: 'sub_mira' }, 'evt_a'),
+    );
+    expect(store.patrons[0]!.status).toBe('paused');
+    paused = false;
+    await applyStripeEvent(
+      { store, stripe, now: () => NOW },
+      event('customer.subscription.updated', { id: 'sub_mira' }, 'evt_b'),
+    );
+    expect(store.patrons[0]!.status).toBe('active');
+  });
+
+  it('records the reason a patron picked in the portal when they leave no comment (P-17)', async () => {
+    store.patrons.push(patron({ id: 'anna', name: 'Anna Pichler', since: '2025-06-25T09:00:00Z' }));
+    const stripe = fakeStripe({
+      async retrieveSubscription() {
+        return subscription({
+          id: 'sub_anna',
+          endedAt: '2026-08-25T10:00:00Z',
+          cancellationFeedback: 'too_expensive',
+        });
+      },
+    });
+    await applyStripeEvent(
+      { store, stripe, now: () => NOW },
+      event('customer.subscription.deleted', { id: 'sub_anna' }),
+    );
+    expect(store.patrons[0]!.leftReason).toBe('Too expensive');
+    expect(store.events[0]!.attribution).toBe('14 months. "Too expensive"');
   });
 });

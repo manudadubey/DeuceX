@@ -1,11 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ApprovalGateDb, ApprovalRecord } from './gate';
 import { ApprovalNotFoundError, ApprovalPayloadMismatchError } from './errors';
+import { billingPauseNotice } from '@procircuit/shared';
 import type { EmailClient, SendEmailInput } from './resend-client';
 import type { FansStripeClient } from './stripe-client';
 import {
   PRO_PAGE_CAP,
+  ManageLinkInvalidError,
+  MANAGE_LINK_TTL_MS,
   TierNotSellableError,
+  createManageToken,
+  openPatronPortal,
+  pausePatronBilling,
+  requestPatronManageLink,
+  resumePatronBilling,
+  verifyManageToken,
   WaitlistEntryUnavailableError,
   createPatronCheckout,
   inviteFromWaitlist,
@@ -73,6 +82,7 @@ function fakeDb(overrides: Partial<FansActionsDb> = {}) {
     createProgramme: vi.fn<FansActionsDb['createProgramme']>(async () => undefined),
     insertNoteSent: vi.fn<FansActionsDb['insertNoteSent']>(async () => undefined),
     markWaitlistInvited: vi.fn<FansActionsDb['markWaitlistInvited']>(async () => undefined),
+    setPatronStatus: vi.fn<FansActionsDb['setPatronStatus']>(async () => undefined),
   };
   const db: FansActionsDb = {
     async getPlayer(id) {
@@ -113,13 +123,60 @@ function fakeDb(overrides: Partial<FansActionsDb> = {}) {
         : null;
     },
     markWaitlistInvited: calls.markWaitlistInvited,
+    async findCurrentPatronsByEmail(_player, email) {
+      return email === 'anna@example.com' ? [{ id: 'anna' }] : [];
+    },
+    async getPatronBilling(id) {
+      return id === 'anna'
+        ? { id: 'anna', playerId: 'player-1', stripeCustomerId: 'cus_anna', status: 'active' }
+        : null;
+    },
+    async listPatronsByStatus(_player, statuses) {
+      const all = [
+        {
+          id: 'anna',
+          name: 'Anna Pichler',
+          email: 'anna@example.com',
+          stripeSubscriptionId: 'sub_anna',
+          status: 'active',
+        },
+        {
+          id: 'tom',
+          name: 'Tom Brandt',
+          email: 'tom@example.com',
+          stripeSubscriptionId: 'sub_tom',
+          status: 'past_due',
+        },
+        {
+          id: 'sophie',
+          name: 'Sophie Taler',
+          email: null,
+          stripeSubscriptionId: 'sub_sophie',
+          status: 'paused',
+        },
+      ];
+      return all.filter((p) => statuses.includes(p.status));
+    },
+    setPatronStatus: calls.setPatronStatus,
+    async listTiers() {
+      return [
+        COURTSIDE,
+        {
+          ...COURTSIDE,
+          id: 'tier-2',
+          position: 2,
+          stripeProductId: 'prod_2',
+          stripePriceId: 'price_2',
+        },
+      ];
+    },
     ...overrides,
   };
   return { db, calls };
 }
 
-function fakeStripe(): FansStripeClient & { calls: Record<string, ReturnType<typeof vi.fn>> } {
-  const calls = {
+function makeStripeCalls() {
+  return {
     createExpressAccount: vi.fn(async () => ({ id: 'acct_new' })),
     createAccountLink: vi.fn(async () => ({ url: 'https://connect.stripe.test/onboard' })),
     upsertTierPrice: vi.fn(async () => ({ productId: 'prod_1', priceId: 'price_2' })),
@@ -127,7 +184,15 @@ function fakeStripe(): FansStripeClient & { calls: Record<string, ReturnType<typ
       id: 'cs_1',
       url: 'https://checkout.stripe.test/cs_1',
     })),
+    createPortalSession: vi.fn(async () => ({ url: 'https://billing.stripe.test/p/1' })),
+    setSubscriptionPaused: vi.fn<
+      (input: { account: string; subscriptionId: string; paused: boolean }) => Promise<void>
+    >(async () => undefined),
   };
+}
+
+function fakeStripe(): FansStripeClient & { calls: ReturnType<typeof makeStripeCalls> } {
+  const calls = makeStripeCalls();
   return {
     calls,
     createExpressAccount: calls.createExpressAccount,
@@ -149,6 +214,8 @@ function fakeStripe(): FansStripeClient & { calls: Record<string, ReturnType<typ
     verifyWebhook() {
       throw new Error('unused');
     },
+    createPortalSession: calls.createPortalSession,
+    setSubscriptionPaused: calls.setSubscriptionPaused,
   };
 }
 
@@ -475,5 +542,195 @@ describe('createPatronCheckout (P-2, P-3, M-TIER-3)', () => {
         base,
       ),
     ).rejects.toBeInstanceOf(TierNotSellableError);
+  });
+});
+
+describe('step 4.1b · the patron manage link (P-17)', () => {
+  const SECRET = 'test-secret';
+  const input = { slug: 'arya-dubey', appBaseUrl: 'https://app.test', linkSecret: SECRET };
+
+  it('signs a one-hour token and refuses a tampered or expired one', () => {
+    const now = new Date('2026-09-24T10:00:00Z');
+    const token = createManageToken(SECRET, 'anna', now);
+    expect(verifyManageToken(SECRET, token, now)).toBe('anna');
+    expect(() => verifyManageToken(SECRET, token.replace('anna', 'tom'), now)).toThrow(
+      ManageLinkInvalidError,
+    );
+    expect(() => verifyManageToken('other-secret', token, now)).toThrow(/bad signature/);
+    expect(() =>
+      verifyManageToken(SECRET, token, new Date(now.getTime() + MANAGE_LINK_TTL_MS + 1)),
+    ).toThrow(/expired/);
+  });
+
+  it('emails the link only to a current patron, and looks the same either way', async () => {
+    const email = fakeEmail();
+    await requestPatronManageLink(fakeDb().db, email.client, {
+      ...input,
+      email: 'nobody@example.com',
+    });
+    expect(email.sent).toHaveLength(0);
+    await requestPatronManageLink(fakeDb().db, email.client, {
+      ...input,
+      email: ' Anna@Example.com ',
+    });
+    expect(email.sent).toHaveLength(1);
+    expect(email.sent[0]).toMatchObject({
+      to: 'anna@example.com',
+      fromName: 'Arya Dubey',
+      replyTo: 'arya@example.com',
+    });
+    expect(email.sent[0]!.html).toContain('https://app.test/p/arya-dubey/manage?t=');
+  });
+
+  it("opens Stripe's portal on the player's account with every tier switchable, only for a valid token", async () => {
+    const stripe = fakeStripe();
+    await expect(
+      openPatronPortal(fakeDb().db, stripe, { ...input, token: 'anna.1.forged' }),
+    ).rejects.toBeInstanceOf(ManageLinkInvalidError);
+    expect(stripe.calls.createPortalSession).not.toHaveBeenCalled();
+
+    const result = await openPatronPortal(fakeDb().db, stripe, {
+      ...input,
+      token: createManageToken(SECRET, 'anna'),
+    });
+    expect(result.url).toBe('https://billing.stripe.test/p/1');
+    expect(stripe.calls.createPortalSession).toHaveBeenCalledWith({
+      account: 'acct_123',
+      customerId: 'cus_anna',
+      returnUrl: 'https://app.test/p/arya-dubey',
+      products: [
+        { productId: 'prod_1', priceId: 'price_1' },
+        { productId: 'prod_2', priceId: 'price_2' },
+      ],
+    });
+  });
+});
+
+describe('step 4.1b · pausing and resuming patron billing (P-18, M-TIER-2)', () => {
+  const input = {
+    approvalId: 'approval-1',
+    playerId: 'player-1',
+    appBaseUrl: 'https://app.test',
+    linkSecret: 's',
+  };
+
+  it("never touches Stripe or emails anyone without the player's approval", async () => {
+    const stripe = fakeStripe();
+    const email = fakeEmail();
+    await expect(
+      pausePatronBilling(fakeGateDb([]), fakeDb().db, stripe, email.client, input),
+    ).rejects.toBeInstanceOf(ApprovalNotFoundError);
+    await expect(
+      resumePatronBilling(fakeGateDb([]), fakeDb().db, stripe, email.client, input),
+    ).rejects.toBeInstanceOf(ApprovalNotFoundError);
+    expect(stripe.calls.setSubscriptionPaused).not.toHaveBeenCalled();
+    expect(email.sent).toHaveLength(0);
+  });
+
+  it('pauses every paying patron and emails each the exact notice the player saw', async () => {
+    const stripe = fakeStripe();
+    const email = fakeEmail();
+    const { db, calls } = fakeDb();
+    const result = await pausePatronBilling(
+      fakeGateDb([approval('patron_billing_pause', {})]),
+      db,
+      stripe,
+      email.client,
+      input,
+    );
+    expect(result).toEqual({ changed: 2, failed: [], unnotified: [] });
+    expect(stripe.calls.setSubscriptionPaused.mock.calls.map((c) => c[0])).toEqual([
+      { account: 'acct_123', subscriptionId: 'sub_anna', paused: true },
+      { account: 'acct_123', subscriptionId: 'sub_tom', paused: true },
+    ]);
+    expect(calls.setPatronStatus.mock.calls).toEqual([
+      ['anna', 'paused'],
+      ['tom', 'paused'],
+    ]);
+    const notice = billingPauseNotice({ playerName: 'Arya Dubey' });
+    expect(email.sent.map((m) => m.to)).toEqual(['anna@example.com', 'tom@example.com']);
+    expect(email.sent[0]!.subject).toBe(notice.subject);
+    for (const paragraph of notice.paragraphs) {
+      expect(email.sent[0]!.html).toContain(paragraph.replace(/'/g, "'"));
+    }
+    expect(email.sent[0]!.html).toContain('/p/arya-dubey/manage?t=');
+  });
+
+  it('leaves a patron whose Stripe call fails untouched and unemailed, and says so', async () => {
+    const stripe = fakeStripe();
+    stripe.calls.setSubscriptionPaused.mockImplementation(async (i) => {
+      if (i.subscriptionId === 'sub_tom') throw new Error('Stripe down');
+    });
+    const email = fakeEmail();
+    const { db, calls } = fakeDb();
+    const result = await pausePatronBilling(
+      fakeGateDb([approval('patron_billing_pause', {})]),
+      db,
+      stripe,
+      email.client,
+      input,
+    );
+    expect(result).toEqual({ changed: 1, failed: ['tom'], unnotified: [] });
+    expect(calls.setPatronStatus.mock.calls).toEqual([['anna', 'paused']]);
+    expect(email.sent.map((m) => m.to)).toEqual(['anna@example.com']);
+  });
+
+  it('resumes paused patrons on Pro, and refuses to on Free', async () => {
+    const stripe = fakeStripe();
+    const { db, calls } = fakeDb();
+    const result = await resumePatronBilling(
+      fakeGateDb([approval('patron_billing_resume', {})]),
+      db,
+      stripe,
+      fakeEmail().client,
+      input,
+    );
+    // Sophie has no email on file: resumed, but reported as not notified.
+    expect(result).toEqual({ changed: 1, failed: [], unnotified: ['sophie'] });
+    expect(stripe.calls.setSubscriptionPaused).toHaveBeenCalledWith({
+      account: 'acct_123',
+      subscriptionId: 'sub_sophie',
+      paused: false,
+    });
+    expect(calls.setPatronStatus).toHaveBeenCalledWith('sophie', 'active');
+
+    await expect(
+      resumePatronBilling(
+        fakeGateDb([approval('patron_billing_resume', {})]),
+        fakeDb({ getPlayer: async () => ({ ...PLAYER, tier: 'free' }) }).db,
+        fakeStripe(),
+        fakeEmail().client,
+        input,
+      ),
+    ).rejects.toBeInstanceOf(TierNotSellableError);
+  });
+});
+
+describe('step 4.1b · an email failure never stops a billing change', () => {
+  it('keeps pausing the rest when one notice fails to send, and reports who missed it', async () => {
+    const stripe = fakeStripe();
+    const { db, calls } = fakeDb();
+    const email: EmailClient = {
+      async sendEmail(m) {
+        if (m.to === 'anna@example.com') throw new Error('Resend refused');
+      },
+    };
+    const result = await pausePatronBilling(
+      fakeGateDb([approval('patron_billing_pause', {})]),
+      db,
+      stripe,
+      email,
+      {
+        approvalId: 'approval-1',
+        playerId: 'player-1',
+        appBaseUrl: 'https://app.test',
+        linkSecret: 's',
+      },
+    );
+    expect(result).toEqual({ changed: 2, failed: [], unnotified: ['anna'] });
+    expect(calls.setPatronStatus.mock.calls).toEqual([
+      ['anna', 'paused'],
+      ['tom', 'paused'],
+    ]);
   });
 });

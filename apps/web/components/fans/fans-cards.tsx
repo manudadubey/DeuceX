@@ -30,7 +30,8 @@ import {
 import { formatPatronMoney } from '@procircuit/agents';
 import { createClient } from '@/lib/supabase/client';
 import { confirmApproval } from '@/lib/approvals/confirm-approval';
-import { inviteFromWaitlist, startConnectOnboarding } from '@/lib/fans/api';
+import { billingResumeNotice } from '@procircuit/shared';
+import { inviteFromWaitlist, resumePatronBilling, startConnectOnboarding } from '@/lib/fans/api';
 import type { FansSnapshot } from '@/lib/fans/load';
 import { MovementChart, MrrChart } from './fans-charts';
 
@@ -580,6 +581,110 @@ export function SetupCard({ snapshot, playerId }: { snapshot: FansSnapshot; play
           </Button>
         )}
         {onboard.error ? <p className="mt-2 text-xs text-danger">{onboard.error}</p> : null}
+      </div>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Step 4.1b · P-18: resume patron billing after a return to Pro or Elite
+// ---------------------------------------------------------------------------
+
+export function PausedBillingCard({
+  snapshot,
+  playerId,
+  playerName,
+  onChanged,
+  onToast,
+}: {
+  snapshot: FansSnapshot;
+  playerId: string;
+  playerName: string;
+  onChanged: () => void;
+  onToast: (title: string) => void;
+}) {
+  const supabase = useMemo(() => createClient(), []);
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const paused = snapshot.patrons.filter((p) => p.status === 'paused').length;
+  if (paused === 0 || snapshot.plan === 'free') return null;
+  const who = paused === 1 ? '1 patron' : `${paused} patrons`;
+  const notice = billingResumeNotice({ playerName });
+
+  const resume = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const approval = await confirmApproval({
+        playerId,
+        actionType: 'patron_billing_resume',
+        payload: {},
+      });
+      const result = await resumePatronBilling(supabase, approval.id);
+      if (result.failed.length > 0) {
+        setError(
+          `Stripe couldn't resume ${result.failed.length === 1 ? '1 patron' : `${result.failed.length} patrons`}; they stay paused. Try again in a moment.`,
+        );
+      } else {
+        onToast(
+          `Billing resumed for ${who}${result.unnotified.length > 0 ? ` · ${result.unnotified.length} didn't get the email` : ''}`,
+        );
+        setConfirming(false);
+      }
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Billing was not resumed.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Patron billing is paused</CardTitle>
+        <CardDescription>
+          {who} paused when you moved to Free. Nothing is being charged. They can come back without
+          signing up again.
+        </CardDescription>
+      </CardHeader>
+      <div className="px-5 pb-5 max-sm:px-4">
+        {confirming ? (
+          <Confirm
+            title={`Resume billing for ${who}`}
+            description={
+              <>
+                Restarts each membership at the price that patron had before, from their next
+                billing date, and sends each this email from you now. It can be paused again from
+                Settings.
+                <span className="mt-2 block rounded-md border border-border p-2 text-xs">
+                  <span className="block font-medium">{notice.subject}</span>
+                  {notice.paragraphs.map((p) => (
+                    <span key={p} className="mt-1 block">
+                      {p}
+                    </span>
+                  ))}
+                </span>
+              </>
+            }
+            actions={
+              <>
+                <Button size="sm" disabled={busy} onClick={resume}>
+                  {busy ? 'Resuming…' : 'Resume billing'}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>
+                  Cancel
+                </Button>
+              </>
+            }
+          />
+        ) : (
+          <Button size="sm" onClick={() => setConfirming(true)}>
+            Resume patron billing
+          </Button>
+        )}
+        {error ? <p className="mt-2 text-xs text-danger">{error}</p> : null}
       </div>
     </Card>
   );

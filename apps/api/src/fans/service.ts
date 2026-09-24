@@ -28,6 +28,7 @@ import {
   type PatronSource,
 } from '@procircuit/agents';
 import { recordRun, type AgentRunsDb } from '@procircuit/actions';
+import { cancellationReason } from '@procircuit/shared';
 import type {
   CheckoutSessionSummary,
   FansStripeClient,
@@ -358,6 +359,14 @@ async function applyEventBody(
         account: event.account,
         id: patron.stripeSubscriptionId,
       });
+      // Step 4.1b: keep the paused state in step with Stripe (P-18). The
+      // gated pause/resume actions already set it directly; this covers a
+      // change made in Stripe's own dashboard, and replays.
+      if (subscription.paused && patron.status !== 'paused' && patron.status !== 'left') {
+        await deps.store.updatePatron(patron.id, { status: 'paused' });
+      } else if (!subscription.paused && patron.status === 'paused') {
+        await deps.store.updatePatron(patron.id, { status: 'active' });
+      }
       const tiers = await deps.store.listTiers(programme.playerId);
       const newTier = tiers.find((t) => t.stripeProductId === subscription.productId);
       const oldTier = tierById(tiers, patron.tierId);
@@ -405,7 +414,10 @@ async function applyEventBody(
         id: patron.stripeSubscriptionId,
       });
       const leftAt = subscription.endedAt ?? subscription.canceledAt ?? event.createdAt;
-      const reason = subscription.cancellationComment?.trim() || null;
+      const reason = cancellationReason(
+        subscription.cancellationComment,
+        subscription.cancellationFeedback,
+      );
       await deps.store.updatePatron(patron.id, {
         status: 'left',
         leftAt,

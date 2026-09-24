@@ -12,6 +12,7 @@
   "dependencies": {
     "@procircuit/agents": "workspace:*",
     "@procircuit/db": "workspace:*",
+    "@procircuit/shared": "workspace:*",
     "@procircuit/ui": "workspace:*",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.106.0",
