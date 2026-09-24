@@ -6,11 +6,17 @@ import {
   computeGrossWeeklySpend,
   computeMonthlyPnl,
   computeRunwayWeeks,
+  eventTitle,
+  mrrHistory,
+  patronDisplayName,
   runwayColour,
+  tenureSummary,
+  twelveMonthRetention,
   type FinancialLedgerLine,
   type MonthlyPnl,
   type RunwayColour,
 } from '@procircuit/agents';
+import { loadPatronIncome } from '../fans/income';
 
 const LOOKBACK_DAYS = 60;
 
@@ -67,8 +73,28 @@ export interface ManagerViewData {
   runwayColour: RunwayColour;
   monthlyPnl: MonthlyPnl;
   expenses: ManagerExpenseLine[];
-  /** Patrons/payouts don't exist until step 4.1 — see PRD-12 4.9's own "No agent outputs" scope. */
-  patronsAvailable: false;
+  /** PRD-04 section 10 / M-SHARE-2 (step 4.1): patron health and payouts, never drafted notes or the open strip. */
+  patrons: ManagerPatronSummary;
+}
+
+export interface ManagerPatronSummary {
+  active: number;
+  byTier: Array<{ name: string; count: number }>;
+  retentionPercent: number | null;
+  averageTenureMonths: number | null;
+  /** Home currency, gross, before fees. */
+  mrr: number;
+  mrrHistory: Array<{ month: string; gross: number }>;
+  events: Array<{ kind: string; at: string; title: string }>;
+  payouts: Array<{
+    friday: string;
+    gross: number;
+    platformFee: number;
+    stripeFee: number;
+    net: number;
+    currency: string;
+    status: string;
+  }>;
 }
 
 export type ShareViewData = CoachViewData | ManagerViewData;
@@ -268,9 +294,8 @@ export class SupabaseSharingDb implements SharingDb {
 
     const reserves = reserveRes.data?.amount ?? 0;
     const grossWeeklySpend = computeGrossWeeklySpend(ledgerLines, now);
-    // patronMrr is always 0 until step 4.1 (patrons/payouts) exists — same
-    // stub apps/api/src/financial/service.ts uses today.
-    const burn = computeBurnState(grossWeeklySpend, 0);
+    const income = await loadPatronIncome(this.client, playerId, homeCurrency, today);
+    const burn = computeBurnState(grossWeeklySpend, income.patronMrr);
     const runwayWeeks = computeRunwayWeeks(reserves, burn.netBurn);
 
     const realisedIncome = (realisedThisMonthRes.data ?? []).map(
@@ -280,7 +305,7 @@ export class SupabaseSharingDb implements SharingDb {
     const monthlyPnl = computeMonthlyPnl({
       expensesInMonth,
       receivedPrizeIncomeHome: realisedIncome,
-      receivedPatronPayoutsHome: [],
+      receivedPatronPayoutsHome: income.receivedPatronPayoutsHome,
     });
 
     return {
@@ -303,7 +328,84 @@ export class SupabaseSharingDb implements SharingDb {
           what: l.what,
           amountHome: l.amountHome,
         })),
-      patronsAvailable: false,
+      patrons: await this.getManagerPatrons(playerId, now),
+    };
+  }
+
+  // A hand-built summary on purpose: no email, no open strip, no attention
+  // note, no drafted text, only what M-SHARE-2 lists.
+  private async getManagerPatrons(playerId: string, now: Date): Promise<ManagerPatronSummary> {
+    const since30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const [tiersRes, patronsRes, eventsRes, payoutsRes] = await Promise.all([
+      this.client
+        .from('patron_tiers')
+        .select('id, name')
+        .eq('player_id', playerId)
+        .order('position'),
+      this.client
+        .from('patrons')
+        .select('id, name, tier_id, status, since, left_at, price')
+        .eq('player_id', playerId),
+      this.client
+        .from('patron_events')
+        .select('kind, at, patron_id, to_tier_id, from_tier_id')
+        .eq('player_id', playerId)
+        .gte('at', since30)
+        .order('at', { ascending: false })
+        .limit(10),
+      this.client
+        .from('payouts')
+        .select('friday, gross, platform_fee, stripe_fee, net, currency, status')
+        .eq('player_id', playerId)
+        .order('friday', { ascending: false })
+        .limit(8),
+    ]);
+    for (const res of [tiersRes, patronsRes, eventsRes, payoutsRes]) if (res.error) throw res.error;
+
+    const tiers = tiersRes.data ?? [];
+    const records = (patronsRes.data ?? []).map((p) => ({
+      id: p.id,
+      name: p.name,
+      tierId: p.tier_id,
+      status: p.status as 'active' | 'past_due' | 'paused' | 'left',
+      since: p.since,
+      leftAt: p.left_at,
+      price: Number(p.price),
+    }));
+    const live = records.filter((p) => p.status === 'active' || p.status === 'past_due');
+    const tierName = (id: string | null) => tiers.find((t) => t.id === id)?.name ?? '';
+    const nameOf = new Map(records.map((p) => [p.id, patronDisplayName(p.name)]));
+    const history = mrrHistory(records, now);
+    return {
+      active: live.length,
+      byTier: tiers.map((t) => ({
+        name: t.name,
+        count: live.filter((p) => p.tierId === t.id).length,
+      })),
+      retentionPercent: twelveMonthRetention(records, now).percent,
+      averageTenureMonths: tenureSummary(records, now).averageMonths,
+      mrr: history[history.length - 1]?.gross ?? 0,
+      mrrHistory: history,
+      events: (eventsRes.data ?? [])
+        .filter((e) => ['join', 'upgrade', 'downgrade', 'leave'].includes(e.kind))
+        .map((e) => ({
+          kind: e.kind,
+          at: e.at,
+          title: eventTitle({
+            kind: e.kind as 'join' | 'upgrade' | 'downgrade' | 'leave',
+            patronName: nameOf.get(e.patron_id) ?? 'A patron',
+            tierName: tierName(e.to_tier_id ?? e.from_tier_id),
+          }),
+        })),
+      payouts: (payoutsRes.data ?? []).map((p) => ({
+        friday: p.friday,
+        gross: Number(p.gross),
+        platformFee: Number(p.platform_fee),
+        stripeFee: Number(p.stripe_fee),
+        net: Number(p.net),
+        currency: p.currency,
+        status: p.status,
+      })),
     };
   }
 }

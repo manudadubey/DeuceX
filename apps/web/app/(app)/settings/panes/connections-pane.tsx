@@ -7,6 +7,7 @@ import {
   ItemDescription,
   ItemTitle,
 } from '@procircuit/ui';
+import { StripeConnectionItem } from '@/components/fans/patron-settings';
 
 const CONNECTIONS: { name: string; description: string; status: 'not_yet' | 'not_offered' }[] = [
   {
@@ -17,11 +18,6 @@ const CONNECTIONS: { name: string; description: string; status: 'not_yet' | 'not
   {
     name: 'ITF ranking and calendar',
     description: 'Weekly refresh. Arrives with Rankings and calendars.',
-    status: 'not_yet',
-  },
-  {
-    name: 'Stripe Connect Express',
-    description: 'Patron payments and payouts. Arrives with Fans.',
     status: 'not_yet',
   },
   {
@@ -36,18 +32,19 @@ const CONNECTIONS: { name: string; description: string; status: 'not_yet' | 'not
   },
 ];
 
-// PRD-12 §4.8, ST-13. None of these are genuinely wired to a per-player
-// connection yet — every named integration here belongs to a later build
-// step, so this pane states that plainly rather than faking a green badge.
+// PRD-12 §4.8, ST-13. Stripe Connect Express is real since step 4.1 (its
+// own live row below); the rest belong to later build steps, so this pane
+// states that plainly rather than faking a green badge.
 // Bank is the one deliberate "not offered," not a gap (the explicit
 // decision behind M-CUR/reserve entries: no bank connection, ever).
-export function ConnectionsPane() {
+export function ConnectionsPane({ playerId }: { playerId: string }) {
   return (
     <Card className="gap-6 p-6">
       <CardHeader className="p-0">
         <CardTitle>Connections</CardTitle>
       </CardHeader>
       <div className="flex flex-col gap-2">
+        <StripeConnectionItem playerId={playerId} />
         {CONNECTIONS.map((c) => (
           <Item key={c.name}>
             <div className="flex-1">

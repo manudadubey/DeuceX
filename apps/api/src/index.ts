@@ -18,6 +18,9 @@ import {
   createOpenAIInsightClient,
   createOpenAIProseClient,
   createOpenAIReceiptExtractionClient,
+  PATRON_NOTE_MODEL,
+  createMockPatronNoteClient,
+  createOpenAIPatronNoteClient,
 } from '@procircuit/agents';
 import cors from '@fastify/cors';
 import { config as loadEnv } from 'dotenv';
@@ -61,6 +64,10 @@ import { registerConditionsRoutes, type ConditionsRoutesDeps } from './condition
 import { createOpenMeteoAdapter } from './conditions/openmeteo-adapter';
 import { registerConditionsRefreshScheduler } from './conditions/refresh-scheduler';
 import { registerConditionsStampBackfillScheduler } from './conditions/stamp-backfill-scheduler';
+import { createStripeFansClient } from '@procircuit/actions/fans';
+import { registerFansRoutes, type FansRoutesDeps } from './fans/routes';
+import { registerFansAttentionScheduler } from './fans/scheduler';
+import { SupabaseFansStore } from './fans/store';
 
 // This service owns anything with an external side effect or a scheduled
 // job (webhooks, the queue worker, structured-output calls). Simple CRUD
@@ -85,6 +92,7 @@ export function buildServer(
   adminRankingsDeps?: AdminRankingsRoutesDeps,
   tournamentDeps?: TournamentRoutesDeps,
   conditionsDeps?: ConditionsRoutesDeps,
+  fansDeps?: FansRoutesDeps,
 ) {
   const app = Fastify({ logger: true });
 
@@ -98,7 +106,8 @@ export function buildServer(
     sharingDeps ||
     adminRankingsDeps ||
     tournamentDeps ||
-    conditionsDeps
+    conditionsDeps ||
+    fansDeps
   ) {
     void app.register(cors, {
       origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000').split(','),
@@ -145,6 +154,15 @@ export function buildServer(
   if (accountDeps) {
     void app.register(async (instance) => {
       await registerAccountRoutes(instance, accountDeps);
+    });
+  }
+
+  // Mixed on purpose (fans/routes.ts's own comment): player routes with a
+  // bearer token, the public patron page's routes with none, and Stripe's
+  // signature-verified webhook.
+  if (fansDeps) {
+    void app.register(async (instance) => {
+      await registerFansRoutes(instance, fansDeps);
     });
   }
 
@@ -290,6 +308,8 @@ async function main() {
     proseClient,
   });
   await registerConditionsStampBackfillScheduler(moneyBoss, { db, weatherAdapter });
+  const fansStore = new SupabaseFansStore(db);
+  await registerFansAttentionScheduler(moneyBoss, { store: fansStore });
 
   const resendApiKey = process.env.RESEND_API_KEY;
   const resendFromAddress = process.env.RESEND_FROM_ADDRESS;
@@ -367,6 +387,42 @@ async function main() {
     proseClient,
   };
 
+  // Step 4.1: Stripe Connect (sandbox until launch). No key means every
+  // Stripe-backed Fans route answers 503, never a silent mock: a fake
+  // checkout would be worse than an honest "not configured".
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecretKey) {
+    console.warn(
+      'STRIPE_SECRET_KEY not set: Fans routes that reach Stripe (Connect onboarding, tiers, checkout) will answer 503. Set STRIPE_SECRET_KEY (a test-mode sk_test_ key) to enable them.',
+    );
+  }
+  const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? null;
+  if (!stripeWebhookSecret) {
+    console.warn(
+      'STRIPE_WEBHOOK_SECRET not set: /webhooks/stripe will answer 503. The thank-you page still records new patrons on return from Checkout.',
+    );
+  }
+  // Same OpenAI account again for Fans' drafted patron notes (step 4.1).
+  const noteClient = openaiApiKey
+    ? createOpenAIPatronNoteClient({ apiKey: openaiApiKey, model: PATRON_NOTE_MODEL })
+    : (() => {
+        console.warn(
+          'OPENAI_API_KEY not set: falling back to the mock patron-note client. Set OPENAI_API_KEY for real drafted notes.',
+        );
+        return createMockPatronNoteClient();
+      })();
+  const fansDeps: FansRoutesDeps = {
+    db,
+    anonClient,
+    store: fansStore,
+    stripe: stripeSecretKey ? createStripeFansClient({ secretKey: stripeSecretKey }) : null,
+    webhookSecret: stripeWebhookSecret,
+    email,
+    noteClient,
+    agentRuns,
+    appBaseUrl,
+  };
+
   const app = buildServer(
     notesDeps,
     rankingsDeps,
@@ -376,6 +432,7 @@ async function main() {
     adminRankingsDeps,
     tournamentDeps,
     conditionsDeps,
+    fansDeps,
   );
   const port = Number(process.env.PORT ?? 8787);
   await app.listen({ port, host: '0.0.0.0' });

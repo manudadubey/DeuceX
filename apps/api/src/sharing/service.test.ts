@@ -35,7 +35,16 @@ const MANAGER_STUB: ManagerViewData = {
   runwayColour: 'green',
   monthlyPnl: { income: 0, spend: 400, net: -400 },
   expenses: [],
-  patronsAvailable: false,
+  patrons: {
+    active: 0,
+    byTier: [],
+    retentionPercent: null,
+    averageTenureMonths: null,
+    mrr: 0,
+    mrrHistory: [],
+    events: [],
+    payouts: [],
+  },
 };
 
 function fakeSharingDb(link: ActiveShareLink | null): SharingDb & { openedIds: string[] } {
@@ -239,7 +248,7 @@ describe('SupabaseSharingDb.getManagerData', () => {
     expect(serialized).not.toContain('transcript');
     expect(serialized).not.toContain('note');
     expect(data.scope).toBe('manager');
-    expect(data.patronsAvailable).toBe(false);
+    expect(data.patrons.active).toBe(0);
     // Regression: computeRunwayWeeks returns Infinity for a zero net burn,
     // and JSON.stringify silently turns Infinity into null — found live,
     // this session, as a crash in the coach/[token] page (data.runwayWeeks
@@ -247,5 +256,78 @@ describe('SupabaseSharingDb.getManagerData', () => {
     // Infinity (which JSON.parse could never reconstruct anyway).
     expect(data.runwayWeeks).toBeNull();
     expect(JSON.parse(serialized).runwayWeeks).toBeNull();
+  });
+
+  it('P-AC-13: shows patron counts, tiers, retention, payouts and MRR, never emails, open strips or drafts', async () => {
+    const fake = new FakeDb();
+    fake.tables.players = [{ id: 'player-1', name: 'Arya Dubey', home_currency: 'AUD' }];
+    fake.tables.ledger_lines = [];
+    fake.tables.reserve_entries = [];
+    fake.tables.fx_rates_daily = [];
+    fake.tables.patron_tiers = [
+      { id: 't1', player_id: 'player-1', name: 'Courtside', position: 1 },
+      { id: 't2', player_id: 'player-1', name: 'Locker Room', position: 2 },
+    ];
+    fake.tables.patrons = [
+      {
+        id: 'p1',
+        player_id: 'player-1',
+        name: 'Mira Kovac',
+        email: 'mira@example.com',
+        tier_id: 't1',
+        status: 'active',
+        since: '2026-01-01T00:00:00Z',
+        left_at: null,
+        price: 29,
+        currency: 'AUD',
+        opens: [1, 0, 1],
+        note: 'Dad. Came to Poznań.',
+      },
+      {
+        id: 'p2',
+        player_id: 'player-1',
+        name: 'Chris Obi',
+        email: 'chris@example.com',
+        tier_id: 't2',
+        status: 'active',
+        since: '2026-02-01T00:00:00Z',
+        left_at: null,
+        price: 65,
+        currency: 'AUD',
+        opens: [],
+        note: null,
+      },
+    ];
+    fake.tables.patron_events = [];
+    fake.tables.patron_note_drafts = [
+      { id: 'd1', player_id: 'player-1', patron_id: 'p1', kind: 'welcome', text: 'SECRET DRAFT' },
+    ];
+    fake.tables.payouts = [
+      {
+        player_id: 'player-1',
+        friday: '2026-09-18',
+        gross: 94,
+        platform_fee: 7.52,
+        stripe_fee: 2.26,
+        net: 84.22,
+        currency: 'AUD',
+        status: 'scheduled',
+      },
+    ];
+
+    const data = await new SupabaseSharingDb(asDb(fake)).getManagerData('player-1');
+
+    expect(data.patrons.active).toBe(2);
+    expect(data.patrons.byTier).toEqual([
+      { name: 'Courtside', count: 1 },
+      { name: 'Locker Room', count: 1 },
+    ]);
+    expect(data.patrons.mrr).toBe(94);
+    expect(data.patrons.payouts[0]).toMatchObject({ gross: 94, net: 84.22, status: 'scheduled' });
+    const serialized = JSON.stringify(data);
+    expect(serialized).not.toContain('example.com');
+    expect(serialized).not.toContain('opens');
+    expect(serialized).not.toContain('SECRET DRAFT');
+    expect(serialized).not.toContain('Poznań');
   });
 });

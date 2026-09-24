@@ -23,7 +23,16 @@ const MANAGER_STUB: ManagerViewData = {
   runwayColour: 'green',
   monthlyPnl: { income: 0, spend: 0, net: 0 },
   expenses: [],
-  patronsAvailable: false,
+  patrons: {
+    active: 0,
+    byTier: [],
+    retentionPercent: null,
+    averageTenureMonths: null,
+    mrr: 0,
+    mrrHistory: [],
+    events: [],
+    payouts: [],
+  },
 };
 
 function fakeSharingDb(link: ActiveShareLink | null): SharingDb {

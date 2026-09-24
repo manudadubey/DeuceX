@@ -23,3 +23,4 @@ export * from './mindset-coach';
 export * from './financial';
 export * from './tournament';
 export * from './conditions';
+export * from './fans';

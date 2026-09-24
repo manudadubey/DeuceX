@@ -2024,3 +2024,147 @@ third time, by three different steps in a row — 2.3 named it as 3.1's job, 3.1
 `/agent/tournament?event=` deep link target for "See the tension test" on `#/agent/mindset` (the
 existing plain `/agent/tournament` link is unchanged, low priority while the physical pattern that
 would link to it can't fire yet either).
+
+## Step 4.1 · Fans — 24 September 2026
+
+Built the patron programme end to end behind Stripe Connect Express. One additive migration
+(`20260924150000_step_4_1_fans.sql`, owner-confirmed before applying to production, types
+regenerated) adds `patron_programmes`, `patron_tiers`, `patrons`, `patron_events`, `payouts`
+(TECH-ARCHITECTURE.md 2.2's own field list, including `net = gross - platform_fee - stripe_fee` as a
+check constraint and a trigger making a paid row immutable), `patron_waitlist`,
+`patron_note_drafts`, `patron_notes_sent` and a service-role-only `stripe_webhook_events`
+idempotency log, plus two approval action types (`connect_onboard`, `waitlist_invite`).
+`packages/agents/src/fans` is all the deterministic arithmetic PRD-04 section 7 names (MRR, mo/mo,
+weekly income, 12-month retention, tenure, the Pro cap, attention flags in card-quiet-new order,
+attribution sentences, the payout breakdown read off Stripe's balance transactions and the formula
+estimate) plus one small drafting call for patron notes. `packages/actions` gets
+`stripe-client.ts`, now the only file importing `stripe`, behind a narrow `FansStripeClient`
+interface, and `fans.ts`'s four gated actions (`startConnectOnboarding`, `publishTier`,
+`sendPatronNote`, `inviteFromWaitlist`), all on `runGatedAction` and all reading anything that
+matters (patron email, tier currency, whether the page has room) from the server's own rows, never
+the payload. `apps/api/src/fans` has the webhook applier, a checkout-return reconcile, the public
+page read model, the waitlist, the 06:00-local attention pass (hourly tick on the shared money
+boss) and the on-tap note draft. `apps/web` gets the real `/fans` page (KPI row, Last 30 days chart
+and feed, tiers with an editor, waitlist, People with filters, search and the note composer,
+Payouts with the Stripe connection row, MRR last), the public `/p/<slug>` page and its thank-you
+page, the dashboard Patrons tile and card, the Stripe row in Settings > Connections, patron payouts
+in Plan & billing, a "Back the season" card with P-19's Patron names switch on `/profile`, and
+patron health plus the payout table on the manager share link.
+
+Owner decisions this session (none were in the worksheet or the register):
+1. **Direct charges** on the player's Express account with `application_fee_percent` 8 (Pro) or 5
+   (Elite). The player's account pays Stripe's charge, which is exactly PRD-04's arithmetic
+   (A$612 → A$49 fee, A$14 Stripe, A$549 net); the player is the seller and carries disputes.
+2. **The player confirms each waitlist invitation** (one `waitlist_invite` approval per email),
+   rather than a standing approval of an automatic invite. P-AC-10's "within five minutes" is
+   therefore five minutes after the tap, and an invitation is refused while a Pro page is still
+   full.
+3. **Tier price changes are grandfathered**: a new Stripe price for new sign-ups only; existing
+   patrons keep what they pay, and `patrons.price` records it. The confirm sentence says so.
+4. **Patron notes are drafted by a small Fans-owned call now** (`gpt-4o-mini`, same OpenAI account
+   as every other agent), with PRD-05's voice profile to be swapped in by step 4.2. The first
+   sentence is deterministic, not the model's (P-AC-5 and P-AC-8 pin its wording), and PRD-04
+   section 7's content rules (no money, no runway, no other patrons' names, no em dash) are checked
+   in code with one corrective retry; on failure the composer opens empty with "Write it yourself;
+   the agent couldn't draft this one."
+
+Design notes:
+- A patron's tier is resolved from the Stripe **product**, not the price: grandfathering means a
+  tier has several live prices, but always one product.
+- Joins arrive two ways, both idempotent through `patrons.stripe_subscription_id` and a partial
+  unique index (one `join` event per patron): the `checkout.session.completed` webhook and the
+  thank-you page's own reconcile. That is what makes P-6's "within a minute" hold even when the
+  webhook is delayed or, in local development, not forwarded at all.
+- A webhook delivery whose apply throws is recorded with its error and runs again when Stripe
+  retries; only an applied event id counts as a duplicate.
+- Creating a patron's Checkout session is the one Stripe call with no player approval behind it:
+  it is the patron's own tap, and it can only sell tiers the player already approved publishing.
+- PRD-04's money strings read "A$612"; `en-AU` formats AUD as a bare "$", so Fans uses one
+  `formatPatronMoney` (en-US symbol table, AUD → "A$") across the api notifications and the page.
+- The dashboard tile says "Patrons · last 7 days" rather than "since last login": nothing records
+  a last-seen time, and the label says what the number actually is.
+- Resolved as a plain inconsistency: P-AC-3 says "Payout sent · A$551" while section 7, section 9,
+  the prototype and worksheet 5 all give A$549. Built and tested to A$549.
+
+Found and fixed live: the API crashed with `EMAXCONNSESSION` once the money boss gained its
+seventh queue, the same 15-client session-pooler limit step 2.3 hit. pg-boss defaults to 10
+connections per instance; all three instances now set `max` (money 4, notes 3, actions 3). Two
+public-page copy lines were also found promising things that don't exist yet (a confirmation email;
+invitations sent "the moment a place opens") and rewritten to say what actually happens.
+
+Verified: 26 new agents fixture tests (P-AC-1's 8/3/1 and A$612, the A$612 → 49/14/549 payout both
+by formula and from balance transactions, P-AC-4's exact attention set, P-AC-5/P-AC-6/P-AC-7/
+P-AC-8's sentences, the cap at 49 vs 50, Elite uncapped), 16 actions tests (every Fans side effect
+refused without an approval, or with an edited note text the player didn't approve), 20 api service
+tests over an in-memory store with the migration's own uniqueness rules, 4 route tests, 1 new
+manager-view test (P-AC-13: no emails, open strips, notes or drafts), and 6 new live RLS integration
+tests against production (a player reads only their own rows, can flip `names_line_enabled` and
+nothing else on the programme row, can't insert or change a patron or payout, can't see the webhook
+log; a paid payout is immutable even to the table owner; a mismatched net is refused). Then a live
+browser pass against a signed-in session with PRD-04's own fixture seeded (owner-approved) against
+the real "Jannik Sinner" player: the populated `/fans` page, the real attention pass flagging Sophie
+quiet, the Needs attention filter showing exactly Sophie, Tom and Anna, a real drafted thank-you
+from the model (US$0.000145 for both runs this session), the dashboard tile and card, the Financial
+Agent's patron MRR and paid-payout income, the public page's P-AC-14 line and its switch-off state,
+P-AC-9 at 50 patrons (waitlist copy, "50 of 50 · 1 on the waitlist", a real waitlist submission),
+the manager and coach links (P-AC-13), and the Free lock. Every fixture row, the two share links and
+the tier flip were removed afterwards and confirmed at zero by a follow-up count query.
+
+**Live Stripe round trip (same day, once the owner's sandbox key was in `.env`):** Connect was
+enabled on the sandbox through the Stripe connector's sandbox-only `EnableConnect` call. The first
+real onboarding attempt then found that Stripe no longer creates v1 connected accounts for new
+platforms, so account creation and onboarding links moved to **Accounts v2**
+(`stripe.v2.core.accounts.create`, `v2.core.accountLinks.create`). That needed one more owner
+decision: **Stripe's Managed Risk with the Express dashboard** (`dashboard: express`,
+`fees_collector: stripe`, `losses_collector: stripe`), a Stripe public preview, so those two calls
+pin API version `2026-08-26.preview`. Stripe then carries negative balances, and Stripe takes its
+own charge from the player's account, which keeps worksheet 5 and 6's fee arithmetic unchanged.
+The weekly Friday payout schedule (P-12) is set through v1 settings right after creation, and the
+account status read stays on v1 `accounts.retrieve`; both were confirmed to work on a v2 account.
+Then, against production and the real sandbox:
+- the owner completed Stripe's hosted KYC with Stripe's test values (the first pass chose a
+  company business type and failed; the second passed with `01/01/1901` and
+  `address_full_match`), and `/fans?stripe=return`'s refresh synced KYC complete with the bank's
+  last four digits;
+- the three default tiers were published through the real confirm-and-approve flow, each becoming
+  a real product and price on the connected account;
+- a real test-mode Checkout from `/p/jannik-sinner?src=draw` (owner paid with Stripe's test card)
+  created the subscription at 12:39:46 and the paid invoice at 12:39:48, and the patron was
+  recorded at 12:39:56 by the thank-you page's reconcile: **about 8 to 10 seconds, inside P-6's
+  one minute**, with source draw, the names opt-in, one join event and one FYI;
+- Stripe's own records confirm `application_fee_percent: 8` and an application fee of exactly 8%
+  of the settled charge.
+
+Found live: the account's country comes from `players.country` (Italy for the fixture player), so
+it settles in EUR, and an AUD charge on it pays Stripe's currency conversion on top of processing
+(€1.17, about 6.5% of this A$29 charge, not PRD-04's domestic "1.75% + 30c"). The payout table
+reads Stripe's real figures, so nothing is misstated, but the footer's rate sentence is only true
+for domestic charges; worth a PRD-04 copy fix before launch. Also found: `APP_BASE_URL` in the
+owner's local `.env` still pointed at an old dev port, so Stripe returned to a dead page (fixed
+locally; not in the repo). "Stripe needs something from you" fired twice during the failed KYC
+pass, because the status went action required, then pending, then action required again. That's
+noisy but harmless; worth de-duplicating per day later. Still not exercised: a real payout webhook.
+There's no `STRIPE_WEBHOOK_SECRET` yet, and a first payout waits for Stripe's 7-day delay anyway.
+The payout path is covered by tests. The live sandbox state (the connected account, three tiers
+and one patron) is left in place for step 4.2.
+
+Deliberately skipped, each for a named reason:
+- **P-17, the Stripe customer portal** (change tier, update card, cancel). The public page
+  therefore does not promise it. This must exist before a real patron is charged: flag it as a
+  launch blocker, not a nice-to-have. It needs a portal configuration on each connected account.
+- **P-18, pausing patron billing on a downgrade to Free.** Downgrade is still step 2.3's direct
+  `players.tier` write with no real Stripe Billing behind it, so there is no period end to hook.
+  Until that exists, a Free player's existing patron subscriptions keep billing (the public page
+  does stop selling). Same launch-blocker weight as P-17.
+- **Open tracking and update attribution** (the six-square strip, the quiet flag's input, P-7's
+  "joins in 7 days", the dashed update lines, the loop card): all need PRD-05's `patron_updates` and
+  Resend events (step 4.2). The strip shows grey "Open data not yet received" squares, as PRD-04
+  section 3's own failure behaviour specifies, and the quiet flag cannot fire until then.
+- **The patron-facing system emails** (welcome, pause notice), which section 9 says the player sees
+  in Settings first; P-22's monthly summary; P-20's Inside Track early access (step 4.2's recipient
+  setting).
+- A player-editable `patrons.note` (only the attention pass and webhooks write it), the dashboard
+  tile's twelve-week spark, the analytics events in section 11, rate limiting on the three public
+  endpoints, and patron-list/payout export (M-PRIV-2; step 2.3's export predates these tables).
+- A real verified sending domain: patron notes go from Resend's sandbox sender with the player's
+  name on the From line and the player's own address as Reply-To.

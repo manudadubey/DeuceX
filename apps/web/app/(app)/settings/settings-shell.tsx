@@ -116,7 +116,7 @@ export function SettingsShell({
               onToast={showToast}
             />
           )}
-          {pane === 'conn' && <ConnectionsPane />}
+          {pane === 'conn' && <ConnectionsPane playerId={player.id} />}
           {pane === 'share' && (
             <SharingPane
               playerId={player.id}

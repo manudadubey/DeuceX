@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@procircuit/db';
 import { convertAtRate, getFxRates } from '@procircuit/db';
+import { loadPatronIncome } from '../fans/income';
 import type {
   ActionCandidate,
   FinancialBudgetEstimate,
@@ -58,7 +59,7 @@ export interface FinancialInputs {
   pendingReceivables: FinancialPendingReceivable[];
   /** This month's realised prize inflows, home currency, already excluding anything still pending (M-DATA-2) — see the design note below on how this is derived. */
   receivedPrizeIncomeHome: number[];
-  /** Always empty: patrons/payouts don't exist until step 4.1. See PRD-03 section 7's own weekly-patron-income formula, fed 0 here rather than faked. */
+  /** Paid patron payouts this month, home currency (step 4.1, fans/income.ts). */
   receivedPatronPayoutsHome: number[];
   patronMrr: number;
   budgetEstimates: FinancialBudgetEstimate[];
@@ -208,13 +209,8 @@ export async function loadFinancialInputs(
     lastReserveEntryAt,
     pendingReceivables,
     receivedPrizeIncomeHome,
-    // Patrons and Stripe payouts don't exist until step 4.1: both the
-    // patron-payout list and the MRR figure feeding computeBurnState are 0
-    // here, the same "not yet, documented" idiom as mindset-coach's
-    // hasMatchToday stub. The formulas themselves are proved against
-    // PRD-03's real MRR fixture in packages/agents/src/financial/runway.test.ts.
-    receivedPatronPayoutsHome: [],
-    patronMrr: 0,
+    // Step 4.1: real patron income (fans/income.ts), replacing step 2.2's 0 stub.
+    ...(await loadPatronIncome(db, playerId, homeCurrency, today)),
     budgetEstimates,
     snoozedKeys,
   };

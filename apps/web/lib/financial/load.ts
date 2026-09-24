@@ -181,8 +181,49 @@ export async function loadFinancialSnapshot(
     };
   });
 
+  // Step 4.1: patron income (PRD-04 P-14). MRR is what active patrons pay
+  // (grandfathered prices, each in its own original currency); paid payouts
+  // are the P&L's realised patron income on their payout date. Both convert
+  // to the home currency at read time, never stored converted (M-DATA-1).
+  const [patronsRes, paidPayoutsRes] = await Promise.all([
+    supabase
+      .from('patrons')
+      .select('price, currency')
+      .eq('player_id', playerId)
+      .in('status', ['active', 'past_due']),
+    supabase
+      .from('payouts')
+      .select('net, currency, paid_at, friday')
+      .eq('player_id', playerId)
+      .eq('status', 'paid')
+      .gte('friday', `${today.slice(0, 7)}-01`),
+  ]);
+  if (patronsRes.error) throw patronsRes.error;
+  if (paidPayoutsRes.error) throw paidPayoutsRes.error;
+  const toHomeOn = async (amount: number, currency: string, date: string) => {
+    if (currency === homeCurrency) return amount;
+    try {
+      return convertAtRate(
+        amount,
+        currency,
+        homeCurrency,
+        ratesToEurMap(await getFxRates(supabase, date, [currency, homeCurrency])),
+      );
+    } catch {
+      return 0; // no rate archived for that day yet: left out rather than guessed
+    }
+  };
+  let patronMrr = 0;
+  for (const p of patronsRes.data ?? []) {
+    patronMrr += await toHomeOn(Number(p.price), p.currency, today);
+  }
+  const receivedPatronPayoutsHome = await Promise.all(
+    (paidPayoutsRes.data ?? []).map((p) =>
+      toHomeOn(Number(p.net), p.currency, (p.paid_at ?? p.friday).slice(0, 10)),
+    ),
+  );
+
   const grossWeeklySpend = computeGrossWeeklySpend(ledgerLines, now);
-  const patronMrr = 0; // step 4.1 stub — see docs/BUILD-LOG.md's step 2.2 entry
   const burn = computeBurnState(grossWeeklySpend, patronMrr);
   const runwayWeeks = computeRunwayWeeks(reserveRes.data?.amount ?? 0, burn.netBurn);
   const weeklyBudgetBar =
@@ -202,7 +243,7 @@ export async function loadFinancialSnapshot(
   const monthlyPnl = computeMonthlyPnl({
     expensesInMonth: ledgerLines.filter((l) => l.date >= monthStart),
     receivedPrizeIncomeHome,
-    receivedPatronPayoutsHome: [], // step 4.1 stub — see docs/BUILD-LOG.md's step 2.2 entry
+    receivedPatronPayoutsHome,
   });
 
   const milestone = computeMilestone(burn.coverage, burn.grossWeeklySpend);

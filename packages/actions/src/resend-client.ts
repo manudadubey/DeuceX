@@ -20,6 +20,10 @@ export interface SendEmailInput {
   subject: string;
   html: string;
   attachments?: EmailAttachment[];
+  /** Step 4.1: a patron note's replies go to the player, not the agent (PRD-04 P-11). */
+  replyTo?: string;
+  /** Step 4.1: the display name shown on the From line, e.g. "Arya Dubey". The address stays the verified sender. */
+  fromName?: string;
 }
 
 // Narrow on purpose (mirrors ApprovalGateDb/ReceivablesDb): account.ts's
@@ -50,8 +54,9 @@ export function createResendEmailClient(config: { apiKey: string; from?: string 
   return {
     async sendEmail(input: SendEmailInput): Promise<void> {
       const { error } = await resend.emails.send({
-        from,
+        from: input.fromName ? `${input.fromName} <${fromAddress(from)}>` : from,
         to: input.to,
+        ...(input.replyTo ? { replyTo: input.replyTo } : {}),
         subject: input.subject,
         html: input.html,
         text: input.html
@@ -70,4 +75,9 @@ export function createResendEmailClient(config: { apiKey: string; from?: string 
       if (error) throw new EmailSendFailedError(error.message);
     },
   };
+}
+
+/** "ProCircuit <onboarding@resend.dev>" -> "onboarding@resend.dev". */
+function fromAddress(from: string): string {
+  return /<([^>]+)>/.exec(from)?.[1] ?? from;
 }

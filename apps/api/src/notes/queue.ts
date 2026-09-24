@@ -36,7 +36,8 @@ export async function createNotesBoss(
   connectionString: string,
   logger: NotesQueueLogger = console,
 ): Promise<PgBoss> {
-  const boss = new PgBoss(connectionString);
+  // Pool capped (step 4.1): see apps/api/src/money/queue.ts's note on the session pooler's 15-client limit.
+  const boss = new PgBoss({ connectionString, max: 3 });
   // pg-boss is an EventEmitter; an 'error' event with no listener (its own
   // maintenance/monitoring failures, not a job's own throw — those are
   // handled below) crashes the Node process instead of just failing quietly.
