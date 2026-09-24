@@ -132,6 +132,9 @@ export function stripeCountryCode(countryName: string | null): string | null {
   return COUNTRY_CODES[countryName] ?? null;
 }
 
+/** Stripe's preview API version, needed for Express dashboard accounts with Managed Risk (Accounts v2). */
+export const STRIPE_PREVIEW_API_VERSION = '2026-08-26.preview';
+
 function iso(seconds: number | null | undefined): string | null {
   return seconds ? new Date(seconds * 1000).toISOString() : null;
 }
@@ -152,28 +155,54 @@ export function createStripeFansClient(config: { secretKey: string }): FansStrip
   }
 
   return {
+    // Accounts v2 (Stripe no longer creates v1 connected accounts for new
+    // platforms; found live in the sandbox, step 4.1). Owner decision, same
+    // session: Stripe's Managed Risk (losses_collector stripe) with the
+    // Express dashboard, and fees_collector stripe so Stripe takes its own
+    // charge from the player's account and ProCircuit's cut stays exactly
+    // application_fee_percent (worksheet 5 and 6). Express with Managed Risk
+    // is a Stripe public preview, hence the pinned preview API version on
+    // this one call.
     createExpressAccount: (input) =>
       wrap(async () => {
-        const account = await stripe.accounts.create({
-          type: 'express',
-          email: input.email,
-          ...(input.country ? { country: input.country } : {}),
-          capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
-          business_type: 'individual',
+        const account = await stripe.v2.core.accounts.create(
+          {
+            contact_email: input.email,
+            dashboard: 'express',
+            ...(input.country ? { identity: { country: input.country } } : {}),
+            defaults: {
+              responsibilities: { fees_collector: 'stripe', losses_collector: 'stripe' },
+            },
+            configuration: { merchant: { capabilities: { card_payments: { requested: true } } } },
+            metadata: input.metadata,
+          },
+          { apiVersion: STRIPE_PREVIEW_API_VERSION },
+        );
+        // P-12: weekly payouts, every Friday. Accounts v2 has no payout
+        // schedule field at creation, so it is set on the same account
+        // through v1's settings, which Stripe keeps interoperable.
+        await stripe.accounts.update(account.id, {
           settings: { payouts: { schedule: { interval: 'weekly', weekly_anchor: 'friday' } } },
-          metadata: input.metadata,
         });
         return { id: account.id };
       }),
 
     createAccountLink: (input) =>
       wrap(async () => {
-        const link = await stripe.accountLinks.create({
-          account: input.account,
-          refresh_url: input.refreshUrl,
-          return_url: input.returnUrl,
-          type: 'account_onboarding',
-        });
+        const link = await stripe.v2.core.accountLinks.create(
+          {
+            account: input.account,
+            use_case: {
+              type: 'account_onboarding',
+              account_onboarding: {
+                configurations: ['merchant'],
+                refresh_url: input.refreshUrl,
+                return_url: input.returnUrl,
+              },
+            },
+          },
+          { apiVersion: STRIPE_PREVIEW_API_VERSION },
+        );
         return { url: link.url };
       }),
 

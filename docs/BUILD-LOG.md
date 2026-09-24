@@ -2110,11 +2110,43 @@ P-AC-9 at 50 patrons (waitlist copy, "50 of 50 · 1 on the waitlist", a real wai
 the manager and coach links (P-AC-13), and the Free lock. Every fixture row, the two share links and
 the tier flip were removed afterwards and confirmed at zero by a follow-up count query.
 
-**Not verified yet, pending the owner's Stripe sandbox key in `.env`:** the live Stripe round trip
-(Connect onboarding, publishing tiers on a real connected account, a real test-mode Checkout
-creating a patron, a real payout webhook). Everything on that path is covered by tests against the
-`FansStripeClient` interface, and every Stripe-backed route answers 503 without a key rather than
-pretending.
+**Live Stripe round trip (same day, once the owner's sandbox key was in `.env`):** Connect was
+enabled on the sandbox through the Stripe connector's sandbox-only `EnableConnect` call. The first
+real onboarding attempt then found that Stripe no longer creates v1 connected accounts for new
+platforms, so account creation and onboarding links moved to **Accounts v2**
+(`stripe.v2.core.accounts.create`, `v2.core.accountLinks.create`). That needed one more owner
+decision: **Stripe's Managed Risk with the Express dashboard** (`dashboard: express`,
+`fees_collector: stripe`, `losses_collector: stripe`), a Stripe public preview, so those two calls
+pin API version `2026-08-26.preview`. Stripe then carries negative balances, and Stripe takes its
+own charge from the player's account, which keeps worksheet 5 and 6's fee arithmetic unchanged.
+The weekly Friday payout schedule (P-12) is set through v1 settings right after creation, and the
+account status read stays on v1 `accounts.retrieve`; both were confirmed to work on a v2 account.
+Then, against production and the real sandbox:
+- the owner completed Stripe's hosted KYC with Stripe's test values (the first pass chose a
+  company business type and failed; the second passed with `01/01/1901` and
+  `address_full_match`), and `/fans?stripe=return`'s refresh synced KYC complete with the bank's
+  last four digits;
+- the three default tiers were published through the real confirm-and-approve flow, each becoming
+  a real product and price on the connected account;
+- a real test-mode Checkout from `/p/jannik-sinner?src=draw` (owner paid with Stripe's test card)
+  created the subscription at 12:39:46 and the paid invoice at 12:39:48, and the patron was
+  recorded at 12:39:56 by the thank-you page's reconcile: **about 8 to 10 seconds, inside P-6's
+  one minute**, with source draw, the names opt-in, one join event and one FYI;
+- Stripe's own records confirm `application_fee_percent: 8` and an application fee of exactly 8%
+  of the settled charge.
+
+Found live: the account's country comes from `players.country` (Italy for the fixture player), so
+it settles in EUR, and an AUD charge on it pays Stripe's currency conversion on top of processing
+(€1.17, about 6.5% of this A$29 charge, not PRD-04's domestic "1.75% + 30c"). The payout table
+reads Stripe's real figures, so nothing is misstated, but the footer's rate sentence is only true
+for domestic charges; worth a PRD-04 copy fix before launch. Also found: `APP_BASE_URL` in the
+owner's local `.env` still pointed at an old dev port, so Stripe returned to a dead page (fixed
+locally; not in the repo). "Stripe needs something from you" fired twice during the failed KYC
+pass, because the status went action required, then pending, then action required again. That's
+noisy but harmless; worth de-duplicating per day later. Still not exercised: a real payout webhook.
+There's no `STRIPE_WEBHOOK_SECRET` yet, and a first payout waits for Stripe's 7-day delay anyway.
+The payout path is covered by tests. The live sandbox state (the connected account, three tiers
+and one patron) is left in place for step 4.2.
 
 Deliberately skipped, each for a named reason:
 - **P-17, the Stripe customer portal** (change tier, update card, cancel). The public page

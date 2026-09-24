@@ -244,9 +244,12 @@ draft); and the real `/fans` page, the public `/p/<slug>` page, the dashboard Pa
 patron income in the Financial Agent, and patron health on the manager link. Four owner decisions
 made this session and recorded in `docs/BUILD-LOG.md`: direct charges, the player confirms each
 waitlist invite, tier prices are grandfathered, and patron notes are drafted now by a Fans-owned
-call. Verified with live RLS tests and a seeded, cleaned-up browser pass against production. **The
-live Stripe round trip is still pending the owner's sandbox key** (`STRIPE_SECRET_KEY` in `.env`;
-`STRIPE_WEBHOOK_SECRET` optional). **P-17 (the Stripe customer portal) and P-18 (pausing patron
+call. Verified with live RLS tests and a seeded, cleaned-up browser pass against production. The live Stripe
+round trip then passed against the sandbox (a real test checkout recorded a patron in about 10
+seconds). Connected accounts use **Accounts v2 with Stripe's Managed Risk and the Express
+dashboard** (a Stripe preview, pinned API version); the sandbox's connected account, three tiers
+and one test patron are left in place for step 4.2. `STRIPE_WEBHOOK_SECRET` is still unset, so no
+real payout webhook has run yet. **P-17 (the Stripe customer portal) and P-18 (pausing patron
 billing on a downgrade to Free) are launch blockers**, not built this step. Also found and fixed
 live: pg-boss's default 10-connection pool per instance tipped the session pooler's 15-client cap;
 all three instances now set `max`. [PR #16](https://github.com/manudadubey/ProCircuit/pull/16)
