@@ -249,7 +249,10 @@ live Stripe round trip is still pending the owner's sandbox key** (`STRIPE_SECRE
 `STRIPE_WEBHOOK_SECRET` optional). **P-17 (the Stripe customer portal) and P-18 (pausing patron
 billing on a downgrade to Free) are launch blockers**, not built this step. Also found and fixed
 live: pg-boss's default 10-connection pool per instance tipped the session pooler's 15-client cap;
-all three instances now set `max`. The next session should
+all three instances now set `max`. [PR #16](https://github.com/manudadubey/ProCircuit/pull/16)
+is **open, not merged yet**: if it still is when the next session starts, branch step 4.2 off
+`step-4.1-fans` and open its PR against that branch (the step 0.5/0.6 stacking pattern). The next
+session should
 start at **step 4.2 (Content Agent)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever
 architecture section it names, and check `gh pr list` first — if a later PR hasn't merged yet,
 branch off it rather than `main`, the same stacking step 0.5/0.6 used. Check
