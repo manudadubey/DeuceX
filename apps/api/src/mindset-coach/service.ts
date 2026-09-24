@@ -107,7 +107,17 @@ export async function loadMindsetInputs(
     tags: Array.isArray(n.tags) ? (n.tags as string[]) : [],
     transcript: n.transcript,
     summary: n.summary,
-    cond: (n.cond as MindsetNote['cond']) ?? null,
+    // notes.cond is PRD-08's own stamp shape as of step 3.3 (a string[] —
+    // see packages/agents/src/conditions/stamp.ts), not this module's
+    // MindsetConditionStamp{firstServePct, tempC, humidityPct} (a step-1.3
+    // placeholder written before PRD-08 existed, and the stamp never
+    // carried a performance metric to begin with). Always null here rather
+    // than a lossy cast of the wrong shape — detectConditionsFirstServe
+    // stays exercised only by its own fixture test, as it already was;
+    // see rules.ts's own updated comment and docs/BUILD-LOG.md's step 3.3
+    // entry for the named gap (no first-serve-percentage extraction exists
+    // anywhere in this pipeline yet).
+    cond: null,
   }));
 
   const checkins: MindsetCheckIn[] = (checkinsRes.data ?? []).map((c) => ({

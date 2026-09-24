@@ -1901,3 +1901,126 @@ and then re-deferred by step 3.1 itself — still not done, now inherited a seco
 step's data model to touch. A real distance/route-aware flight estimate (the cost model is tier-
 bucketed only, `home_airport` feeds the *display* route string, not the price). PRD-01's 300–500
 word recommendation memo card and Excluded-list `Consider anyway` action.
+
+## Step 3.3 · Conditions and Equipment — 24 September 2026
+
+Built `equipment_profile` and `conditions_briefs` (TECH-ARCHITECTURE.md 2.2's own core-entities
+table named both, unbuilt, since the first architecture pass), the whole rule engine in
+`packages/agents/src/conditions` (amber, ball-diff, the tension driver, frames-to-bring, grip,
+unit conversion, the stamp builder — all deterministic, no model call), a batched prose layer
+(`generate-prose.ts`, up to five briefs per model call, one corrective retry, `gpt-4o-mini`, same
+OpenAI account as every other structured-output call in this codebase) for the brief's own
+comparison-and-practice sentence, a real Open-Meteo forecast adapter
+(`apps/api/src/conditions/openmeteo-adapter.ts`, free and key-less, always wired in like
+`fx/ecb-adapter.ts`) with a climate-normals fallback, the Match note stamp (CE-11, attached at save
+time in `notes/service.ts`, best-effort with a 24-hour backfill sweep), a daily in-window refresh
+tick (`refresh-scheduler.ts`, both halves of section 7's Refresh rule collapsed into one mechanism
+— see design note below) that sends the one "brief refreshed" FYI only when a recommendation
+actually flips, and the full UI: the Conditions brief inside the Tournament Agent detail (four
+tiles, prose, the racquet visual ported verbatim from the prototype's own SVG markup, the two-frame
+test), the dashboard decision card's Conditions chip, condition stamp chips on Match Scribe's past
+notes (amber at 28°C/70%), and the real Settings > Equipment pane (replacing the step-0.5 stub).
+`packages/db` gets `equipment.ts` and `conditions.ts`, plus a narrow `updateUnits()` (writing only
+`players.units`, since `updatePreferences()` writes every Preferences field at once and would have
+silently blanked the rest — a real bug caught before it shipped, not after).
+
+Design notes: PRD-08 section 6 says the stamp is "rendered as the cond array
+['33°C','82% RH','outdoor hard','Head Tour']", and `apps/web/components/match-scribe/
+recorder-card.tsx`'s review step — real, shipped code from step 1.1 — already reads `note.cond` as
+exactly that `string[]` and renders it as a chip row. That settles a real inconsistency step 1.3
+left open: `packages/agents/src/mindset-coach`'s own `MindsetConditionStamp{firstServePct, tempC,
+humidityPct}` guessed a different, incompatible shape before PRD-08 existed. This step keeps the
+real, load-bearing contract (`notes.cond` as `string[]`) and leaves mindset-coach's own types and
+tests untouched beyond updating its two placeholder thresholds (30°C/80% → the now-real 28°C/70%);
+`apps/api/src/mindset-coach/service.ts` now maps `cond` to `null` explicitly, with a comment, rather
+than silently miscasting a string array into an object shape that was never going to match. The
+`detectConditionsFirstServe` rule therefore still never fires in production — not because `cond` is
+null (it isn't, once a player has stamped notes) but because nothing in this codebase's pipeline
+extracts a first-serve percentage from a transcript; PRD-08 section 3's own inputs list ("Match
+notes with performance figures") assumes that number already exists somewhere upstream, and it
+doesn't. Named precisely rather than left as the vaguer step-1.3 comment it was.
+
+The tension rule (section 7) has three OR'd conditions that can all fire at once with no stated
+priority; this step picks heat first, then altitude-plus-ball, then humidity-plus-wind, matching
+which single driver each of the PRD's own worked examples names, and verified every one of the
+prototype's five fixture events (Poznań, Sibiu, Bratislava, Lisboa, Antalya — `docs/procircuit-
+dashboard.html`'s own `T` array) against the acceptance criteria's exact numbers and copy. Frames
+prototype B10 ("Antalya says bring 5 while the default profile carries 4"): implemented literally as
+written — the default stays 4, the rule caps at whatever the profile actually carries, and a capped
+hot week combines the cap note with the grip line rather than replacing it. The day-before-travel
+refresh moment is not a separate mechanism from the daily in-window one: there is no itinerary
+source to know a real travel date earlier than the seven-day window, so a single daily tick covers
+both halves of section 7's sentence — a deliberate collapse, named in `refresh-scheduler.ts`'s own
+comment, not an oversight. Climate normals (CE-19's fallback) are a small, explicit placeholder
+table (temperate-zone seasonal midpoints by hemisphere and month) since no real archive is on
+TECH-ARCHITECTURE.md section 4's integrations list, the same "wire a defensible number, name it as
+a placeholder" treatment the tension-step-kg and frames-ladder constants already got from PRD-08
+itself. The Tournament Agent run's own conditions call is two-phase: deterministic tiles persist
+unconditionally per candidate before the batched prose call runs, so a prose failure (vendor down,
+schema validation twice) never blocks the tiles from showing — PRD-08 section 3's "no failure blocks
+the Tournament Agent run" standard, applied to this layer's own model step too, not just the
+forecast.
+
+**Found and fixed, live**: saving the kg/lb toggle in the Equipment pane persisted correctly but
+didn't update `SettingsShell`'s shared in-memory player state, so switching units there left the
+Preferences pane showing the stale unit until a reload — CE-17's own "stay in sync in both
+directions" caught by testing it, not assumed from the code. Fixed by giving `EquipmentPane` an
+`onUnitsChange` callback the same shape every other pane's `onPlayerChange` already uses; re-tested
+live and confirmed the fix (switching in Equipment now updates Preferences' own control immediately,
+no reload). Also found, in this session's shared dev environment specifically (two concurrent
+Claude Code sessions against the same repository checkout and the same Supabase session pooler):
+the `conditions-refresh`/`conditions-stamp-backfill` queues' own polling occasionally hit the
+already-documented `EMAXCONNSESSION` cap (step 2.3's own finding, now recurring under doubled load
+from a second full dev stack) and a stale, reused browser tab from the other session rendered
+unstyled until a fresh tab was opened — both are environment artifacts of concurrent sessions
+sharing one sandbox, not defects in this step's code, and the CORS-blocked `/conditions/re-run` call
+from a dev port outside the shared `.env`'s `CORS_ORIGIN` list (deliberately left un-"fixed" rather
+than editing a `.env` another live session depends on) is the same category — verified instead via
+a server-side Fastify-inject test (`conditions/routes.test.ts`) proving the route's own logic end to
+end.
+
+**Verified against the real Supabase project**, migration owner-confirmed before applying, then
+`database.types.ts` regenerated from the live schema (not hand-edited, per its own header) and
+matched byte-for-byte against this step's own hand-written interim types, confirming the migration
+was written correctly the first time. `get_advisors` shows no new security finding on either new
+table (every pre-existing finding predates this step). A real, signed-in live browser session
+(dev sign-in link, no magic-link email round trip) against production: opened Settings > Equipment,
+confirmed the PRD-08 example defaults render (Wilson Blade 98, Luxilon Alu Power 1.25, 24/23 kg,
+4 frames, Every 8–10 sets, Tourna Grip, Dunlop Fort selected, stamp switch on), toggled kg → lb and
+confirmed the exact CE-AC-8 numbers (53/51 lb) and the "Tension shown in lb" toast, confirmed the
+Preferences pane's own Units control updated to Imperial without a reload (after the fix above),
+toggled back to kg and confirmed the reverse, then saved and confirmed the exact CE-15 toast text
+("Saved · next brief uses the new baseline"). Also opened `/agent/tournament` (correct empty state,
+no shortlist yet), `/match-scribe` (existing real notes with no stamp render exactly as unstamped,
+no crash from the new stamp-chip code) and `/` (dashboard renders, `DecisionCardSlot`'s early return
+still correct with no shortlist). Did not visually verify a live, fully populated Conditions brief
+(tiles, racquet visual, two-frame test) end to end in the browser — that needs a shortlisted,
+Entered fixture tournament the way step 3.1/3.2 seeded and cleaned up, and the shared-environment
+friction above made that a worse tradeoff than usual this session; the server-side integration tests
+(`conditions/run.test.ts`, `conditions/refresh-scheduler.test.ts`'s CE-AC-14 scenario,
+`conditions/routes.test.ts`) cover the same logic end to end without the browser. `pnpm typecheck`,
+`pnpm lint` and `pnpm format` are clean across every package; 499 tests pass without a live DB
+connection (6 `packages/shared`, 3 `packages/ui`, 84 `packages/db`, 59 `packages/actions`, 155
+`packages/agents`, 177 `apps/api`, 15 `apps/web`) plus the pre-existing 32 live `packages/db` RLS
+blocks (unchanged this step — no new RLS integration test was added; `equipment_profile`'s and
+`conditions_briefs`' policies mirror already-proven shapes exactly). 54 of the new tests are this
+step's own (35 `packages/agents/src/conditions`: amber, ball-diff, the tension driver's priority
+order, frames-and-cap, the stamp builder, the five-fixture brief orchestrator matching CE-AC-1
+through CE-AC-7 exactly, and the batched-prose corrective-retry path; 19 `apps/api/src/conditions`:
+the Open-Meteo response parser, the stamp's Entered-event matching, the run orchestrator's
+tiles-persist-even-on-prose-failure and batching behaviour, the refresh scheduler's travel-window
+membership and CE-AC-14's exact flip-and-notify scenario, and the re-run route end to end).
+
+Skipped, deliberately: CE-21 (the post-event "did the test help" check-in, a Should) and CE-22 (the
+hourly forecast once order of play is known, a Could). The physical-pattern rule's real firing
+condition (a first-serve-percentage source on the structured extraction, PRD-02's job, not this
+step's) — named precisely above, not left as a vague "not yet." A stringer share scope (PRD-08
+section 12's own open question, PRD-00 section 10) — out of scope for Release 1 by the PRD's own
+words. Real climate-normals data (a placeholder table, named as such). A distinct day-before-travel
+refresh mechanism reading a real itinerary (collapsed into the daily window, named above). The
+`players` ranking-column grant lockdown, still not this step's data model to touch (now deferred a
+third time, by three different steps in a row — 2.3 named it as 3.1's job, 3.1 re-deferred it to
+3.2, 3.2 re-deferred it again; worth flagging for whichever step finally owns it). A dedicated
+`/agent/tournament?event=` deep link target for "See the tension test" on `#/agent/mindset` (the
+existing plain `/agent/tournament` link is unchanged, low priority while the physical pattern that
+would link to it can't fire yet either).

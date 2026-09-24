@@ -13,9 +13,13 @@
 // ranking, cost model and why-text are all pure functions over the input
 // bundle (see docs/BUILD-LOG.md's step 3.2 entry for why an LLM-authored
 // why paragraph and recommendation memo are deliberately out of scope this
-// step).
+// step). The fifth, conditions (step 3.3), is deterministic tiles and rules
+// (amber, ball-diff, tension, frames, grip, unit conversion, stamps) plus
+// one small model call for the brief's own comparison-and-practice prose,
+// batched up to five briefs per call (PRD-08 section 3).
 
 export * from './match-scribe';
 export * from './mindset-coach';
 export * from './financial';
 export * from './tournament';
+export * from './conditions';

@@ -5,7 +5,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1, step 2.1 through step 3.2 done, start step 3.3
+## Status: Phase 0, Phase 1, step 2.1 through step 3.3 done, start step 4.1
 
 The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -201,10 +201,39 @@ platform-prior-only for now; T-20/T-21's pin-and-consider; the coach-view agenda
 `prize_receivables` writer, since no results ingestion exists yet; the players ranking-column
 grant lockdown step 3.1 re-deferred, still not this step's job; a distance-aware flight price
 model; the recommendation memo card).
-[PR #14](https://github.com/manudadubey/ProCircuit/pull/14) is merged. The next session should
-start at **step 3.3 (Conditions and Equipment)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that
-step plus whatever architecture section it names, and check `gh pr list` first — if a later PR
-hasn't merged yet, branch off it rather than `main`, the same stacking step 0.5/0.6 used. Check
+[PR #14](https://github.com/manudadubey/ProCircuit/pull/14) is merged.
+Step 3.3 (Conditions and Equipment) added `equipment_profile` and `conditions_briefs` (named,
+unbuilt, in TECH-ARCHITECTURE.md section 2.2 since the first architecture pass), the deterministic
+rule engine in `packages/agents/src/conditions` (amber, ball-diff, the tension driver with an
+explicit heat-then-altitude-then-humidity priority order, frames-to-bring, grip, unit conversion,
+the stamp builder) verified against all five of the prototype's own fixture events, a batched prose
+layer (up to five briefs per model call, one corrective retry, `gpt-4o-mini`) for the brief's own
+comparison sentence, a real key-less Open-Meteo forecast adapter with a climate-normals fallback,
+the Match note stamp attached at save time with a 24-hour backfill sweep, a daily refresh tick that
+sends one FYI only when a recommendation actually flips (verified against CE-AC-14's exact
+scenario), and the full UI: the Conditions brief inside the Tournament Agent detail, the dashboard
+chip, stamp chips on Match Scribe notes, and the real Settings > Equipment pane. The stamp's real
+shape settled a genuine inconsistency step 1.3 left open before PRD-08 existed (see
+`docs/BUILD-LOG.md`'s step 3.3 entry for the full reasoning); mindset-coach's physical-pattern rule
+still can't actually fire in production, now for a precisely named reason (no first-serve-percentage
+extraction anywhere in this codebase's pipeline) rather than the old vaguer one. Verified against
+the real Supabase project, migration owner-confirmed before applying, `database.types.ts`
+regenerated and matched byte-for-byte against this step's own interim hand-written types; a live
+signed-in browser session confirmed the Equipment pane's save, unit-toggle and CE-15/CE-AC-8 copy
+exactly, and caught and fixed a real bug live (the unit toggle wrote to the database correctly but
+didn't update Settings' shared in-memory state, so Preferences showed the stale unit until a
+reload). Did not visually verify a live, fully populated Conditions brief in the browser this
+session (tiles, racquet visual, two-frame test) — the shared dev environment this session ran in
+(two concurrent sessions against the same repo and Supabase session pooler) made seeding a fixture
+tournament a worse tradeoff than usual; the same logic is covered end to end by server-side
+integration tests instead. See `docs/BUILD-LOG.md`'s step 3.3 entry for the full design reasoning
+and everything else deliberately skipped (CE-21's post-event check-in, CE-22's order-of-play
+forecast, a real climate-normals data source, a distinct day-before-travel refresh mechanism, the
+players ranking-column grant lockdown deferred a third time now).
+[PR #15](https://github.com/manudadubey/ProCircuit/pull/15) is open, not yet merged. The next
+session should start at **step 4.1 (Fans)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step
+plus whatever architecture section it names, and check `gh pr list` first — if PR #15 hasn't merged
+yet, branch off it rather than `main`, the same stacking step 0.5/0.6 used. Check
 `docs/BUILD-LOG.md` for what each prior
 step actually did (including follow-ups) before assuming anything about the current state — this
 line is a pointer, not the full record.

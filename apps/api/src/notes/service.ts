@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   FREE_TIER_MONTHLY_NOTE_LIMIT,
   type Database,
+  type Json,
   type Note,
   type NoteCtx,
 } from '@procircuit/db';
@@ -10,6 +11,8 @@ import type { AgentRunsDb } from '@procircuit/actions';
 import type { ExtractionModelClient } from '@procircuit/agents';
 import type { StorageAdapter } from '../storage/adapter';
 import type { TranscriptionAdapter } from '../transcription/adapter';
+import { computeNoteStamp } from '../conditions/stamp';
+import type { WeatherAdapter } from '../conditions/adapter';
 import { runExtraction, type ExtractionLogger } from './extraction';
 
 export class QuotaExceededError extends Error {
@@ -43,6 +46,8 @@ export interface NotesServiceDeps {
   /** The match-scribe/extract agent's model call (step 1.2) and its agent_runs sink. */
   extraction: ExtractionModelClient;
   agentRuns: AgentRunsDb;
+  /** CE-11's condition stamp, attached at save time (step 3.3). */
+  weatherAdapter: WeatherAdapter;
   enqueueTranscription: (noteId: string) => Promise<void>;
   enqueueExtraction: (noteId: string) => Promise<void>;
   /** Injected for tests; defaults to the real clock. */
@@ -268,6 +273,29 @@ export async function saveNote(deps: NotesServiceDeps, input: SaveNoteInput): Pr
         audio_delete_cause: 'confirmed',
       })
       .eq('id', input.noteId);
+  }
+
+  // PRD-08 CE-11/section 3: "at Match note save time to produce a stamp...
+  // if a stamp cannot be produced at save the note saves without one and is
+  // backfilled within 24 hours" — best-effort and never allowed to fail the
+  // save itself, matching that failure behaviour exactly. Scoped to Match
+  // notes (section 4.3's own "Match Scribe notes"), not Practice/Travel/Other.
+  if (note.ctx === 'match') {
+    try {
+      const cond = await computeNoteStamp(
+        { db: deps.db, weatherAdapter: deps.weatherAdapter },
+        input.playerId,
+        note.recorded_at,
+      );
+      if (cond) {
+        await deps.db
+          .from('notes')
+          .update({ cond: cond as unknown as Json })
+          .eq('id', input.noteId);
+      }
+    } catch (err) {
+      deps.logger?.error(`[conditions] stamp failed for note ${input.noteId}:`, err);
+    }
   }
 
   return requireNote(deps.db, input.noteId, input.playerId);

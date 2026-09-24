@@ -5,8 +5,16 @@ import { cn } from '../lib/cn';
 // `[data-tip]` (Baseline §Feedback and overlays "Tooltip"): 12px foreground-on-background,
 // 350ms delay, arrow, flips below when there's no room above.
 export const TooltipProvider = TooltipPrimitive.Provider;
+// Radix's Tooltip.Root throws ("`Tooltip` must be used within `TooltipProvider`")
+// without a Provider ancestor — it has no built-in default context, unlike most
+// Radix primitives. Self-wrapping here means every caller gets a working
+// tooltip without having to remember a top-level <TooltipProvider>; a caller
+// that already has its own ancestor Provider (kitchen-sink's page-wide one)
+// just gets a harmless nested Provider, which Radix supports fine.
 export const Tooltip = (props: ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>) => (
-  <TooltipPrimitive.Root delayDuration={350} {...props} />
+  <TooltipPrimitive.Provider delayDuration={350}>
+    <TooltipPrimitive.Root delayDuration={350} {...props} />
+  </TooltipPrimitive.Provider>
 );
 export const TooltipTrigger = TooltipPrimitive.Trigger;
 

@@ -13,7 +13,8 @@ import {
   ToastTitle,
   ToastViewport,
 } from '@procircuit/ui';
-import { parseBlockedDateRanges } from '@procircuit/agents';
+import { parseBlockedDateRanges, type Unit } from '@procircuit/agents';
+import { updateUnits, type Units } from '@procircuit/db';
 import { createClient } from '@/lib/supabase/client';
 import { daysUntil, loadTournamentSnapshot, type TournamentSnapshot } from '@/lib/tournament/load';
 import { CalendarTab } from '@/components/tournament/calendar-tab';
@@ -50,6 +51,7 @@ export interface TournamentClientProps {
   weeklyBudget: number | null;
   blockedDates: string | null;
   isFree: boolean;
+  initialUnits: Units;
 }
 
 type View = 'list' | 'cal';
@@ -60,6 +62,7 @@ export function TournamentClient({
   weeklyBudget,
   blockedDates,
   isFree,
+  initialUnits,
 }: TournamentClientProps) {
   const supabase = useMemo(() => createClient(), []);
   const [snapshot, setSnapshot] = useState<TournamentSnapshot | null>(null);
@@ -68,11 +71,25 @@ export function TournamentClient({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ title: string } | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
+  // CE-17: synced with Preferences > Units and the Equipment pane's own
+  // control, all three writing the same players.units column.
+  const [units, setUnits] = useState<Units>(initialUnits);
+  const unit: Unit = units === 'imperial' ? 'lb' : 'kg';
 
   const showToast = useCallback((title: string) => {
     setToast({ title });
     setToastOpen(true);
   }, []);
+
+  const handleUnitChange = useCallback(
+    async (next: Unit) => {
+      const nextUnits: Units = next === 'lb' ? 'imperial' : 'metric';
+      setUnits(nextUnits);
+      await updateUnits(supabase, { playerId, units: nextUnits });
+      showToast(`Tension shown in ${next}`);
+    },
+    [playerId, showToast, supabase],
+  );
 
   const load = useCallback(async () => {
     const data = await loadTournamentSnapshot(supabase, playerId, homeCurrency, weeklyBudget);
@@ -246,6 +263,10 @@ export function TournamentClient({
                 reserves={snapshot?.reserves ?? 0}
                 netBurn={snapshot?.netBurn ?? 0}
                 isFree={isFree}
+                unit={unit}
+                onUnitChange={handleUnitChange}
+                equipmentMainsKg={snapshot?.equipmentMainsKg ?? 24}
+                equipmentCrossesKg={snapshot?.equipmentCrossesKg ?? 23}
                 onDone={load}
                 onStartTrial={handleStartTrial}
                 onToast={showToast}

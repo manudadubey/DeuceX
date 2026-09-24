@@ -6,14 +6,17 @@ import {
   EXTRACTION_MODEL,
   FINANCIAL_ACTION_MODEL,
   INSIGHT_MODEL,
+  PROSE_MODEL,
   RECEIPT_EXTRACTION_MODEL,
   createMockExtractionClient,
   createMockFinancialActionClient,
   createMockInsightClient,
+  createMockProseClient,
   createMockReceiptExtractionClient,
   createOpenAIExtractionClient,
   createOpenAIFinancialActionClient,
   createOpenAIInsightClient,
+  createOpenAIProseClient,
   createOpenAIReceiptExtractionClient,
 } from '@procircuit/agents';
 import cors from '@fastify/cors';
@@ -54,6 +57,10 @@ import {
 import { registerSharingRoutes, type SharingRoutesDeps } from './sharing/routes';
 import { SupabaseSharingDb } from './sharing/service';
 import { createResendEmailClient, type EmailClient } from '@procircuit/actions/account';
+import { registerConditionsRoutes, type ConditionsRoutesDeps } from './conditions/routes';
+import { createOpenMeteoAdapter } from './conditions/openmeteo-adapter';
+import { registerConditionsRefreshScheduler } from './conditions/refresh-scheduler';
+import { registerConditionsStampBackfillScheduler } from './conditions/stamp-backfill-scheduler';
 
 // This service owns anything with an external side effect or a scheduled
 // job (webhooks, the queue worker, structured-output calls). Simple CRUD
@@ -77,6 +84,7 @@ export function buildServer(
   sharingDeps?: SharingRoutesDeps,
   adminRankingsDeps?: AdminRankingsRoutesDeps,
   tournamentDeps?: TournamentRoutesDeps,
+  conditionsDeps?: ConditionsRoutesDeps,
 ) {
   const app = Fastify({ logger: true });
 
@@ -89,7 +97,8 @@ export function buildServer(
     accountDeps ||
     sharingDeps ||
     adminRankingsDeps ||
-    tournamentDeps
+    tournamentDeps ||
+    conditionsDeps
   ) {
     void app.register(cors, {
       origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000').split(','),
@@ -124,6 +133,12 @@ export function buildServer(
   if (tournamentDeps) {
     void app.register(async (instance) => {
       await registerTournamentRoutes(instance, tournamentDeps);
+    });
+  }
+
+  if (conditionsDeps) {
+    void app.register(async (instance) => {
+      await registerConditionsRoutes(instance, conditionsDeps);
     });
   }
 
@@ -227,6 +242,20 @@ async function main() {
         );
         return createMockReceiptExtractionClient();
       })();
+  // Open-Meteo needs no API key (like ECB, fx/ecb-adapter.ts's own comment),
+  // so it is always wired in — no fixture-vs-real fallback branch here.
+  const weatherAdapter = createOpenMeteoAdapter();
+  // Same OpenAI account again for the Conditions brief's comparison-and-
+  // practice prose (step 3.3), batched up to five briefs per call.
+  const proseClient = openaiApiKey
+    ? createOpenAIProseClient({ apiKey: openaiApiKey, model: PROSE_MODEL })
+    : (() => {
+        console.warn(
+          'OPENAI_API_KEY not set: falling back to the mock Conditions prose client. Set OPENAI_API_KEY for real briefs.',
+        );
+        return createMockProseClient();
+      })();
+
   const agentRuns = new SupabaseAgentRunsDb(db);
 
   const boss = await createNotesBoss(dbConnectionString);
@@ -236,7 +265,7 @@ async function main() {
   const actionsBoss = await createBoss(dbConnectionString);
   await registerMindsetCoach(actionsBoss, { db, client: insightClient, agentRuns });
   await registerFinancialAgent(actionsBoss, { db, client: financialActionClient, agentRuns });
-  await registerTournamentAgent(actionsBoss, { db, agentRuns });
+  await registerTournamentAgent(actionsBoss, { db, agentRuns, weatherAdapter, proseClient });
 
   // Step 2.1's own boss (money/queue.ts): the daily ECB fetch, the Sunday
   // reserve-balance reminder and (step 2.3) the fourteen-day account-
@@ -254,6 +283,13 @@ async function main() {
     storage,
   });
   await registerFeedWindowScheduler(moneyBoss, { db });
+  await registerConditionsRefreshScheduler(moneyBoss, {
+    db,
+    agentRuns,
+    weatherAdapter,
+    proseClient,
+  });
+  await registerConditionsStampBackfillScheduler(moneyBoss, { db, weatherAdapter });
 
   const resendApiKey = process.env.RESEND_API_KEY;
   const resendFromAddress = process.env.RESEND_FROM_ADDRESS;
@@ -282,6 +318,7 @@ async function main() {
     transcription,
     extraction,
     agentRuns,
+    weatherAdapter,
     enqueueTranscription: (noteId) => enqueueTranscription(boss, noteId),
     enqueueExtraction: (noteId) => enqueueExtraction(boss, noteId),
   };
@@ -322,6 +359,13 @@ async function main() {
   const accountDeps: AccountRoutesDeps = { db, anonClient, email, appBaseUrl };
   const sharingDeps: SharingRoutesDeps = { db: new SupabaseSharingDb(db) };
   const tournamentDeps: TournamentRoutesDeps = { db, anonClient };
+  const conditionsDeps: ConditionsRoutesDeps = {
+    db,
+    anonClient,
+    agentRuns,
+    weatherAdapter,
+    proseClient,
+  };
 
   const app = buildServer(
     notesDeps,
@@ -331,6 +375,7 @@ async function main() {
     sharingDeps,
     adminRankingsDeps,
     tournamentDeps,
+    conditionsDeps,
   );
   const port = Number(process.env.PORT ?? 8787);
   await app.listen({ port, host: '0.0.0.0' });

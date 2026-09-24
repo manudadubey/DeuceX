@@ -108,7 +108,14 @@ export function SettingsShell({
               onToast={showToast}
             />
           )}
-          {pane === 'equip' && <EquipmentPane />}
+          {pane === 'equip' && (
+            <EquipmentPane
+              playerId={player.id}
+              initialUnits={player.units === 'imperial' ? 'imperial' : 'metric'}
+              onUnitsChange={(units) => onPlayerChange({ units })}
+              onToast={showToast}
+            />
+          )}
           {pane === 'conn' && <ConnectionsPane />}
           {pane === 'share' && (
             <SharingPane

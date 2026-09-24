@@ -7,6 +7,7 @@ import Fastify from 'fastify';
 import { FakeDb, makeNote } from '../test-support/fake-db';
 import { createMemoryStorageAdapter } from '../storage/memory-adapter';
 import { createMockTranscriptionAdapter } from '../transcription/mock-adapter';
+import { createFixtureWeatherAdapter } from '../conditions/fixture-adapter';
 import { registerNotesRoutes, type NotesRoutesDeps } from './routes';
 
 function fakeAgentRunsDb(): AgentRunsDb {
@@ -58,6 +59,7 @@ async function buildApp(fake: FakeDb, overrides: Partial<NotesRoutesDeps> = {}) 
     transcription: createMockTranscriptionAdapter(),
     extraction: createMockExtractionClient(),
     agentRuns: fakeAgentRunsDb(),
+    weatherAdapter: createFixtureWeatherAdapter(null),
     enqueueTranscription: async () => undefined,
     enqueueExtraction: async () => undefined,
     now: () => new Date('2026-09-11T18:44:00Z'),

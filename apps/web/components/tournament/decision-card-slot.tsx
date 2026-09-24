@@ -64,6 +64,8 @@ export function DecisionCardSlot({
       candidate={nearest}
       reserves={snapshot.reserves}
       netBurn={snapshot.netBurn}
+      equipmentMainsKg={snapshot.equipmentMainsKg}
+      equipmentCrossesKg={snapshot.equipmentCrossesKg}
       onDone={load}
     />
   );

@@ -7,8 +7,11 @@ import {
   type CostModelPlayer,
   type ShortlistFilters,
   type ShortlistResult,
+  type ProseModelClient,
 } from '@procircuit/agents';
 import { loadTournamentCandidates, loadTournamentPlayer } from './service';
+import { runConditionsForCandidates } from '../conditions/run';
+import type { WeatherAdapter } from '../conditions/adapter';
 
 export const TOURNAMENT_AGENT_NAME = 'tournament';
 export const TOURNAMENT_SCHEMA_VERSION = 'v1';
@@ -25,6 +28,12 @@ export interface TournamentRunLogger {
 export interface TournamentRunDeps {
   db: SupabaseClient<Database>;
   agentRuns: AgentRunsDb;
+  // PRD-08 section 3: "runs inside every Tournament Agent run" — the
+  // Conditions layer's own weather adapter and prose model client, threaded
+  // through from apps/api/src/index.ts the same way as everything else this
+  // run needs, rather than conditions/run.ts reaching for its own globals.
+  weatherAdapter: WeatherAdapter;
+  proseClient: ProseModelClient;
   logger?: TournamentRunLogger;
 }
 
@@ -205,6 +214,36 @@ export async function runTournamentAgent(
 
     if (triggerType === 'schedule') {
       await sendShortlistNotification(deps.db, playerId, result, now);
+    }
+
+    // PRD-08 section 3: "runs inside every Tournament Agent run"; section
+    // 3's own failure behaviour ("No failure blocks the Tournament Agent
+    // run") is why this is its own try/catch rather than part of the block
+    // above — a Conditions failure must never turn a successful shortlist
+    // run into a failed one.
+    try {
+      const tournamentIds = result.candidates.map((c) => c.tournamentId);
+      if (tournamentIds.length > 0) {
+        const { data: tournamentRows, error: tournamentsError } = await deps.db
+          .from('tournaments')
+          .select('*')
+          .in('id', tournamentIds);
+        if (tournamentsError) throw tournamentsError;
+        await runConditionsForCandidates(
+          {
+            db: deps.db,
+            agentRuns: deps.agentRuns,
+            weatherAdapter: deps.weatherAdapter,
+            proseClient: deps.proseClient,
+            logger,
+          },
+          playerId,
+          tournamentRows ?? [],
+          now,
+        );
+      }
+    } catch (err) {
+      logger.error(`[conditions] failed inside tournament run for player ${playerId}:`, err);
     }
 
     return result;

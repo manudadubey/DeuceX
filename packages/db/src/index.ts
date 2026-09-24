@@ -117,6 +117,7 @@ export {
 export {
   updateAccount,
   updatePreferences,
+  updateUnits,
   updateNotificationPrefs,
   isNotificationChannelEnabled,
   hasAtLeastOneChannel,
@@ -165,6 +166,14 @@ export {
   type EntryDecisionStatus,
   type ShortlistCandidateRow,
 } from './tournament';
+export {
+  getEquipmentProfile,
+  upsertEquipmentProfile,
+  type EquipmentProfile,
+  type RestringCadence,
+  type UpsertEquipmentProfileInput,
+} from './equipment';
+export { listConditionsBriefs, type ConditionsBriefRow } from './conditions';
 
 // Two clients, deliberately: the anon-scoped client respects row-level
 // security and is what every player-facing request uses; the service-role

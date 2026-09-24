@@ -9,16 +9,18 @@ import { Badge, Button } from '@procircuit/ui';
 // stay live on Free.
 export function LockedSection({
   onStartTrial,
+  label = 'Pro shows cost, outcomes and runway effect',
   children,
 }: {
   onStartTrial: () => void;
+  label?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="relative">
       <div className="pointer-events-none select-none opacity-40 blur-[1px]">{children}</div>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg bg-card/60 p-4 text-center">
-        <Badge variant="secondary">Pro shows cost, outcomes and runway effect</Badge>
+        <Badge variant="secondary">{label}</Badge>
         <Button size="sm" onClick={onStartTrial}>
           Start Pro trial
         </Button>

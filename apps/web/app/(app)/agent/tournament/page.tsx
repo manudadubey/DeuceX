@@ -13,7 +13,7 @@ export default async function TournamentAgentPage() {
 
   const { data: player } = await supabase
     .from('players')
-    .select('id, home_currency, weekly_budget, blocked_dates, tier')
+    .select('id, home_currency, weekly_budget, blocked_dates, tier, units')
     .eq('id', playerId)
     .single();
   if (!player) redirect('/onboarding');
@@ -25,6 +25,7 @@ export default async function TournamentAgentPage() {
       weeklyBudget={player.weekly_budget}
       blockedDates={player.blocked_dates}
       isFree={player.tier !== 'pro' && player.tier !== 'elite'}
+      initialUnits={player.units === 'imperial' ? 'imperial' : 'metric'}
     />
   );
 }

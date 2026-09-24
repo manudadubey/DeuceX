@@ -3,6 +3,33 @@ import type { Database } from '@procircuit/db';
 import type { CostBreakdown, RoundOutcome } from '@procircuit/agents';
 import { loadFinancialSnapshot } from '@/lib/financial/load';
 
+// PRD-08 section 6's brief, read straight off conditions_briefs (system-
+// computed, same "read live and directly from the player's own rows on
+// every load" idiom loadTournamentSnapshot already uses for everything
+// else on this page).
+export interface ConditionsBriefView {
+  tempRange: string;
+  tempMax: number;
+  rhRange: string;
+  rhMax: number;
+  wind: string;
+  altitudeM: number | null;
+  ball: string | null;
+  ballDiff: boolean;
+  io: string;
+  diff: string;
+  tension: boolean;
+  tensionNote: string;
+  testMains: number | null;
+  testCrosses: number | null;
+  frames: number;
+  framesSubLine: string;
+  grip: string;
+  practice: string;
+  refreshed: boolean;
+  forecastSource: string;
+}
+
 export interface TournamentCandidateView {
   tournamentId: string;
   rank: number;
@@ -27,6 +54,7 @@ export interface TournamentCandidateView {
   current: boolean;
   status: 'none' | 'entered' | 'skipped' | 'withdrawn';
   plannedExpenseId: string | null;
+  conditions: ConditionsBriefView | null;
 }
 
 interface CachedRunOutput {
@@ -42,7 +70,13 @@ export interface TournamentSnapshot {
   excluded: CachedRunOutput['excluded'];
   reserves: number;
   netBurn: number;
+  /** Equipment profile baseline (PRD-08 section 4.5's own defaults when the player hasn't saved one yet). */
+  equipmentMainsKg: number;
+  equipmentCrossesKg: number;
 }
+
+const DEFAULT_EQUIPMENT_MAINS_KG = 24;
+const DEFAULT_EQUIPMENT_CROSSES_KG = 23;
 
 function daysUntil(dateIso: string | null, now: Date): number | null {
   if (!dateIso) return null;
@@ -69,7 +103,7 @@ export async function loadTournamentSnapshot(
   weeklyBudget: number | null,
   now: Date = new Date(),
 ): Promise<TournamentSnapshot> {
-  const [candidatesRes, decisionsRes, runRes] = await Promise.all([
+  const [candidatesRes, decisionsRes, runRes, equipmentRes] = await Promise.all([
     supabase
       .from('shortlist_candidates')
       .select('*')
@@ -85,20 +119,40 @@ export async function loadTournamentSnapshot(
       .order('started_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from('equipment_profile')
+      .select('tension_mains_kg, tension_crosses_kg')
+      .eq('player_id', playerId)
+      .maybeSingle(),
   ]);
   if (candidatesRes.error) throw candidatesRes.error;
   if (decisionsRes.error) throw decisionsRes.error;
   if (runRes.error) throw runRes.error;
+  if (equipmentRes.error) throw equipmentRes.error;
 
   const candidateRows = candidatesRes.data ?? [];
   const tournamentIds = candidateRows.map((c) => c.tournament_id);
-  const tournamentsRes = tournamentIds.length
-    ? await supabase.from('tournaments').select('*').in('id', tournamentIds)
-    : { data: [], error: null };
+  const [tournamentsRes, conditionsRes] = tournamentIds.length
+    ? await Promise.all([
+        supabase.from('tournaments').select('*').in('id', tournamentIds),
+        supabase
+          .from('conditions_briefs')
+          .select('*')
+          .eq('player_id', playerId)
+          .in('tournament_id', tournamentIds),
+      ])
+    : [
+        { data: [], error: null },
+        { data: [], error: null },
+      ];
   if (tournamentsRes.error) throw tournamentsRes.error;
+  if (conditionsRes.error) throw conditionsRes.error;
 
   const tournamentById = new Map((tournamentsRes.data ?? []).map((t) => [t.id, t]));
   const decisionByTournament = new Map((decisionsRes.data ?? []).map((d) => [d.tournament_id, d]));
+  const conditionsByTournament = new Map(
+    (conditionsRes.data ?? []).map((c) => [c.tournament_id, c]),
+  );
 
   function mondayOf(dateIso: string): string {
     const date = new Date(`${dateIso}T00:00:00Z`);
@@ -111,6 +165,7 @@ export async function loadTournamentSnapshot(
   const candidates: TournamentCandidateView[] = candidateRows.map((c) => {
     const tournament = tournamentById.get(c.tournament_id);
     const decision = decisionByTournament.get(c.tournament_id);
+    const conditions = conditionsByTournament.get(c.tournament_id);
     return {
       tournamentId: c.tournament_id,
       rank: c.rank,
@@ -135,6 +190,30 @@ export async function loadTournamentSnapshot(
       current: c.current,
       status: (decision?.status ?? 'none') as TournamentCandidateView['status'],
       plannedExpenseId: decision?.planned_expense_id ?? null,
+      conditions: conditions
+        ? {
+            tempRange: conditions.temp_range,
+            tempMax: conditions.temp_max,
+            rhRange: conditions.rh_range,
+            rhMax: conditions.rh_max,
+            wind: conditions.wind,
+            altitudeM: conditions.altitude_m,
+            ball: conditions.ball,
+            ballDiff: conditions.ball_diff,
+            io: conditions.io,
+            diff: conditions.diff,
+            tension: conditions.tension,
+            tensionNote: conditions.tension_note,
+            testMains: conditions.test_mains,
+            testCrosses: conditions.test_crosses,
+            frames: conditions.frames,
+            framesSubLine: conditions.frames_sub_line,
+            grip: conditions.grip,
+            practice: conditions.practice,
+            refreshed: conditions.refreshed,
+            forecastSource: conditions.forecast_source,
+          }
+        : null,
     };
   });
 
@@ -155,5 +234,7 @@ export async function loadTournamentSnapshot(
     excluded: cached?.excluded ?? [],
     reserves: financial.reserves,
     netBurn: financial.netBurn,
+    equipmentMainsKg: equipmentRes.data?.tension_mains_kg ?? DEFAULT_EQUIPMENT_MAINS_KG,
+    equipmentCrossesKg: equipmentRes.data?.tension_crosses_kg ?? DEFAULT_EQUIPMENT_CROSSES_KG,
   };
 }

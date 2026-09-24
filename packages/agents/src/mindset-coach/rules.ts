@@ -117,15 +117,22 @@ function detectTravelFlat(
 }
 
 // A stamp counts as a "hot" condition worth comparing against baseline.
-// Placeholder thresholds: PRD-08 (step 3.3) owns the real amber predicate
-// ("the forecast maximum of 28°C or 70 percent humidity", Baseline's own
-// conditions brief) — this rule exists so the "Conditions" pattern kind is
-// structurally real ahead of that step, the same "wire it, defer the real
-// numbers" pattern step 1.1/1.2 already used for the cond column itself.
-// cond is always null until PRD-08 ships, so this never actually fires in
-// production yet; it is exercised only by this package's own fixture test.
-const HOT_TEMP_C = 30;
-const HOT_HUMIDITY_PCT = 80;
+// PRD-08 (step 3.3) has since shipped the real amber predicate — 28C or 70
+// percent humidity, packages/agents/src/conditions/amber.ts's own
+// AMBER_TEMP_C/AMBER_HUMIDITY_PCT — and these two numbers now match it
+// exactly (kept as literals here, not a cross-submodule import, so this
+// already-shipped, already-tested module changes by exactly two numbers).
+// This rule still never fires in production: step 3.3 populates notes.cond
+// with PRD-08's own stamp shape (temp/humidity/court/ball/place, a
+// string[]), not this module's MindsetConditionStamp{firstServePct, tempC,
+// humidityPct} — the stamp never carried a performance metric to begin
+// with, and no step in this codebase's pipeline extracts a first-serve
+// percentage from a note's transcript (match-scribe/schema.ts's own
+// structured extraction has no such field). See docs/BUILD-LOG.md's step
+// 3.3 entry for the full reasoning; this remains exercised only by this
+// package's own fixture test below.
+const HOT_TEMP_C = 28;
+const HOT_HUMIDITY_PCT = 70;
 const FIRST_SERVE_DROP_THRESHOLD_PCT = 10;
 
 function detectConditionsFirstServe(

@@ -9,8 +9,11 @@ import {
   CardHeader,
   CardTitle,
   Confirm,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from '@procircuit/ui';
-import { computeRunwayWeeks } from '@procircuit/agents';
+import { computeRunwayWeeks, formatTension } from '@procircuit/agents';
 import { createClient } from '@/lib/supabase/client';
 import { daysUntil, type TournamentCandidateView } from '@/lib/tournament/load';
 import { useEntryActions } from './use-entry-actions';
@@ -34,6 +37,8 @@ export function DecisionCard({
   candidate,
   reserves,
   netBurn,
+  equipmentMainsKg,
+  equipmentCrossesKg,
   onDone,
 }: {
   playerId: string;
@@ -41,6 +46,8 @@ export function DecisionCard({
   candidate: TournamentCandidateView;
   reserves: number;
   netBurn: number;
+  equipmentMainsKg: number;
+  equipmentCrossesKg: number;
   onDone: () => void;
 }) {
   const supabase = useMemo(() => createClient(), []);
@@ -95,6 +102,25 @@ export function DecisionCard({
         </Badge>
         {days != null && (
           <Badge variant={days <= 10 ? 'warn' : 'secondary'}>{days} days to decide</Badge>
+        )}
+        {candidate.conditions && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="secondary">
+                {candidate.conditions.tempRange} · {candidate.conditions.ball ?? 'ball n/a'} ·{' '}
+                {candidate.conditions.tension
+                  ? `test ${formatTension(candidate.conditions.testMains ?? equipmentMainsKg, candidate.conditions.testCrosses ?? equipmentCrossesKg, 'kg')} kg`
+                  : `keep ${formatTension(equipmentMainsKg, equipmentCrossesKg, 'kg')} kg`}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              From the Conditions brief: {candidate.conditions.tempRange},{' '}
+              {candidate.conditions.rhRange} humidity, {candidate.conditions.ball ?? 'ball n/a'}.{' '}
+              {candidate.conditions.tension
+                ? candidate.conditions.tensionNote
+                : `Keep your baseline tension, bring ${candidate.conditions.frames} frames.`}
+            </TooltipContent>
+          </Tooltip>
         )}
       </div>
 
