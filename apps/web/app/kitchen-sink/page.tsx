@@ -84,10 +84,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
   HelpMark,
-} from '@procircuit/ui';
+} from '@deucex/ui';
 
 // Every component from step 0.4 of docs/BUILD-PLAN-CLAUDE-CODE.md, in both themes (toggle
-// top right) and matching docs/procircuit-baseline.html. Not a route the product ships;
+// top right) and matching docs/deucex-baseline.html. Not a route the product ships;
 // this is the "done when" acceptance surface.
 export default function KitchenSinkPage() {
   const [progress, setProgress] = useState(62);

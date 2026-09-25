@@ -15,8 +15,8 @@ import {
   PulseTileSub,
   PulseTileValue,
   buttonVariants,
-} from '@procircuit/ui';
-import { formatPatronMoney, type FansPlan } from '@procircuit/agents';
+} from '@deucex/ui';
+import { formatPatronMoney, type FansPlan } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import { loadFansSnapshot, type FansSnapshot } from '@/lib/fans/load';
 

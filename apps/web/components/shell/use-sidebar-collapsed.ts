@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 const STORAGE_KEY = 'pc.sidebar';
 
 // Baseline §Shells and routes: "256px sidebar (48px collapsed, Cmd/Ctrl+B)", persisted
-// (PROCIRCUIT-CONTEXT 4.5 `pc.sidebar`). Starts false (expanded) on the server render and
+// (DEUCEX-CONTEXT 4.5 `pc.sidebar`). Starts false (expanded) on the server render and
 // syncs from localStorage on mount, so there's no server/client markup mismatch.
 export function useSidebarCollapsed(): [boolean, () => void] {
   const [collapsed, setCollapsed] = useState(false);

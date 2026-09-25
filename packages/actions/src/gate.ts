@@ -1,5 +1,5 @@
-import { type ApprovalActionType, type Database, type Json } from '@procircuit/db';
-import { hashApprovalPayload } from '@procircuit/shared';
+import { type ApprovalActionType, type Database, type Json } from '@deucex/db';
+import { hashApprovalPayload } from '@deucex/shared';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   ApprovalActionMismatchError,

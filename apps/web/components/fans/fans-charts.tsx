@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { el, tagChartEnter } from '@procircuit/ui';
-import { formatPatronMoney } from '@procircuit/agents';
+import { el, tagChartEnter } from '@deucex/ui';
+import { formatPatronMoney } from '@deucex/agents';
 
 // PRD-04 section 4.1's two charts, ported from the prototype's drawFans() and
 // drawMRR(): hand-drawn with el() into a host div and redrawn on resize,

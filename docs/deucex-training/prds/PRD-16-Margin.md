@@ -2,7 +2,7 @@
 
 Version 0.1 · 20 September 2026 · Owner: Manu Dubey · Status: draft for review · Parent: PRD-00 · Siblings: PRD-06 (Mindset Coach), PRD-14 (Resonance), PRD-15 (Sixteen), PRD-08 (Conditions and Equipment)
 
-Prototype reference: `procircuit-margin.html` v1, and the same tool embedded in the Training tab of `procircuit-dashboard.html`. The prototype holds the flight model, the three drill modes, the light and speed controls, the call pad, the per-ball feedback and the set summary with the lean split and the band chart. It is the visual and behavioural reference for this document.
+Prototype reference: `deucex-margin.html` v1, and the same tool embedded in the Training tab of `deucex-dashboard.html`. The prototype holds the flight model, the three drill modes, the light and speed controls, the call pad, the per-ball feedback and the set summary with the lean split and the band chart. It is the visual and behavioural reference for this document.
 
 ---
 
@@ -358,7 +358,7 @@ The prototype is a single file with a hand-rolled projection and a canvas render
 
 Three things must change. The line metric, per A32. The renderer should move to a size-observer rather than a window resize listener, because in the dashboard it lives in a frame that can resize without the window doing so. And the drill currently assumes it owns the whole viewport, which is true full-screen and not true if it is ever embedded inline.
 
-The dashboard integration in `procircuit-dashboard.html` is a prototype-only arrangement: each tool runs in its own frame because the five tools share dozens of element identifiers with each other and with the dashboard. In the real build these are components and the problem does not exist, so the frame approach should not be carried across.
+The dashboard integration in `deucex-dashboard.html` is a prototype-only arrangement: each tool runs in its own frame because the five tools share dozens of element identifiers with each other and with the dashboard. In the real build these are components and the problem does not exist, so the frame approach should not be carried across.
 
 ## 14. Out of scope and open questions
 

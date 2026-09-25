@@ -11,8 +11,8 @@ import {
   CardHeader,
   CardTitle,
   Empty,
-} from '@procircuit/ui';
-import { setInsightFeedback, setInsightFocusDone, type Insight } from '@procircuit/db';
+} from '@deucex/ui';
+import { setInsightFeedback, setInsightFocusDone, type Insight } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 
 function formatDate(date: string): string {

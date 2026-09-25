@@ -25,7 +25,7 @@ export interface PayoutBalanceLine {
 /**
  * Sums a payout's balance transactions into P-13's four columns. Stripe's own
  * GST on its fees (fee type 'tax') counts toward the Stripe column, since the
- * player sees it as part of Stripe's charge, not ProCircuit's.
+ * player sees it as part of Stripe's charge, not DeuceX's.
  */
 export function payoutBreakdownFromBalance(lines: readonly PayoutBalanceLine[]): PayoutBreakdown {
   let gross = 0;

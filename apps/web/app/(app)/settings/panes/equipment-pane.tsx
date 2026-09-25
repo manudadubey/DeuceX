@@ -13,14 +13,14 @@ import {
   Switch,
   ToggleGroup,
   ToggleGroupItem,
-} from '@procircuit/ui';
+} from '@deucex/ui';
 import {
   getEquipmentProfile,
   updateUnits,
   upsertEquipmentProfile,
   type RestringCadence,
-} from '@procircuit/db';
-import { toDisplayKg, type Unit } from '@procircuit/agents';
+} from '@deucex/db';
+import { toDisplayKg, type Unit } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import { requestConditionsReRun } from '@/lib/conditions/api';
 

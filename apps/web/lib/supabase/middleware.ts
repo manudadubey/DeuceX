@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 
 // Do not add code between createServerClient and getClaims(): a mistake here
 // is what randomly logs players out (the refreshed token has to make it back

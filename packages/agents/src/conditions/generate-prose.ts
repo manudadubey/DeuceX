@@ -1,4 +1,4 @@
-import { AgentValidationError, type TokenUsage } from '@procircuit/actions';
+import { AgentValidationError, type TokenUsage } from '@deucex/actions';
 import { buildCorrectiveProsePrompt, buildProsePrompt, type ProseBriefInput } from './prose-prompt';
 import type { ProseModelClient } from './prose-model-client';
 import { proseOutputSchema, validateProseCoverage, type ProseModelOutput } from './prose-schema';

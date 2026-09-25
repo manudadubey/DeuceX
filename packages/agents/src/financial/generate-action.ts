@@ -1,4 +1,4 @@
-import { AgentValidationError, type TokenUsage } from '@procircuit/actions';
+import { AgentValidationError, type TokenUsage } from '@deucex/actions';
 import type { ActionCandidate } from './action-candidates';
 import { buildCorrectiveFinancialActionPrompt, buildFinancialActionPrompt } from './prompt';
 import { financialActionModelOutputSchema } from './schema';

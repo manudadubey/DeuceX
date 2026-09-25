@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { Logo } from '@procircuit/ui';
+import { Logo } from '@deucex/ui';
 import { createClient } from '@/lib/supabase/server';
 
 // The bare, no-sidebar-no-topbar shell (PRD-11 section 4.1), but wider than
@@ -18,7 +18,7 @@ export default async function OnboardingLayout({ children }: { children: React.R
         <div className="flex items-center gap-2.5 self-center">
           <Logo className="size-8" />
           <div>
-            <div className="text-sm font-medium">ProCircuit</div>
+            <div className="text-sm font-medium">DeuceX</div>
             <div className="text-xs text-muted-foreground">Set up in about four minutes</div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { NoteCtx, NoteMood, NoteRound } from '@procircuit/db';
+import type { NoteCtx, NoteMood, NoteRound } from '@deucex/db';
 
 // PRD-02 section 7: "Result grammar: W or L, then sets as d-d with an
 // optional tiebreak in parentheses, for example 'L 6-4 3-6 6-7(5)'."
@@ -19,7 +19,7 @@ export const EXTRACTION_MAX_SUMMARY_LENGTH = 220;
 
 // A versioned schema (PRD-02 section 7's "Zod-style, version 1"), built per
 // call because the tag vocabulary it validates against is per-player, not
-// static — see @procircuit/agents/match-scribe's caller, which unions
+// static — see @deucex/agents/match-scribe's caller, which unions
 // INITIAL_TAG_VOCABULARY with tags the player has already used.
 export function buildExtractionModelOutputSchema(tagVocabulary: readonly string[]) {
   const vocabulary = new Set(tagVocabulary);

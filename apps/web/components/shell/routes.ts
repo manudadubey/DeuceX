@@ -24,7 +24,7 @@ export interface NavGroup {
 }
 
 // Step 0.5's route table (docs/BUILD-PLAN-CLAUDE-CODE.md), grouped as in the prototype's
-// sidebar (docs/procircuit-dashboard.html). The Sponsor and Fan agents are Elite-only and
+// sidebar (docs/deucex-dashboard.html). The Sponsor and Fan agents are Elite-only and
 // out of scope until they're built (PRD-09, PRD-10), so they're not in the nav yet.
 export const NAV_GROUPS: NavGroup[] = [
   {
@@ -59,7 +59,7 @@ export const ROUTE_TITLES: Record<string, string> = Object.fromEntries(
   NAV_GROUPS.flatMap((group) => group.items).map((item) => [item.href, item.label]),
 );
 
-// The mobile tab bar shows five of the ten routes (docs/procircuit-dashboard.html `.tabbar`);
+// The mobile tab bar shows five of the ten routes (docs/deucex-dashboard.html `.tabbar`);
 // the rest are one tap away from Dashboard until there's a "More" sheet to hold them.
 export const TAB_ITEMS: NavItem[] = [
   { href: '/', label: 'Home', icon: Home },

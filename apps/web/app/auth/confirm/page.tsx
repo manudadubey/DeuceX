@@ -24,7 +24,7 @@ export default function ConfirmSignInPage({
 
   return (
     <main>
-      <p>ProCircuit</p>
+      <p>DeuceX</p>
       <form action={confirmSignIn}>
         <input type="hidden" name="token_hash" value={tokenHash} />
         <input type="hidden" name="type" value={type} />

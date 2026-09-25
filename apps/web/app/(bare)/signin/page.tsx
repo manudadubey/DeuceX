@@ -1,19 +1,11 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import {
-  Button,
-  Card,
-  CardContent,
-  Field,
-  FieldDescription,
-  FieldLabel,
-  Input,
-} from '@procircuit/ui';
+import { Button, Card, CardContent, Field, FieldDescription, FieldLabel, Input } from '@deucex/ui';
 import { createClient } from '@/lib/supabase/server';
 import { requestMagicLink } from './actions';
 import { PasskeySignIn } from './passkey-sign-in';
 
-// Bare shell matching the prototype's #/signin (docs/procircuit-dashboard.html)
+// Bare shell matching the prototype's #/signin (docs/deucex-dashboard.html)
 // and PRD-12 section 4.11 / ST-21: email field, magic link, optional passkey,
 // no password field anywhere (M-ID-1, decisions worksheet 11).
 export default async function SignInPage({
@@ -34,7 +26,7 @@ export default async function SignInPage({
     <Card>
       <CardContent className="flex flex-col gap-4">
         <div>
-          <p className="text-sm font-medium">ProCircuit</p>
+          <p className="text-sm font-medium">DeuceX</p>
           <h1 className="text-sm text-muted-foreground">Sign in</h1>
         </div>
 

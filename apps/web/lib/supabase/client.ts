@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 
 // Passkey support is still an experimental supabase-js API (opt-in flag
 // required), used only here since registerPasskey/signInWithPasskey run in

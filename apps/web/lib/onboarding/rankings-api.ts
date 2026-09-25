@@ -1,7 +1,7 @@
 'use client';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 
 // The one apps/api call onboarding makes (step 1.4's ranking lookup adapter
 // — see apps/api/src/rankings). Everything else onboarding does is the

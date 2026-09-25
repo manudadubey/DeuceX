@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import type { ConditionsBriefRules } from '@procircuit/agents';
+import type { Database } from '@deucex/db';
+import type { ConditionsBriefRules } from '@deucex/agents';
 
 export interface PersistBriefInput {
   playerId: string;

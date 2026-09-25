@@ -1,10 +1,14 @@
-# ProCircuit (becoming DeuceX)
+# DeuceX
 
-**Rebrand in progress (owner, 25 September 2026): the product is being renamed DeuceX, domain
-`deucex.ai`.** The codebase, UI copy, PRDs, repo and Vercel projects still say "ProCircuit"; the
-rename is a planned step of its own that hasn't started. Until then, keep new code consistent with
-the existing ProCircuit naming, but anything that reaches the outside world for the first time
-(email sender, domains) uses DeuceX. Don't do a partial rename in passing.
+**Renamed from ProCircuit on 25 September 2026** (owner decision; domain `deucex.ai`). Code, UI
+copy, docs, the `@deucex/*` package scope, the GitHub repo (`manudadubey/DeuceX`) and both Vercel
+projects (`deucex`, `deucex-admin`) all say DeuceX now. A few names deliberately still say
+ProCircuit, each commented where it lives: the Stripe metadata keys `procircuit_player_id` and
+`procircuit_tier_id` and the portal configuration tag `procircuit: 'fans'` (live Stripe objects
+carry them), the offline-queue IndexedDB name `procircuit-match-scribe` (renaming it strands queued
+notes), comments inside already-applied migrations (never edited), and the Supabase project and
+Stripe sandbox account names, which are only renameable in those dashboards. Use DeuceX for
+everything new.
 
 Agentic SaaS for ATP and WTA players ranked roughly #150 to #1500. The agent proposes, the
 player decides: nothing leaves the app (entry, payment, email, post, message) without a
@@ -13,7 +17,7 @@ entry client or ICS. Never work around this.
 
 ## Status: Phase 0, Phase 1, step 2.1 through step 4.1b done, start step 4.2
 
-The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
+The monorepo scaffold is built and deploying; the database has RLS-protected DeuceX tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
 0.3); `packages/ui` has the full Baseline component set and a `/kitchen-sink` route in `apps/web`
 (step 0.4); `apps/web` has the real app shell (sidebar, topbar, mobile tab bar, FAB, bare shell)
@@ -74,7 +78,7 @@ balance updates or marking a receivable received — that's step 2.2's Financial
 pre-existing, unrelated step 1.1 bug in `rls.integration.test.ts` (the "notes" RLS block, a test
 helper always rolling back so several tests asserted on state that never persisted) was found
 while live-testing step 2.1 and fixed in a follow-up commit on the same
-[PR #10](https://github.com/manudadubey/ProCircuit/pull/10), which is merged.
+[PR #10](https://github.com/manudadubey/DeuceX/pull/10), which is merged.
 Step 2.2 (Financial Agent) added the deterministic runway/burn/fourteen-week-projection engine,
 budget vs actual, monthly P&L (decisions worksheet 7's pending-receivable fix made structural: the
 P&L function has no parameter a pending receivable could even be passed through), and a ranked
@@ -96,16 +100,16 @@ is what "live runs recompute figures without regenerating the action" actually m
 against a real signed-in session in the browser (not deferred, unlike step 1.4): a balance update
 and a manual expense entry both persisted and recomputed the KPI row, chart and budget bar
 correctly; test rows deleted afterward. The build was also checked field by field against
-`docs/procircuit-dashboard-neumayer.html`'s own `#/agent/financial` prototype, which surfaced real
+`docs/deucex-dashboard-neumayer.html`'s own `#/agent/financial` prototype, which surfaced real
 gaps (the milestone progress bar, the three runway summary tiles, CSV export, the ledger's
 footer row) fixed the same session, not just noted. See `docs/BUILD-LOG.md`'s step 2.2 entry for
 the full design reasoning, four bugs found and fixed (a with-pending chart line that was silently
 never fed pending receivables, an unhandled promise rejection, a `pg-boss`-in-the-browser-bundle
-break requiring a `@procircuit/actions/queue` export split, and a shared dev server whose build
+break requiring a `@deucex/actions/queue` export split, and a shared dev server whose build
 cache was corrupted by running a production build against it mid-session) and what it deliberately
 skipped (scenario tabs pending step 3.2's Tournament Agent, the six-month P&L chart and month
 selector, receipt rendition/redaction pending an image-processing dependency, patron MRR pending
-step 4.1). [PR #11](https://github.com/manudadubey/ProCircuit/pull/11) is merged.
+step 4.1). [PR #11](https://github.com/manudadubey/DeuceX/pull/11) is merged.
 Step 2.3 (Settings, preferences, sharing) built the nine Settings panes, closed step 0.2's own
 flagged gap (a column-level grant lockdown on `players`, scoped to exactly the new
 deletion/export columns, verified live to leave every existing write path, including onboarding's
@@ -128,7 +132,7 @@ view, an empty-CSV attachment Resend refused, an unverified sending domain, and 
 instance that tipped the session pooler's connection cap over) fixed the same session, not just
 noted; see `docs/BUILD-LOG.md`'s step 2.3 entry for all four and for what it deliberately skipped
 (real Stripe Billing, Equipment pane content which is step 3.3's own job, most of Connections,
-direct coach accounts). [PR #12](https://github.com/manudadubey/ProCircuit/pull/12) is merged.
+direct coach accounts). [PR #12](https://github.com/manudadubey/DeuceX/pull/12) is merged.
 Step 3.1 (Rankings and calendars, with the manual path first) added `ranking_snapshots` (doubling
 as both the per-player weekly history and the onboarding lookup's own matching directory,
 `player_id` nullable — a real ambiguity in TECH-ARCHITECTURE.md's own schema description, resolved
@@ -163,7 +167,7 @@ reasoning, two bugs found and fixed (a partial-unique-index `ON CONFLICT` limita
 before it ever hit the live database, and four `FakeDb` test-support gaps), and everything else
 deliberately skipped (a real licensed ATP/WTA/ITF feed, AD-20/AD-21's shortlist re-run since no
 shortlist exists until step 3.2, a 52-week ranking chart, `apps/admin`'s real design system).
-[PR #13](https://github.com/manudadubey/ProCircuit/pull/13) is merged.
+[PR #13](https://github.com/manudadubey/DeuceX/pull/13) is merged.
 Step 3.2 (Tournament Agent) added `entry_decisions` and `shortlist_candidates` (both named,
 unbuilt, in TECH-ARCHITECTURE.md's own architecture pass since the beginning), a second
 `ledger_lines.real_tournament_id` column (the existing `tournament_id` stays pointed at
@@ -207,7 +211,7 @@ platform-prior-only for now; T-20/T-21's pin-and-consider; the coach-view agenda
 `prize_receivables` writer, since no results ingestion exists yet; the players ranking-column
 grant lockdown step 3.1 re-deferred, still not this step's job; a distance-aware flight price
 model; the recommendation memo card).
-[PR #14](https://github.com/manudadubey/ProCircuit/pull/14) is merged.
+[PR #14](https://github.com/manudadubey/DeuceX/pull/14) is merged.
 Step 3.3 (Conditions and Equipment) added `equipment_profile` and `conditions_briefs` (named,
 unbuilt, in TECH-ARCHITECTURE.md section 2.2 since the first architecture pass), the deterministic
 rule engine in `packages/agents/src/conditions` (amber, ball-diff, the tension driver with an
@@ -236,7 +240,7 @@ integration tests instead. See `docs/BUILD-LOG.md`'s step 3.3 entry for the full
 and everything else deliberately skipped (CE-21's post-event check-in, CE-22's order-of-play
 forecast, a real climate-normals data source, a distinct day-before-travel refresh mechanism, the
 players ranking-column grant lockdown deferred a third time now).
-[PR #15](https://github.com/manudadubey/ProCircuit/pull/15) is merged.
+[PR #15](https://github.com/manudadubey/DeuceX/pull/15) is merged.
 Step 4.1 (Fans) built the patron programme on Stripe Connect Express: a migration adding
 `patron_programmes`, `patron_tiers`, `patrons`, `patron_events`, `payouts` (net = gross − fee −
 Stripe as a check constraint, a paid row immutable by trigger), `patron_waitlist`,
@@ -244,7 +248,7 @@ Stripe as a check constraint, a paid row immutable by trigger), `patron_waitlist
 `connect_onboard` and `waitlist_invite` action types; `packages/agents/src/fans` (all of PRD-04
 section 7's arithmetic, deterministic, plus a small drafting call for patron notes);
 `packages/actions/src/stripe-client.ts` (now the only file importing `stripe`, reached through the
-`@procircuit/actions/fans` subpath) and four gated actions in `fans.ts`; `apps/api/src/fans`
+`@deucex/actions/fans` subpath) and four gated actions in `fans.ts`; `apps/api/src/fans`
 (webhook applier, checkout-return reconcile, public page, waitlist, 06:00 attention pass, on-tap
 draft); and the real `/fans` page, the public `/p/<slug>` page, the dashboard Patrons tile and card,
 patron income in the Financial Agent, and patron health on the manager link. Four owner decisions
@@ -263,7 +267,7 @@ shown beforehand; both verified live against the sandbox. A membership paused fo
 automatically with a goodbye email (owner decision; `patrons.paused_at`, a sweep on the hourly Fans
 tick). Still open: an in-app upgrade back to Pro. Also found and fixed
 live: pg-boss's default 10-connection pool per instance tipped the session pooler's 15-client cap;
-all three instances now set `max`. [PR #16](https://github.com/manudadubey/ProCircuit/pull/16) is merged. [PR #17](https://github.com/manudadubey/ProCircuit/pull/17) is merged. The next
+all three instances now set `max`. [PR #16](https://github.com/manudadubey/DeuceX/pull/16) is merged. [PR #17](https://github.com/manudadubey/DeuceX/pull/17) is merged. The next
 session should
 start at **step 4.2 (Content Agent)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever
 architecture section it names, and check `gh pr list` first — if a later PR hasn't merged yet,
@@ -279,14 +283,15 @@ line is a pointer, not the full record.
 - The payout footer's "1.75% + 30c" is only true for domestic charges (the Italian sandbox account
   paid about 6.5% with currency conversion): a PRD-04 copy fix.
 - Em dashes left in step 2.3's Settings copy (billing pane), against the copy rule.
-- The DeuceX rebrand, as its own planned step.
+- Rename the Supabase project and the Stripe sandbox account to DeuceX in their dashboards
+  (optional; nothing depends on those display names).
 
 ## Read before coding
 
 - `docs/BUILD-PLAN-CLAUDE-CODE.md` (the step you are on), `docs/TECH-ARCHITECTURE.md`, the PRD
-  the step names, `docs/PRD-00-ProCircuit-Master.md` for cross-cutting rules.
-- Design: `docs/procircuit-baseline.html` is the rule book; `docs/procircuit-dashboard*.html`,
-  `docs/procircuit-admin.html` and `docs/procircuit-architecture.html` are the visual reference.
+  the step names, `docs/PRD-00-DeuceX-Master.md` for cross-cutting rules.
+- Design: `docs/deucex-baseline.html` is the rule book; `docs/deucex-dashboard*.html`,
+  `docs/deucex-admin.html` and `docs/deucex-architecture.html` are the visual reference.
   Tokens only, both themes, 44px targets on mobile, sizes in rem.
 - Decisions already made: `docs/DECISIONS-WORKSHEET.md` and `docs/PRD-REVIEW-REGISTER.md`. If a
   step needs a decision that is not there, stop and ask rather than choosing.
@@ -309,11 +314,11 @@ line is a pointer, not the full record.
 
 ## Infrastructure already in place
 
-- **GitHub**: [manudadubey/ProCircuit](https://github.com/manudadubey/ProCircuit), `main` branch,
+- **GitHub**: [manudadubey/DeuceX](https://github.com/manudadubey/DeuceX), `main` branch,
   public. Local git remote `origin` already points here. Push auth in a fresh shell needs
   `gh auth login` (device flow) — the account that owns this repo is `manudadubey`, not
-  `matsudadubey` (a different, unrelated GitHub account that also happens to own a repo called
-  `ProCircuit` — don't confuse them). `gh auth setup-git` wires git to use it once logged in.
+  `matsudadubey` (a different, unrelated GitHub account that owns a repo called
+  `ProCircuit`, this repo's pre-rebrand name; don't confuse them). `gh auth setup-git` wires git to use it once logged in.
 - **CI**: `.github/workflows/ci.yml` runs install, typecheck, lint, format check and unit tests on
   every push/PR. Passing on `main`. Needs Node **22.13+** (pnpm 11 requires it) — this bit us on
   the first push, already fixed in the workflow, `.nvmrc` and `package.json` engines.
@@ -321,17 +326,17 @@ line is a pointer, not the full record.
   *different* team from one also called "MD Labs projects" that a stale token scope may show
   instead; use `md-labs`). Two projects, both linked to the GitHub repo above and auto-deploying
   on push to `main`:
-  - `procircuit` — the player app, root directory `apps/web`, framework Next.js.
-  - `procircuit-admin` — the staff console, root directory `apps/admin`, framework Next.js.
+  - `deucex` — the player app, root directory `apps/web`, framework Next.js.
+  - `deucex-admin` — the staff console, root directory `apps/admin`, framework Next.js.
   Both currently deploy the placeholder pages from step 0.1; both sit behind Vercel's default SSO
   protection (no custom domain yet). A few empty, unlinked stray projects (`procircuit-web` and an
   earlier bare `procircuit` under the other team) were left behind during setup and can be deleted
   from the dashboard whenever — harmless, no deployments, not referenced by anything.
-- **Supabase** project **ProCircuit** (`gpzpmrumwaqyfkyvqbgl`, org `MD Labs`, `ap-northeast-1`).
+- **Supabase** project **ProCircuit** (the project is still named that; `gpzpmrumwaqyfkyvqbgl`, org `MD Labs`, `ap-northeast-1`).
   Shares the database with an unrelated pre-existing schema (`matches`, `points`, `stats_*`, from
   a different app); RLS was enabled on those 5 tables during setup (they had none before — a real
   anon-key exposure that's now closed) but they still have no policies, so only the service role
-  can reach them. ProCircuit's own schema now exists (steps 0.2, 0.6, 1.1): `players`,
+  can reach them. DeuceX's own schema now exists (steps 0.2, 0.6, 1.1): `players`,
   `fx_rates_daily`, `agent_runs`, `approvals`, `approval_consumptions`, `agent_schedules`,
   `provider_switches`, `admin_actions`, `notifications`, `share_links`, `notes`, `check_ins`, an
   empty `pgboss` schema, and a `console` role with no grants yet. See `packages/db/README.md` and
@@ -365,13 +370,13 @@ line is a pointer, not the full record.
   owner's local `.env` sets `RESEND_FROM_ADDRESS="DeuceX <updates@mail.deucex.ai>"` (quoted, so
   shell `. ./.env` works); without it `apps/api` falls back to Resend's sandbox sender
   (`onboarding@resend.dev`), which only delivers to the Resend account owner's own inbox and
-  refuses `example.com` addresses. The old `procircuit.app` domain was never registered; don't
+  refuses `example.com` addresses. The old `deucex.ai` domain was never registered; don't
   use it.
 - **Domain**: **`deucex.ai`**, bought 25 September 2026 through Vercel in the `md-labs` team
   (auto-renews, expires 2028), DNS on Vercel's nameservers. Only the Resend records above plus
   Vercel's defaults exist; it isn't attached to either Vercel project yet. Add DNS records one at a
   time in the dashboard: the Vercel connector's only DNS write replaces the whole zone file.
-- **Stripe** (step 4.1): the **ProCircuit sandbox** account (`acct_1UJAD5HFJcPzP6oW`, test mode
+- **Stripe** (step 4.1): the **ProCircuit sandbox** account (its Stripe name predates the rebrand) (`acct_1UJAD5HFJcPzP6oW`, test mode
   only), key `STRIPE_SECRET_KEY` in the owner's local `.env` (it was pasted in chat on 24 September,
   so it should be rolled). Connect was enabled through the Stripe connector's sandbox-only
   `EnableConnect`. Connected accounts must be **Accounts v2** (v1 creation is refused for new
@@ -394,7 +399,7 @@ line is a pointer, not the full record.
   directly, same as any other production write.
 - Do not give any product agent MCP tools: agents take a pre-assembled input bundle and make one
   schema-constrained call (TECH-ARCHITECTURE.md section 3a).
-- Phase 5 adds a ProCircuit admin MCP server over the console API with the console's roles,
+- Phase 5 adds a DeuceX admin MCP server over the console API with the console's roles,
   reasons and audit rows.
 
 ## Working rhythm
@@ -405,6 +410,6 @@ line is a pointer, not the full record.
   any question raised.
 - Commit messages: `step X.Y: <what>`; branch per step. If the previous step's PR hasn't merged
   yet, branch off *that* branch (not `main`) and open the new PR with it as the base, rather than
-  waiting — steps 0.5 and 0.6 are stacked this way ([#4](https://github.com/manudadubey/ProCircuit/pull/4),
-  [#5](https://github.com/manudadubey/ProCircuit/pull/5)). Check open PRs at the start of a
+  waiting — steps 0.5 and 0.6 are stacked this way ([#4](https://github.com/manudadubey/DeuceX/pull/4),
+  [#5](https://github.com/manudadubey/DeuceX/pull/5)). Check open PRs at the start of a
   session (`gh pr list`) before assuming `main` has everything prior steps built.

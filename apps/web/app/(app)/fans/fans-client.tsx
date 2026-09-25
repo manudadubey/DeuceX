@@ -10,8 +10,8 @@ import {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-} from '@procircuit/ui';
-import type { FansPlan } from '@procircuit/agents';
+} from '@deucex/ui';
+import type { FansPlan } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import { refreshConnectAccount } from '@/lib/fans/api';
 import { loadFansSnapshot, sampleFansSnapshot, type FansSnapshot } from '@/lib/fans/load';

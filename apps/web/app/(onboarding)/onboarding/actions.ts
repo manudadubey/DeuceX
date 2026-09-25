@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { type FinishOnboardingInput, finishOnboarding } from '@procircuit/db';
+import { type FinishOnboardingInput, finishOnboarding } from '@deucex/db';
 import { createClient } from '@/lib/supabase/server';
 
 export type FinishOnboardingFormInput = Omit<

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, Json } from '@procircuit/db';
+import type { Database, Json } from '@deucex/db';
 import type { PgBoss } from 'pg-boss';
 import { CONDITIONS_STAMP_BACKFILL_QUEUE } from '../money/queue';
 import { computeNoteStamp } from './stamp';

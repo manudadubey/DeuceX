@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 
 // apps/api never trusts a client-supplied player id (unlike the direct
 // client-side writes in apps/web, where RLS is the real authorization —

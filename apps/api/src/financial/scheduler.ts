@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import type { PgBoss } from 'pg-boss';
-import { enqueueAgentRun } from '@procircuit/actions/queue';
+import { enqueueAgentRun } from '@deucex/actions/queue';
 
 export const FINANCIAL_SCHEDULER_QUEUE = 'financial-scheduler';
 export const FINANCIAL_AGENT_NAME = 'financial';

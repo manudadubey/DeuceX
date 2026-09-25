@@ -12,8 +12,8 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@procircuit/ui';
-import { computeRunwayWeeks, formatTension } from '@procircuit/agents';
+} from '@deucex/ui';
+import { computeRunwayWeeks, formatTension } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import { daysUntil, type TournamentCandidateView } from '@/lib/tournament/load';
 import { useEntryActions } from './use-entry-actions';

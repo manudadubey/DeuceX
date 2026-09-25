@@ -20,7 +20,7 @@ import {
   Textarea,
   ToggleGroup,
   ToggleGroupItem,
-} from '@procircuit/ui';
+} from '@deucex/ui';
 import {
   FREE_TIER_MONTHLY_NOTE_LIMIT,
   INITIAL_TAG_VOCABULARY,
@@ -29,7 +29,7 @@ import {
   type Note,
   type NoteCtx,
   type NoteMood,
-} from '@procircuit/db';
+} from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 import {
   QuotaExceededError,

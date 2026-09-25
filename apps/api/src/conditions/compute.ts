@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import {
   climateNormalFor,
   computeConditionsBriefRules,
@@ -8,7 +8,7 @@ import {
   type PreviousStampedEventInput,
   type TournamentFactSheetInput,
   type VenueForecastInput,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 import type { WeatherAdapter } from './adapter';
 
 type TournamentRow = Database['public']['Tables']['tournaments']['Row'];

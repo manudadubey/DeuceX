@@ -11,7 +11,7 @@
 // Web Crypto (globalThis.crypto.subtle), not node:crypto: this file is
 // imported from apps/web client components too (packages/db's approvals.ts,
 // pulled in by lib/approvals/confirm-approval.ts and, transitively, by
-// anything else importing from @procircuit/db — Match Scribe's history list
+// anything else importing from @deucex/db — Match Scribe's history list
 // among them, step 1.1), and Next.js's client webpack bundle has no `node:`
 // scheme polyfill. Web Crypto is a Node 20+ and browser standard, so the
 // same code runs unmodified on both sides of the gate.

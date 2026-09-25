@@ -1,11 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ApprovalGateDb, ApprovalRecord } from './gate';
 import { ApprovalNotFoundError, ApprovalPayloadMismatchError } from './errors';
-import {
-  billingPauseNotice,
-  membershipEndedNotice,
-  pausedMembershipEndDate,
-} from '@procircuit/shared';
+import { billingPauseNotice, membershipEndedNotice, pausedMembershipEndDate } from '@deucex/shared';
 import type { EmailClient, SendEmailInput } from './resend-client';
 import type { FansStripeClient } from './stripe-client';
 import {

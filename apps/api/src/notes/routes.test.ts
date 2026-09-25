@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import type { AgentRunsDb } from '@procircuit/actions';
-import { createMockExtractionClient } from '@procircuit/agents';
+import type { Database } from '@deucex/db';
+import type { AgentRunsDb } from '@deucex/actions';
+import { createMockExtractionClient } from '@deucex/agents';
 import Fastify from 'fastify';
 import { FakeDb, makeNote } from '../test-support/fake-db';
 import { createMemoryStorageAdapter } from '../storage/memory-adapter';
@@ -31,7 +31,7 @@ function buildMultipart(
   fields: Record<string, string>,
   file: { field: string; filename: string; contentType: string; data: Buffer },
 ): { body: Buffer; contentType: string } {
-  const boundary = '----procircuittestboundary';
+  const boundary = '----deucextestboundary';
   const parts: Buffer[] = [];
   for (const [key, value] of Object.entries(fields)) {
     parts.push(

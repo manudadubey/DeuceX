@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { INITIAL_TAG_VOCABULARY, type Database, type Json, type NoteCtx } from '@procircuit/db';
-import { recordRun, type AgentRunsDb } from '@procircuit/actions';
+import { INITIAL_TAG_VOCABULARY, type Database, type Json, type NoteCtx } from '@deucex/db';
+import { recordRun, type AgentRunsDb } from '@deucex/actions';
 import {
   EXTRACTION_MODEL,
   EXTRACTION_PROMPT_VERSION,
@@ -9,7 +9,7 @@ import {
   extractMatchNote,
   type ExtractionModelClient,
   type MatchScribeProposal,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 
 export interface ExtractionLogger {
   error(...args: unknown[]): void;

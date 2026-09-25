@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, Json } from '@procircuit/db';
-import { calculateCost, recordRun, type AgentRunsDb } from '@procircuit/actions';
+import type { Database, Json } from '@deucex/db';
+import { calculateCost, recordRun, type AgentRunsDb } from '@deucex/actions';
 import {
   INSIGHT_MODEL,
   INSIGHT_PROMPT_VERSION,
@@ -10,7 +10,7 @@ import {
   type GenerateInsightInput,
   type GenerateInsightResult,
   type InsightModelClient,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 import {
   getExistingInsightHash,
   loadMindsetInputs,

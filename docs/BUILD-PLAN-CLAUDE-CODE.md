@@ -1,6 +1,6 @@
-# ProCircuit build plan for Claude Code
+# DeuceX build plan for Claude Code
 
-Version 0.1 · 14 September 2026 · Owner: Manu Dubey · Companion to TECH-ARCHITECTURE.md v0.3, PRD-00 v0.4 to PRD-13, and Baseline (`procircuit-baseline.html`)
+Version 0.1 · 14 September 2026 · Owner: Manu Dubey · Companion to TECH-ARCHITECTURE.md v0.3, PRD-00 v0.4 to PRD-13, and Baseline (`deucex-baseline.html`)
 
 This is the document to hand Claude Code, one step at a time. It turns the eighteen epics in TECH-ARCHITECTURE section 9 into an order that produces something a player can use early, keeps the approval gate structural from the first week, and never blocks on the ranking-data licences. Each step says what to build, what to read first, what "done" means, and the prompt to give Claude Code. Copy the `CLAUDE.md` at the end into the repository root before step 1.
 
@@ -8,7 +8,7 @@ This is the document to hand Claude Code, one step at a time. It turns the eight
 
 ## Can Mindset Coach be built first?
 
-Yes, and it is the right first slice. Mindset Coach depends on Match Scribe (a voice note, a transcript, a structured extraction) and on nothing else: no ranking feed, no money model, no Stripe, no tournament calendar. Those two together are the smallest thing that is recognisably ProCircuit: a player records a note after a match and the next morning reads one honest sentence about a pattern in her own words. It exercises the whole agent pipeline (queue, worker, schema-validated model call, proposal row, audit row, cost accounting) without touching anything irreversible, so the gate can be built and tested against a harmless agent before the Financial Agent or Fans ever see a credential.
+Yes, and it is the right first slice. Mindset Coach depends on Match Scribe (a voice note, a transcript, a structured extraction) and on nothing else: no ranking feed, no money model, no Stripe, no tournament calendar. Those two together are the smallest thing that is recognisably DeuceX: a player records a note after a match and the next morning reads one honest sentence about a pattern in her own words. It exercises the whole agent pipeline (queue, worker, schema-validated model call, proposal row, audit row, cost accounting) without touching anything irreversible, so the gate can be built and tested against a harmless agent before the Financial Agent or Fans ever see a credential.
 
 What cannot come first: the Tournament Agent (needs feeds and the money model), Fans (needs Stripe Connect), Content Agent (needs Fans for recipients and Match Scribe for the trigger), Conditions (needs the Tournament Agent's shortlist). What can come very early alongside Mindset Coach: the Financial Agent's ledger and reserves, since they only need the FX archive.
 
@@ -27,13 +27,13 @@ Keep the prototypes open in a browser while building. They are the visual refere
 ## Phase 0 · Repository and foundation (E0, part of E12)
 
 ### Step 0.1 · Monorepo scaffold
-Read first: TECH-ARCHITECTURE sections 1 and the repository layout in `procircuit-architecture.html`.
+Read first: TECH-ARCHITECTURE sections 1 and the repository layout in `deucex-architecture.html`.
 
 Build: a pnpm monorepo with `apps/web` (Next.js, App Router, TypeScript), `apps/admin` (Next.js), `apps/api` (Fastify), `packages/ui`, `packages/db`, `packages/agents`, `packages/actions`, `packages/shared`, `infra`, `docs`. Copy the PRDs, TECH-ARCHITECTURE, the review register and this file into `docs/`. Set up ESLint, Prettier, TypeScript strict, Vitest, Playwright, and a GitHub Actions workflow that runs type-check, lint and tests on every push.
 
 Done when: `pnpm install && pnpm -r typecheck && pnpm -r test` is green on an empty scaffold; the CI workflow runs on a pull request.
 
-Prompt: "Scaffold the ProCircuit monorepo exactly as `docs/TECH-ARCHITECTURE.md` section 1 and the repository layout describe. Empty packages are fine. Add the CI workflow. Do not add any feature code yet."
+Prompt: "Scaffold the DeuceX monorepo exactly as `docs/TECH-ARCHITECTURE.md` section 1 and the repository layout describe. Empty packages are fine. Add the CI workflow. Do not add any feature code yet."
 
 ### Step 0.2 · Database, migrations, row-level security
 Read first: TECH-ARCHITECTURE section 2 (all of it), PRD-00 section 5.3.
@@ -52,16 +52,16 @@ Build: sign-in by emailed magic link with an optional passkey, no password anywh
 Done when: a new email can sign in from a link; a passkey can be registered and used; there is no password column, field or route.
 
 ### Step 0.4 · Design system port (Baseline)
-Read first: `procircuit-baseline.html` (open it), PROCIRCUIT-CONTEXT section 3.
+Read first: `deucex-baseline.html` (open it), DEUCEX-CONTEXT section 3.
 
 Build: `packages/ui` with the tokens.css from Baseline's Implementation section, the Tailwind theme mapping, and the component set as React components on Base UI or Radix primitives: Button (primary, outline, secondary, ghost, destructive; sm and icon), Badge, Card (header, description, actions, footer), PulseTile, Stat, Tabs (segmented), ToggleGroup, Switch, Input, InputGroup, Select, Textarea, Field, Table, Item, Empty, Progress, Spinner, Toast, Tooltip, Sheet, Confirm, Flag (SVG sprite), and the chart helper `el()` with `axisK()`. Light and dark from tokens; reduced motion, reduced transparency and increased contrast rules; 44px targets on mobile; sizes in rem.
 
 Done when: a Storybook or a single `/kitchen-sink` route renders every component in both themes and matches Baseline visually; the Playwright check confirms no horizontal scroll at 390px.
 
-Prompt: "Port Baseline into `packages/ui`. Use the tokens.css block from `procircuit-baseline.html` verbatim. Every component takes its colours from tokens only. Follow the motion and accessibility rules in Baseline's Motion and Accessibility sections. Build a kitchen-sink route that shows every component in both themes."
+Prompt: "Port Baseline into `packages/ui`. Use the tokens.css block from `deucex-baseline.html` verbatim. Every component takes its colours from tokens only. Follow the motion and accessibility rules in Baseline's Motion and Accessibility sections. Build a kitchen-sink route that shows every component in both themes."
 
 ### Step 0.5 · App shell and routing
-Read first: PROCIRCUIT-CONTEXT sections 4.2 and 4.3, Baseline "Shells and routes".
+Read first: DEUCEX-CONTEXT sections 4.2 and 4.3, Baseline "Shells and routes".
 
 Build: the `apps/web` shell: 256px sidebar with collapse (Cmd/Ctrl+B, persisted), sticky translucent topbar (title, date chip, share, tour, bell, theme), content column, mobile tab bar under 900px with the floating capture button, bare shell variant, route table matching the prototype (`/`, `/agent/tournament`, `/match-scribe`, `/agent/financial`, `/fans`, `/agent/content`, `/agent/mindset`, `/fuel`, `/onboarding`, `/profile`, `/settings`, `/coach/[token]`, `/signin`). Every route renders a placeholder page with the right title. The three-answers dashboard renders with empty states.
 
@@ -158,7 +158,7 @@ Build: the weekly shortlist run (Sunday 20:00 UTC) scanning the tour-and-stage s
 Done when: the Arya fixture produces the five-event shortlist in the prototype's order; Accept writes an approval and a planned expense; runway after R1 loss matches PRD-03's arithmetic; Free shows the locked state.
 
 ### Step 3.3 · Conditions and Equipment
-Read first: PRD-08 (all), PROCIRCUIT-CONTEXT 5.4.
+Read first: PRD-08 (all), DEUCEX-CONTEXT 5.4.
 
 Build: weather fetch per venue inside the travel window with climate-normal fallback; the brief (air amber at the forecast maximum of 28°C or 70 percent humidity, ball difference, frames to bring capped at frames carried, tension test proposal reading the equipment profile); the racquet visual; unit toggle with prose rewriting; note stamps; the physical pattern link; the Equipment pane.
 
@@ -201,7 +201,7 @@ Build: an MCP server in `apps/api` exposing read tools (player lookup, agent hea
 Done when: a support identity cannot call an owner tool; a delete tool without a reason is refused; every call appears in the admin audit log.
 
 ### Step 5.1 · Admin console
-Read first: PRD-13 (all), `procircuit-admin.html`.
+Read first: PRD-13 (all), `deucex-admin.html`.
 
 Build: `apps/admin` on its own hostname with staff auth (magic link plus mandatory passkey), the `console` database role with the explicit grant list (no grant on transcripts, audio references, moods, photo references), three roles that hide areas, Overview, Players with the confirm-and-reason actions, Agent health from the nightly aggregation, Money with reconciliation, Trust and safety cases, alerts and routing, the admin audit log merged into the player's Data & safety view.
 
@@ -232,13 +232,13 @@ E13 Elite forecast (TimesFM), E14 Sponsor Agent, E15 Fan Agent with review-befor
 ## CLAUDE.md to place in the repository root
 
 ```markdown
-# ProCircuit
+# DeuceX
 
 Agentic SaaS for ATP and WTA players ranked roughly #150 to #1500. The agent proposes, the player decides: nothing leaves the app (entry, payment, email, post, message) without a player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the entry client or ICS. Never work around this.
 
 ## Read before coding
-- `docs/BUILD-PLAN-CLAUDE-CODE.md` (the step you are on), `docs/TECH-ARCHITECTURE.md`, the PRD the step names, `docs/PRD-00-ProCircuit-Master.md` for cross-cutting rules.
-- Design: `docs/procircuit-baseline.html` is the rule book; the prototypes in `docs/` are the visual reference. Tokens only, both themes, 44px targets on mobile, sizes in rem.
+- `docs/BUILD-PLAN-CLAUDE-CODE.md` (the step you are on), `docs/TECH-ARCHITECTURE.md`, the PRD the step names, `docs/PRD-00-DeuceX-Master.md` for cross-cutting rules.
+- Design: `docs/deucex-baseline.html` is the rule book; the prototypes in `docs/` are the visual reference. Tokens only, both themes, 44px targets on mobile, sizes in rem.
 - Decisions already made: `docs/DECISIONS-WORKSHEET.md` and `docs/PRD-REVIEW-REGISTER.md`. If a step needs a decision that is not there, stop and ask.
 
 ## Conventions
@@ -251,7 +251,7 @@ Agentic SaaS for ATP and WTA players ranked roughly #150 to #1500. The agent pro
 ## MCP servers to connect
 - Supabase (migrations to a branch, logs, advisors), Vercel (deployments, build logs), Stripe (test mode only), Sentry, GitHub. Writes through MCP go to database branches and vendor test modes only, never production.
 - Do not give any product agent MCP tools: agents take a pre-assembled input bundle and make one schema-constrained call (TECH-ARCHITECTURE section 3a).
-- Phase 5 adds a ProCircuit admin MCP server over the console API with the console's roles, reasons and audit rows.
+- Phase 5 adds a DeuceX admin MCP server over the console API with the console's roles, reasons and audit rows.
 
 ## Working rhythm
 - One build-plan step per session. Restate the acceptance checks before writing code; run them before finishing.

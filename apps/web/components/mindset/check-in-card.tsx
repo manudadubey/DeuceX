@@ -13,8 +13,8 @@ import {
   Input,
   ToggleGroup,
   ToggleGroupItem,
-} from '@procircuit/ui';
-import { saveCheckIn, type SaveCheckInInput } from '@procircuit/db';
+} from '@deucex/ui';
+import { saveCheckIn, type SaveCheckInInput } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 
 const VALUES = [1, 2, 3, 4, 5] as const;

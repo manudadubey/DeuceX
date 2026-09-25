@@ -1,4 +1,4 @@
-import { Logo } from '@procircuit/ui';
+import { Logo } from '@deucex/ui';
 
 // `.bare` (Baseline §Shells and routes): "Onboarding, sign-in and the coach view drop the
 // sidebar and topbar: centred column, logo, steps." No auth or interactivity here, so this

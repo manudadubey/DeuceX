@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { createAnonClient, createServiceRoleClient } from '@procircuit/db';
-import { SupabaseAgentRunsDb } from '@procircuit/actions';
-import { createBoss } from '@procircuit/actions/queue';
+import { createAnonClient, createServiceRoleClient } from '@deucex/db';
+import { SupabaseAgentRunsDb } from '@deucex/actions';
+import { createBoss } from '@deucex/actions/queue';
 import {
   EXTRACTION_MODEL,
   FINANCIAL_ACTION_MODEL,
@@ -22,7 +22,7 @@ import {
   PATRON_NOTE_MODEL,
   createMockPatronNoteClient,
   createOpenAIPatronNoteClient,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 import cors from '@fastify/cors';
 import { config as loadEnv } from 'dotenv';
 import Fastify from 'fastify';
@@ -60,12 +60,12 @@ import {
 } from './account/scheduler';
 import { registerSharingRoutes, type SharingRoutesDeps } from './sharing/routes';
 import { SupabaseSharingDb } from './sharing/service';
-import { createResendEmailClient, type EmailClient } from '@procircuit/actions/account';
+import { createResendEmailClient, type EmailClient } from '@deucex/actions/account';
 import { registerConditionsRoutes, type ConditionsRoutesDeps } from './conditions/routes';
 import { createOpenMeteoAdapter } from './conditions/openmeteo-adapter';
 import { registerConditionsRefreshScheduler } from './conditions/refresh-scheduler';
 import { registerConditionsStampBackfillScheduler } from './conditions/stamp-backfill-scheduler';
-import { createStripeFansClient } from '@procircuit/actions/fans';
+import { createStripeFansClient } from '@deucex/actions/fans';
 import { registerFansRoutes, type FansRoutesDeps } from './fans/routes';
 import { registerFansAttentionScheduler } from './fans/scheduler';
 import { SupabaseFansStore } from './fans/store';

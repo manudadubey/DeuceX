@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AgentRunsDb } from '@procircuit/actions';
+import type { AgentRunsDb } from '@deucex/actions';
 import type {
   FansStripeClient,
   StripeWebhookEvent,
   SubscriptionSummary,
-} from '@procircuit/actions/fans';
-import { createMockPatronNoteClient, type PatronNoteModelClient } from '@procircuit/agents';
+} from '@deucex/actions/fans';
+import { createMockPatronNoteClient, type PatronNoteModelClient } from '@deucex/agents';
 import { MemoryFansStore } from './memory-store';
 import {
   QUIET_NOTE,
@@ -281,7 +281,7 @@ describe('a new patron (P-6, P-AC-6)', () => {
     expect(store.patrons).toHaveLength(1);
   });
 
-  it('ignores events from an account that is not a ProCircuit patron programme', async () => {
+  it('ignores events from an account that is not a DeuceX patron programme', async () => {
     const e = {
       ...event('checkout.session.completed', { id: 'cs_1', mode: 'subscription' }),
       account: 'acct_other',

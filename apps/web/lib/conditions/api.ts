@@ -1,7 +1,7 @@
 'use client';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 
 // CE-15: "saving [the equipment profile] triggers a re-run of every current
 // brief." The profile write itself is a direct RLS-scoped Supabase call

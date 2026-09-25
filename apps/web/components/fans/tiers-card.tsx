@@ -14,8 +14,8 @@ import {
   FieldLabel,
   Input,
   Textarea,
-} from '@procircuit/ui';
-import { formatPatronMoney } from '@procircuit/agents';
+} from '@deucex/ui';
+import { formatPatronMoney } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import { confirmApproval } from '@/lib/approvals/confirm-approval';
 import { publishTier } from '@/lib/fans/api';

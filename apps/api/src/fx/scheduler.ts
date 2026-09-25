@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import type { PgBoss } from 'pg-boss';
 import { FX_DAILY_FETCH_QUEUE } from '../money/queue';
 import { fetchAndStoreDailyRates } from './service';

@@ -20,9 +20,9 @@ import {
   TabsList,
   TabsTrigger,
   Textarea,
-} from '@procircuit/ui';
-import { patronNoteOpening } from '@procircuit/agents';
-import { pausedMembershipEndDate } from '@procircuit/shared';
+} from '@deucex/ui';
+import { patronNoteOpening } from '@deucex/agents';
+import { pausedMembershipEndDate } from '@deucex/shared';
 import { createClient } from '@/lib/supabase/client';
 import { confirmApproval } from '@/lib/approvals/confirm-approval';
 import { draftPatronNote, sendPatronNote } from '@/lib/fans/api';

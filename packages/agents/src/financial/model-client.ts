@@ -1,4 +1,4 @@
-import type { TokenUsage } from '@procircuit/actions';
+import type { TokenUsage } from '@deucex/actions';
 import type { FinancialActionPrompt } from './prompt';
 
 // Same shape as mindset-coach/model-client.ts: a plain fetch against the

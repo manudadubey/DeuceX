@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import type { AgentRunsDb } from '@procircuit/actions';
-import { createInvalidExtractionClient, createMockExtractionClient } from '@procircuit/agents';
+import type { Database } from '@deucex/db';
+import type { AgentRunsDb } from '@deucex/actions';
+import { createInvalidExtractionClient, createMockExtractionClient } from '@deucex/agents';
 import { FakeDb, makeNote } from '../test-support/fake-db';
 import { createMemoryStorageAdapter } from '../storage/memory-adapter';
 import { createFixtureWeatherAdapter } from '../conditions/fixture-adapter';

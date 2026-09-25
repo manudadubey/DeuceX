@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import type { AgentRunsDb } from '@procircuit/actions';
-import { createMockProseClient, type ProseModelClient } from '@procircuit/agents';
+import type { Database } from '@deucex/db';
+import type { AgentRunsDb } from '@deucex/actions';
+import { createMockProseClient, type ProseModelClient } from '@deucex/agents';
 import { FakeDb } from '../test-support/fake-db';
 import { createFixtureWeatherAdapter } from './fixture-adapter';
 import { runConditionsForCandidates } from './run';

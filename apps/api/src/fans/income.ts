@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { convertAtRate, getFxRates, type Database } from '@procircuit/db';
+import { convertAtRate, getFxRates, type Database } from '@deucex/db';
 
 // PRD-04 P-14: "Paid payouts appear in the Financial Agent as patron income
 // lines on the payout date, and gross MRR by tier is available to its

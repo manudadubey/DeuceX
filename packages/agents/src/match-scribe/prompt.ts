@@ -1,4 +1,4 @@
-import type { NoteCtx } from '@procircuit/db';
+import type { NoteCtx } from '@deucex/db';
 
 // Bump whenever the prompt's instructions change in a way that could shift
 // the model's output distribution; agent_runs.prompt_version records this

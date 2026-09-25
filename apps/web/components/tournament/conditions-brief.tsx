@@ -1,11 +1,11 @@
-import { Badge, Tooltip, TooltipContent, TooltipTrigger } from '@procircuit/ui';
+import { Badge, Tooltip, TooltipContent, TooltipTrigger } from '@deucex/ui';
 import {
   convertTensionText,
   formatTension,
   formatTemp,
   toDisplayKg,
   type Unit,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 import type { ConditionsBriefView } from '@/lib/tournament/load';
 import { LockedSection } from './locked-section';
 import { RacquetVisual } from './racquet-visual';

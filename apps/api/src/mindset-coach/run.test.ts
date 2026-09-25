@@ -1,8 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import type { AgentRunInsert, AgentRunsDb } from '@procircuit/actions';
-import { createMockInsightClient } from '@procircuit/agents';
-import type { InsightModelClient } from '@procircuit/agents';
+import type { Database } from '@deucex/db';
+import type { AgentRunInsert, AgentRunsDb } from '@deucex/actions';
+import { createMockInsightClient } from '@deucex/agents';
+import type { InsightModelClient } from '@deucex/agents';
 import { describe, expect, it } from 'vitest';
 import { FakeDb } from '../test-support/fake-db';
 import { runMindsetCoach } from './run';

@@ -2,7 +2,7 @@
 
 Version 0.3 · 13 September 2026 · Owner: Manu Dubey · Status: draft for review · Parent: PRD-00
 
-Prototype reference: `procircuit-admin.html` (published), a separate file built on the same shell and design preset as the player prototypes. Routes: `#/` overview (`#att`, `#apprList`, `#cSign`, `#cSpend`), `#/players` (`#plTbl`, `#plRows`, `#pdet`, `#delConfirm`), `#/agents` (`#agRows`, `#failList`, `[data-kill]`, `#cRuns`), `#/ingestion` (`#feeds`, `#csvPreview`, `#factRows`), `#/money` (`#cMRR`), `#/trust` (`#cases`), the alerts sheet (`#nt`), the global player search (`#q`, ⌘K) and the role preview in the user menu (`#umenu [data-role]`, applied as `data-role` on `.shell` with `.owner-only` and `.ops-only` visibility classes). This is a platform surface used by ProCircuit staff rather than by players, so section 3 is a system contract in the same shape PRD-12 uses. Nothing in this document changes what a player sees except where an admin action is explicitly required to notify the player.
+Prototype reference: `deucex-admin.html` (published), a separate file built on the same shell and design preset as the player prototypes. Routes: `#/` overview (`#att`, `#apprList`, `#cSign`, `#cSpend`), `#/players` (`#plTbl`, `#plRows`, `#pdet`, `#delConfirm`), `#/agents` (`#agRows`, `#failList`, `[data-kill]`, `#cRuns`), `#/ingestion` (`#feeds`, `#csvPreview`, `#factRows`), `#/money` (`#cMRR`), `#/trust` (`#cases`), the alerts sheet (`#nt`), the global player search (`#q`, ⌘K) and the role preview in the user menu (`#umenu [data-role]`, applied as `data-role` on `.shell` with `.owner-only` and `.ops-only` visibility classes). This is a platform surface used by DeuceX staff rather than by players, so section 3 is a system contract in the same shape PRD-12 uses. Nothing in this document changes what a player sees except where an admin action is explicitly required to notify the player.
 
 ---
 
@@ -86,7 +86,7 @@ The right-side sheet lists platform alerts grouped by day with All, Needs action
 
 ## 5. Functional requirements
 
-AD-1 (Must). The console is a separate deployment on its own hostname (admin.procircuit.app) built from the same codebase as the player app, with staff sign-in by magic link plus a mandatory passkey; no shared accounts, no player identity may hold a staff role. Decided 13 September 2026 (A18).
+AD-1 (Must). The console is a separate deployment on its own hostname (admin.deucex.ai) built from the same codebase as the player app, with staff sign-in by magic link plus a mandatory passkey; no shared accounts, no player identity may hold a staff role. Decided 13 September 2026 (A18).
 
 AD-2 (Must). Three roles (support, ops, owner) are granted per person by the owner; a role sees only its areas, and areas outside the role are absent from navigation and unreachable by URL rather than shown disabled.
 

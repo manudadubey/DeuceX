@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Badge, Button, Card, CardDescription, CardHeader, CardTitle } from '@procircuit/ui';
-import { snoozeFinancialAction } from '@procircuit/db';
-import type { Milestone } from '@procircuit/agents';
+import { Badge, Button, Card, CardDescription, CardHeader, CardTitle } from '@deucex/ui';
+import { snoozeFinancialAction } from '@deucex/db';
+import type { Milestone } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import type { FinancialAction } from '@/lib/financial/load';
 

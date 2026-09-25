@@ -1,7 +1,7 @@
 'use client';
 
-import { Card, CardDescription, CardHeader, CardTitle } from '@procircuit/ui';
-import type { MonthlyPnl } from '@procircuit/agents';
+import { Card, CardDescription, CardHeader, CardTitle } from '@deucex/ui';
+import type { MonthlyPnl } from '@deucex/agents';
 
 function formatMoney(amount: number, currency: string): string {
   const sign = amount < 0 ? '−' : '';

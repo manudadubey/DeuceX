@@ -14,7 +14,7 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'pnpm --filter @procircuit/web dev',
+    command: 'pnpm --filter @deucex/web dev',
     url: `${baseURL}/kitchen-sink`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

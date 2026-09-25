@@ -1,5 +1,5 @@
-import { Badge, Card, CardDescription, CardHeader, CardTitle, Empty } from '@procircuit/ui';
-import type { Insight } from '@procircuit/db';
+import { Badge, Card, CardDescription, CardHeader, CardTitle, Empty } from '@deucex/ui';
+import type { Insight } from '@deucex/db';
 
 function statusBadge(insight: Insight): { label: string; variant: 'ok' | 'secondary' } {
   if (insight.delivery === 'quiet') return { label: 'Quiet', variant: 'secondary' };

@@ -10,7 +10,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@procircuit/ui';
+} from '@deucex/ui';
 
 // `#qa` (Baseline §Feedback and overlays "Quick actions sheet"), opened from the FAB.
 // Menu and receipt scanning don't exist until PRD-08/PRD-03 land, so those two stay

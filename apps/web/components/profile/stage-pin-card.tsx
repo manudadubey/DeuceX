@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge, Button, Card, CardHeader, CardTitle, Switch } from '@procircuit/ui';
-import { setStagePinned, type Player } from '@procircuit/db';
+import { Badge, Button, Card, CardHeader, CardTitle, Switch } from '@deucex/ui';
+import { setStagePinned, type Player } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 
 const STAGE_LABELS: Record<'1' | '2' | '3', string> = {

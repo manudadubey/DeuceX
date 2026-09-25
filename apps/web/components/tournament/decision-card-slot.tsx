@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Card, CardDescription, CardHeader, CardTitle } from '@procircuit/ui';
+import { Card, CardDescription, CardHeader, CardTitle } from '@deucex/ui';
 import { createClient } from '@/lib/supabase/client';
 import { loadTournamentSnapshot, type TournamentSnapshot } from '@/lib/tournament/load';
 import { DecisionCard } from './decision-card';

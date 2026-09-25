@@ -19,7 +19,7 @@ import {
   Switch,
   ToggleGroup,
   ToggleGroupItem,
-} from '@procircuit/ui';
+} from '@deucex/ui';
 import {
   DEFAULT_AGENT_TOGGLES,
   type AgentToggles,
@@ -31,7 +31,7 @@ import {
   type PlayerTour,
   detectStage,
   isMinor,
-} from '@procircuit/db';
+} from '@deucex/db';
 import {
   lookupRanking as defaultLookupRanking,
   type RankingCandidate,

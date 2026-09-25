@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import { describe, expect, it } from 'vitest';
 import { FakeDb } from '../test-support/fake-db';
 import { checkFeedWindows, findOverdueFeeds } from './feed-monitor';

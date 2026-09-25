@@ -10,8 +10,8 @@ import {
   Field,
   FieldLabel,
   Input,
-} from '@procircuit/ui';
-import { formatPatronMoney } from '@procircuit/agents';
+} from '@deucex/ui';
+import { formatPatronMoney } from '@deucex/agents';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8787';
 
@@ -25,7 +25,7 @@ export interface PublicPatronPage {
 }
 
 // Step 4.1b · P-17: a patron's way to change tier, update their card or
-// cancel. Patrons have no ProCircuit login, so the page emails a one-hour
+// cancel. Patrons have no DeuceX login, so the page emails a one-hour
 // link to Stripe's own portal. The reply is identical whether or not the
 // email backs this player, so the form can't reveal who does.
 function ManageMembership({ page, firstName }: { page: PublicPatronPage; firstName: string }) {
@@ -238,8 +238,8 @@ export function PatronPage({ page, source }: { page: PublicPatronPage; source: s
           </label>
           {error ? <p className="text-sm text-danger">{error}</p> : null}
           <p className="text-xs text-muted-foreground">
-            You pay the monthly price shown and nothing more, through Stripe; ProCircuit never sees
-            your card. From it, Stripe takes its processing charge and ProCircuit takes{' '}
+            You pay the monthly price shown and nothing more, through Stripe; DeuceX never sees your
+            card. From it, Stripe takes its processing charge and DeuceX takes{' '}
             {page.feePercent ?? 8}%; the rest goes to {firstName}.
           </p>
         </>

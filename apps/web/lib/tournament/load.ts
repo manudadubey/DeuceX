@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import type { CostBreakdown, RoundOutcome } from '@procircuit/agents';
+import type { Database } from '@deucex/db';
+import type { CostBreakdown, RoundOutcome } from '@deucex/agents';
 import { loadFinancialSnapshot } from '@/lib/financial/load';
 
 // PRD-08 section 6's brief, read straight off conditions_briefs (system-

@@ -1,4 +1,4 @@
-import type { PublishedUpdate } from '@procircuit/agents';
+import type { PublishedUpdate } from '@deucex/agents';
 import type {
   FansStore,
   NewNotification,

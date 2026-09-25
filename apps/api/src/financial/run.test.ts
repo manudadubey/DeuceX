@@ -1,8 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import type { AgentRunInsert, AgentRunsDb } from '@procircuit/actions';
-import { createMockFinancialActionClient } from '@procircuit/agents';
-import type { FinancialActionModelClient } from '@procircuit/agents';
+import type { Database } from '@deucex/db';
+import type { AgentRunInsert, AgentRunsDb } from '@deucex/actions';
+import { createMockFinancialActionClient } from '@deucex/agents';
+import type { FinancialActionModelClient } from '@deucex/agents';
 import { describe, expect, it, vi } from 'vitest';
 import { FakeDb } from '../test-support/fake-db';
 import { runFinancialAgent } from './run';

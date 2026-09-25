@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import { FakeDb } from '../test-support/fake-db';
 import { createFixtureWeatherAdapter } from './fixture-adapter';
 import { computeNoteStamp } from './stamp';

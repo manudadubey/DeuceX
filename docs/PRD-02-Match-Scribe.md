@@ -8,7 +8,7 @@ Prototype reference: `#/match-scribe` (recorder card, review, pipeline card, dai
 
 ## 1. Purpose and job to be done
 
-Everything else in ProCircuit is built on what the player says in the minute after a match, a practice or a long day of travel. The Tournament Agent reads results and surface form from it, the Content Agent turns it into a patron update, the Mindset Coach looks for patterns across it, and the Conditions layer attaches the weather and the ball so that a physical pattern can be told apart from a mental one. Match Scribe is the capture surface for that minute: fast enough to use in a car park with a bag on one shoulder, forgiving enough that the player never types, and honest about what happens to the recording afterwards.
+Everything else in DeuceX is built on what the player says in the minute after a match, a practice or a long day of travel. The Tournament Agent reads results and surface form from it, the Content Agent turns it into a patron update, the Mindset Coach looks for patterns across it, and the Conditions layer attaches the weather and the ball so that a physical pattern can be told apart from a mental one. Match Scribe is the capture surface for that minute: fast enough to use in a car park with a bag on one shoulder, forgiving enough that the player never types, and honest about what happens to the recording afterwards.
 
 The prototype's page description is the promise: "Sixty seconds after a match, a practice or a long day. Talk like you would to a coach in the car. Every agent reads this." Job statement: "Within a minute of walking off court, let me say what happened and how it felt, in whatever language comes out, and turn it into something my agents and my coach can use without me ever typing a result or a mood."
 

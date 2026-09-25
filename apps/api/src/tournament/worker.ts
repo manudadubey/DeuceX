@@ -1,9 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import type { PgBoss } from 'pg-boss';
-import type { AgentRunsDb, ProviderState } from '@procircuit/actions';
-import type { ProseModelClient } from '@procircuit/agents';
-import { registerAgentWorker, type AgentJobData } from '@procircuit/actions/queue';
+import type { AgentRunsDb, ProviderState } from '@deucex/actions';
+import type { ProseModelClient } from '@deucex/agents';
+import { registerAgentWorker, type AgentJobData } from '@deucex/actions/queue';
 import { TOURNAMENT_AGENT_NAME, runTournamentAgent, type TournamentRunLogger } from './run';
 import { registerTournamentScheduler, type TournamentSchedulerLogger } from './scheduler';
 import type { WeatherAdapter } from '../conditions/adapter';

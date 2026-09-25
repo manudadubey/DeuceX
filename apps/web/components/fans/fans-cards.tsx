@@ -26,11 +26,11 @@ import {
   TableHeader,
   TableRow,
   TableWrap,
-} from '@procircuit/ui';
-import { formatPatronMoney } from '@procircuit/agents';
+} from '@deucex/ui';
+import { formatPatronMoney } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import { confirmApproval } from '@/lib/approvals/confirm-approval';
-import { billingResumeNotice, pausedMembershipEndDate } from '@procircuit/shared';
+import { billingResumeNotice, pausedMembershipEndDate } from '@deucex/shared';
 import { inviteFromWaitlist, resumePatronBilling, startConnectOnboarding } from '@/lib/fans/api';
 import type { FansSnapshot } from '@/lib/fans/load';
 import { MovementChart, MrrChart } from './fans-charts';
@@ -233,7 +233,7 @@ function useOnboard(playerId: string) {
 }
 
 const ONBOARD_CONSEQUENCE =
-  "Opens Stripe's own onboarding. ProCircuit creates a Stripe Express account in your name and sends Stripe your name and email; Stripe asks for your identity and bank details itself, which takes about ten minutes. You can stop at any point.";
+  "Opens Stripe's own onboarding. DeuceX creates a Stripe Express account in your name and sends Stripe your name and email; Stripe asks for your identity and bank details itself, which takes about ten minutes. You can stop at any point.";
 
 export function PayoutsCard({ snapshot, playerId }: { snapshot: FansSnapshot; playerId: string }) {
   const { programme, payouts, kpi } = snapshot;
@@ -292,7 +292,7 @@ export function PayoutsCard({ snapshot, playerId }: { snapshot: FansSnapshot; pl
         )}
         <div className="text-xs text-muted-foreground">
           {kyc === 'complete' && !held
-            ? `${programme?.bankLast4 ? `Bank ending ${programme.bankLast4}` : 'Your bank account'} is held by Stripe, not ProCircuit. Change it in the Stripe dashboard.`
+            ? `${programme?.bankLast4 ? `Bank ending ${programme.bankLast4}` : 'Your bank account'} is held by Stripe, not DeuceX. Change it in the Stripe dashboard.`
             : held
               ? 'Stripe needs something from you before it pays out. Payouts show Held until it is done.'
               : 'Patrons can sign up once Stripe has verified you.'}
@@ -535,8 +535,8 @@ export function SetupCard({ snapshot, playerId }: { snapshot: FansSnapshot; play
         <CardTitle>{started ? 'Finish setting up payouts' : 'Switch on patron tiers'}</CardTitle>
         <CardDescription>
           Most players get their first patron from people who already know them. Stripe Connect
-          handles payments and payouts; ProCircuit never sees a card or bank number. KYC takes about
-          ten minutes.
+          handles payments and payouts; DeuceX never sees a card or bank number. KYC takes about ten
+          minutes.
         </CardDescription>
       </CardHeader>
       <ol className="grid gap-2 px-5 pb-4 text-sm max-sm:px-4">

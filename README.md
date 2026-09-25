@@ -1,4 +1,4 @@
-# ProCircuit
+# DeuceX
 
 Agentic SaaS for ATP and WTA players ranked roughly #150 to #1500. See `CLAUDE.md` for the
 working rules and `docs/` for the requirements pack (PRD-00 to PRD-13), the technical

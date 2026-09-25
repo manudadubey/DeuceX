@@ -1,12 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import type {
   OpenMark,
   PatronFlag,
   PatronSource,
   PatronStatus,
   PublishedUpdate,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 
 // What apps/api's Fans service needs from the database, kept narrow (the
 // same reasoning as packages/actions' EntriesDb/FansActionsDb): the webhook

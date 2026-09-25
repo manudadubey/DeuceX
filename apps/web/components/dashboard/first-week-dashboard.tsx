@@ -12,9 +12,9 @@ import {
   ItemMedia,
   ItemTitle,
   Progress,
-} from '@procircuit/ui';
-import type { Player } from '@procircuit/db';
-import { showDoublesChip } from '@procircuit/db';
+} from '@deucex/ui';
+import type { Player } from '@deucex/db';
+import { showDoublesChip } from '@deucex/db';
 import { CheckInCard } from '@/components/mindset/check-in-card';
 import { RunwayPulseTile } from '@/components/financial/runway-pulse-tile';
 import { DecisionTile } from '@/components/tournament/decision-tile';

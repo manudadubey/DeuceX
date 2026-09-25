@@ -68,7 +68,7 @@ Specified fully in PRD-08; this pane hosts frame, string, tension (kg/lb synced 
 
 ### 4.8 Connections
 
-A list of external connections, each with a status badge: ATP ranking (TDI live feed, player ID, Monday 02:00 UTC), ITF ranking and calendar (weekly), Stripe Connect Express ("Patron payments and payouts · KYC complete," with "Open"), Resend (patron email, domain verified), Calendar feed (a copyable .ics link), and Bank, dimmed, "Not offered. Balances are entered by you; receipts are scanned. ProCircuit never holds bank logins," an explicit decision, not a gap.
+A list of external connections, each with a status badge: ATP ranking (TDI live feed, player ID, Monday 02:00 UTC), ITF ranking and calendar (weekly), Stripe Connect Express ("Patron payments and payouts · KYC complete," with "Open"), Resend (patron email, domain verified), Calendar feed (a copyable .ics link), and Bank, dimmed, "Not offered. Balances are entered by you; receipts are scanned. DeuceX never holds bank logins," an explicit decision, not a gap.
 
 ### 4.9 Sharing
 

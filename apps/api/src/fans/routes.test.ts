@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import Fastify from 'fastify';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import type { FansStripeClient } from '@procircuit/actions/fans';
-import { createMockPatronNoteClient } from '@procircuit/agents';
+import type { Database } from '@deucex/db';
+import type { FansStripeClient } from '@deucex/actions/fans';
+import { createMockPatronNoteClient } from '@deucex/agents';
 import { MemoryFansStore } from './memory-store';
 import { registerFansRoutes, type FansRoutesDeps } from './routes';
 

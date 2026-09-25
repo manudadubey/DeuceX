@@ -1,18 +1,12 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import {
-  Empty,
-  PulseTileBadge,
-  PulseTileLabel,
-  PulseTileSub,
-  PulseTileValue,
-} from '@procircuit/ui';
-import { getLatestRankingSnapshotForPlayer, listNotes } from '@procircuit/db';
+import { Empty, PulseTileBadge, PulseTileLabel, PulseTileSub, PulseTileValue } from '@deucex/ui';
+import { getLatestRankingSnapshotForPlayer, listNotes } from '@deucex/db';
 import { createClient } from '@/lib/supabase/server';
 import { CheckInCard } from '@/components/mindset/check-in-card';
 import { FirstWeekDashboard } from '@/components/dashboard/first-week-dashboard';
 
-// The "three answers" dashboard (PROCIRCUIT-CONTEXT.md 5.1), with honest empty states:
+// The "three answers" dashboard (DEUCEX-CONTEXT.md 5.1), with honest empty states:
 // no ranking, agent or fan data exists yet (that's Phase 1 onward), so every tile says so
 // and links to the placeholder route that will eventually fill it, rather than showing
 // fixture numbers.

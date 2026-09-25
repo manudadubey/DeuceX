@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 
 // Next 14's cookies() is synchronous (this becomes async under Next 15+,
 // which apps/web isn't on yet). Server Components can't write cookies, so

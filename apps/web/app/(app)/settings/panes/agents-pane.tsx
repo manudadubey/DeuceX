@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge, Card, CardHeader, CardTitle, Switch } from '@procircuit/ui';
-import { setAgentPaused, type Database } from '@procircuit/db';
+import { Badge, Card, CardHeader, CardTitle, Switch } from '@deucex/ui';
+import { setAgentPaused, type Database } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 
 type AgentSchedule = Database['public']['Tables']['agent_schedules']['Row'];

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import {
   ApprovalActionMismatchError,
   ApprovalAlreadyConsumedError,
@@ -7,8 +7,8 @@ import {
   ApprovalPayloadMismatchError,
   SupabaseApprovalGateDb,
   type AgentRunsDb,
-} from '@procircuit/actions';
-import type { EmailClient } from '@procircuit/actions/account';
+} from '@deucex/actions';
+import type { EmailClient } from '@deucex/actions/account';
 import {
   createPatronCheckout,
   ManageLinkInvalidError,
@@ -30,8 +30,8 @@ import {
   WaitlistEntryUnavailableError,
   type FansStripeClient,
   type PatronNoteKind,
-} from '@procircuit/actions/fans';
-import type { PatronNoteModelClient } from '@procircuit/agents';
+} from '@deucex/actions/fans';
+import type { PatronNoteModelClient } from '@deucex/agents';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { authenticateRequest, UnauthorizedError } from '../auth';
 import {

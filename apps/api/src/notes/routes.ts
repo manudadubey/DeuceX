@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, NoteCtx } from '@procircuit/db';
+import type { Database, NoteCtx } from '@deucex/db';
 import multipart from '@fastify/multipart';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { authenticateRequest, UnauthorizedError } from '../auth';

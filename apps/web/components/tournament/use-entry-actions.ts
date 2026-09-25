@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import { skipCandidate, undoSkip } from '@procircuit/db';
+import type { Database } from '@deucex/db';
+import { skipCandidate, undoSkip } from '@deucex/db';
 import { confirmApproval } from '@/lib/approvals/confirm-approval';
 import {
   acceptTournamentEntry,

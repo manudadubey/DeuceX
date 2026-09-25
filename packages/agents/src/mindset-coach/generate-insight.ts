@@ -1,4 +1,4 @@
-import { AgentValidationError, type TokenUsage } from '@procircuit/actions';
+import { AgentValidationError, type TokenUsage } from '@deucex/actions';
 import { evaluateDistress, type DistressEvaluation } from './distress';
 import { mergePattern, type ExistingPattern, type PatternMergeResult } from './merge-patterns';
 import { detectPatterns } from './rules';

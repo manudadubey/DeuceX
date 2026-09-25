@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Badge, Button, Toast, ToastProvider, ToastTitle, ToastViewport } from '@procircuit/ui';
+import { Badge, Button, Toast, ToastProvider, ToastTitle, ToastViewport } from '@deucex/ui';
 import {
   getInsightByDate,
   getMindsetBoundaries,
@@ -15,7 +15,7 @@ import {
   type Note,
   type NoteMood,
   type Pattern,
-} from '@procircuit/db';
+} from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 import { CheckInCard } from '@/components/mindset/check-in-card';
 import { TodayCard } from '@/components/mindset/today-card';

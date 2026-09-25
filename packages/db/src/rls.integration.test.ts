@@ -1,4 +1,4 @@
-// Integration tests against the real ProCircuit Supabase project (step 0.2).
+// Integration tests against the real DeuceX Supabase project (step 0.2).
 // They need a direct Postgres connection (SUPABASE_DB_URL) because they have
 // to switch to the `authenticated` role and forge a request.jwt.claims value
 // mid-session, the same way PostgREST does for a real request; the
@@ -39,9 +39,9 @@ describeIfConfigured('players row-level security', () => {
     await client.connect();
     await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
       playerA,
-      `rls-test-a-${playerA}@procircuit.test`,
+      `rls-test-a-${playerA}@deucex.test`,
       playerB,
-      `rls-test-b-${playerB}@procircuit.test`,
+      `rls-test-b-${playerB}@deucex.test`,
     ]);
     await client.query(
       `insert into public.players
@@ -49,12 +49,7 @@ describeIfConfigured('players row-level security', () => {
        values
          ($1, 'wta', 'Player A', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney'),
          ($3, 'atp', 'Player B', $4, 'US', '2000-01-01', 'USD', 'en', 'imperial', 'America/New_York')`,
-      [
-        playerA,
-        `rls-test-a-${playerA}@procircuit.test`,
-        playerB,
-        `rls-test-b-${playerB}@procircuit.test`,
-      ],
+      [playerA, `rls-test-a-${playerA}@deucex.test`, playerB, `rls-test-b-${playerB}@deucex.test`],
     );
   });
 
@@ -151,9 +146,9 @@ describeIfConfigured('notes row-level security and quota (step 1.1)', () => {
     await client.connect();
     await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
       playerA,
-      `notes-rls-a-${playerA}@procircuit.test`,
+      `notes-rls-a-${playerA}@deucex.test`,
       playerB,
-      `notes-rls-b-${playerB}@procircuit.test`,
+      `notes-rls-b-${playerB}@deucex.test`,
     ]);
     await client.query(
       `insert into public.players
@@ -163,9 +158,9 @@ describeIfConfigured('notes row-level security and quota (step 1.1)', () => {
          ($3, 'atp', 'Player B', $4, 'US', '2000-01-01', 'USD', 'en', 'imperial', 'America/New_York')`,
       [
         playerA,
-        `notes-rls-a-${playerA}@procircuit.test`,
+        `notes-rls-a-${playerA}@deucex.test`,
         playerB,
-        `notes-rls-b-${playerB}@procircuit.test`,
+        `notes-rls-b-${playerB}@deucex.test`,
       ],
     );
     const inserted = await client.query(
@@ -288,13 +283,13 @@ describeIfConfigured('check_ins row-level security (step 1.1)', () => {
     await client.connect();
     await client.query(`insert into auth.users (id, email) values ($1, $2)`, [
       playerA,
-      `checkins-rls-${playerA}@procircuit.test`,
+      `checkins-rls-${playerA}@deucex.test`,
     ]);
     await client.query(
       `insert into public.players
          (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
        values ($1, 'wta', 'Player A', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney')`,
-      [playerA, `checkins-rls-${playerA}@procircuit.test`],
+      [playerA, `checkins-rls-${playerA}@deucex.test`],
     );
   });
 
@@ -337,9 +332,9 @@ describeIfConfigured('money model row-level security (step 2.1)', () => {
     await client.connect();
     await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
       playerA,
-      `money-rls-a-${playerA}@procircuit.test`,
+      `money-rls-a-${playerA}@deucex.test`,
       playerB,
-      `money-rls-b-${playerB}@procircuit.test`,
+      `money-rls-b-${playerB}@deucex.test`,
     ]);
     await client.query(
       `insert into public.players
@@ -349,9 +344,9 @@ describeIfConfigured('money model row-level security (step 2.1)', () => {
          ($3, 'atp', 'Player B', $4, 'US', '2000-01-01', 'USD', 'en', 'imperial', 'America/New_York')`,
       [
         playerA,
-        `money-rls-a-${playerA}@procircuit.test`,
+        `money-rls-a-${playerA}@deucex.test`,
         playerB,
-        `money-rls-b-${playerB}@procircuit.test`,
+        `money-rls-b-${playerB}@deucex.test`,
       ],
     );
     const receivableInserted = await client.query(
@@ -515,14 +510,14 @@ describeIfConfigured('settings row-level security (step 2.3)', () => {
     await client.connect();
     await client.query(`insert into auth.users (id, email) values ($1, $2)`, [
       playerA,
-      `settings-rls-a-${playerA}@procircuit.test`,
+      `settings-rls-a-${playerA}@deucex.test`,
     ]);
     await client.query(
       `insert into public.players
          (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
        values
          ($1, 'wta', 'Player A', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney')`,
-      [playerA, `settings-rls-a-${playerA}@procircuit.test`],
+      [playerA, `settings-rls-a-${playerA}@deucex.test`],
     );
   });
 
@@ -577,9 +572,9 @@ describeIfConfigured('rankings and calendars row-level security (step 3.1)', () 
     await client.connect();
     await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
       playerA,
-      `rankings-rls-a-${playerA}@procircuit.test`,
+      `rankings-rls-a-${playerA}@deucex.test`,
       playerB,
-      `rankings-rls-b-${playerB}@procircuit.test`,
+      `rankings-rls-b-${playerB}@deucex.test`,
     ]);
     await client.query(
       `insert into public.players
@@ -590,9 +585,9 @@ describeIfConfigured('rankings and calendars row-level security (step 3.1)', () 
          ($3, 'wta', 'Player B', $4, 'US', '2000-01-01', 'USD', 'en', 'imperial', 'America/New_York', null)`,
       [
         playerA,
-        `rankings-rls-a-${playerA}@procircuit.test`,
+        `rankings-rls-a-${playerA}@deucex.test`,
         playerB,
-        `rankings-rls-b-${playerB}@procircuit.test`,
+        `rankings-rls-b-${playerB}@deucex.test`,
         `rls-test-${playerA}`,
       ],
     );
@@ -698,9 +693,9 @@ describeIfConfigured('tournament agent row-level security (step 3.2)', () => {
     await client.connect();
     await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
       playerA,
-      `tournament-rls-a-${playerA}@procircuit.test`,
+      `tournament-rls-a-${playerA}@deucex.test`,
       playerB,
-      `tournament-rls-b-${playerB}@procircuit.test`,
+      `tournament-rls-b-${playerB}@deucex.test`,
     ]);
     await client.query(
       `insert into public.players
@@ -710,9 +705,9 @@ describeIfConfigured('tournament agent row-level security (step 3.2)', () => {
          ($3, 'wta', 'Player B', $4, 'US', '2000-01-01', 'USD', 'en', 'imperial', 'America/New_York')`,
       [
         playerA,
-        `tournament-rls-a-${playerA}@procircuit.test`,
+        `tournament-rls-a-${playerA}@deucex.test`,
         playerB,
-        `tournament-rls-b-${playerB}@procircuit.test`,
+        `tournament-rls-b-${playerB}@deucex.test`,
       ],
     );
     const tournamentResult = await client.query(
@@ -874,9 +869,9 @@ describeIfConfigured('fans row-level security (step 4.1)', () => {
     await client.connect();
     await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
       playerA,
-      `fans-rls-a-${playerA}@procircuit.test`,
+      `fans-rls-a-${playerA}@deucex.test`,
       playerB,
-      `fans-rls-b-${playerB}@procircuit.test`,
+      `fans-rls-b-${playerB}@deucex.test`,
     ]);
     await client.query(
       `insert into public.players
@@ -884,12 +879,7 @@ describeIfConfigured('fans row-level security (step 4.1)', () => {
        values
          ($1, 'wta', 'Player A', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney'),
          ($3, 'atp', 'Player B', $4, 'US', '2000-01-01', 'USD', 'en', 'imperial', 'America/New_York')`,
-      [
-        playerA,
-        `fans-rls-a-${playerA}@procircuit.test`,
-        playerB,
-        `fans-rls-b-${playerB}@procircuit.test`,
-      ],
+      [playerA, `fans-rls-a-${playerA}@deucex.test`, playerB, `fans-rls-b-${playerB}@deucex.test`],
     );
     // Fixture setup as the table owner (the service role's equivalent):
     // every one of these rows is written by apps/api in production, never
@@ -907,7 +897,7 @@ describeIfConfigured('fans row-level security (step 4.1)', () => {
     tierId = tier.rows[0].id;
     await client.query(
       `insert into public.patrons (player_id, tier_id, stripe_subscription_id, name, email, price, currency)
-       values ($1, $2, $3, 'Mira Kovac', 'mira@procircuit.test', 29, 'AUD')`,
+       values ($1, $2, $3, 'Mira Kovac', 'mira@deucex.test', 29, 'AUD')`,
       [playerA, tierId, `sub_rls_${playerA.slice(0, 8)}`],
     );
     await client.query(

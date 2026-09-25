@@ -2,7 +2,7 @@
 
 Version 0.1 · 19 September 2026 · Owner: Manu Dubey · Status: draft for review · Parent: PRD-00 · Siblings: PRD-06 (Mindset Coach), PRD-14 (Resonance), PRD-02 (Match Scribe)
 
-Prototype reference: `procircuit-training.html` v0.2, the Training tab carrying both tools. Sixteen holds the four-phase rehearsal, the three capture paths (Listen, Tap it in, Sample set), the set summary with the interval strip, the routine pattern and the session history. It is the visual and behavioural reference for this document. Resonance in the same file is specified by PRD-14.
+Prototype reference: `deucex-training.html` v0.2, the Training tab carrying both tools. Sixteen holds the four-phase rehearsal, the three capture paths (Listen, Tap it in, Sample set), the set summary with the interval strip, the routine pattern and the session history. It is the visual and behavioural reference for this document. Resonance in the same file is specified by PRD-14.
 
 ---
 
@@ -374,13 +374,13 @@ Prompt: "Add Listen from `docs/PRD-15-Sixteen.md` sections 5.3 and 8. Audio must
 
 ### 13.3 Porting the prototype
 
-`procircuit-training.html` carries both tools and is the port source for the Training tab as a whole. Follow PROCIRCUIT-CONTEXT section 10: read the Arya lines, apply the persona adapter, apply insertions bottom-up by line number, then grep for leaked words.
+`deucex-training.html` carries both tools and is the port source for the Training tab as a whole. Follow DEUCEX-CONTEXT section 10: read the Arya lines, apply the persona adapter, apply insertions bottom-up by line number, then grep for leaked words.
 
 Storage keys: `pc.sx` and `pc.sxprefs` in the Arya file, `pc.ln.*` in Neumayer, `pc.sb.*` in Berger.
 
-Persona adaptation: Neumayer needs an invented history under the real-player governance in PROCIRCUIT-CONTEXT section 6.2, with no fabricated coach involvement, and the coach-link line must not name a coach. Berger needs the same. The leak word list gains "Marko" for the Neumayer port, which appears in Sixteen's boundary card.
+Persona adaptation: Neumayer needs an invented history under the real-player governance in DEUCEX-CONTEXT section 6.2, with no fabricated coach involvement, and the coach-link line must not name a coach. Berger needs the same. The leak word list gains "Marko" for the Neumayer port, which appears in Sixteen's boundary card.
 
-The port also carries Baseline v1.1's reduced-motion, reduced-transparency and 44px rules into the three player files, which PROCIRCUIT-CONTEXT section 2 still lists as outstanding. `procircuit-training.html` v0.2 has them and is the source.
+The port also carries Baseline v1.1's reduced-motion, reduced-transparency and 44px rules into the three player files, which DEUCEX-CONTEXT section 2 still lists as outstanding. `deucex-training.html` v0.2 has them and is the source.
 
 ## 14. Out of scope and open questions
 

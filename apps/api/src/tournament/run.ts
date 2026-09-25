@@ -1,14 +1,14 @@
 import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, Json } from '@procircuit/db';
-import { recordRun, type AgentRunsDb, type AgentRunTriggerType } from '@procircuit/actions';
+import type { Database, Json } from '@deucex/db';
+import { recordRun, type AgentRunsDb, type AgentRunTriggerType } from '@deucex/actions';
 import {
   buildShortlist,
   type CostModelPlayer,
   type ShortlistFilters,
   type ShortlistResult,
   type ProseModelClient,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 import { loadTournamentCandidates, loadTournamentPlayer } from './service';
 import { runConditionsForCandidates } from '../conditions/run';
 import type { WeatherAdapter } from '../conditions/adapter';

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import {
   MissingReceivedDateRateError,
   ReceivableNotFoundOrAlreadyReceivedError,
@@ -7,7 +7,7 @@ import {
   SupabaseReceivablesDb,
   markReceivableReceived,
   type ReceivedReceivableResult,
-} from '@procircuit/actions';
+} from '@deucex/actions';
 
 export interface ReceiveReceivableInput {
   approvalId: string;

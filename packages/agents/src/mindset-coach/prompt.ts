@@ -1,4 +1,4 @@
-import type { NoteCtx, NoteMood } from '@procircuit/db';
+import type { NoteCtx, NoteMood } from '@deucex/db';
 
 // Bump on any instruction change that could shift the model's output
 // distribution (TECH-ARCHITECTURE.md section 3, agent_runs.prompt_version).

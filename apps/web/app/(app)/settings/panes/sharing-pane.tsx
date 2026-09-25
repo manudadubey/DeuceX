@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge, Button, Card, CardHeader, CardTitle } from '@procircuit/ui';
-import { createShareLink, renewShareLink, revokeShareLink, type Database } from '@procircuit/db';
+import { Badge, Button, Card, CardHeader, CardTitle } from '@deucex/ui';
+import { createShareLink, renewShareLink, revokeShareLink, type Database } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 
 type ShareLink = Database['public']['Tables']['share_links']['Row'];

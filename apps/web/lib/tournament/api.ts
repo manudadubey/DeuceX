@@ -1,7 +1,7 @@
 'use client';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 
 // The Tournament Agent's two apps/api calls with a real gated side effect
 // (Accept entry, Withdraw) — Skip and Undo are direct, RLS-scoped client

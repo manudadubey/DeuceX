@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import { buildStamp } from '@procircuit/agents';
+import type { Database } from '@deucex/db';
+import { buildStamp } from '@deucex/agents';
 import type { WeatherAdapter } from './adapter';
 import { tournamentFactSheet } from './compute';
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import type { EmailClient } from '@procircuit/actions/account';
+import type { Database } from '@deucex/db';
+import type { EmailClient } from '@deucex/actions/account';
 import Fastify from 'fastify';
 import { FakeDb } from '../test-support/fake-db';
 import { registerAccountRoutes, type AccountRoutesDeps } from './routes';
@@ -33,7 +33,7 @@ async function buildApp(fake: FakeDb, overrides: Partial<AccountRoutesDeps> = {}
     db: fake as unknown as SupabaseClient<Database>,
     anonClient: fakeAnonClient('good-token', 'player-1'),
     email: fakeEmailClient(),
-    appBaseUrl: 'https://app.procircuit.app',
+    appBaseUrl: 'https://app.deucex.ai',
     ...overrides,
   };
   await registerAccountRoutes(app, deps);

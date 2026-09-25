@@ -1,4 +1,4 @@
-import type { TokenUsage } from '@procircuit/actions';
+import type { TokenUsage } from '@deucex/actions';
 import type { ProsePrompt } from './prose-prompt';
 
 // A plain fetch against the vendor's REST API, the same style as

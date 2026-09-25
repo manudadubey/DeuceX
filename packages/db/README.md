@@ -1,15 +1,15 @@
-# @procircuit/db
+# @deucex/db
 
-Supabase project: **ProCircuit** (`gpzpmrumwaqyfkyvqbgl`, org `MD Labs`, region `ap-northeast-1`).
+Supabase project: **ProCircuit**, its name predates the DeuceX rebrand (`gpzpmrumwaqyfkyvqbgl`, org `MD Labs`, region `ap-northeast-1`).
 
 This project already holds an unrelated schema (`matches`, `points`, `stats_overview`,
-`stats_rally`, `stats_serve_basics`) from a different app. ProCircuit's own tables live
+`stats_rally`, `stats_serve_basics`) from a different app. DeuceX's own tables live
 alongside them in the same database; row-level security is enabled on the existing tables
 so they stay isolated from anything added here.
 
 ## Schema
 
-Step 0.2 added the first ProCircuit tables: `players`, `fx_rates_daily`, `agent_runs`,
+Step 0.2 added the first DeuceX tables: `players`, `fx_rates_daily`, `agent_runs`,
 `approvals`, `admin_actions`, `notifications`, `share_links`, plus an empty `pgboss` schema
 (pg-boss creates its own tables in there once a worker exists) and a `console` database role
 with no grants yet. Migrations live in `migrations/` and are applied with the Supabase MCP

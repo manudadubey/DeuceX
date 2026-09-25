@@ -2,7 +2,7 @@
 
 Version 0.1 · 20 September 2026 · Owner: Manu Dubey · Status: draft for review · Parent: PRD-00 · Siblings: PRD-06 (Mindset Coach), PRD-14 (Resonance), PRD-15 (Sixteen), PRD-16 (Margin), PRD-17 (Hold)
 
-Prototype reference: `procircuit-field.html` v1, and the same tool embedded in the Training tab of `procircuit-dashboard.html`. The prototype holds the three subtests, the backward mask, the four-way central response, the eight-way dial, the Bayesian threshold estimator, the refresh-rate measurement and the summary with the field map. It is the visual and behavioural reference for this document.
+Prototype reference: `deucex-field.html` v1, and the same tool embedded in the Training tab of `deucex-dashboard.html`. The prototype holds the three subtests, the backward mask, the four-way central response, the eight-way dial, the Bayesian threshold estimator, the refresh-rate measurement and the summary with the field map. It is the visual and behavioural reference for this document.
 
 ---
 

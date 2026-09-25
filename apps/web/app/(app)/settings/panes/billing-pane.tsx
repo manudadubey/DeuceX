@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Badge, Button, Card, CardHeader, CardTitle, Confirm, Empty } from '@procircuit/ui';
+import { Badge, Button, Card, CardHeader, CardTitle, Confirm, Empty } from '@deucex/ui';
 import { PatronPayoutsItem } from '@/components/fans/patron-settings';
-import { downgradeToFree, type Player } from '@procircuit/db';
-import { billingPauseNotice, pausedMembershipEndDate } from '@procircuit/shared';
+import { downgradeToFree, type Player } from '@deucex/db';
+import { billingPauseNotice, pausedMembershipEndDate } from '@deucex/shared';
 import { createClient } from '@/lib/supabase/client';
 import { confirmApproval } from '@/lib/approvals/confirm-approval';
 import { pausePatronBilling } from '@/lib/fans/api';

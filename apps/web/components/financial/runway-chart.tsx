@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { axisK, el, tagChartEnter } from '@procircuit/ui';
+import { axisK, el, tagChartEnter } from '@deucex/ui';
 
 export interface RunwayChartProps {
   /** 14 weekly balances, cash only. */

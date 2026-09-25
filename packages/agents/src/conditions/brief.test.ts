@@ -3,8 +3,8 @@ import { computeConditionsBriefRules } from './brief';
 import { formatTension, convertTensionText, toDisplayTempC } from './unit';
 import type { ConditionsBriefRuleInput, EquipmentProfileInput } from './types';
 
-// The five prototype fixtures (docs/procircuit-dashboard.html's own `T`
-// array, PROCIRCUIT-CONTEXT.md 5.4), which PRD-08's own acceptance criteria
+// The five prototype fixtures (docs/deucex-dashboard.html's own `T`
+// array, DEUCEX-CONTEXT.md 5.4), which PRD-08's own acceptance criteria
 // (CE-AC-1 to CE-AC-5) are worked examples of. mainsKg/crossesKg = 24/23
 // throughout, matching every fixture's own baseline numbers.
 const EQUIPMENT: EquipmentProfileInput = {

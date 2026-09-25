@@ -12,8 +12,8 @@ import {
   ToastTitle,
   ToastViewport,
   cn,
-} from '@procircuit/ui';
-import { createShareLink, listShareLinks } from '@procircuit/db';
+} from '@deucex/ui';
+import { createShareLink, listShareLinks } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 import { formatDateChip } from './date-chip';
 import { NotificationSheet } from './notification-sheet';

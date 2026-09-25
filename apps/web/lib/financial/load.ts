@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import { convertAtRate, getFxRates, type LedgerLine, type PrizeReceivable } from '@procircuit/db';
+import type { Database } from '@deucex/db';
+import { convertAtRate, getFxRates, type LedgerLine, type PrizeReceivable } from '@deucex/db';
 import {
   computeBudgetVsActual,
   computeBurnState,
@@ -24,7 +24,7 @@ import {
   type ProjectionResult,
   type RunwayColour,
   type WeeklyBudgetBar,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 
 const LOOKBACK_DAYS = 60;
 

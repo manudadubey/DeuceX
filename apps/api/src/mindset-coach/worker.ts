@@ -1,10 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import type { PgBoss } from 'pg-boss';
-import type { ProviderState } from '@procircuit/actions';
-import type { AgentRunsDb } from '@procircuit/actions';
-import { registerAgentWorker, type AgentJobData } from '@procircuit/actions/queue';
-import type { InsightModelClient } from '@procircuit/agents';
+import type { ProviderState } from '@deucex/actions';
+import type { AgentRunsDb } from '@deucex/actions';
+import { registerAgentWorker, type AgentJobData } from '@deucex/actions/queue';
+import type { InsightModelClient } from '@deucex/agents';
 import {
   MINDSET_AGENT_NAME,
   registerMindsetScheduler,

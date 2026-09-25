@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import { describe, expect, it, vi } from 'vitest';
 import { fetchAndStoreDailyRates } from './service';
 import { createFixtureEcbAdapter } from './fixture-adapter';

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import type { PgBoss } from 'pg-boss';
-import { enqueueAgentRun } from '@procircuit/actions/queue';
+import { enqueueAgentRun } from '@deucex/actions/queue';
 import { TOURNAMENT_AGENT_NAME } from './run';
 
 export const TOURNAMENT_SCHEDULER_QUEUE = 'tournament-scheduler';

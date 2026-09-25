@@ -1,14 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, Json } from '@procircuit/db';
+import type { Database, Json } from '@deucex/db';
 import type { PgBoss } from 'pg-boss';
-import type { AgentRunsDb } from '@procircuit/actions';
-import { recordRun } from '@procircuit/actions';
+import type { AgentRunsDb } from '@deucex/actions';
+import { recordRun } from '@deucex/actions';
 import {
   generateConditionsProse,
   isAirAmber,
   PROSE_MODEL,
   type ProseModelClient,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 import { CONDITIONS_REFRESH_QUEUE } from '../money/queue';
 import {
   computeBriefForTournament,

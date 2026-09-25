@@ -1,4 +1,4 @@
-import { AgentValidationError, type TokenUsage } from '@procircuit/actions';
+import { AgentValidationError, type TokenUsage } from '@deucex/actions';
 import {
   buildCorrectiveReceiptExtractionPrompt,
   buildReceiptExtractionPrompt,

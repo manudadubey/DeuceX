@@ -1,4 +1,4 @@
-// The '@procircuit/actions/fans' subpath (package.json's `exports` map):
+// The '@deucex/actions/fans' subpath (package.json's `exports` map):
 // stripe-client.ts imports the real 'stripe' SDK, so it stays off the main
 // barrel for the same reason './account' keeps 'resend' off it (the main
 // barrel reaches apps/web's client bundle transitively). apps/api is the

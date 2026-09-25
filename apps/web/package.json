@@ -1,5 +1,5 @@
 {
-  "name": "@procircuit/web",
+  "name": "@deucex/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,10 +10,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@procircuit/agents": "workspace:*",
-    "@procircuit/db": "workspace:*",
-    "@procircuit/shared": "workspace:*",
-    "@procircuit/ui": "workspace:*",
+    "@deucex/agents": "workspace:*",
+    "@deucex/db": "workspace:*",
+    "@deucex/shared": "workspace:*",
+    "@deucex/ui": "workspace:*",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.106.0",
     "idb": "^8.0.0",

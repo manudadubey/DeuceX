@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Logo, cn } from '@procircuit/ui';
+import { Logo, cn } from '@deucex/ui';
 import { NAV_GROUPS } from './routes';
 
 export interface SidebarProps {
@@ -27,7 +27,7 @@ export function Sidebar({ collapsed, email }: SidebarProps) {
         <Logo />
         {!collapsed ? (
           <div className="leading-tight">
-            <div className="text-sm font-medium">ProCircuit</div>
+            <div className="text-sm font-medium">DeuceX</div>
           </div>
         ) : null}
       </div>

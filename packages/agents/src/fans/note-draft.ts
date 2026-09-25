@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AgentValidationError, type TokenUsage } from '@procircuit/actions';
+import { AgentValidationError, type TokenUsage } from '@deucex/actions';
 import type { PatronNoteKind } from './types';
 
 // P-10: one drafted note per flagged patron, in the player's voice, that the

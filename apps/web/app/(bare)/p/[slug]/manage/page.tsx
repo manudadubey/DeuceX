@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Card, Spinner } from '@procircuit/ui';
+import { Card, Spinner } from '@deucex/ui';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8787';
 

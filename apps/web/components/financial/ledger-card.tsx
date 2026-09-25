@@ -30,9 +30,9 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
-} from '@procircuit/ui';
-import { insertLedgerLine, type LedgerCategory } from '@procircuit/db';
-import type { ReceiptProposal } from '@procircuit/agents';
+} from '@deucex/ui';
+import { insertLedgerLine, type LedgerCategory } from '@deucex/db';
+import type { ReceiptProposal } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import {
   ReceiptExtractionFailedError,

@@ -1,7 +1,7 @@
 'use client';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 
 // Fans' apps/api calls. The four gated ones (onboard, tiers, send, invite)
 // are called only after @/lib/approvals/confirm-approval's confirmApproval

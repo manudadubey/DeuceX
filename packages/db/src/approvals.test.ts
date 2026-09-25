@@ -43,7 +43,7 @@ describe('createApproval', () => {
     const { client } = fakeClient({ id: 'approval-2' }, null);
     const payload = { amount: 42, currency: 'USD' };
 
-    const { hashApprovalPayload } = await import('@procircuit/shared');
+    const { hashApprovalPayload } = await import('@deucex/shared');
     const result = await createApproval(client, {
       playerId: 'player-1',
       actionType: 'expense_save',

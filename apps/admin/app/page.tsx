@@ -5,7 +5,7 @@
 export default function AdminHomePage() {
   return (
     <main>
-      <h1>ProCircuit Admin</h1>
+      <h1>DeuceX Admin</h1>
       <p>Build in progress. The full console lands in step 5.1.</p>
       <p>
         <a href="/ingestion">Ingestion →</a>

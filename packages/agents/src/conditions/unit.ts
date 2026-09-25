@@ -1,7 +1,7 @@
 import type { Unit } from './types';
 
 // PRD-08 section 7's unit engine, matching the prototype's own `toU`/`convT`
-// (PROCIRCUIT-CONTEXT.md 5.4) exactly: `toU(kg) = round(kg * 2.2046)`. The
+// (DEUCEX-CONTEXT.md 5.4) exactly: `toU(kg) = round(kg * 2.2046)`. The
 // stored baseline always stays in kg (CE-17) — this only ever runs at
 // display time.
 const KG_TO_LB = 2.2046;

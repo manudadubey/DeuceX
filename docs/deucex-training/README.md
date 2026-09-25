@@ -1,4 +1,4 @@
-# ProCircuit Training tab
+# DeuceX Training tab
 
 Five focus and attention tools for the Mindset Coach, with a product requirements document for each, and Arya's player dashboard with all five wired into it.
 
@@ -6,7 +6,7 @@ Built September 2026. Owner: Manu Dubey.
 
 ## Open this first
 
-`prototypes/procircuit-dashboard.html`
+`prototypes/deucex-dashboard.html`
 
 Arya's dashboard with the Training tab in place. Open it, go to **Mindset Coach** in the sidebar, then the **Training** tab. Every tool opens from there.
 
@@ -30,16 +30,16 @@ The grouping is deliberate. Resonance, Sixteen and Margin are built for the twen
 
 | File | Notes |
 |---|---|
-| `procircuit-dashboard.html` | Arya's dashboard with the Training tab. Start here |
-| `procircuit-training.html` | Resonance and Sixteen as a standalone pair |
-| `procircuit-resonance.html` | Resonance on its own |
-| `procircuit-margin.html` | Margin on its own |
-| `procircuit-hold.html` | Hold on its own |
-| `procircuit-field.html` | Field on its own |
+| `deucex-dashboard.html` | Arya's dashboard with the Training tab. Start here |
+| `deucex-training.html` | Resonance and Sixteen as a standalone pair |
+| `deucex-resonance.html` | Resonance on its own |
+| `deucex-margin.html` | Margin on its own |
+| `deucex-hold.html` | Hold on its own |
+| `deucex-field.html` | Field on its own |
 
 Every file is self-contained. No build step, no server, no network call. Open any of them directly in a browser.
 
-Resonance appears twice, once inside `procircuit-training.html` and once on its own. The dashboard embeds the paired file, so the Resonance and Sixteen cards both open it and land on the right tab.
+Resonance appears twice, once inside `deucex-training.html` and once on its own. The dashboard embeds the paired file, so the Resonance and Sixteen cards both open it and land on the right tab.
 
 ### prds/
 
@@ -81,4 +81,4 @@ Each follows the house template: fourteen sections, surface and code placement, 
 
 None of these tools has been tested against anything. The evidence cited in each document is for the underlying paradigm, not for this implementation of it, and each tool says so in its own words on its own page. Nothing in this package should be described as validated.
 
-The pre-Training version of Arya's dashboard is not in this folder. It is in the project as `claude/procircuit-dashboard-pre-training.html`.
+The pre-Training version of Arya's dashboard is not in this folder. It is in the project as `claude/procircuit-dashboard-pre-training.html` (outside this repo, under its pre-rebrand name).
