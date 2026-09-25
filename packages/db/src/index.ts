@@ -75,6 +75,8 @@ export {
   getFxRate,
   getFxRates,
   convertAtRate,
+  latestRateBetween,
+  type RateBetween,
   convertLedgerLine,
   InvalidLedgerAmountError,
   MissingFxRateError,
@@ -194,3 +196,4 @@ export function createServiceRoleClient(
   });
 }
 export * from './fans';
+export * from './fuel';

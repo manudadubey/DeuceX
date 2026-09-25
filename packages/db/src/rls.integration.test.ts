@@ -1146,3 +1146,220 @@ describeIfConfigured('content agent row-level security (step 4.2)', () => {
     });
   });
 });
+
+describeIfConfigured('fuel row-level security and the log functions (step 4.3)', () => {
+  let client: Client;
+  const playerA = randomUUID();
+  const playerB = randomUUID();
+  const scanA = randomUUID();
+  const scanB = randomUUID();
+  const scanOld = randomUUID();
+  const oldMeal = randomUUID();
+
+  // A stored scan, as apps/api writes it with the service role: the pick's
+  // price lives here, and log_fuel_pick must read it from here.
+  async function seedScan(id: string, playerId: string) {
+    await client.query(
+      `insert into public.menu_scans
+         (id, player_id, local_date, pages, photo_hashes, home_currency, menu_currency,
+          rate, rate_date, mode, picks, status, photos_deleted_at, venue_name, city)
+       values ($1, $2, current_date, 1, array['abc'], 'AUD', 'RON', 0.332, '2026-09-11',
+          'pre-match', $3::jsonb, 'ready', now(), 'Hotel Continental Sibiu', 'Sibiu')`,
+      [
+        id,
+        playerId,
+        JSON.stringify([
+          {
+            rank: 1,
+            dishOriginal: 'Piept de pui la grătar cu orez',
+            dishEnglish: 'Grilled chicken breast with rice',
+            priceMenu: 42,
+          },
+        ]),
+      ],
+    );
+  }
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
+      playerA,
+      `rls-fuel-a-${playerA}@deucex.test`,
+      playerB,
+      `rls-fuel-b-${playerB}@deucex.test`,
+    ]);
+    await client.query(
+      `insert into public.players
+         (id, tour, name, email, country, dob, home_currency, app_language, units, timezone, tier)
+       values
+         ($1, 'wta', 'Fuel A', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'UTC', 'pro'),
+         ($3, 'atp', 'Fuel B', $4, 'US', '2000-01-01', 'USD', 'en', 'imperial', 'UTC', 'pro')`,
+      [playerA, `rls-fuel-a-${playerA}@deucex.test`, playerB, `rls-fuel-b-${playerB}@deucex.test`],
+    );
+    await seedScan(scanA, playerA);
+    await seedScan(scanB, playerB);
+    await seedScan(scanOld, playerA);
+    // A meal logged two days ago, straight in as the service role: past midnight, so not undoable.
+    await client.query(
+      `insert into public.meal_logs
+         (id, player_id, scan_id, pick_rank, local_date, dish_original, dish_english, mode,
+          price_menu, currency_menu, rate_date)
+       values ($1, $2, $3, 1, current_date - 2, 'x', 'x', 'pre-match', 10, 'RON', current_date - 2)`,
+      [oldMeal, playerA, scanOld],
+    );
+  });
+
+  afterAll(async () => {
+    await client.query(`delete from public.players where id in ($1, $2)`, [playerA, playerB]);
+    await client.query(`delete from auth.users where id in ($1, $2)`, [playerA, playerB]);
+    await client.end();
+  });
+
+  it("lets a player write their own dietary profile and see no one else's", async () => {
+    await asPlayer(client, playerA, async () => {
+      await client.query(
+        `insert into public.fuel_profiles (player_id, exclusions, preferences)
+         values ($1, array['pork'], array['fish'])`,
+        [playerA],
+      );
+      await client.query(
+        `update public.fuel_profiles set allergies = array['gluten'] where player_id = $1`,
+        [playerA],
+      );
+      const rows = await client.query('select player_id, allergies from public.fuel_profiles');
+      expect(rows.rows).toEqual([{ player_id: playerA, allergies: ['gluten'] }]);
+    });
+  });
+
+  it('refuses an allergy outside the closed list', async () => {
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query(
+          `insert into public.fuel_profiles (player_id, allergies) values ($1, array['kiwi'])`,
+          [playerA],
+        ),
+      ).rejects.toThrow(/check constraint/);
+    });
+  });
+
+  it('refuses a direct menu_scans insert from a player', async () => {
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query(
+          `insert into public.menu_scans
+             (player_id, local_date, pages, photo_hashes, home_currency, mode, status, photos_deleted_at)
+           values ($1, current_date, 1, array['x'], 'AUD', 'rest', 'ready', now())`,
+          [playerA],
+        ),
+      ).rejects.toThrow(/permission denied/);
+    });
+  });
+
+  it('refuses a direct meal_logs insert from a player', async () => {
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query(
+          `insert into public.meal_logs
+             (player_id, scan_id, pick_rank, local_date, dish_original, dish_english, mode,
+              price_menu, currency_menu, rate_date)
+           values ($1, $2, 1, current_date, 'x', 'x', 'rest', 1, 'RON', current_date)`,
+          [playerA, scanA],
+        ),
+      ).rejects.toThrow(/permission denied/);
+    });
+  });
+
+  it('logs a pick as one Fuel ledger line in lei at the scan rate date, then undoes it (FU-AC-7, FU-AC-8)', async () => {
+    await asPlayer(client, playerA, async () => {
+      const logged = await client.query(`select public.log_fuel_pick($1, 1, 'test') as r`, [scanA]);
+      const { mealId, expenseLineId } = logged.rows[0].r as {
+        mealId: string;
+        expenseLineId: string;
+      };
+
+      const line = await client.query(
+        `select category, source, amount_original::float as amount, currency_original, fx_rate_date::text, what
+         from public.ledger_lines where id = $1`,
+        [expenseLineId],
+      );
+      expect(line.rows[0]).toMatchObject({
+        category: 'food',
+        source: 'fuel',
+        amount: 42,
+        currency_original: 'RON',
+        fx_rate_date: '2026-09-11',
+      });
+      expect(line.rows[0].what).toMatch(
+        /Grilled chicken breast with rice · Hotel Continental Sibiu$/,
+      );
+
+      const meal = await client.query(
+        `select outcome, city, expense_line_id from public.meal_logs where id = $1`,
+        [mealId],
+      );
+      expect(meal.rows[0]).toEqual({
+        outcome: 'none',
+        city: 'Sibiu',
+        expense_line_id: expenseLineId,
+      });
+
+      await client.query('select public.unlog_fuel_meal($1)', [mealId]);
+      const left = await client.query(
+        `select (select count(*) from public.meal_logs where id = $1)::int as meals,
+                (select count(*) from public.ledger_lines where id = $2)::int as lines`,
+        [mealId, expenseLineId],
+      );
+      expect(left.rows[0]).toEqual({ meals: 0, lines: 0 });
+    });
+  });
+
+  it("refuses to log a pick from someone else's scan", async () => {
+    await asPlayer(client, playerA, async () => {
+      await expect(client.query(`select public.log_fuel_pick($1, 1)`, [scanB])).rejects.toThrow(
+        /scan not found/,
+      );
+    });
+  });
+
+  it('refuses to undo a meal after midnight', async () => {
+    await asPlayer(client, playerA, async () => {
+      await expect(client.query('select public.unlog_fuel_meal($1)', [oldMeal])).rejects.toThrow(
+        /until midnight/,
+      );
+    });
+  });
+
+  it('lets a player tap an outcome on their own meal only', async () => {
+    await asPlayer(client, playerA, async () => {
+      await client.query(
+        `update public.meal_logs set outcome = 'worked', outcome_source = 'tap-history', outcome_at = now()
+         where id = $1`,
+        [oldMeal],
+      );
+      const row = await client.query('select outcome from public.meal_logs where id = $1', [
+        oldMeal,
+      ]);
+      expect(row.rows[0]).toEqual({ outcome: 'worked' });
+    });
+    await asPlayer(client, playerB, async () => {
+      const res = await client.query(
+        `update public.meal_logs set outcome = 'flat', outcome_source = 'tap-history' where id = $1`,
+        [oldMeal],
+      );
+      expect(res.rowCount).toBe(0);
+    });
+  });
+
+  it('refuses the log function to anon', async () => {
+    await client.query('begin');
+    try {
+      await client.query('set local role anon');
+      await expect(client.query(`select public.log_fuel_pick($1, 1)`, [scanA])).rejects.toThrow(
+        /permission denied/,
+      );
+    } finally {
+      await client.query('rollback');
+    }
+  });
+});

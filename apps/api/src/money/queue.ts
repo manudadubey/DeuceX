@@ -28,6 +28,7 @@ export const CONDITIONS_STAMP_BACKFILL_QUEUE = 'conditions-stamp-backfill';
 // patron rows (no model call; a note is drafted only when the player taps).
 export const FANS_ATTENTION_QUEUE = 'fans-attention-pass';
 export const CONTENT_TICK_QUEUE = 'content-tick';
+export const FUEL_OUTCOME_QUEUE = 'fuel-outcome-sweep';
 
 export interface MoneyQueueLogger {
   error(...args: unknown[]): void;
@@ -63,6 +64,7 @@ export async function createMoneyBoss(
   await boss.createQueue(CONDITIONS_STAMP_BACKFILL_QUEUE);
   await boss.createQueue(FANS_ATTENTION_QUEUE);
   await boss.createQueue(CONTENT_TICK_QUEUE);
+  await boss.createQueue(FUEL_OUTCOME_QUEUE);
   await boss.schedule(FX_DAILY_FETCH_QUEUE, '0 * * * *', {});
   await boss.schedule(RESERVE_REMINDER_QUEUE, '0 * * * *', {});
   await boss.schedule(ACCOUNT_DELETION_SWEEP_QUEUE, '0 * * * *', {});
@@ -73,5 +75,6 @@ export async function createMoneyBoss(
   // Step 4.2: every five minutes, so a 30-minute draft window (PRD-05 C-1)
   // and a 07:00 scheduled send land within five minutes of their time.
   await boss.schedule(CONTENT_TICK_QUEUE, '*/5 * * * *', {});
+  await boss.schedule(FUEL_OUTCOME_QUEUE, '0 * * * *', {});
   return boss;
 }

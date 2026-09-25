@@ -9,12 +9,14 @@ import { useSidebarCollapsed } from './use-sidebar-collapsed';
 
 export interface AppShellProps {
   email?: string | undefined;
+  /** Free tier: Fuel's quick action opens the locked page (worksheet 15). */
+  isFree?: boolean;
   children: React.ReactNode;
 }
 
 // `.shell` (Baseline §Shells and routes): sidebar + topbar + content, with the mobile tab
 // bar and FAB swapped in under 900px. See docs/DEUCEX-CONTEXT.md 4.2/4.3.
-export function AppShell({ email, children }: AppShellProps) {
+export function AppShell({ email, isFree = true, children }: AppShellProps) {
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
 
   return (
@@ -33,7 +35,7 @@ export function AppShell({ email, children }: AppShellProps) {
           {children}
         </main>
       </div>
-      <Fab />
+      <Fab isFree={isFree} />
       <TabBar />
     </div>
   );

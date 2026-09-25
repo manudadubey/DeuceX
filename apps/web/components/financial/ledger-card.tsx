@@ -448,10 +448,22 @@ export function LedgerCard({
                       .map((line) => (
                         <TableRow key={line.id}>
                           <TableCell>{line.date}</TableCell>
-                          <TableCell>{line.what}</TableCell>
+                          <TableCell>
+                            {line.what}
+                            {line.source === 'fuel' && (
+                              <span className="ml-1.5 text-xs text-muted-foreground">· Fuel</span>
+                            )}
+                          </TableCell>
                           <TableCell>{line.category}</TableCell>
                           <TableCell>{line.label ?? '–'}</TableCell>
-                          <TableCell>−{formatMoney(line.amountHome, homeCurrency)}</TableCell>
+                          <TableCell>
+                            −{formatMoney(line.amountHome, homeCurrency)}
+                            {line.currencyOriginal !== homeCurrency && (
+                              <span className="block text-xs text-muted-foreground">
+                                {line.amountOriginal} {line.currencyOriginal}
+                              </span>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))}
                   </TableBody>

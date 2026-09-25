@@ -16,6 +16,7 @@ import {
 } from '@deucex/ui';
 import { saveCheckIn, type SaveCheckInInput } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
+import { MealOutcomeLine } from '@/components/fuel/meal-outcome-line';
 
 const VALUES = [1, 2, 3, 4, 5] as const;
 
@@ -71,6 +72,11 @@ export function CheckInCard({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <div className="flex flex-col gap-4 px-6">
+        {/* PRD-07: Fuel's next-day question rides in the Match Scribe and
+            Mindset check-ins only, not the dashboard's. */}
+        {source !== 'dashboard' && (
+          <MealOutcomeLine playerId={playerId} timezone={timezone} onToast={onToast} />
+        )}
         <Field>
           <FieldLabel>
             This morning <small>· 1 flat, 5 energised</small>

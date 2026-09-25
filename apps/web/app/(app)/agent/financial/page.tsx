@@ -14,7 +14,7 @@ export default async function FinancialAgentPage() {
 
   const { data: player } = await supabase
     .from('players')
-    .select('id, home_currency, weekly_budget, tier')
+    .select('id, home_currency, weekly_budget, daily_food_allowance, tier')
     .eq('id', playerId)
     .single();
   if (!player) redirect('/onboarding');
@@ -24,6 +24,7 @@ export default async function FinancialAgentPage() {
       playerId={player.id}
       homeCurrency={player.home_currency}
       weeklyBudget={player.weekly_budget}
+      dailyFoodAllowance={player.daily_food_allowance}
       // Free-tier gate (M-TIER-1): a player with no tier set yet reads as
       // Free, the same conservative default mindset/page.tsx already uses.
       isFree={player.tier !== 'pro' && player.tier !== 'elite'}

@@ -27,6 +27,7 @@ export interface FinancialClientProps {
   playerId: string;
   homeCurrency: string;
   weeklyBudget: number | null;
+  dailyFoodAllowance: number | null;
   isFree: boolean;
 }
 
@@ -51,8 +52,10 @@ export function FinancialClient({
   playerId,
   homeCurrency,
   weeklyBudget,
+  dailyFoodAllowance,
   isFree,
 }: FinancialClientProps) {
+  const [foodAllowance, setFoodAllowance] = useState(dailyFoodAllowance);
   const supabase = useMemo(() => createClient(), []);
   const [snapshot, setSnapshot] = useState<FinancialSnapshot | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -239,6 +242,16 @@ export function FinancialClient({
               weeklyBudgetBar={snapshot.weeklyBudgetBar}
               rows={snapshot.budgetVsActual}
               currency={homeCurrency}
+              playerId={playerId}
+              dailyFoodAllowance={foodAllowance}
+              onFoodAllowanceSaved={(amount) => {
+                setFoodAllowance(amount);
+                showToast(
+                  amount === null
+                    ? 'Daily food money cleared'
+                    : `Daily food money set to ${formatMoney(amount, homeCurrency)} a day`,
+                );
+              }}
             />
             <ReservesCard
               playerId={playerId}

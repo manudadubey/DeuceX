@@ -16,7 +16,10 @@
 // step). The fifth, conditions (step 3.3), is deterministic tiles and rules
 // (amber, ball-diff, tension, frames, grip, unit conversion, stamps) plus
 // one small model call for the brief's own comparison-and-practice prose,
-// batched up to five briefs per call (PRD-08 section 3).
+// batched up to five briefs per call (PRD-08 section 3). Fuel (step 4.3)
+// is one vision call that reads and describes a menu, then a deterministic
+// ranker that applies the player's hard rules and the week mode: the model
+// never decides what is safe to eat.
 
 export * from './match-scribe';
 export * from './mindset-coach';
@@ -25,3 +28,4 @@ export * from './tournament';
 export * from './conditions';
 export * from './fans';
 export * from './content';
+export * from './fuel';

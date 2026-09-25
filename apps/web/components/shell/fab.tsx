@@ -6,9 +6,9 @@ import { QuickActionsSheet } from './quick-actions-sheet';
 
 // `.fab` (Baseline §Shells and routes "floating capture button"): desktop only. Under
 // 900px the mobile tab bar's own record tab (tab-bar.tsx) replaces it.
-export function Fab() {
+export function Fab({ isFree }: { isFree: boolean }) {
   return (
-    <QuickActionsSheet>
+    <QuickActionsSheet isFree={isFree}>
       <button
         type="button"
         aria-label="Capture: record a note, scan a menu or a receipt"

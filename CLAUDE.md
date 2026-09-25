@@ -16,7 +16,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1, step 2.1 through step 4.2 done, start step 4.3
+## Status: Phase 0, Phase 1, step 2.1 through step 4.3 done, start step 5.1
 
 The monorepo scaffold is built and deploying; the database has RLS-protected DeuceX tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -277,13 +277,25 @@ rebuilt from the server row; schedules claim the approval only at send time), op
 from Resend (owner decision), and the page, dashboard one-tap card (worksheet 8), Settings row,
 profile teaser switch and public teaser. Verified live against production and the real OpenAI and
 Resend APIs; see `docs/BUILD-LOG.md`'s step 4.2 entry, including six bugs found live and fixed and
-what was skipped. Open tracking is live (tracking subdomain `links.mail.deucex.ai`, verified). The next
-session should start at **step 4.3 (Fuel)** in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus
-whatever it names, and check `gh pr list` first. The step 4.2 work is
-[PR #21](https://github.com/manudadubey/DeuceX/pull/21), merged. Check `docs/BUILD-LOG.md` for what each prior step actually did before
+what was skipped. Open tracking is live (tracking subdomain `links.mail.deucex.ai`, verified). The step 4.2 work is
+[PR #21](https://github.com/manudadubey/DeuceX/pull/21), merged.
+
+Step 4.3 (Fuel) built menu scanning on a new migration (`fuel_profiles`, `menu_scans`,
+`meal_logs`, three `players` columns, `'fuel'` as a ledger source, and the `log_fuel_pick` /
+`unlog_fuel_meal` functions that pair a meal with its Food line in the menu currency at the
+scan's rate date). One vision call reads the menu, and a deterministic ranker in
+`packages/agents/src/fuel` applies the hard rules, so the model never decides what is safe. The
+rest: `POST /fuel/scans` (Free refused before upload), an hourly mood-inference sweep, the real
+`/fuel` page with the Free lock, "Scan a menu" live in the quick-actions sheet, the next-day
+check-in line, and a daily food money setting on the Financial Agent. There were four owner
+decisions; see `docs/BUILD-LOG.md`'s step 4.3 entry. Verified with nine new live RLS tests. The
+next session should start at **step 5.1 (Admin console)** in `docs/BUILD-PLAN-CLAUDE-CODE.md`
+(step 5.0 comes after it): read that step plus whatever it names, and check `gh pr list` first. Check `docs/BUILD-LOG.md` for what each prior step actually did before
 assuming anything about the current state; this paragraph is a pointer, not the full record.
 
-**Open follow-ups** (none block step 4.3):
+**Open follow-ups** (none block step 5.1):
+- Run one real Fuel scan of a photographed menu against the live model (only the fixture path
+  and tests have run; the browser pane can't upload a camera photo).
 - Settings > Agents still says the Tournament Agent "arrives with step 3.2"; it shipped.
 - Roll the Stripe sandbox secret key (pasted in chat).
 - Set `STRIPE_WEBHOOK_SECRET` once `apps/api` has a public URL; no live webhook has run yet.
