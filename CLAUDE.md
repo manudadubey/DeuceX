@@ -273,8 +273,6 @@ step actually did (including follow-ups) before assuming anything about the curr
 line is a pointer, not the full record.
 
 **Open follow-ups before or alongside step 4.2** (none block starting it):
-- Resend verification of `mail.deucex.ai`, then one real test send to a real inbox (the owner OK'd
-  manu.dadubey@gmail.com as a patron manage-link email; set the test patron's email back after).
 - Roll the Stripe sandbox secret key (pasted in chat).
 - Set `STRIPE_WEBHOOK_SECRET` once `apps/api` has a public URL; no live webhook has run yet.
 - De-duplicate the "Stripe needs something from you" notification (fired twice in one KYC pass).
@@ -361,13 +359,14 @@ line is a pointer, not the full record.
   `.env`. Sending domain **`mail.deucex.ai`** (Resend domain id
   `26ac35a2-7651-460f-aeb7-bd7b21897401`, region `ap-northeast-1`) was added on 25 September 2026,
   with its DKIM, SPF (MX and TXT) and return-path CNAME records added to deucex.ai's DNS in Vercel
-  and confirmed correct on Vercel's nameservers and public DNS. Resend's own verification was
-  still **pending** at the end of that session: check its status before assuming mail sends. The
+  and confirmed correct on Vercel's nameservers and public DNS. **Verified by Resend** the same
+  day (about 20 minutes after the records went in), and a real patron manage-link email from
+  `Jannik Sinner <updates@mail.deucex.ai>` was **delivered** to the owner's Gmail. The
   owner's local `.env` sets `RESEND_FROM_ADDRESS="DeuceX <updates@mail.deucex.ai>"` (quoted, so
   shell `. ./.env` works); without it `apps/api` falls back to Resend's sandbox sender
   (`onboarding@resend.dev`), which only delivers to the Resend account owner's own inbox and
   refuses `example.com` addresses. The old `procircuit.app` domain was never registered; don't
-  use it. A real test send to a real inbox is still owed once Resend verifies.
+  use it.
 - **Domain**: **`deucex.ai`**, bought 25 September 2026 through Vercel in the `md-labs` team
   (auto-renews, expires 2028), DNS on Vercel's nameservers. Only the Resend records above plus
   Vercel's defaults exist; it isn't attached to either Vercel project yet. Add DNS records one at a
