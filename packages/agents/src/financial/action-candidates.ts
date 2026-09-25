@@ -19,6 +19,8 @@ export interface ActionCandidate {
   hoursEffort: number;
   score: number;
   facts: ActionCandidateFacts;
+  /** The receivable a chase_overdue_receivable candidate is about. Kept out of facts so it never reaches the prompt; it lets a "Mark received" approval link the run that proposed it (PRD-13 AD-13). */
+  receivableId?: string;
 }
 
 export type ActionCandidateFacts =
@@ -77,6 +79,7 @@ function overdueReceivableCandidates(input: ActionCandidateInput, now: Date): Ac
         effectWeeks,
         hoursEffort,
         score: effectWeeks / hoursEffort,
+        receivableId: r.id,
         facts: {
           key: 'chase_overdue_receivable',
           label: r.label,

@@ -2514,3 +2514,57 @@ Three bugs found and fixed:
 
 The owner's test log (50 USD) is left in place for them to undo or keep.
 
+
+### Follow-up · approvals record the agent run they answer — 25 September 2026
+
+A live check found 0 of 20 production approvals set `approvals.agent_run_id` (step 0.6). PRD-13
+AD-13 and section 7 measure an agent's approval rate through that link, so step 5.1's nightly
+aggregation shows "Not measured yet" for every agent. Now each approval that answers a specific
+run's proposal records that run's id. The id is only metadata on the approvals row. It is not in
+the approved payload, so `runGatedAction`'s payload hash is unchanged (a new `createApproval`
+test checks this).
+
+The root cause was that `recordRun` never returned the id it wrote. That is why the Tournament
+Agent looked its run up again by inputs hash, and why step 4.3 left `menu_scans.agent_run_id`
+null. `recordRun` now mints the id itself and returns it as `runId`, so no one needs a lookup.
+
+How each surface finds its run:
+- **Tournament** (`entry_confirm`, `retract`): from `shortlist_candidates.run_id`, which is
+  already written for each candidate and now carried on the candidate view.
+- **Content** (`content_publish`): `patron_updates.agent_run_id` (a step 4.2 column, never set
+  until now) is written when a draft succeeds, and the page and dashboard card both pass it. A
+  failed draft ("Write it yourself") links nothing, and a rewrite keeps the draft's link:
+  the player asked for the rewrite, so it isn't a new proposal.
+- **Fans patron notes** (`patron_send`): the draft route returns the drafting run's id. A cached
+  draft finds its run by the inputs hash `patron_note_drafts` already keeps, so no migration was
+  needed. An edited draft still links, since the approval answers that run's proposal.
+- **Financial** (`receivable_received`): linked only when the current "one thing" is
+  `chase_overdue_receivable` for **that** receivable. The candidate now carries `receivableId`
+  outside `facts`, so it never reaches the prompt, and the run output stores it. It is added to
+  the candidate hash only for chase candidates, so every other cached sentence stays valid.
+  Marking any other receivable received links nothing.
+
+No migration was needed. `approvals_insert_own` checks only `player_id` and `approved_by`. A new
+live RLS test shows a player's own session can insert an approval that carries their run's id,
+and passes against production.
+
+**Verified against production**, in a transaction that was rolled back (0 fixture rows left
+after): a fixture player with tournament, fans/patron-note and financial runs, with linked
+approvals on two of them. Step 5.1's own `aggregateDay` (still uncommitted in the main checkout)
+then gave tournament an `approval_rate_7d` of 0.5, fans/patron-note 0.2 (its four real, unlinked
+runs from 23 September are in the window), and left financial and content null. Production itself
+stays unlinked until this code runs: `apps/api` isn't deployed, and the 20 existing approvals
+weren't backfilled (the table is append-only).
+
+Left for step 5.1's aggregation to decide (not changed here):
+- Content rewrites are `content` runs, so they count as proposals that can never be linked. This
+  pulls the Content Agent's rate down.
+- Financial runs that propose `update_balance` or `trim_weekly_overspend` are answered by plain
+  CRUD, not an approval, so they can never be linked either.
+- Once an agent has any link, older unlinked runs still in the seven-day window count as
+  unanswered, so the first week's rate reads low.
+- A retract linked to a later shortlist run counts that run as answered, even if the player never
+  accepted anything from it.
+- The insert policy doesn't check that `agent_run_id` belongs to the same player. A player can't
+  read anyone else's run ids, so the risk is only to the metric. An ownership check in the policy
+  would take a migration.

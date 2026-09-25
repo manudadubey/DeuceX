@@ -565,11 +565,15 @@ describe('drafting a note on tap (P-10, P-AC-5)', () => {
     const first = await draftPatronNote(deps, PLAYER_ID, 'anna');
     expect(first).toMatchObject({ kind: 'thanks' });
     expect(first!.text!.startsWith('Anna, I noticed you moved on last month')).toBe(true);
-    await draftPatronNote(deps, PLAYER_ID, 'anna');
+    const cached = await draftPatronNote(deps, PLAYER_ID, 'anna');
     expect(spy).toHaveBeenCalledTimes(1);
     expect(agentRuns.insertAgentRun).toHaveBeenCalledWith(
       expect.objectContaining({ agentName: 'fans/patron-note', status: 'succeeded' }),
     );
+    // PRD-13 AD-13: the send approval links the drafting run, cached or not.
+    const written = vi.mocked(agentRuns.insertAgentRun).mock.calls.at(-1)![0];
+    expect(first!.runId).toBe(written.id);
+    expect(cached!.runId).toBe(written.id);
   });
 
   it('returns no text when the agent could not draft one, so the player writes it', async () => {
@@ -584,7 +588,7 @@ describe('drafting a note on tap (P-10, P-AC-5)', () => {
       PLAYER_ID,
       'tom',
     );
-    expect(result).toEqual({ kind: 'checkin', text: null });
+    expect(result).toEqual({ kind: 'checkin', text: null, runId: null });
   });
 });
 

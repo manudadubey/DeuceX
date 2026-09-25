@@ -100,7 +100,12 @@ export function ContentAgentCard({
         sendAt: draft.send_at,
         teaser: draft.teaser,
       });
-      const approval = await confirmApproval({ playerId, actionType: 'content_publish', payload });
+      const approval = await confirmApproval({
+        playerId,
+        actionType: 'content_publish',
+        payload,
+        agentRunId: draft.agent_run_id,
+      });
       const result = await publishDraft(supabase, draft.id, approval.id);
       setState('sent');
       setMessage(

@@ -26,13 +26,17 @@ export function useEntryActions({
 }) {
   const [pending, setPending] = useState<string | null>(null);
 
-  async function accept(tournamentId: string): Promise<AcceptEntryResult> {
+  // runId is the shortlist run that proposed the candidate. It rides on the
+  // approvals row as metadata for PRD-13's approval rate, never in the
+  // payload, so the hash packages/actions re-verifies is unchanged.
+  async function accept(tournamentId: string, runId: string | null): Promise<AcceptEntryResult> {
     setPending(tournamentId);
     try {
       const approval = await confirmApproval({
         playerId,
         actionType: 'entry_confirm',
         payload: { tournamentId },
+        agentRunId: runId,
       });
       const result = await acceptTournamentEntry(supabase, {
         approvalId: approval.id,
@@ -45,13 +49,14 @@ export function useEntryActions({
     }
   }
 
-  async function withdraw(tournamentId: string): Promise<void> {
+  async function withdraw(tournamentId: string, runId: string | null): Promise<void> {
     setPending(tournamentId);
     try {
       const approval = await confirmApproval({
         playerId,
         actionType: 'retract',
         payload: { tournamentId },
+        agentRunId: runId,
       });
       await withdrawTournamentEntry(supabase, { approvalId: approval.id, tournamentId });
       onDone();

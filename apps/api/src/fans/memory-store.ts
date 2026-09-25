@@ -32,7 +32,7 @@ export class MemoryFansStore implements FansStore {
     invitedAt: string | null;
     convertedAt: string | null;
   }> = [];
-  drafts = new Map<string, { text: string; inputsHash: string }>();
+  drafts = new Map<string, { text: string; inputsHash: string; runId: string | null }>();
   webhooks = new Map<string, { appliedAt: string | null; error: string | null }>();
   updates: PublishedUpdate[] = [];
   private nextId = 1;
@@ -204,10 +204,17 @@ export class MemoryFansStore implements FansStore {
     return this.drafts.get(`${patronId}:${kind}`) ?? null;
   }
 
-  async saveDraft(input: { patronId: string; kind: string; text: string; inputsHash: string }) {
+  async saveDraft(input: {
+    patronId: string;
+    kind: string;
+    text: string;
+    inputsHash: string;
+    runId: string;
+  }) {
     this.drafts.set(`${input.patronId}:${input.kind}`, {
       text: input.text,
       inputsHash: input.inputsHash,
+      runId: input.runId,
     });
   }
 }

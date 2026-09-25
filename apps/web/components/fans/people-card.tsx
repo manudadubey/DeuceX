@@ -162,6 +162,7 @@ function Composer({
   const [state, setState] = useState<'drafting' | 'ready' | 'sending'>('drafting');
   const [text, setText] = useState('');
   const [draft, setDraft] = useState<string | null>(null);
+  const [draftRunId, setDraftRunId] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -172,6 +173,7 @@ function Composer({
       .then((result) => {
         if (cancelled) return;
         setDraft(result.text);
+        setDraftRunId(result.runId);
         setText(result.text ?? '');
         setFailed(result.text === null);
       })
@@ -193,7 +195,15 @@ function Composer({
     setError(null);
     try {
       const payload = { patronId: patron.id, kind: patron.noteKind, text };
-      const approval = await confirmApproval({ playerId, actionType: 'patron_send', payload });
+      // Linked to the drafting run even when the player edits the text: the
+      // approval answers that run's proposal (PRD-13 AD-13). A note written
+      // from scratch after a failed draft has no run to link.
+      const approval = await confirmApproval({
+        playerId,
+        actionType: 'patron_send',
+        payload,
+        agentRunId: draftRunId,
+      });
       await sendPatronNote(supabase, patron.id, {
         approvalId: approval.id,
         kind: patron.noteKind,

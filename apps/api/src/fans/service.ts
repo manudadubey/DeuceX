@@ -810,6 +810,8 @@ export interface DraftResult {
   kind: PatronNoteKind;
   /** Null when the agent couldn't draft this one; the UI then opens an empty textarea. */
   text: string | null;
+  /** The run that drafted the text; the patron_send approval records it (PRD-13 AD-13). */
+  runId: string | null;
 }
 
 export async function draftPatronNote(
@@ -842,11 +844,13 @@ export async function draftPatronNote(
     .digest('hex');
 
   const cached = await deps.store.getDraft(patron.id, kind);
-  if (cached && cached.inputsHash === inputsHash) return { kind, text: cached.text };
+  if (cached && cached.inputsHash === inputsHash) {
+    return { kind, text: cached.text, runId: cached.runId };
+  }
 
   try {
     let text = '';
-    await recordRun(
+    const { runId } = await recordRun(
       deps.agentRuns,
       {
         agentName: 'fans/patron-note',
@@ -863,9 +867,9 @@ export async function draftPatronNote(
         return { output: { kind, text }, usage: result.usage };
       },
     );
-    await deps.store.saveDraft({ playerId, patronId: patron.id, kind, text, inputsHash });
-    return { kind, text };
+    await deps.store.saveDraft({ playerId, patronId: patron.id, kind, text, inputsHash, runId });
+    return { kind, text, runId };
   } catch {
-    return { kind, text: null };
+    return { kind, text: null, runId: null };
   }
 }

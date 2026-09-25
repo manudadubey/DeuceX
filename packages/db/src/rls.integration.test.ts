@@ -1363,3 +1363,52 @@ describeIfConfigured('fuel row-level security and the log functions (step 4.3)',
     }
   });
 });
+
+// PRD-13 AD-13: an approval answering an agent run's proposal records that
+// run, written by the player's own session through approvals_insert_own.
+describeIfConfigured('approvals.agent_run_id', () => {
+  let client: Client;
+  const playerA = randomUUID();
+  const runA = randomUUID();
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2)`, [
+      playerA,
+      `rls-run-link-${playerA}@deucex.test`,
+    ]);
+    await client.query(
+      `insert into public.players
+         (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+       values ($1, 'atp', 'Run Link', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney')`,
+      [playerA, `rls-run-link-${playerA}@deucex.test`],
+    );
+    await client.query(
+      `insert into public.agent_runs
+         (id, agent_name, player_id, trigger_type, started_at, completed_at, inputs_hash,
+          model, prompt_version, schema_version, status)
+       values ($1, 'tournament', $2, 'schedule', now(), now(), 'h', 'deterministic', '1', '1', 'succeeded')`,
+      [runA, playerA],
+    );
+  });
+
+  afterAll(async () => {
+    // agent_runs cascades from players.
+    await client.query(`delete from public.players where id = $1`, [playerA]);
+    await client.query(`delete from auth.users where id = $1`, [playerA]);
+    await client.end();
+  });
+
+  it("lets a player's own approval carry the run it answers", async () => {
+    await asPlayer(client, playerA, async () => {
+      const inserted = await client.query(
+        `insert into public.approvals (player_id, approved_by, action_type, payload, agent_run_id)
+         values ($1, $1, 'entry_confirm', '{"tournamentId":"t-1"}'::jsonb, $2)
+         returning agent_run_id`,
+        [playerA, runA],
+      );
+      expect(inserted.rows[0]).toEqual({ agent_run_id: runA });
+    });
+  });
+});

@@ -38,6 +38,9 @@ function candidateHash(candidate: ActionCandidate): string {
       JSON.stringify({
         key: candidate.key,
         facts: candidate.facts,
+        // Only chase candidates carry one, so every other candidate's hash
+        // (and its cached sentence) is unchanged.
+        ...(candidate.receivableId ? { receivableId: candidate.receivableId } : {}),
         effectWeeks: candidate.effectWeeks,
       }),
     )
@@ -138,7 +141,14 @@ export async function runFinancialAgent(
       },
       async () => {
         const result = await generateFinancialAction(deps.client, winner);
-        return { output: { ...result, inputsHash: hash } as unknown as Json, usage: result.usage };
+        return {
+          output: {
+            ...result,
+            inputsHash: hash,
+            receivableId: winner.receivableId ?? null,
+          } as unknown as Json,
+          usage: result.usage,
+        };
       },
     );
 

@@ -103,25 +103,6 @@ async function persistShortlist(
   }
 }
 
-async function findRunId(
-  db: SupabaseClient<Database>,
-  playerId: string,
-  inputsHash: string,
-): Promise<string | null> {
-  const { data, error } = await db
-    .from('agent_runs')
-    .select('id')
-    .eq('player_id', playerId)
-    .eq('agent_name', TOURNAMENT_AGENT_NAME)
-    .eq('inputs_hash', inputsHash)
-    .eq('status', 'succeeded')
-    .order('started_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw error;
-  return data?.id ?? null;
-}
-
 // PRD-01 section 9: exactly one notification per run — a For-you when a
 // deadline falls inside the coming seven days, otherwise an FYI that the
 // shortlist is ready (M-NOTIF-1).
@@ -192,7 +173,7 @@ export async function runTournamentAgent(
   const inputsHash = inputsHashFor(candidateInputs, filters, costModelPlayer);
 
   try {
-    const { output } = await recordRun(
+    const { output, runId } = await recordRun(
       deps.agentRuns,
       {
         agentName: TOURNAMENT_AGENT_NAME,
@@ -209,7 +190,6 @@ export async function runTournamentAgent(
     );
 
     const result = output as unknown as ShortlistResult;
-    const runId = await findRunId(deps.db, playerId, inputsHash);
     await persistShortlist(deps.db, playerId, result, runId, now);
 
     if (triggerType === 'schedule') {

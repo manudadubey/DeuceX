@@ -155,13 +155,18 @@ export interface FansStore {
   addToWaitlist(playerId: string, email: string): Promise<{ added: boolean; waiting: number }>;
   markWaitlistConverted(playerId: string, email: string, at: string): Promise<void>;
 
-  getDraft(patronId: string, kind: string): Promise<{ text: string; inputsHash: string } | null>;
+  /** runId is the fans/patron-note run that drafted the cached text, when it can still be found. */
+  getDraft(
+    patronId: string,
+    kind: string,
+  ): Promise<{ text: string; inputsHash: string; runId: string | null } | null>;
   saveDraft(input: {
     playerId: string;
     patronId: string;
     kind: string;
     text: string;
     inputsHash: string;
+    runId: string;
   }): Promise<void>;
 }
 
@@ -528,12 +533,26 @@ export class SupabaseFansStore implements FansStore {
   async getDraft(patronId: string, kind: string) {
     const { data, error } = await this.db
       .from('patron_note_drafts')
-      .select('text, agent_run_inputs_hash')
+      .select('player_id, text, agent_run_inputs_hash')
       .eq('patron_id', patronId)
       .eq('kind', kind)
       .maybeSingle();
     if (error) throw error;
-    return data ? { text: data.text, inputsHash: data.agent_run_inputs_hash } : null;
+    if (!data) return null;
+    // patron_note_drafts keeps the run's inputs hash, not its id, so the run
+    // is found the way it was cached: same player, agent and inputs.
+    const { data: run, error: runError } = await this.db
+      .from('agent_runs')
+      .select('id')
+      .eq('player_id', data.player_id)
+      .eq('agent_name', 'fans/patron-note')
+      .eq('inputs_hash', data.agent_run_inputs_hash)
+      .eq('status', 'succeeded')
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (runError) throw runError;
+    return { text: data.text, inputsHash: data.agent_run_inputs_hash, runId: run?.id ?? null };
   }
 
   async saveDraft(input: {

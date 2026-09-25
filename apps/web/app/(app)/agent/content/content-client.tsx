@@ -187,7 +187,12 @@ export function ContentClient({
         sendAt: row.sendAt,
         teaser: row.teaser,
       });
-      const approval = await confirmApproval({ playerId, actionType: 'content_publish', payload });
+      const approval = await confirmApproval({
+        playerId,
+        actionType: 'content_publish',
+        payload,
+        agentRunId: row.agentRunId,
+      });
       const result = await api.publishDraft(supabase, row.id, approval.id);
       showToast(
         result.status === 'scheduled'

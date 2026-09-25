@@ -53,6 +53,29 @@ describe('createApproval', () => {
     expect(result.payloadHash).toBe(await hashApprovalPayload(payload));
   });
 
+  it('writes agent_run_id as row metadata without changing the payload hash (PRD-13 AD-13)', async () => {
+    const { client, insert } = fakeClient({ id: 'approval-3' }, null);
+    const payload = { tournamentId: 't-1' };
+
+    const linked = await createApproval(client, {
+      playerId: 'player-1',
+      actionType: 'entry_confirm',
+      payload,
+      agentRunId: 'run-1',
+    });
+    const unlinked = await createApproval(client, {
+      playerId: 'player-1',
+      actionType: 'entry_confirm',
+      payload,
+    });
+
+    expect(insert).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ agent_run_id: 'run-1', payload }),
+    );
+    expect(linked.payloadHash).toBe(unlinked.payloadHash);
+  });
+
   it('throws when the insert fails (e.g. RLS rejects it)', async () => {
     const { client } = fakeClient(null, new Error('new row violates row-level security policy'));
 
