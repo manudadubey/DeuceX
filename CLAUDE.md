@@ -253,8 +253,9 @@ real payout webhook has run yet. P-17 (the Stripe customer portal) and P-18 (pau
 on a downgrade to Free), launch blockers step 4.1 flagged, were closed in **step 4.1b**: an emailed,
 HMAC-signed one-hour link to Stripe's portal for patrons, and gated `patron_billing_pause` /
 `patron_billing_resume` actions that the downgrade confirm runs first, with the exact patron notice
-shown beforehand; both verified live against the sandbox. Still open: auto-cancel after 90 days
-paused, and an in-app upgrade back to Pro. Also found and fixed
+shown beforehand; both verified live against the sandbox. A membership paused for 90 days now ends
+automatically with a goodbye email (owner decision; `patrons.paused_at`, a sweep on the hourly Fans
+tick). Still open: an in-app upgrade back to Pro. Also found and fixed
 live: pg-boss's default 10-connection pool per instance tipped the session pooler's 15-client cap;
 all three instances now set `max`. [PR #16](https://github.com/manudadubey/ProCircuit/pull/16) is merged. The next
 session should

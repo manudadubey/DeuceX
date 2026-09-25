@@ -15,6 +15,8 @@ import {
   joinWaitlist,
   loadPublicPage,
   runAttentionPass,
+  runPausedExpirySweep,
+  PAUSED_EXPIRY_ENDED_REASON,
   thanksLine,
 } from './service';
 import type { StoredPatron } from './store';
@@ -94,6 +96,7 @@ function patron(overrides: Partial<StoredPatron> & { id: string; name: string })
     namesOptIn: false,
     cardFailedAt: null,
     cardRetryAt: null,
+    pausedAt: null,
     source: 'unknown',
     ...overrides,
   };
@@ -174,6 +177,9 @@ function fakeStripe(overrides: Partial<FansStripeClient> = {}): FansStripeClient
       throw new Error('unused');
     },
     async setSubscriptionPaused() {
+      throw new Error('unused');
+    },
+    async cancelSubscription() {
       throw new Error('unused');
     },
     ...overrides,
@@ -623,5 +629,119 @@ describe('step 4.1b · webhook sync for the portal and the pause', () => {
     );
     expect(store.patrons[0]!.leftReason).toBe('Too expensive');
     expect(store.events[0]!.attribution).toBe('14 months. "Too expensive"');
+  });
+});
+
+describe('step 4.1b follow-up · the 90-day paused-membership sweep', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  const pausedDaysAgo = (d: number) => new Date(NOW.getTime() - d * DAY).toISOString();
+
+  function sweepDeps(overrides: Partial<FansStripeClient> = {}) {
+    const cancelled: string[] = [];
+    const sent: Array<{ to: string; subject: string }> = [];
+    const stripe = fakeStripe({
+      async cancelSubscription({ subscriptionId }) {
+        cancelled.push(subscriptionId);
+      },
+      ...overrides,
+    });
+    store.playerEmails.set(PLAYER_ID, 'arya@example.com');
+    return {
+      deps: {
+        store,
+        stripe,
+        email: {
+          async sendEmail(m: { to: string; subject: string }) {
+            sent.push(m);
+          },
+        },
+        appBaseUrl: 'https://app.test',
+        now: () => NOW,
+      },
+      cancelled,
+      sent,
+    };
+  }
+
+  it('ends a membership paused for over 90 days: Stripe cancel, goodbye, departure, one FYI', async () => {
+    store.patrons.push(
+      patron({
+        id: 'mira',
+        name: 'Mira Kovac',
+        status: 'paused',
+        pausedAt: pausedDaysAgo(91),
+        since: '2025-12-12T00:00:00Z',
+      }),
+      patron({ id: 'tom', name: 'Tom Brandt', status: 'paused', pausedAt: pausedDaysAgo(89) }),
+    );
+    const { deps, cancelled, sent } = sweepDeps();
+    expect(await runPausedExpirySweep(deps)).toEqual({ ended: 1, failed: 0 });
+    expect(cancelled).toEqual(['sub_mira']);
+    expect(sent.map((m) => m.to)).toEqual(['mira@example.com']);
+    const mira = store.patrons.find((p) => p.id === 'mira')!;
+    expect(mira).toMatchObject({
+      status: 'left',
+      leftReason: PAUSED_EXPIRY_ENDED_REASON,
+      pausedAt: null,
+    });
+    expect(store.events).toEqual([
+      expect.objectContaining({
+        kind: 'leave',
+        patronId: 'mira',
+        attribution: '9 months. Ended after 90 days paused.',
+      }),
+    ]);
+    expect(store.notifications).toEqual([
+      expect.objectContaining({ category: 'fyi', title: 'Mira K. left Courtside' }),
+    ]);
+    expect(store.patrons.find((p) => p.id === 'tom')!.status).toBe('paused');
+  });
+
+  it('is idempotent: a second run the same day ends nothing more', async () => {
+    store.patrons.push(
+      patron({ id: 'mira', name: 'Mira Kovac', status: 'paused', pausedAt: pausedDaysAgo(95) }),
+    );
+    const { deps, cancelled } = sweepDeps();
+    await runPausedExpirySweep(deps);
+    expect(await runPausedExpirySweep(deps)).toEqual({ ended: 0, failed: 0 });
+    expect(cancelled).toEqual(['sub_mira']);
+  });
+
+  it('leaves a patron paused when Stripe refuses the cancel, for the next tick to retry', async () => {
+    store.patrons.push(
+      patron({ id: 'mira', name: 'Mira Kovac', status: 'paused', pausedAt: pausedDaysAgo(120) }),
+    );
+    const { deps, sent } = sweepDeps({
+      async cancelSubscription() {
+        throw new Error('Stripe down');
+      },
+    });
+    expect(await runPausedExpirySweep(deps)).toEqual({ ended: 0, failed: 1 });
+    expect(store.patrons[0]!.status).toBe('paused');
+    expect(sent).toHaveLength(0);
+    expect(store.events).toHaveLength(0);
+  });
+
+  it('stamps pausedAt when a pause arrives from Stripe directly, and clears it on resume', async () => {
+    store.patrons.push(
+      patron({ id: 'mira', name: 'Mira Kovac', stripeSubscriptionId: 'sub_mira' }),
+    );
+    let paused = true;
+    const stripe = fakeStripe({
+      async retrieveSubscription() {
+        return subscription({ paused });
+      },
+    });
+    await applyStripeEvent(
+      { store, stripe, now: () => NOW },
+      event('customer.subscription.updated', { id: 'sub_mira' }, 'evt_p1'),
+    );
+    expect(store.patrons[0]!.pausedAt).toBe(NOW.toISOString());
+    paused = false;
+    await applyStripeEvent(
+      { store, stripe, now: () => NOW },
+      event('customer.subscription.updated', { id: 'sub_mira' }, 'evt_p2'),
+    );
+    expect(store.patrons[0]!.pausedAt).toBeNull();
   });
 });

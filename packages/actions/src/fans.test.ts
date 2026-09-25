@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ApprovalGateDb, ApprovalRecord } from './gate';
 import { ApprovalNotFoundError, ApprovalPayloadMismatchError } from './errors';
-import { billingPauseNotice } from '@procircuit/shared';
+import {
+  billingPauseNotice,
+  membershipEndedNotice,
+  pausedMembershipEndDate,
+} from '@procircuit/shared';
 import type { EmailClient, SendEmailInput } from './resend-client';
 import type { FansStripeClient } from './stripe-client';
 import {
@@ -12,6 +16,7 @@ import {
   createManageToken,
   openPatronPortal,
   pausePatronBilling,
+  endPausedMembership,
   requestPatronManageLink,
   resumePatronBilling,
   verifyManageToken,
@@ -188,6 +193,9 @@ function makeStripeCalls() {
     setSubscriptionPaused: vi.fn<
       (input: { account: string; subscriptionId: string; paused: boolean }) => Promise<void>
     >(async () => undefined),
+    cancelSubscription: vi.fn<
+      (input: { account: string; subscriptionId: string }) => Promise<void>
+    >(async () => undefined),
   };
 }
 
@@ -216,6 +224,7 @@ function fakeStripe(): FansStripeClient & { calls: ReturnType<typeof makeStripeC
     },
     createPortalSession: calls.createPortalSession,
     setSubscriptionPaused: calls.setSubscriptionPaused,
+    cancelSubscription: calls.cancelSubscription,
   };
 }
 
@@ -647,7 +656,10 @@ describe('step 4.1b · pausing and resuming patron billing (P-18, M-TIER-2)', ()
       ['anna', 'paused'],
       ['tom', 'paused'],
     ]);
-    const notice = billingPauseNotice({ playerName: 'Arya Dubey' });
+    const notice = billingPauseNotice({
+      playerName: 'Arya Dubey',
+      endsOn: pausedMembershipEndDate(new Date()),
+    });
     expect(email.sent.map((m) => m.to)).toEqual(['anna@example.com', 'tom@example.com']);
     expect(email.sent[0]!.subject).toBe(notice.subject);
     for (const paragraph of notice.paragraphs) {
@@ -732,5 +744,58 @@ describe('step 4.1b · an email failure never stops a billing change', () => {
       ['anna', 'paused'],
       ['tom', 'paused'],
     ]);
+  });
+});
+
+describe('step 4.1b follow-up · a membership paused for 90 days ends', () => {
+  const input = {
+    account: 'acct_123',
+    subscriptionId: 'sub_anna',
+    patronEmail: 'anna@example.com',
+    playerName: 'Arya Dubey',
+    playerEmail: 'arya@example.com',
+    pageUrl: 'https://app.test/p/arya-dubey',
+  };
+
+  it('names the 90-day end date in the pause notice the player approves', () => {
+    const endsOn = pausedMembershipEndDate(new Date('2026-09-25T00:00:00Z'));
+    expect(endsOn).toBe('24 December 2026');
+    expect(billingPauseNotice({ playerName: 'Arya Dubey', endsOn }).paragraphs[1]).toContain(
+      'it ends on 24 December 2026 and nothing more is ever charged',
+    );
+  });
+
+  it('cancels the subscription and sends the goodbye', async () => {
+    const stripe = fakeStripe();
+    const email = fakeEmail();
+    expect(await endPausedMembership(stripe, email.client, input)).toEqual({ notified: true });
+    expect(stripe.calls.cancelSubscription).toHaveBeenCalledWith({
+      account: 'acct_123',
+      subscriptionId: 'sub_anna',
+    });
+    expect(email.sent[0]).toMatchObject({
+      to: 'anna@example.com',
+      subject: membershipEndedNotice({ playerName: 'Arya Dubey' }).subject,
+    });
+    expect(email.sent[0]!.html).toContain('https://app.test/p/arya-dubey');
+  });
+
+  it('still ends the membership when the goodbye fails to send', async () => {
+    const stripe = fakeStripe();
+    const failing: EmailClient = {
+      async sendEmail() {
+        throw new Error('Resend refused');
+      },
+    };
+    expect(await endPausedMembership(stripe, failing, input)).toEqual({ notified: false });
+    expect(stripe.calls.cancelSubscription).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends nothing when Stripe refuses the cancel, so the sweep retries tomorrow', async () => {
+    const stripe = fakeStripe();
+    stripe.calls.cancelSubscription.mockRejectedValue(new Error('Stripe down'));
+    const email = fakeEmail();
+    await expect(endPausedMembership(stripe, email.client, input)).rejects.toThrow('Stripe down');
+    expect(email.sent).toHaveLength(0);
   });
 });

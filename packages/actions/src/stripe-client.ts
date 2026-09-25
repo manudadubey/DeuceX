@@ -123,6 +123,8 @@ export interface FansStripeClient {
     subscriptionId: string;
     paused: boolean;
   }): Promise<void>;
+  /** Ends a subscription now (a membership paused for 90 days; owner decision 25 Sep 2026). */
+  cancelSubscription(input: { account: string; subscriptionId: string }): Promise<void>;
 }
 
 export class StripeCallFailedError extends Error {
@@ -446,6 +448,15 @@ export function createStripeFansClient(config: { secretKey: string }): FansStrip
           input.subscriptionId,
           // 'void': invoices due while paused are voided, so nothing is owed on resume.
           input.paused ? { pause_collection: { behavior: 'void' } } : { pause_collection: '' },
+          { stripeAccount: input.account },
+        );
+      }),
+
+    cancelSubscription: (input) =>
+      wrap(async () => {
+        await stripe.subscriptions.cancel(
+          input.subscriptionId,
+          { cancellation_details: { comment: 'Ended after 90 days paused' } },
           { stripeAccount: input.account },
         );
       }),

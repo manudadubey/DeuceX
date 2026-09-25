@@ -4,6 +4,8 @@ import {
   billingPauseNotice,
   billingResumeNotice,
   manageLinkNotice,
+  membershipEndedNotice,
+  pausedMembershipEndDate,
   type PatronNotice,
 } from '@procircuit/shared';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -719,7 +721,7 @@ async function changeBilling(
   );
   const notice =
     mode === 'pause'
-      ? billingPauseNotice({ playerName: player.name })
+      ? billingPauseNotice({ playerName: player.name, endsOn: pausedMembershipEndDate(new Date()) })
       : billingResumeNotice({ playerName: player.name });
   let changed = 0;
   const failed: string[] = [];
@@ -809,6 +811,47 @@ export async function resumePatronBilling(
       return changeBilling(db, stripe, email, input, 'resume');
     },
   );
+}
+
+// ---------------------------------------------------------------------------
+// Step 4.1b follow-up: a membership paused for 90 days ends (owner decision,
+// 25 September 2026). Not a new player approval: it is the stated, scheduled
+// consequence of the pause the player already approved, whose confirm step
+// and patron notice both name the end date. apps/api's daily sweep calls
+// this; it does the Stripe cancel and the goodbye only, and the caller
+// records the departure.
+// ---------------------------------------------------------------------------
+
+export interface EndPausedMembershipInput {
+  account: string;
+  subscriptionId: string;
+  patronEmail: string | null;
+  playerName: string;
+  playerEmail: string;
+  pageUrl: string;
+}
+
+/** Returns whether the goodbye email went out; a send failure never blocks the cancellation. */
+export async function endPausedMembership(
+  stripe: FansStripeClient,
+  email: EmailClient,
+  input: EndPausedMembershipInput,
+): Promise<{ notified: boolean }> {
+  await stripe.cancelSubscription({ account: input.account, subscriptionId: input.subscriptionId });
+  if (!input.patronEmail) return { notified: false };
+  const notice = membershipEndedNotice({ playerName: input.playerName });
+  try {
+    await email.sendEmail({
+      to: input.patronEmail,
+      fromName: input.playerName,
+      replyTo: input.playerEmail,
+      subject: notice.subject,
+      html: noticeHtml(notice, { href: input.pageUrl, label: 'Visit the patron page' }),
+    });
+    return { notified: true };
+  } catch {
+    return { notified: false };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1069,8 +1112,12 @@ export class SupabaseFansActionsDb implements FansActionsDb {
     }));
   }
 
+  // paused_at starts the 90-day clock (owner decision, 25 Sep 2026); resume clears it.
   async setPatronStatus(patronId: string, status: 'active' | 'paused') {
-    const { error } = await this.client.from('patrons').update({ status }).eq('id', patronId);
+    const { error } = await this.client
+      .from('patrons')
+      .update({ status, paused_at: status === 'paused' ? new Date().toISOString() : null })
+      .eq('id', patronId);
     if (error) throw error;
   }
 

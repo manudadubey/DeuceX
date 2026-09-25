@@ -6,6 +6,20 @@ export interface PatronNoticeInput {
   playerName: string;
 }
 
+/** How long a paused membership waits for the player before it ends (owner decision, 25 Sep 2026). */
+export const PAUSED_MEMBERSHIP_DAYS = 90;
+
+/** "24 December 2026": the date a membership paused on `pausedAt` ends. */
+export function pausedMembershipEndDate(pausedAt: Date): string {
+  const end = new Date(pausedAt.getTime() + PAUSED_MEMBERSHIP_DAYS * 24 * 60 * 60 * 1000);
+  return new Intl.DateTimeFormat('en-AU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(end);
+}
+
 export interface PatronNotice {
   subject: string;
   /** Plain paragraphs; the email adds the manage link after them. */
@@ -16,14 +30,26 @@ function first(name: string): string {
   return name.trim().split(/\s+/)[0] ?? name;
 }
 
-export function billingPauseNotice(input: PatronNoticeInput): PatronNotice {
+export function billingPauseNotice(input: PatronNoticeInput & { endsOn: string }): PatronNotice {
   const f = first(input.playerName);
   return {
     subject: `${f} has paused their patron page`,
     paragraphs: [
       `${input.playerName} has paused their patron page for now. Your membership is paused too: you won't be charged again while it stays paused, and nothing you've already paid is affected.`,
-      `If ${f} restarts it, your membership resumes at the same price without signing up again, and you'll get an email first.`,
+      `If ${f} restarts it by ${input.endsOn}, your membership resumes at the same price without signing up again, and you'll get an email first. If not, it ends on ${input.endsOn} and nothing more is ever charged.`,
       `You don't need to do anything. If you'd rather end it now, use the link below.`,
+    ],
+  };
+}
+
+/** The goodbye when a membership paused for 90 days ends (owner decision, 25 Sep 2026). */
+export function membershipEndedNotice(input: PatronNoticeInput): PatronNotice {
+  const f = first(input.playerName);
+  return {
+    subject: `Your membership with ${f} has ended`,
+    paragraphs: [
+      `${input.playerName}'s patron page has been paused for ${PAUSED_MEMBERSHIP_DAYS} days, so your membership has now ended. Nothing more will be charged, and there's nothing you need to do.`,
+      `Thank you for backing ${f}. If the page opens again, you're welcome back any time.`,
     ],
   };
 }

@@ -310,7 +310,6 @@ async function main() {
   });
   await registerConditionsStampBackfillScheduler(moneyBoss, { db, weatherAdapter });
   const fansStore = new SupabaseFansStore(db);
-  await registerFansAttentionScheduler(moneyBoss, { store: fansStore });
 
   const resendApiKey = process.env.RESEND_API_KEY;
   const resendFromAddress = process.env.RESEND_FROM_ADDRESS;
@@ -430,6 +429,15 @@ async function main() {
       process.env.PATRON_LINK_SECRET ??
       createHash('sha256').update(`patron-link:${serviceRoleKey}`).digest('hex'),
   };
+
+  // The 06:00 attention pass, plus (step 4.1b) the 90-day paused-membership
+  // sweep, which needs Stripe to cancel and so only runs when a key is set.
+  await registerFansAttentionScheduler(moneyBoss, {
+    store: fansStore,
+    expiry: fansDeps.stripe
+      ? { store: fansStore, stripe: fansDeps.stripe, email, appBaseUrl }
+      : null,
+  });
 
   const app = buildServer(
     notesDeps,

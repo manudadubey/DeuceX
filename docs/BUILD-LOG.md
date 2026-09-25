@@ -2223,12 +2223,40 @@ portal's reason code), and a live pass against the sandbox with the real test pa
   set her active again. The player was left on Pro and Mira active, as before.
 
 Not done, deliberately:
-- **Pause expiry after 90 days** (P-18's "if the player returns within 90 days"). A paused
-  membership currently stays paused indefinitely: no charge, but no automatic cancellation either.
-  That needs a scheduled sweep with its own notice.
+- ~~Pause expiry after 90 days~~: done the same day, see the follow-up below.
 - **An in-app route back to Pro.** The Resume card appears whenever the plan is Pro or Elite with
   paused patrons, but there's still no in-app upgrade (real Stripe Billing for the player's own
   plan is a later step), so this run set the tier directly.
 - A welcome email, and a manage link in every patron update's footer (step 4.2, with the Content
   Agent's emails).
 - A verified Resend sending domain, still needed before any of these emails reach a real patron.
+
+### Step 4.1b follow-up · the 90-day limit on a paused membership — 25 September 2026
+
+Owner decision: a membership paused for 90 days ends, with a goodbye email to the patron. PRD-04
+P-18 only says billing resumes "if the player returns within 90 days", not what happens after.
+
+- One additive migration, `20260925090000_step_4_1b_paused_at.sql` (owner-confirmed, applied,
+  types regenerated): `patrons.paused_at`, stamped by the gated pause (and by the webhook when a
+  pause is made in Stripe directly) and cleared on resume.
+- A sweep, `runPausedExpirySweep`, on the existing hourly Fans tick (it only acts on patrons past
+  90 days, so it's idempotent). For each: Stripe cancels the subscription (`cancelSubscription`,
+  comment "Ended after 90 days paused"), the patron gets `membershipEndedNotice` ("you're welcome
+  back any time", with the page link), the row becomes `left` with that reason, one leave event
+  records "N months. Ended after 90 days paused.", and the player gets one FYI. A Stripe refusal
+  leaves the patron paused for the next tick; a failed goodbye email never blocks the cancel. The
+  sweep only registers when a Stripe key is configured.
+- Not a new player approval, deliberately: it's the stated, scheduled consequence of the pause the
+  player already approved. To make that true rather than implied, the pause notice now names the
+  date in both places the player and patron see it: the downgrade confirm ("…if you come back to
+  Pro by 24 December 2026; after that, each membership ends") and the patron's email ("If not, it
+  ends on 24 December 2026 and nothing more is ever charged"). A paused row's badge reads "Paused ·
+  ends <date>", and the resume card names the earliest end date.
+
+Verified: 4 new actions tests (the end date in the approved notice, cancel plus goodbye, a failed
+goodbye still ending the membership, a Stripe refusal sending nothing) and 4 new API tests (91 days
+ends and 89 days doesn't, idempotent on a second run, a Stripe failure leaving the patron paused,
+`pausedAt` stamped and cleared by the webhook). In the browser, the downgrade confirm renders the
+real date, and a missing space ("Pro by24 December") was caught and fixed there. Not run live
+end to end: nothing in the sandbox has been paused for 90 days, and waiting 90 days, or faking the
+clock against a real Stripe subscription, isn't worth it given the tests cover the sweep.

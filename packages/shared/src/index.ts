@@ -19,6 +19,9 @@ export { hashApprovalPayload } from './approval-hash';
 export {
   billingPauseNotice,
   billingResumeNotice,
+  membershipEndedNotice,
+  pausedMembershipEndDate,
+  PAUSED_MEMBERSHIP_DAYS,
   manageLinkNotice,
   cancellationReason,
   type PatronNotice,

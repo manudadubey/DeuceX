@@ -30,7 +30,7 @@ import {
 import { formatPatronMoney } from '@procircuit/agents';
 import { createClient } from '@/lib/supabase/client';
 import { confirmApproval } from '@/lib/approvals/confirm-approval';
-import { billingResumeNotice } from '@procircuit/shared';
+import { billingResumeNotice, pausedMembershipEndDate } from '@procircuit/shared';
 import { inviteFromWaitlist, resumePatronBilling, startConnectOnboarding } from '@/lib/fans/api';
 import type { FansSnapshot } from '@/lib/fans/load';
 import { MovementChart, MrrChart } from './fans-charts';
@@ -607,7 +607,13 @@ export function PausedBillingCard({
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const paused = snapshot.patrons.filter((p) => p.status === 'paused').length;
+  const pausedPatrons = snapshot.patrons.filter((p) => p.status === 'paused');
+  const paused = pausedPatrons.length;
+  // The earliest pause ends first; that's the date worth naming.
+  const firstPausedAt = pausedPatrons
+    .map((p) => p.pausedAt)
+    .filter((d): d is string => d !== null)
+    .sort()[0];
   if (paused === 0 || snapshot.plan === 'free') return null;
   const who = paused === 1 ? '1 patron' : `${paused} patrons`;
   const notice = billingResumeNotice({ playerName });
@@ -646,7 +652,11 @@ export function PausedBillingCard({
         <CardTitle>Patron billing is paused</CardTitle>
         <CardDescription>
           {who} paused when you moved to Free. Nothing is being charged. They can come back without
-          signing up again.
+          signing up again
+          {firstPausedAt
+            ? ` if you resume by ${pausedMembershipEndDate(new Date(firstPausedAt))}; a membership paused for 90 days ends`
+            : ''}
+          .
         </CardDescription>
       </CardHeader>
       <div className="px-5 pb-5 max-sm:px-4">

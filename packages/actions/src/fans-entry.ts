@@ -37,6 +37,8 @@ export {
   openPatronPortal,
   pausePatronBilling,
   resumePatronBilling,
+  endPausedMembership,
+  type EndPausedMembershipInput,
   createManageToken,
   verifyManageToken,
   ManageLinkInvalidError,

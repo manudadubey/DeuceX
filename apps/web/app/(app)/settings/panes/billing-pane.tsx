@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Badge, Button, Card, CardHeader, CardTitle, Confirm, Empty } from '@procircuit/ui';
 import { PatronPayoutsItem } from '@/components/fans/patron-settings';
 import { downgradeToFree, type Player } from '@procircuit/db';
-import { billingPauseNotice } from '@procircuit/shared';
+import { billingPauseNotice, pausedMembershipEndDate } from '@procircuit/shared';
 import { createClient } from '@/lib/supabase/client';
 import { confirmApproval } from '@/lib/approvals/confirm-approval';
 import { pausePatronBilling } from '@/lib/fans/api';
@@ -41,7 +41,11 @@ export function BillingPane({
   const [payingPatrons, setPayingPatrons] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const plan = player.tier ?? 'free';
-  const notice = billingPauseNotice({ playerName: player.name });
+  // The confirm shows the notice exactly as patrons will get it, end date included.
+  const notice = billingPauseNotice({
+    playerName: player.name,
+    endsOn: pausedMembershipEndDate(new Date()),
+  });
 
   // Step 4.1b · P-18: how many patrons a downgrade would stop charging.
   useEffect(() => {
@@ -136,7 +140,8 @@ export function BillingPane({
                       Patron billing pauses now for{' '}
                       {payingPatrons === 1 ? '1 patron' : `${payingPatrons} patrons`}: nothing more
                       is charged, and each gets this email from you. It resumes at the same price,
-                      without re-signup, if you come back to Pro.
+                      without re-signup, if you come back to Pro by{' '}
+                      {pausedMembershipEndDate(new Date())}; after that, each membership ends.
                       <span className="mt-2 block rounded-md border border-border p-2 text-xs">
                         <span className="block font-medium">{notice.subject}</span>
                         {notice.paragraphs.map((p) => (
