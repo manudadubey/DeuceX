@@ -1,0 +1,66 @@
+# Render Blueprint for apps/api (owner decision, 26 September 2026: Render,
+# not Fly.io). Render has no Tokyo region; Singapore is the closest to the
+# Supabase project in ap-northeast-1.
+#
+# One always-on web service: the API also runs pg-boss workers and cron-style
+# schedules (the morning run, the nightly aggregation, sweeps), so it must
+# not sleep. Render's free plan spins down after 15 minutes idle, which would
+# stop every scheduled job; `starter` is the smallest always-on plan.
+#
+# Secrets are `sync: false`: Render asks for each value when the Blueprint is
+# first applied, and they never live in this file.
+services:
+  - type: web
+    name: deucex-api
+    runtime: node
+    region: singapore
+    plan: starter
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: pnpm --filter @deucex/api start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 22.13.0
+      - key: NODE_ENV
+        value: production
+      # Supabase (project gpzpmrumwaqyfkyvqbgl). SUPABASE_DB_URL is the
+      # session pooler (port 5432): pg-boss needs session connections.
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_DB_URL
+        sync: false
+      # Vendors.
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_ADDRESS
+        value: 'DeuceX <updates@mail.deucex.ai>'
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        value: audio-files
+      # Signs patrons' emailed manage links (step 4.1b); required in production.
+      - key: PATRON_LINK_SECRET
+        generateValue: true
+      # Where emailed links point, and which browser origins may call the API.
+      - key: APP_BASE_URL
+        value: https://deucex.vercel.app
+      - key: ADMIN_BASE_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
