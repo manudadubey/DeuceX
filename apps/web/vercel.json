@@ -1,3 +1,11 @@
 {
-  "buildCommand": "pnpm --filter @deucex/web build"
+  "buildCommand": "pnpm --filter @deucex/web build",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "procircuit.vercel.app" }],
+      "destination": "https://deucex.vercel.app/:path*",
+      "permanent": true
+    }
+  ]
 }
