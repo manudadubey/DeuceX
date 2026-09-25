@@ -311,13 +311,31 @@ confirmation token, AD-5 reasons enforced, one `admin_actions` row per call with
 `docs/BUILD-LOG.md`'s step 5.0 entry. [PR #26](https://github.com/manudadubey/DeuceX/pull/26), merged 26 September 2026. Next is **step 5.2** (notifications, digest and the morning
 run).
 
-**Open follow-ups** (none block step 5.0):
+**Agent pause fix** ([PR #27](https://github.com/manudadubey/DeuceX/pull/27), found during step
+5.0's live check; see its `docs/BUILD-LOG.md` entry). Two bugs meant a player's agent switches
+didn't do what they said:
+- Onboarding and Settings paused the Mindset Coach as `mindset`, but the runner reads
+  `mindset-coach`. Stored agent names now come from `AGENT_NAMES` in `@deucex/shared`, and a drift
+  test (`apps/api/src/agent-names.test.ts`) fails if a player-facing name stops matching an agent
+  apps/api runs. A data migration (`20260928100000_fix_mindset_agent_name`, owner-confirmed,
+  applied) renamed the rows; where a player had both, paused won.
+- Resuming any agent in Settings deleted its `agent_schedules` row, and players have no delete
+  policy, so it silently did nothing (since step 2.3). `setAgentPaused` now upserts `paused` both
+  ways. A `paused: false` row means the same as no row. Don't write player-side code that relies
+  on deleting that table's rows.
+
+**Open follow-ups** (none block step 5.2):
 - **Launch blocker:** the staff passkey is off locally (`ADMIN_PASSKEY_REQUIRED=false` in the
   owner's `.env`; the API refuses it in production). Before launch: clear stray localhost
   passkeys, register one per staff member, add `https://admin.deucex.ai` to Supabase Auth >
   Passkeys origins (`http://localhost:3001` was added 25 September 2026).
 - No approval writer sets `approvals.agent_run_id`, so the console's approval rates read "Not
-  measured yet" until it does (a separate task was started for this).
+  measured yet" until it does. The fix is [PR #23](https://github.com/manudadubey/DeuceX/pull/23),
+  still open.
+- Replaying onboarding with an agent switched back on leaves it paused: onboarding only writes rows
+  for agents left off (step 1.4's OB-17 gap). Upserting every toggle's state, like Settings now
+  does, would close it.
+- The admin MCP access page (`apps/admin`, `/mcp`) hasn't had a browser pass yet (step 5.0).
 - Settings > Agents still says the Tournament Agent "arrives with step 3.2"; it shipped.
 - Roll the Stripe sandbox secret key (pasted in chat).
 - Set `STRIPE_WEBHOOK_SECRET` once `apps/api` has a public URL; no live webhook has run yet.
