@@ -56,14 +56,39 @@ export interface AgentWorkerDeps {
   getAgentPaused(agentName: string, playerId: string): Promise<boolean>;
   /** Looks up the current state of every named provider (provider_switches, latest row per provider). */
   getProviderStates(providers: readonly string[]): Promise<Record<string, ProviderState>>;
-  /** The providers this agent depends on. */
-  requiredProviders: readonly string[];
+  /** The providers this agent depends on (a function when one worker serves several agents). */
+  requiredProviders: readonly string[] | ((agentName: string) => readonly string[]);
   /** Runs the agent itself. Any throw here triggers a scheduled retry (or, past the third, onRetriesExhausted). */
   runAgent(job: AgentJobData): Promise<void>;
   /** The pickup guard skipped this job; write whatever record that needs (e.g. an agent_runs row with a skipped status). */
   onSkippedPaused?(job: AgentJobData, cause: 'agent_paused' | { provider: string }): Promise<void>;
   /** All three retries failed; the run is done, not just delayed. */
   onRetriesExhausted?(job: AgentJobData, error: unknown): Promise<void>;
+  /**
+   * Every failed attempt, from the first (PRD-13 AD-14: the console lists a
+   * failing run from its first attempt, not only once retries are spent).
+   * `attempt` counts from 1; `exhausted` is true on the last one.
+   */
+  onAttemptFailed?(
+    job: AgentJobData,
+    error: unknown,
+    info: { attempt: number; exhausted: boolean },
+  ): Promise<void>;
+  /** The run succeeded (lets a failure record for the same window close itself). */
+  onSucceeded?(job: AgentJobData): Promise<void>;
+}
+
+/**
+ * A console retry (AD-14): re-queues one run now with the attempt counter
+ * reset. Deliberately no singleton key, since the original window's key
+ * would collapse it into the job that already failed.
+ */
+export async function retryAgentRunNow(
+  boss: PgBoss,
+  input: EnqueueAgentRunInput,
+): Promise<string | null> {
+  const data: AgentJobData = { ...input, retryCount: 0 };
+  return boss.send(AGENT_RUN_QUEUE, data);
 }
 
 // Wires the pickup-time pause/provider-switch check and the manual 5/20/60
@@ -86,15 +111,19 @@ async function handleJob(
   job: Job<AgentJobData>,
   deps: AgentWorkerDeps,
 ): Promise<void> {
+  const requiredProviders =
+    typeof deps.requiredProviders === 'function'
+      ? deps.requiredProviders(job.data.agentName)
+      : deps.requiredProviders;
   const [agentPaused, providerStates] = await Promise.all([
     deps.getAgentPaused(job.data.agentName, job.data.playerId),
-    deps.getProviderStates(deps.requiredProviders),
+    deps.getProviderStates(requiredProviders),
   ]);
 
   const decision = evaluatePickup({
     agentPaused,
     providerStates,
-    requiredProviders: deps.requiredProviders,
+    requiredProviders,
   });
 
   if (!decision.proceed) {
@@ -108,6 +137,15 @@ async function handleJob(
     const nextRetryCount = job.data.retryCount + 1;
     const delaySeconds = nextRetryDelaySeconds(nextRetryCount);
 
+    try {
+      await deps.onAttemptFailed?.(job.data, error, {
+        attempt: nextRetryCount,
+        exhausted: delaySeconds === null,
+      });
+    } catch {
+      // Recording the failure must never stop the retry from being scheduled.
+    }
+
     if (delaySeconds === null) {
       await deps.onRetriesExhausted?.(job.data, error);
       return;
@@ -115,5 +153,8 @@ async function handleJob(
 
     const retryData: AgentJobData = { ...job.data, retryCount: nextRetryCount };
     await boss.sendAfter(AGENT_RUN_QUEUE, retryData, null, delaySeconds);
+    return;
   }
+
+  await deps.onSucceeded?.(job.data);
 }

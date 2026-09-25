@@ -35,6 +35,7 @@ import { config as loadEnv } from 'dotenv';
 import Fastify from 'fastify';
 import { registerNotesRoutes, type NotesRoutesDeps } from './notes/routes';
 import {
+  deferTranscription,
   createNotesBoss,
   enqueueExtraction,
   enqueueTranscription,
@@ -48,6 +49,25 @@ import { registerFinancialRoutes, type FinancialRoutesDeps } from './financial/r
 import { registerFinancialAgent, enqueueFinancialRecompute } from './financial/worker';
 import { registerTournamentRoutes, type TournamentRoutesDeps } from './tournament/routes';
 import { registerTournamentAgent } from './tournament/worker';
+import { registerAgentDispatcher } from './agent-dispatcher';
+import { getProviderStates } from './agent-controls';
+import { TOURNAMENT_AGENT_NAME } from './tournament/run';
+import pg from 'pg';
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@deucex/db';
+import { canAccessArea } from '@deucex/shared';
+import { SupabaseAccountDb } from '@deucex/actions/account';
+import { retryAgentRunNow } from '@deucex/actions/queue';
+import { createConsoleDb } from './admin/console-db';
+import { registerAdminRoutes, type AdminRoutesDeps } from './admin/routes';
+import { registerNightlyAggregation } from './admin/aggregation';
+import { ConsoleAdminGateDb, recordAdminAction } from './admin/audit';
+import {
+  StaffAuthError,
+  authenticateStaff,
+  type Staff,
+  type StaffAuthDeps,
+} from './admin/staff-auth';
 import { registerRankingsRoutes, type RankingsRoutesDeps } from './rankings/routes';
 import { createDirectoryRankingAdapter } from './rankings/directory-adapter';
 import { registerAdminRankingsRoutes, type AdminRankingsRoutesDeps } from './rankings/admin-routes';
@@ -115,6 +135,7 @@ export function buildServer(
   fansDeps?: FansRoutesDeps,
   contentDeps?: ContentRoutesDeps,
   fuelDeps?: FuelRoutesDeps,
+  adminDeps?: AdminRoutesDeps,
 ) {
   const app = Fastify({ logger: true });
 
@@ -131,10 +152,14 @@ export function buildServer(
     conditionsDeps ||
     fansDeps ||
     contentDeps ||
-    fuelDeps
+    fuelDeps ||
+    adminDeps
   ) {
+    // The admin console (step 5.1, localhost:3001 in dev) calls this API from
+    // the browser too, with its own staff session and the role preview header.
     void app.register(cors, {
-      origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000').split(','),
+      origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://localhost:3001').split(','),
+      allowedHeaders: ['authorization', 'content-type', 'x-role-preview'],
     });
   }
 
@@ -150,7 +175,7 @@ export function buildServer(
     });
   }
 
-  // Unauthenticated for this step; see admin-routes.ts's own design note.
+  // Staff-only since step 5.1 (guard and audit passed in main()).
   if (adminRankingsDeps) {
     void app.register(async (instance) => {
       await registerAdminRankingsRoutes(instance, adminRankingsDeps);
@@ -199,6 +224,14 @@ export function buildServer(
   if (fuelDeps) {
     void app.register(async (instance) => {
       await registerFuelRoutes(instance, fuelDeps);
+    });
+  }
+
+  // Step 5.1: the admin console's API. Staff sign-in and role checks on
+  // every route (admin/routes.ts); never a player session.
+  if (adminDeps) {
+    void app.register(async (instance) => {
+      await registerAdminRoutes(instance, adminDeps);
     });
   }
 
@@ -317,9 +350,12 @@ async function main() {
   // infra), separate from the notes boss above for the same reason its own
   // comment gives: different job shape, different pickup rules.
   const actionsBoss = await createBoss(dbConnectionString);
-  await registerMindsetCoach(actionsBoss, { db, client: insightClient, agentRuns });
-  await registerFinancialAgent(actionsBoss, { db, client: financialActionClient, agentRuns });
-  await registerTournamentAgent(actionsBoss, { db, agentRuns, weatherAdapter, proseClient });
+  const agentHandlers = [
+    await registerMindsetCoach(actionsBoss, { db, client: insightClient, agentRuns }),
+    await registerFinancialAgent(actionsBoss, { db, client: financialActionClient, agentRuns }),
+    await registerTournamentAgent(actionsBoss, { db, agentRuns, weatherAdapter, proseClient }),
+  ];
+  await registerAgentDispatcher(actionsBoss, db, agentHandlers);
 
   // Step 2.1's own boss (money/queue.ts): the daily ECB fetch, the Sunday
   // reserve-balance reminder and (step 2.3) the fourteen-day account-
@@ -379,7 +415,14 @@ async function main() {
   };
 
   await registerNotesWorkers(boss, {
-    transcribeNote: (noteId) => transcribeNote(notesDeps, noteId),
+    transcribeNote: async (noteId) => {
+      const states = await getProviderStates(db, ['transcription']);
+      if (states.transcription === 'off') {
+        await deferTranscription(boss, noteId);
+        return;
+      }
+      await transcribeNote(notesDeps, noteId);
+    },
     extractNote: (noteId) =>
       runExtraction(
         { db, extractionClient: extraction, agentRuns, logger: notesDeps.logger },
@@ -532,6 +575,92 @@ async function main() {
   };
   await registerFuelOutcomeScheduler(moneyBoss, { store: fuelStore });
 
+  // Step 5.1: the admin console. Its database access goes through the
+  // console role (admin/console-db.ts); the nightly aggregation uses its own
+  // one-connection pool as the platform, not as staff.
+  const consoleDb = createConsoleDb(dbConnectionString);
+  const platformPool = new pg.Pool({ connectionString: dbConnectionString, max: 1 });
+  const passkeyAdmin = createClient<Database>(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false, experimental: { passkey: true } },
+  });
+  // AD-1's mandatory passkey: on unless ADMIN_PASSKEY_REQUIRED=false, and
+  // never off in production (owner decision 25 September 2026: off for local
+  // development until launch).
+  const requirePasskey = process.env.ADMIN_PASSKEY_REQUIRED !== 'false';
+  if (!requirePasskey && process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'ADMIN_PASSKEY_REQUIRED=false is refused in production: staff sign-in needs a passkey (PRD-13 AD-1).',
+    );
+  }
+  if (!requirePasskey) {
+    console.warn(
+      'ADMIN_PASSKEY_REQUIRED=false: the admin console accepts a staff magic link without a passkey. Development only.',
+    );
+  }
+  const staffAuth: StaffAuthDeps = { anonClient, passkeyAdmin, consoleDb, requirePasskey };
+  const adminStripe = stripeSecretKey
+    ? createStripeFansClient({ secretKey: stripeSecretKey })
+    : null;
+  const adminDeps: AdminRoutesDeps = {
+    auth: staffAuth,
+    consoleDb,
+    gateDb: new ConsoleAdminGateDb(consoleDb),
+    email,
+    staffEmail: email,
+    authAdmin: passkeyAdmin,
+    passkeyAdmin,
+    exportDb: new SupabaseAccountDb(db),
+    ranking: rankingsDeps.ranking,
+    actionsBoss,
+    appBaseUrl,
+    adminBaseUrl: process.env.ADMIN_BASE_URL ?? 'http://localhost:3001',
+    platformPool,
+    ...(adminStripe ? { stripeBalance: () => adminStripe.retrievePlatformBalance() } : {}),
+  };
+  await registerNightlyAggregation(moneyBoss, platformPool);
+
+  adminRankingsDeps.guard = async (request) => {
+    let staff: Staff;
+    try {
+      staff = await authenticateStaff(staffAuth, request.headers);
+    } catch (error) {
+      // Fastify turns a hook error's statusCode into the response status.
+      if (error instanceof StaffAuthError) {
+        throw Object.assign(new Error(error.message), {
+          statusCode: error.status,
+          code: error.code,
+        });
+      }
+      throw error;
+    }
+    if (!canAccessArea(staff.actingRole, 'ingestion')) {
+      throw Object.assign(new Error('Your role does not include Ingestion.'), { statusCode: 403 });
+    }
+    return { staffName: staff.name, staff };
+  };
+  adminRankingsDeps.audit = async (context, input) => {
+    const staff = context.staff as Staff;
+    await consoleDb.tx((q) => recordAdminAction(q, staff, { device: null, ip: null }, input));
+  };
+  adminRankingsDeps.rerunShortlists = async (tournamentId) => {
+    const { data, error } = await db
+      .from('shortlist_candidates')
+      .select('player_id')
+      .eq('tournament_id', tournamentId);
+    if (error) throw error;
+    const players = [...new Set((data ?? []).map((r) => r.player_id))];
+    const window = `rerun:${tournamentId}:${new Date().toISOString()}`;
+    for (const playerId of players) {
+      await retryAgentRunNow(actionsBoss, {
+        agentName: TOURNAMENT_AGENT_NAME,
+        playerId,
+        scheduledWindow: window,
+        triggerType: 'event',
+      });
+    }
+    return players.length;
+  };
+
   const app = buildServer(
     notesDeps,
     rankingsDeps,
@@ -544,6 +673,7 @@ async function main() {
     fansDeps,
     contentDeps,
     fuelDeps,
+    adminDeps,
   );
   const port = Number(process.env.PORT ?? 8787);
   await app.listen({ port, host: '0.0.0.0' });

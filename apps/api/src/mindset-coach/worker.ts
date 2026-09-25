@@ -1,9 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@deucex/db';
 import type { PgBoss } from 'pg-boss';
-import type { ProviderState } from '@deucex/actions';
 import type { AgentRunsDb } from '@deucex/actions';
-import { registerAgentWorker, type AgentJobData } from '@deucex/actions/queue';
+import type { AgentHandler } from '../agent-dispatcher';
 import type { InsightModelClient } from '@deucex/agents';
 import {
   MINDSET_AGENT_NAME,
@@ -16,41 +15,6 @@ import { runMindsetCoach, type MindsetRunLogger } from './run';
 // keyed by; mindset-coach depends only on the one model vendor call.
 const REQUIRED_PROVIDERS = ['openai'] as const;
 
-async function getAgentPaused(
-  db: SupabaseClient<Database>,
-  agentName: string,
-  playerId: string,
-): Promise<boolean> {
-  const { data, error } = await db
-    .from('agent_schedules')
-    .select('paused')
-    .eq('agent_name', agentName)
-    .eq('player_id', playerId)
-    .maybeSingle();
-  if (error) throw error;
-  return data?.paused ?? false;
-}
-
-async function getProviderStates(
-  db: SupabaseClient<Database>,
-  providers: readonly string[],
-): Promise<Record<string, ProviderState>> {
-  const states: Record<string, ProviderState> = {};
-  for (const provider of providers) {
-    const { data, error } = await db
-      .from('provider_switches')
-      .select('state')
-      .eq('provider', provider)
-      .order('changed_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (error) throw error;
-    // "A provider with no row yet is implicitly on" (TECH-ARCHITECTURE.md 2.4).
-    states[provider] = (data?.state as ProviderState | undefined) ?? 'on';
-  }
-  return states;
-}
-
 export interface MindsetCoachDeps {
   db: SupabaseClient<Database>;
   client: InsightModelClient;
@@ -58,35 +22,27 @@ export interface MindsetCoachDeps {
   logger?: MindsetRunLogger & MindsetSchedulerLogger;
 }
 
-// Registers both halves of the Mindset Coach's scheduled-run infrastructure
-// on one pg-boss instance: the hourly scheduler tick (scheduler.ts) that
-// decides *when* a player is due, and the AGENT_RUN_QUEUE worker
-// (packages/actions, step 0.6) that actually picks up and runs a job —
-// mindset-coach is the first agent to exercise that queue's pause/provider-
-// switch pickup guard and 5/20/60 minute retry schedule for real.
-export async function registerMindsetCoach(boss: PgBoss, deps: MindsetCoachDeps): Promise<void> {
+// Registers the Mindset Coach's hourly scheduler tick (scheduler.ts), which
+// decides when a player is due, and returns the handler the shared
+// AGENT_RUN_QUEUE dispatcher (../agent-dispatcher.ts, step 5.1) runs a job
+// with; the pause/provider-switch pickup guard and 5/20/60 minute retries
+// (packages/actions, step 0.6) live in the dispatcher.
+export async function registerMindsetCoach(
+  boss: PgBoss,
+  deps: MindsetCoachDeps,
+): Promise<AgentHandler> {
   const logger = deps.logger ?? console;
   await registerMindsetScheduler(boss, { db: deps.db, logger });
 
-  await registerAgentWorker(boss, {
-    getAgentPaused: (agentName, playerId) => getAgentPaused(deps.db, agentName, playerId),
-    getProviderStates: (providers) => getProviderStates(deps.db, providers),
+  return {
+    agentName: MINDSET_AGENT_NAME,
+    label: 'The Mindset Coach',
     requiredProviders: REQUIRED_PROVIDERS,
-    runAgent: async (job: AgentJobData) => {
-      if (job.agentName !== MINDSET_AGENT_NAME) return;
+    run: async (job) => {
       await runMindsetCoach(
         { db: deps.db, client: deps.client, agentRuns: deps.agentRuns, logger },
         job.playerId,
       );
     },
-    onSkippedPaused: async (job, cause) => {
-      logger.error(`[mindset-coach] skipped (paused) for player ${job.playerId}:`, cause);
-    },
-    onRetriesExhausted: async (job, error) => {
-      logger.error(
-        `[mindset-coach] retries exhausted for player ${job.playerId} (window ${job.scheduledWindow}):`,
-        error,
-      );
-    },
-  });
+  };
 }

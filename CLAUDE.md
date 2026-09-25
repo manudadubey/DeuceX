@@ -16,7 +16,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1, step 2.1 through step 4.3 done, start step 5.1
+## Status: Phase 0, Phase 1, step 2.1 through step 5.1 done, start step 5.0
 
 The monorepo scaffold is built and deploying; the database has RLS-protected DeuceX tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -294,7 +294,22 @@ next session should start at **step 5.1 (Admin console)** in `docs/BUILD-PLAN-CL
 (step 5.0 comes after it): read that step plus whatever it names, and check `gh pr list` first. Check `docs/BUILD-LOG.md` for what each prior step actually did before
 assuming anything about the current state; this paragraph is a pointer, not the full record.
 
-**Open follow-ups** (none block step 5.1):
+Step 5.1 (Admin console), [PR #24](https://github.com/manudadubey/DeuceX/pull/24), merged 26
+September 2026 (it also carried the FX home-currency fix): staff auth, the `console` role's explicit grants (a live test
+proves it can't read `notes.transcript`), three roles enforced by the API, every PRD-13 page, the
+admin-action gate for staff-triggered emails (owner decision), the nightly aggregation, and admin
+actions in the player's Data & safety log. It also fixed a pre-existing queue bug (three agent
+workers on one queue could complete each other's jobs). The owner staff identity is
+`matsudadubey@gmail.com`. See `docs/BUILD-LOG.md`'s step 5.1 entry. Next is **step 5.0**
+(the admin MCP server), which the build plan orders after 5.1.
+
+**Open follow-ups** (none block step 5.0):
+- **Launch blocker:** the staff passkey is off locally (`ADMIN_PASSKEY_REQUIRED=false` in the
+  owner's `.env`; the API refuses it in production). Before launch: clear stray localhost
+  passkeys, register one per staff member, add `https://admin.deucex.ai` to Supabase Auth >
+  Passkeys origins (`http://localhost:3001` was added 25 September 2026).
+- No approval writer sets `approvals.agent_run_id`, so the console's approval rates read "Not
+  measured yet" until it does (a separate task was started for this).
 - Settings > Agents still says the Tournament Agent "arrives with step 3.2"; it shipped.
 - Roll the Stripe sandbox secret key (pasted in chat).
 - Set `STRIPE_WEBHOOK_SECRET` once `apps/api` has a public URL; no live webhook has run yet.

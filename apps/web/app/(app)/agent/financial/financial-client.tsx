@@ -22,6 +22,9 @@ import { BudgetCard } from '@/components/financial/budget-card';
 import { ReservesCard } from '@/components/financial/reserves-card';
 import { PnlCard } from '@/components/financial/pnl-card';
 import { LedgerCard } from '@/components/financial/ledger-card';
+import { PausedNotice } from '@/components/agents/paused-notice';
+
+const OPENAI = ['openai'] as const;
 
 export interface FinancialClientProps {
   playerId: string;
@@ -132,6 +135,7 @@ export function FinancialClient({
           </Button>
         </div>
       </header>
+      <PausedNotice agent="financial" providers={OPENAI} label="The Financial Agent" />
 
       {!loaded || !snapshot ? null : (
         <>

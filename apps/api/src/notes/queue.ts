@@ -110,3 +110,15 @@ export async function enqueueTranscription(boss: PgBoss, noteId: string): Promis
 export async function enqueueExtraction(boss: PgBoss, noteId: string): Promise<void> {
   await boss.send(NOTE_EXTRACT_QUEUE, { noteId } satisfies NoteExtractJobData);
 }
+
+/**
+ * PRD-13 AD-16 and AD-AC-6: while the owner has transcription switched off,
+ * a transcription job is put back for later instead of calling the vendor.
+ * The note stays uploaded (its audio is kept, inside the seven-day window)
+ * and Match Scribe shows players a plain notice.
+ */
+export const TRANSCRIPTION_OFF_RETRY_SECONDS = 10 * 60;
+
+export async function deferTranscription(boss: PgBoss, noteId: string): Promise<void> {
+  await boss.sendAfter(NOTE_TRANSCRIBE_QUEUE, { noteId }, null, TRANSCRIPTION_OFF_RETRY_SECONDS);
+}

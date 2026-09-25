@@ -22,6 +22,7 @@ export {
   confirmAccountDeletion,
   cancelAccountDeletion,
   requestDataExport,
+  sendStaffDataExport,
   buildExportJson,
   buildExpensesCsv,
   buildNotesCsv,
@@ -37,3 +38,22 @@ export {
   type RequestAccountDeletionInput,
   type RequestDataExportInput,
 } from './account';
+
+export {
+  runAdminGatedAction,
+  reasonRequired,
+  REASON_REQUIRED_ADMIN_ACTIONS,
+  sendStaffDeletionStartedEmail,
+  sendPlayerSignInLink,
+  sendStaffSignInLink,
+  AdminActionNotFoundError,
+  AdminActionMismatchError,
+  AdminActionAlreadyConsumedError,
+  AdminReasonRequiredError,
+  type AdminActionGateDb,
+  type AdminActionRecord,
+  type AdminRole,
+  type RunAdminGatedActionInput,
+  type StaffDeletionEmailInput,
+  type PlayerSignInLinkInput,
+} from './admin';

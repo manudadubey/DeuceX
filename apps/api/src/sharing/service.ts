@@ -263,7 +263,11 @@ export class SupabaseSharingDb implements SharingDb {
     if (realisedThisMonthRes.error) throw realisedThisMonthRes.error;
 
     const ledgerRows = ledgerRes.data ?? [];
-    const currencies = [...new Set(ledgerRows.map((l) => l.currency_original))];
+    // The home currency must be in the set too: converting a line needs both
+    // its own rate and the target's (convertAtRate). Missing it went unnoticed
+    // while every line was already in the home currency; the first foreign
+    // line (a Fuel meal in USD, step 4.3) threw MissingRateForCurrencyError.
+    const currencies = [...new Set(ledgerRows.map((l) => l.currency_original)), homeCurrency];
     const ratesByDate = new Map<string, Record<string, number>>();
     for (const line of ledgerRows) {
       if (!ratesByDate.has(line.fx_rate_date)) {

@@ -1364,6 +1364,176 @@ describeIfConfigured('fuel row-level security and the log functions (step 4.3)',
   });
 });
 
+// Step 5.1: the console role's explicit grant list (TECH-ARCHITECTURE.md
+// 2.4, PRD-13 AD-6) and the staff/player identity split (AD-1). Each
+// forbidden statement runs in its own transaction: Postgres aborts the
+// whole transaction on the first error, the trap step 1.1 and step 3.2's
+// RLS blocks both hit before.
+describeIfConfigured('admin console role and staff identities', () => {
+  let client: Client;
+  const player = randomUUID();
+  const staff = randomUUID();
+  const staffEmail = `rls-test-staff-${staff}@deucex.test`;
+  const playerEmail = `rls-test-player-${player}@deucex.test`;
+
+  async function asConsole<T>(fn: () => Promise<T>): Promise<T> {
+    await client.query('begin');
+    try {
+      await client.query('set local role console');
+      return await fn();
+    } finally {
+      await client.query('rollback');
+    }
+  }
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
+      player,
+      playerEmail,
+      staff,
+      staffEmail,
+    ]);
+    await client.query(
+      `insert into public.players
+         (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+       values ($1, 'atp', 'Console Test Player', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney')`,
+      [player, playerEmail],
+    );
+    await client.query(
+      `insert into public.notes (player_id, ctx, recorded_at, dur_seconds, status, transcript)
+       values ($1, 'match', now(), 30, 'saved', 'private words')`,
+      [player],
+    );
+    await client.query(
+      `insert into public.admin_users (id, name, email, role) values ($1, 'Test Support', $2, 'support')`,
+      [staff, staffEmail],
+    );
+  });
+
+  afterAll(async () => {
+    await client.query(`delete from public.admin_actions where admin_id = $1`, [staff]);
+    await client.query(`delete from public.notes where player_id = $1`, [player]);
+    await client.query(`delete from public.admin_users where id = $1`, [staff]);
+    await client.query(`delete from public.players where id = $1`, [player]);
+    await client.query(`delete from auth.users where id in ($1, $2)`, [player, staff]);
+    await client.end();
+  });
+
+  it('refuses the console role notes.transcript with a permission error', async () => {
+    await asConsole(async () => {
+      await expect(
+        client.query('select transcript from public.notes where player_id = $1', [player]),
+      ).rejects.toThrow(/permission denied/);
+    });
+  });
+
+  it('refuses the console role moods and note audio too', async () => {
+    for (const sql of [
+      'select mood from public.notes limit 1',
+      'select audio_ref from public.notes limit 1',
+      'select value from public.check_ins limit 1',
+      'select emergency_contact from public.players limit 1',
+      'select token from public.share_links limit 1',
+    ]) {
+      await asConsole(async () => {
+        await expect(client.query(sql)).rejects.toThrow(/permission denied/);
+      });
+    }
+  });
+
+  it('lets the console role see that a note exists, and when, without its content', async () => {
+    await asConsole(async () => {
+      const { rows } = await client.query(
+        'select id, recorded_at, status from public.notes where player_id = $1',
+        [player],
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).not.toHaveProperty('transcript');
+    });
+  });
+
+  it('keeps admin_actions append-only for the console role', async () => {
+    await asConsole(async () => {
+      const { rows } = await client.query(
+        `insert into public.admin_actions (admin_id, admin_name, role_at_time, player_id, action_type, consequence)
+         values ($1, 'Test Support', 'support', $2, 'trial_extend', 'Moves the trial end.') returning id`,
+        [staff, player],
+      );
+      await client.query('savepoint before_update');
+      await expect(
+        client.query(`update public.admin_actions set reason = 'edited' where id = $1`, [
+          rows[0].id,
+        ]),
+      ).rejects.toThrow(/permission denied/);
+    });
+  });
+
+  it('refuses a delete_account admin action with no reason', async () => {
+    await asConsole(async () => {
+      await expect(
+        client.query(
+          `insert into public.admin_actions (admin_id, role_at_time, player_id, action_type, consequence)
+           values ($1, 'owner', $2, 'delete_account', 'Starts the cooling-off.')`,
+          [staff, player],
+        ),
+      ).rejects.toThrow(/admin_actions_reason_required/);
+    });
+  });
+
+  it("shows the player their own admin action with the admin's name and role but not device or ip", async () => {
+    await client.query(
+      `insert into public.admin_actions (admin_id, admin_name, role_at_time, player_id, action_type, consequence, reason, device, ip)
+       values ($1, 'Test Support', 'support', $2, 'trial_extend', 'Moves the trial end.', 'Travelling', 'Safari', '203.0.113.9')`,
+      [staff, player],
+    );
+    await asPlayer(client, player, async () => {
+      const { rows } = await client.query(
+        'select admin_name, role_at_time, reason from public.admin_actions',
+      );
+      expect(rows).toEqual([
+        { admin_name: 'Test Support', role_at_time: 'support', reason: 'Travelling' },
+      ]);
+    });
+    await asPlayer(client, player, async () => {
+      await expect(client.query('select ip from public.admin_actions')).rejects.toThrow(
+        /permission denied/,
+      );
+    });
+  });
+
+  it('refuses a staff role for an identity that is a player (AD-1)', async () => {
+    await client.query('begin');
+    try {
+      await expect(
+        client.query(
+          `insert into public.admin_users (id, name, email, role) values ($1, 'Player As Staff', $2, 'owner')`,
+          [player, playerEmail],
+        ),
+      ).rejects.toThrow(/cannot hold a staff role/);
+    } finally {
+      await client.query('rollback');
+    }
+  });
+
+  it('refuses a player account for a staff identity (AD-1)', async () => {
+    await client.query('begin');
+    try {
+      await expect(
+        client.query(
+          `insert into public.players
+             (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+           values ($1, 'atp', 'Staff As Player', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney')`,
+          [staff, staffEmail],
+        ),
+      ).rejects.toThrow(/cannot hold a player account/);
+    } finally {
+      await client.query('rollback');
+    }
+  });
+});
+
 // PRD-13 AD-13: an approval answering an agent run's proposal records that
 // run, written by the player's own session through approvals_insert_own.
 describeIfConfigured('approvals.agent_run_id', () => {
