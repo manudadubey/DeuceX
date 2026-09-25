@@ -2372,10 +2372,10 @@ ingestion exists); the "Opened by <p>% so far" FYI at 48 hours; the Match Scribe
 chip; analytics events; the profile bio in the voice profile (no bio column until PRD-11's
 editor); a Resend webhook route (polling covers it until apps/api is hosted).
 
-Open for the owner: open tracking is switched on for `mail.deucex.ai` with tracking subdomain
-`links`, but Resend only applies it once two DNS records verify: a CNAME `links.mail` →
-`links2.resend-dns.com`, and a CAA record Resend lists as `0 issue "amazon.com"`. Add them in
-the Vercel dashboard one at a time. Be careful with the CAA: placed on the apex it would restrict
-which certificate authorities can issue for all of deucex.ai, and Vercel's certificates come from
-Let's Encrypt, so it belongs on the tracking name only, or needs a `letsencrypt.org` entry beside
-it. Until then, open rates read as an en dash.
+Open tracking, done the same day (owner asked for it in the dashboard): Resend only applies open
+tracking once a tracking subdomain verifies, so `mail.deucex.ai` got tracking subdomain `links`
+and two records were added in Vercel's DNS: a CNAME `links.mail` → `links2.resend-dns.com`, and
+a CAA `0 issue "amazon.com"` on the root, next to Vercel's existing `letsencrypt.org`,
+`pki.goog` and `sectigo.com` entries (it only adds a permitted issuer, so Vercel's certificates
+are unaffected; it can't live on `links.mail` because that name holds a CNAME). Resend verified
+both within about a minute and the domain is fully verified with open tracking on.

@@ -277,16 +277,13 @@ rebuilt from the server row; schedules claim the approval only at send time), op
 from Resend (owner decision), and the page, dashboard one-tap card (worksheet 8), Settings row,
 profile teaser switch and public teaser. Verified live against production and the real OpenAI and
 Resend APIs; see `docs/BUILD-LOG.md`'s step 4.2 entry, including six bugs found live and fixed and
-what was skipped. Open tracking needs two DNS records the owner adds (see that entry). The next
+what was skipped. Open tracking is live (tracking subdomain `links.mail.deucex.ai`, verified). The next
 session should start at **step 4.3 (Fuel)** in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus
 whatever it names, and check `gh pr list` first; if the step 4.2 PR hasn't merged yet, branch off
 it rather than `main`. Check `docs/BUILD-LOG.md` for what each prior step actually did before
 assuming anything about the current state; this paragraph is a pointer, not the full record.
 
 **Open follow-ups** (none block step 4.3):
-- Add Resend's tracking records for `mail.deucex.ai` (CNAME `links.mail` → `links2.resend-dns.com`
-  plus its CAA; mind the CAA's scope, see the step 4.2 build-log entry). Open rates stay blank
-  until then.
 - Settings > Agents still says the Tournament Agent "arrives with step 3.2"; it shipped.
 - Roll the Stripe sandbox secret key (pasted in chat).
 - Set `STRIPE_WEBHOOK_SECRET` once `apps/api` has a public URL; no live webhook has run yet.
