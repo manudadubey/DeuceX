@@ -1,11 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@deucex/db';
 import type { PgBoss } from 'pg-boss';
+import { AGENT_NAMES } from '@deucex/shared';
 import { enqueueAgentRun } from '@deucex/actions/queue';
 import { countLifetimeSavedNotes } from './service';
 
 export const MINDSET_SCHEDULER_QUEUE = 'mindset-coach-scheduler';
-export const MINDSET_AGENT_NAME = 'mindset-coach';
+export const MINDSET_AGENT_NAME = AGENT_NAMES.mindsetCoach;
 
 // Onboarding's own copy (PRD-06 section 2): "Starts after your third Match
 // Scribe note." A lifetime count, not the 30-day window generate-insight.ts

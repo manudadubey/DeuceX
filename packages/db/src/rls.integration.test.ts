@@ -1684,6 +1684,80 @@ describeIfConfigured('admin MCP tokens', () => {
   });
 });
 
+// The Agents pane's pause switch (PRD-12 4.6). Players have insert and
+// update policies on agent_schedules but no delete policy, so resuming must
+// upsert paused: false. A delete matches nothing and leaves the agent
+// paused, which is how Settings' old "resume = delete the row" failed
+// silently. The upsert below is the statement supabase-js sends for
+// setAgentPaused.
+describeIfConfigured('agent pause switches', () => {
+  let client: Client;
+  const player = randomUUID();
+  const other = randomUUID();
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
+      player,
+      `rls-test-pause-${player}@deucex.test`,
+      other,
+      `rls-test-pause-${other}@deucex.test`,
+    ]);
+    for (const id of [player, other]) {
+      await client.query(
+        `insert into public.players
+           (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+         values ($1, 'atp', 'Pause Test Player', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney')`,
+        [id, `rls-test-pause-${id}@deucex.test`],
+      );
+    }
+  });
+
+  afterAll(async () => {
+    await client.query(`delete from public.agent_schedules where player_id in ($1, $2)`, [
+      player,
+      other,
+    ]);
+    await client.query(`delete from public.players where id in ($1, $2)`, [player, other]);
+    await client.query(`delete from auth.users where id in ($1, $2)`, [player, other]);
+    await client.end();
+  });
+
+  const upsert = `insert into public.agent_schedules (player_id, agent_name, paused, updated_at)
+     values ($1, 'mindset-coach', $2, now())
+     on conflict (player_id, agent_name) do update set paused = excluded.paused, updated_at = excluded.updated_at`;
+
+  it('lets a player pause and then resume their own agent', async () => {
+    await asPlayer(client, player, async () => {
+      await client.query(upsert, [player, true]);
+      await client.query(upsert, [player, false]);
+      const { rows } = await client.query(
+        `select paused from public.agent_schedules where player_id = $1 and agent_name = 'mindset-coach'`,
+        [player],
+      );
+      expect(rows).toEqual([{ paused: false }]);
+    });
+  });
+
+  it('matches nothing when a player deletes their pause row, so resuming must not delete', async () => {
+    await asPlayer(client, player, async () => {
+      await client.query(upsert, [player, true]);
+      const res = await client.query(
+        `delete from public.agent_schedules where player_id = $1 and agent_name = 'mindset-coach'`,
+        [player],
+      );
+      expect(res.rowCount).toBe(0);
+    });
+  });
+
+  it("refuses a player pausing someone else's agent", async () => {
+    await asPlayer(client, player, async () => {
+      await expect(client.query(upsert, [other, true])).rejects.toThrow(/row-level security/);
+    });
+  });
+});
+
 // PRD-13 AD-13: an approval answering an agent run's proposal records that
 // run, written by the player's own session through approvals_insert_own.
 describeIfConfigured('approvals.agent_run_id', () => {
