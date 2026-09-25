@@ -288,7 +288,8 @@ scan's rate date). One vision call reads the menu, and a deterministic ranker in
 rest: `POST /fuel/scans` (Free refused before upload), an hourly mood-inference sweep, the real
 `/fuel` page with the Free lock, "Scan a menu" live in the quick-actions sheet, the next-day
 check-in line, and a daily food money setting on the Financial Agent. There were four owner
-decisions; see `docs/BUILD-LOG.md`'s step 4.3 entry. Verified with nine new live RLS tests. The
+decisions; see `docs/BUILD-LOG.md`'s step 4.3 entry. Verified with nine new live RLS tests and a
+real scan by the owner. The work is [PR #22](https://github.com/manudadubey/DeuceX/pull/22), merged. The
 next session should start at **step 5.1 (Admin console)** in `docs/BUILD-PLAN-CLAUDE-CODE.md`
 (step 5.0 comes after it): read that step plus whatever it names, and check `gh pr list` first. Check `docs/BUILD-LOG.md` for what each prior step actually did before
 assuming anything about the current state; this paragraph is a pointer, not the full record.
