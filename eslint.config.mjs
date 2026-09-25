@@ -38,6 +38,11 @@ export default tseslint.config(
               message:
                 'Only packages/actions may import ics. Route side effects through the actions module.',
             },
+            {
+              name: 'web-push',
+              message:
+                'Only packages/actions may import web-push. Route side effects through the actions module.',
+            },
           ],
         },
       ],

@@ -788,7 +788,7 @@ export function OnboardingWizard({
                 {
                   key: 'financial',
                   label: 'Financial Agent',
-                  desc: "Runs daily at 07:00 UTC once you enter a starting balance. We'll ask on the dashboard.",
+                  desc: "Runs daily at 07:00 your time once you enter a starting balance. We'll ask on the dashboard.",
                 },
                 {
                   key: 'mindset',

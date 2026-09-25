@@ -112,6 +112,44 @@ export function isNotificationChannelEnabled(
   return prefs[agent]?.[category]?.[channel] ?? true;
 }
 
+/**
+ * The Settings row a notification's `agent` belongs to. Notifications from
+ * the platform itself (for example staff actions, agent `deucex`) have no
+ * row, so every channel stays on for them.
+ */
+export function prefsAgentFor(agent: string): NotificationAgent | null {
+  switch (agent) {
+    case 'tournament':
+    case 'conditions':
+      return 'tournament';
+    case 'content':
+      return 'content';
+    case 'mindset-coach':
+    case 'mindset':
+      return 'mindset';
+    case 'financial':
+      return 'financial';
+    case 'fans':
+    case 'stripe':
+      return 'fans';
+    default:
+      return null;
+  }
+}
+
+/**
+ * The in-app rail (M-NOTIF-1) respects the in-app column too; a row with no
+ * Settings agent always shows. Entry deadlines always keep at least one
+ * channel, which the Notifications pane enforces before saving (ST-9).
+ */
+export function showsInApp(
+  notification: { agent: string; category: NotificationCategory },
+  prefs: NotificationPrefs,
+): boolean {
+  const agent = prefsAgentFor(notification.agent);
+  return agent ? isNotificationChannelEnabled(prefs, agent, notification.category, 'in_app') : true;
+}
+
 // ST-9's "entry deadlines always keep at least one channel" rule: a soft UX
 // guardrail on the Tournament Agent's For-you row, not a security boundary,
 // so it is enforced here as a pure validator the Notifications pane calls

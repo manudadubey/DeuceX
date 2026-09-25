@@ -98,7 +98,7 @@ export function MindsetClient({ playerId, timezone, isFree, started }: MindsetCl
             variant="secondary"
             title="Reads your last 30 days of notes and check-ins, your ranking line and the next two weeks of schedule. Writes two or three sentences. Nothing else."
           >
-            Drafting model · 06:00 your time
+            Drafting model · 07:00 your time
           </Badge>
         </div>
       </header>

@@ -5,11 +5,7 @@ import type { AgentRunsDb } from '@deucex/actions';
 import { enqueueAgentRun } from '@deucex/actions/queue';
 import type { AgentHandler } from '../agent-dispatcher';
 import type { FinancialActionModelClient } from '@deucex/agents';
-import {
-  FINANCIAL_AGENT_NAME,
-  registerFinancialScheduler,
-  type FinancialSchedulerLogger,
-} from './scheduler';
+import { FINANCIAL_AGENT_NAME } from './scheduler';
 import { runFinancialAgent, type FinancialRunLogger } from './run';
 
 const REQUIRED_PROVIDERS = ['openai'] as const;
@@ -18,18 +14,18 @@ export interface FinancialAgentDeps {
   db: SupabaseClient<Database>;
   client: FinancialActionModelClient;
   agentRuns: AgentRunsDb;
-  logger?: FinancialRunLogger & FinancialSchedulerLogger;
+  logger?: FinancialRunLogger;
 }
 
-// Registers the Financial Agent's hourly scheduler tick (07:00 UTC only) and
-// returns its handler for the shared AGENT_RUN_QUEUE dispatcher
+// Returns the Financial Agent's handler (the morning run schedules it) for
+// the shared AGENT_RUN_QUEUE dispatcher for the shared AGENT_RUN_QUEUE dispatcher
 // (../agent-dispatcher.ts, step 5.1), same shape as mindset-coach/worker.ts.
 export async function registerFinancialAgent(
   boss: PgBoss,
   deps: FinancialAgentDeps,
 ): Promise<AgentHandler> {
   const logger = deps.logger ?? console;
-  await registerFinancialScheduler(boss, { db: deps.db, logger });
+  // Scheduled by the 07:00-local morning run (morning-run/scheduler.ts).
 
   return {
     agentName: FINANCIAL_AGENT_NAME,

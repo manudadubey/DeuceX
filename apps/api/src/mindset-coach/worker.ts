@@ -4,11 +4,7 @@ import type { PgBoss } from 'pg-boss';
 import type { AgentRunsDb } from '@deucex/actions';
 import type { AgentHandler } from '../agent-dispatcher';
 import type { InsightModelClient } from '@deucex/agents';
-import {
-  MINDSET_AGENT_NAME,
-  registerMindsetScheduler,
-  type MindsetSchedulerLogger,
-} from './scheduler';
+import { MINDSET_AGENT_NAME } from './scheduler';
 import { runMindsetCoach, type MindsetRunLogger } from './run';
 
 // The provider names TECH-ARCHITECTURE.md 2.4's provider_switches rows are
@@ -19,7 +15,7 @@ export interface MindsetCoachDeps {
   db: SupabaseClient<Database>;
   client: InsightModelClient;
   agentRuns: AgentRunsDb;
-  logger?: MindsetRunLogger & MindsetSchedulerLogger;
+  logger?: MindsetRunLogger;
 }
 
 // Registers the Mindset Coach's hourly scheduler tick (scheduler.ts), which
@@ -32,7 +28,7 @@ export async function registerMindsetCoach(
   deps: MindsetCoachDeps,
 ): Promise<AgentHandler> {
   const logger = deps.logger ?? console;
-  await registerMindsetScheduler(boss, { db: deps.db, logger });
+  // Scheduled by the 07:00-local morning run (morning-run/scheduler.ts).
 
   return {
     agentName: MINDSET_AGENT_NAME,

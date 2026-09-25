@@ -69,11 +69,11 @@ export function OneThingCard({
       <CardHeader>
         <div className="flex items-center gap-2">
           <CardTitle>One thing to do this week</CardTitle>
-          {action && <Badge variant="secondary">07:00 UTC</Badge>}
+          {action && <Badge variant="secondary">07:00 your time</Badge>}
         </div>
         {!action && (
           <CardDescription>
-            Runs tomorrow at 07:00 UTC once there is enough to go on.
+            Runs tomorrow at 07:00 your time once there is enough to go on.
           </CardDescription>
         )}
       </CardHeader>

@@ -221,7 +221,7 @@ export function RecorderCard({
         coachShare,
       });
       await saveNoteRemote(supabase, note.id);
-      onToast('Saved · Content draft within 30 min, Mindset insight at 06:00');
+      onToast('Saved · Content draft within 30 min, Mindset insight at 07:00');
       onSaved();
       reset();
     } catch (err) {

@@ -108,7 +108,9 @@ export function AccountPane({
               Follow my phone
             </Button>
           </div>
-          <FieldDescription>Mindset Coach runs at 06:00 in this zone.</FieldDescription>
+          <FieldDescription>
+            Your morning run (Mindset Coach and Financial Agent) is at 07:00 in this zone.
+          </FieldDescription>
         </Field>
       </FieldGroup>
       <div className="border-t border-border pt-6">

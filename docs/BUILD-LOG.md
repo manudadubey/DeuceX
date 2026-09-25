@@ -2917,3 +2917,99 @@ doesn't unpause it, because onboarding only ever writes rows for agents left off
 
 Not changed: the notification preferences' `mindset` key is a separate namespace (per-agent
 notification channels, not a pause), so it stays.
+
+## Step 5.2 · Notifications, digest and the morning run — 26 September 2026
+
+Read first: PRD-00 section 5.6, PRD-12 section 4.5, and step 5.1's entry (its retry hooks and the
+"didn't complete" notice already existed).
+
+Owner decisions this session:
+- **The morning run is 07:00 in each player's own time zone.** One batch per player runs every
+  daily agent: the Financial Agent, and the Mindset Coach once a player has three notes. This
+  replaces the Financial Agent's 07:00 UTC tick and the Mindset Coach's 06:00 local one. It
+  supersedes PRD-03 section 3 and PRD-06 section 3's times; the build plan's "07:00 UTC" would have
+  landed at 17:00 in Sydney.
+- **A player's own notification settings are consent** for notification emails and pushes to
+  themselves. No per-message approval row is needed; anything to anyone else still needs one.
+- **Web Push now**, native push with step 5.3's Capacitor apps.
+
+Built:
+- **Migration** `20260928110000_step_5_2_notifications` (owner-confirmed, applied):
+  - notifications gains `deadline_at` and `delivery_planned_at`, and every existing notification
+    was backfilled as planned, so the backlog is never emailed;
+  - new tables `notification_deliveries` and `notification_digests`, which players can't reach;
+  - new table `push_subscriptions`: a player can list, add and remove only their own, with no
+    update;
+  - `alerts.emailed_at`, backfilled so staff get no burst.
+- **Morning run** (`apps/api/src/morning-run`): one hourly tick enqueues each player's daily agents
+  at 07:00 local, keyed on the player's local date, and unschedules the two old ticks. Runs keep the
+  existing pause checks, 5/20/60 minute retries and the "This morning's run didn't complete" notice.
+  The app's "07:00 UTC" and "06:00" copy now says 07:00 your time.
+- **Delivery rules** (`apps/api/src/notifications/plan.ts`, pure):
+  - the per agent, category and channel matrix, where a missing key means on;
+  - quiet hours, held until they end, with the entry-deadline exception inside 24 hours (ST-AC-7);
+  - the weekly digest: from the sixth FYI email in seven days, FYI emails fold into a Monday 07:00
+    local digest. For-you emails are never digested.
+- **Senders** (`packages/actions/src/notifications.ts`, `push-client.ts`, subpath
+  `@deucex/actions/notifications`):
+  - no function takes a recipient: an email goes only to the delivery's own player address, and a
+    push only to that player's subscriptions;
+  - each delivery sends at most once;
+  - `web-push` joins the lint rule's restricted imports.
+- **Sweep** (`apps/api/src/notifications/sweep.ts`). Every minute it:
+  - plans new notifications (anything over a day old gets no email or push);
+  - sends what's due, retrying failures at 5, 20 and 60 minutes;
+  - emails staff alerts by the console's alert routing, falling back to the owning role for
+    needs-action alerts.
+
+  Every hour it sends the digest and runs AD-25's 24-hour distress escalation to the owner, once
+  per case.
+- The Tournament Agent's "entry closes soon" notice sets `deadline_at` to the start of the deadline
+  day (UTC): the earliest the deadline could fall, never too late.
+- **apps/web**:
+  - The rail (`notification-sheet.tsx`, previously an empty placeholder) follows the prototype's
+    `#nt`: For you and FYI tabs, rows grouped by day with unread dots and an unread count on the
+    bell. Opening a row marks it read, and there is a Mark all read button. It respects the In app
+    switches, shows a quiet-hours footer and links to Preferences.
+  - Settings > Notifications gains "Push on this device" (service worker `public/push-sw.js`, which
+    handles only push and clicks), a digest note, and a Save that really blocks while the entry
+    deadline row has no channel (ST-9). The old row warning showed on every For-you row but blocked
+    nothing; it now applies to entry deadlines only, as ST-9 says.
+- VAPID keys were generated into the owner's local `.env`, and the public key into
+  `apps/web/.env.local`; both files are gitignored. `.env.example` lists the four variables.
+
+Verified:
+- Unit tests:
+  - 12 delivery-rule tests, including ST-AC-7 as written;
+  - 3 routing tests and 3 morning-run tests;
+  - 11 sender tests, plus the lint rule for `web-push`.
+  The full suite passes (api 282, actions 117).
+- 4 new live RLS tests against production: a player's own push subscriptions only, no access to
+  delivery bookkeeping, and marking a notification read but nothing else. The full live suite passes
+  (71).
+- **Live sweep against production** with capturing email and push, for a throwaway Rome player at
+  00:13 local:
+  - the entry-deadline notice due in 12 hours was sent at once;
+  - an ordinary FYI was held until 07:00 Rome;
+  - an FYI whose email switch was off got no delivery;
+  - a second sweep sent nothing twice;
+  - a distress case open 25 hours escalated once and produced the owner's staff email.
+  All fixture rows were removed (0 left).
+- **Browser**, as the fixture player:
+  - the bell showed its unread count, and the rail showed "2 need you" with For you and FYI rows;
+  - opening a row marked it read (the database confirmed it, and I set it back) and opened its page;
+  - the Notifications pane showed the digest note and the push control;
+  - with the entry-deadline row fully off, Save was disabled with the message.
+
+Not verified:
+- **A real email or push end to end.** The sweep used capturing fakes, and the in-app browser
+  blocks notification permission. A real check needs apps/api running and a normal browser.
+
+Not done:
+- The 3-day and 1-day entry-deadline countdown notices ("Entry deadline in 3 days and 1 day").
+  Only the Tournament Agent's "entry closes soon" notice carries a deadline today.
+- Native push (step 5.3).
+- The ops "morning run summary" FYI alert.
+- Enforcing M-NOTIF-1's "one For-you per run" cap in code.
+- Staff push (the console has no service worker).
+- A Settings switch to opt out of the digest.
