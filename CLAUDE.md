@@ -257,7 +257,7 @@ shown beforehand; both verified live against the sandbox. A membership paused fo
 automatically with a goodbye email (owner decision; `patrons.paused_at`, a sweep on the hourly Fans
 tick). Still open: an in-app upgrade back to Pro. Also found and fixed
 live: pg-boss's default 10-connection pool per instance tipped the session pooler's 15-client cap;
-all three instances now set `max`. [PR #16](https://github.com/manudadubey/ProCircuit/pull/16) is merged. The next
+all three instances now set `max`. [PR #16](https://github.com/manudadubey/ProCircuit/pull/16) is merged. [PR #17](https://github.com/manudadubey/ProCircuit/pull/17) is merged. The next
 session should
 start at **step 4.2 (Content Agent)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever
 architecture section it names, and check `gh pr list` first — if a later PR hasn't merged yet,
