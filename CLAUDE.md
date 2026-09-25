@@ -279,8 +279,8 @@ profile teaser switch and public teaser. Verified live against production and th
 Resend APIs; see `docs/BUILD-LOG.md`'s step 4.2 entry, including six bugs found live and fixed and
 what was skipped. Open tracking is live (tracking subdomain `links.mail.deucex.ai`, verified). The next
 session should start at **step 4.3 (Fuel)** in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus
-whatever it names, and check `gh pr list` first; if the step 4.2 PR hasn't merged yet, branch off
-it rather than `main`. Check `docs/BUILD-LOG.md` for what each prior step actually did before
+whatever it names, and check `gh pr list` first. The step 4.2 work is
+[PR #21](https://github.com/manudadubey/DeuceX/pull/21), merged. Check `docs/BUILD-LOG.md` for what each prior step actually did before
 assuming anything about the current state; this paragraph is a pointer, not the full record.
 
 **Open follow-ups** (none block step 4.3):
