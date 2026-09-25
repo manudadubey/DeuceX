@@ -3,9 +3,25 @@
   "redirects": [
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": "procircuit.vercel.app" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "procircuit.vercel.app"
+        }
+      ],
       "destination": "https://deucex.vercel.app/:path*",
       "permanent": true
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
+      ]
     }
   ]
 }
