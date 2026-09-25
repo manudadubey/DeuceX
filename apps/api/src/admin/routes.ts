@@ -20,6 +20,7 @@ import {
   type CaseOutcome,
 } from './actions';
 import { runNightlyAggregation } from './aggregation';
+import { McpAuthError, createMcpToken, listMcpTokens, revokeMcpToken } from './mcp-tokens';
 import type { RequestMeta } from './audit';
 import { PLAYER_ACTION_TYPES, type PlayerActionType } from './consequences';
 import {
@@ -79,6 +80,7 @@ function sendError(reply: FastifyReply, error: unknown) {
   }
   if (error instanceof AdminActionError)
     return reply.code(error.status).send({ error: error.message });
+  if (error instanceof McpAuthError) return reply.code(400).send({ error: error.message });
   throw error;
 }
 
@@ -356,6 +358,36 @@ export async function registerAdminRoutes(
       return reply.send(
         await resolveCase(deps, staff, meta(request), id, body.outcome, body.reason ?? null),
       );
+    } catch (error) {
+      return sendError(reply, error);
+    }
+  });
+
+  // --- Admin MCP tokens (step 5.0). Personal: each staff member lists,
+  // creates and revokes only their own. These take a console session, never
+  // an MCP token, so a token can't mint more tokens, and with the passkey
+  // required a token can only be created from a passkey session (AD-1).
+  read('/admin/mcp-tokens', 'overview', (staff) =>
+    deps.consoleDb.read((q) => listMcpTokens(q, staff.id)),
+  );
+
+  app.post('/admin/mcp-tokens', async (request, reply) => {
+    try {
+      const staff = await staffFor(request, 'overview');
+      const body = (request.body ?? {}) as { label?: string };
+      return reply.send(
+        await createMcpToken(deps.consoleDb, staff, meta(request), body.label ?? '', now()),
+      );
+    } catch (error) {
+      return sendError(reply, error);
+    }
+  });
+
+  app.post('/admin/mcp-tokens/:id/revoke', async (request, reply) => {
+    try {
+      const staff = await staffFor(request, 'overview');
+      const { id } = request.params as { id: string };
+      return reply.send(await revokeMcpToken(deps.consoleDb, staff, meta(request), id));
     } catch (error) {
       return sendError(reply, error);
     }

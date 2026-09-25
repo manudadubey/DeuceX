@@ -1533,3 +1533,153 @@ describeIfConfigured('admin console role and staff identities', () => {
     }
   });
 });
+
+// Step 5.0: admin MCP tokens and admin_actions.via. The console role runs
+// apps/api's exact token check; players and anon never see a token; the
+// via column stays staff-only like device and ip.
+describeIfConfigured('admin MCP tokens', () => {
+  let client: Client;
+  const player = randomUUID();
+  const staff = randomUUID();
+  const staffEmail = `rls-test-mcp-staff-${staff}@deucex.test`;
+  const playerEmail = `rls-test-mcp-player-${player}@deucex.test`;
+  const tokenHash = `rls-test-hash-${randomUUID()}`;
+  let tokenId = '';
+
+  async function inTx<T>(role: string, fn: () => Promise<T>): Promise<T> {
+    await client.query('begin');
+    try {
+      await client.query(`set local role ${role}`);
+      return await fn();
+    } finally {
+      await client.query('rollback');
+    }
+  }
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
+      player,
+      playerEmail,
+      staff,
+      staffEmail,
+    ]);
+    await client.query(
+      `insert into public.players
+         (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+       values ($1, 'atp', 'MCP Test Player', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney')`,
+      [player, playerEmail],
+    );
+    await client.query(
+      `insert into public.admin_users (id, name, email, role) values ($1, 'Test Ops', $2, 'ops')`,
+      [staff, staffEmail],
+    );
+    // Created as the console role, exactly as apps/api does.
+    await client.query('begin');
+    await client.query('set local role console');
+    const { rows } = await client.query(
+      `insert into public.admin_mcp_tokens (admin_id, label, token_hash, token_prefix, expires_at)
+       values ($1, 'RLS test', $2, 'dxm_rlstst', now() + interval '30 days') returning id`,
+      [staff, tokenHash],
+    );
+    await client.query('commit');
+    tokenId = rows[0].id;
+    await client.query(
+      `insert into public.admin_actions (admin_id, admin_name, role_at_time, player_id, action_type, consequence, via)
+       values ($1, 'Test Ops', 'ops', $2, 'trial_extend', 'Moves the trial end.', 'mcp')`,
+      [staff, player],
+    );
+  });
+
+  afterAll(async () => {
+    await client.query(`delete from public.admin_actions where admin_id = $1`, [staff]);
+    await client.query(`delete from public.admin_mcp_tokens where admin_id = $1`, [staff]);
+    await client.query(`delete from public.admin_users where id = $1`, [staff]);
+    await client.query(`delete from public.players where id = $1`, [player]);
+    await client.query(`delete from auth.users where id in ($1, $2)`, [player, staff]);
+    await client.end();
+  });
+
+  it("runs apps/api's token check as the console role, and stops at a revoked staff row", async () => {
+    const check = `update public.admin_mcp_tokens t set last_used_at = now()
+       from public.admin_users u
+       where t.token_hash = $1 and t.revoked_at is null and t.expires_at > now()
+         and u.id = t.admin_id and u.revoked_at is null
+       returning t.id as token_id, u.id, u.name, u.role`;
+    await inTx('console', async () => {
+      const { rows } = await client.query(check, [tokenHash]);
+      expect(rows).toEqual([{ token_id: tokenId, id: staff, name: 'Test Ops', role: 'ops' }]);
+    });
+    await client.query('begin');
+    try {
+      await client.query(`update public.admin_users set revoked_at = now() where id = $1`, [staff]);
+      await client.query('set local role console');
+      const { rows } = await client.query(check, [tokenHash]);
+      expect(rows).toEqual([]);
+    } finally {
+      await client.query('rollback');
+    }
+  });
+
+  it('lets the console role revoke a token but never rewrite or delete one', async () => {
+    await inTx('console', async () => {
+      const res = await client.query(
+        `update public.admin_mcp_tokens set revoked_at = now() where id = $1`,
+        [tokenId],
+      );
+      expect(res.rowCount).toBe(1);
+    });
+    await inTx('console', async () => {
+      await expect(
+        client.query(`update public.admin_mcp_tokens set token_hash = 'x' where id = $1`, [
+          tokenId,
+        ]),
+      ).rejects.toThrow(/permission denied/);
+    });
+    await inTx('console', async () => {
+      await expect(
+        client.query(`delete from public.admin_mcp_tokens where id = $1`, [tokenId]),
+      ).rejects.toThrow(/permission denied/);
+    });
+  });
+
+  it('never shows a token to a player or to anon', async () => {
+    await asPlayer(client, player, async () => {
+      await expect(client.query('select id from public.admin_mcp_tokens')).rejects.toThrow(
+        /permission denied/,
+      );
+    });
+    await inTx('anon', async () => {
+      await expect(client.query('select id from public.admin_mcp_tokens')).rejects.toThrow(
+        /permission denied/,
+      );
+    });
+  });
+
+  it('keeps admin_actions.via staff-only: the player sees the row but not where it came from', async () => {
+    await asPlayer(client, player, async () => {
+      const { rows } = await client.query(
+        'select admin_name, role_at_time from public.admin_actions',
+      );
+      expect(rows).toEqual([{ admin_name: 'Test Ops', role_at_time: 'ops' }]);
+    });
+    await asPlayer(client, player, async () => {
+      await expect(client.query('select via from public.admin_actions')).rejects.toThrow(
+        /permission denied/,
+      );
+    });
+  });
+
+  it('accepts only console or mcp in admin_actions.via', async () => {
+    await inTx('console', async () => {
+      await expect(
+        client.query(
+          `insert into public.admin_actions (admin_id, role_at_time, action_type, consequence, via)
+           values ($1, 'ops', 'mcp_read', 'Read only.', 'api')`,
+          [staff],
+        ),
+      ).rejects.toThrow(/check constraint/);
+    });
+  });
+});

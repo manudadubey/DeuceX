@@ -974,9 +974,10 @@ export async function listAdminAudit(
     player_name: string | null;
     consequence: string;
     reason: string | null;
+    via: string;
   }>(
     `select a.id, a.created_at, a.admin_name, a.role_at_time, a.action_type, p.name as player_name,
-            a.consequence, a.reason
+            a.consequence, a.reason, a.via
      from public.admin_actions a left join public.players p on p.id = a.player_id
      where ($1::uuid is null or a.admin_id = $1)
      order by a.created_at desc limit 200`,
@@ -995,6 +996,9 @@ export async function listAdminAudit(
       id: r.id,
       at: r.created_at,
       adminName: r.admin_name,
+      // Step 5.0: an admin MCP call's actor reads mcp:<admin name>.
+      actor: r.via === 'mcp' ? `mcp:${r.admin_name ?? 'unknown'}` : r.admin_name,
+      via: r.via,
       role: r.role_at_time,
       action: r.action_type,
       playerName: r.player_name,

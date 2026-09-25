@@ -2765,3 +2765,106 @@ Needs the owner:
 - Raising Supabase's session pooler pool size. Each API instance holds about 13 of its 15
   connections, so a deployed API, Render's deploy overlap and a local API can't all connect at
   once. Raising it to about 40 (max_connections is 60) fits all three.
+
+## Step 5.0 · Admin MCP server — 26 September 2026
+
+Read first: TECH-ARCHITECTURE.md 3a, PRD-13 AD-3 to AD-5, the step 5.1 entry above.
+
+Owner decisions this session:
+- **Console-issued tokens authenticate MCP clients.** An MCP client can't complete the console's
+  magic-link-plus-passkey sign-in, so a staff member creates a personal token in the console
+  (user menu, MCP access). It is shown once and stored only as a SHA-256 hash. It expires after 30
+  days and is revocable. It is dead the moment its `admin_users` row is revoked. Creating one needs
+  a full console session, so with the passkey required it needs a passkey session (AD-1). Chosen
+  over pasting the hourly Supabase access token and over a full OAuth 2.1 flow.
+- **Migration applied to production** (owner-confirmed): `20260928090000_step_5_0_admin_mcp`.
+
+Built:
+- **Migration**: `admin_mcp_tokens` has RLS on and all grants revoked from anon and
+  authenticated. Supabase's default privileges would otherwise have left RLS as the only barrier.
+  The console role gets select and insert, plus update on `last_used_at` and `revoked_at` only.
+  `admin_actions.via` is `console` or `mcp`, staff-only: the player's named-column select doesn't
+  include it. `database.types.ts` was regenerated; its diff is exactly the new table and column.
+- **`apps/api/src/admin/mcp`**:
+  - `POST /mcp` is MCP's Streamable HTTP transport, stateless. Each POST re-authenticates the
+    token and re-reads the staff row and role, so a revocation or role change applies from the
+    next call. GET and DELETE return 405.
+  - 28 tools over the same console functions as `admin/routes.ts`. Reads: `whoami`,
+    `get_overview`, `find_players`, `get_player`, `list_alerts`, `get_agent_health`,
+    `get_feed_status`, `list_missing_deadlines`, `list_cases`, `get_spend` and `get_audit_log`.
+    Actions: every AD-9 player action, plus delete, comp and the Elite offer (owner only), share
+    link revoke, run retry and dismiss, the global agent pause, the provider kill switch (owner),
+    case resolution and setting an entry deadline.
+  - **Roles (AD-2)**: `tools/list` shows a role only its own tools. A call to any other tool,
+    including an unknown name, is refused in the dispatcher and audited.
+  - **Two-step (AD-3)**: an action tool called without `confirmationToken` returns the
+    server-built consequence sentence and a token, and runs only when called again with it. The
+    token is an HMAC over the staff id, tool, exact arguments (the reason included) and the
+    sentence. So it can't be moved to another player, tool, reason or staff member, and it is
+    refused if the player's state changed the sentence. It works once, within 10 minutes. The key
+    lives in memory, so a restart only means previewing again.
+  - **Reasons (AD-5)**: delete, comp, the kill switch and a run dismissal are refused without a
+    written reason, before even the preview.
+  - **Audit (AD-4)**: every call writes exactly one `admin_actions` row with `via = 'mcp'`. A
+    confirmed action writes the row the console would write, in the same transaction as its
+    change. Reads, previews and refusals write `mcp_read`, `mcp_preview` or `mcp_refused` with no
+    `player_id`, so a staff lookup never lands in a player's own log (PRD-13 section 3). An
+    unexpected error still writes `mcp_failed`. The admin audit log shows the actor as
+    `mcp:<name>`.
+  - **Side effects**: only through the console's own action functions, so staff emails still go
+    through the admin-action gate. Nothing in `mcp/` imports a vendor client. Reads run as the
+    console role, so AD-6 holds for MCP exactly as for the console.
+- **Refactors for sharing**:
+  - The consequence builders for agent pause, provider switch, run retry and dismiss, and case
+    resolution are now exported from `admin/actions.ts`.
+  - The AD-21 deadline logic moved to `rankings/deadlines.ts`. The console's ingestion routes use
+    it too, and their behaviour is unchanged.
+- **`apps/admin`**:
+  - An MCP access page (`/mcp`, every role) to create, copy (with the `claude mcp add` command)
+    and revoke tokens, linked from the user menu.
+  - The audit log shows `mcp:<name>` and labels the `mcp_*` actions.
+  - The token routes (`/admin/mcp-tokens`) take a console session only, so a token can't mint
+    tokens.
+
+Verified:
+- 12 new tests over the real transport (JSON-RPC to `POST /mcp`):
+  - **a support identity can't call an owner tool** (refused, audited, nothing written or sent);
+  - **a delete without a reason is refused**;
+  - **every call appears in the admin audit log**, as mcp;
+  - preview then confirm through the gate (one email);
+  - a swapped reason, a replay, another staff member's token and a changed player state are each
+    refused;
+  - missing, unknown, revoked and de-staffed tokens get 401;
+  - tokens are stored hashed.
+- 5 new live RLS tests against production:
+  - the console role runs apps/api's exact token check, which stops at a revoked staff row;
+  - it can revoke a token but can't rewrite or delete one;
+  - a player and anon get permission errors on the token table;
+  - a player can't read `via`;
+  - `via` accepts only console or mcp.
+  The full live suite passes (64).
+- **Live round trip against production** with the SDK's own MCP client, through a scratch server
+  mounting only `/mcp` on the real console pool, with email stubbed:
+  - an owner token minted through `createMcpToken` listed 28 tools;
+  - the reads returned real data, and `get_player` carried no transcript or mood;
+  - reason-less delete and kill-switch calls were refused;
+  - `pause_player_agents` previewed, confirmed and refused its replay, then
+    `resume_player_agents` ran.
+  All 14 calls wrote 14 `via = 'mcp'` rows. The token was then revoked through the audited path
+  and refused (401). The two fixture notifications were deleted, and the fixture player's three
+  queued agents are unpaused. The audit rows stay: the table is append-only by design.
+- Workspace typecheck, lint, format and all unit tests pass.
+
+Not done:
+- **The browser pass on the MCP access page.** Another session's apps/admin and apps/api servers
+  held the ports, and starting a second full apps/api risks the session pooler's 15-client cap
+  (step 4.1's lesson). The page is typechecked and uses the console's existing `ConfirmAction`.
+- Snapshot CSV import, fact-sheet corrections, comp removal, alert acknowledgement and alert
+  routing over MCP: all console-only for now. The build plan names none of them for MCP.
+- The guardian resend: it still doesn't exist (step 5.1).
+
+Noticed, not changed:
+- The fixture player has an `agent_schedules` row for `mindset` (paused) besides the
+  dispatcher's `mindset-coach`. Worth checking which name Settings writes.
+- `pg` logs its parallel-query deprecation warning when a console-pool connection opens, because
+  the on-connect `set role console` overlaps the first query. This predates this step.

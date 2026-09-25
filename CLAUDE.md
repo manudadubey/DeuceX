@@ -16,7 +16,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1, step 2.1 through step 5.1 done, start step 5.0
+## Status: Phase 0, Phase 1, step 2.1 through step 5.1 and step 5.0 done, start step 5.2
 
 The monorepo scaffold is built and deploying; the database has RLS-protected DeuceX tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -302,6 +302,14 @@ actions in the player's Data & safety log. It also fixed a pre-existing queue bu
 workers on one queue could complete each other's jobs). The owner staff identity is
 `matsudadubey@gmail.com`. See `docs/BUILD-LOG.md`'s step 5.1 entry. Next is **step 5.0**
 (the admin MCP server), which the build plan orders after 5.1.
+
+Step 5.0 (Admin MCP server): `POST /mcp` in apps/api (Streamable HTTP, stateless), authenticated
+by personal tokens staff create in the console (owner decision; `admin_mcp_tokens`, hashed, 30
+days, revocable). 28 tools over the console's own functions, role-scoped, two-step via a
+confirmation token, AD-5 reasons enforced, one `admin_actions` row per call with `via = 'mcp'`
+(shown as `mcp:<name>`). Verified with transport tests, live RLS tests and a live round trip; see
+`docs/BUILD-LOG.md`'s step 5.0 entry. Next is **step 5.2** (notifications, digest and the morning
+run).
 
 **Open follow-ups** (none block step 5.0):
 - **Launch blocker:** the staff passkey is off locally (`ADMIN_PASSKEY_REQUIRED=false` in the

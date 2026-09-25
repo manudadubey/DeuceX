@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Check, ChevronsUpDown, LogOut, ScrollText, Waypoints } from 'lucide-react';
+import { Check, ChevronsUpDown, KeyRound, LogOut, ScrollText, Waypoints } from 'lucide-react';
 import { ADMIN_ROLE_LABELS, ADMIN_ROLES, roleAtLeast, type AdminRole } from '@deucex/shared';
 import { cn } from '@deucex/ui';
 import {
@@ -113,6 +113,10 @@ export function UserMenu({
         <DropdownMenuItem onClick={() => router.push('/audit')}>
           <ScrollText aria-hidden="true" />
           My admin audit log
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push('/mcp')}>
+          <KeyRound aria-hidden="true" />
+          MCP access
         </DropdownMenuItem>
         {roleAtLeast(actingRole, 'ops') ? (
           <DropdownMenuItem onClick={() => router.push('/routing')}>
