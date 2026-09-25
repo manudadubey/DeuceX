@@ -16,16 +16,29 @@ const dishSchema = z.object({
   asks: z.array(z.string().min(1).max(80)).max(3),
 });
 
+// Found live (step 4.3): the model sometimes answers a nullable field with
+// the word "null" (or an empty string) instead of JSON null, which then
+// reached the ledger as "Lunch · Pasta · null". Normalised here, once.
+const nullableText = z
+  .string()
+  .nullable()
+  .transform((v) => {
+    const t = v?.trim() ?? '';
+    return t === '' || /^(null|none|n\/a|unknown)$/i.test(t) ? null : t;
+  });
+
 export const menuModelOutputSchema = z.object({
   readable: z.boolean(),
-  venueName: z.string().nullable(),
+  venueName: nullableText,
   venueType: z.enum(['restaurant', 'room-service', 'shop', 'other']),
   languages: z.array(z.string().length(2)),
-  menuCurrency: z
-    .string()
-    .length(3)
-    .transform((c) => c.toUpperCase())
-    .nullable(),
+  menuCurrency: nullableText.pipe(
+    z
+      .string()
+      .length(3)
+      .transform((c) => c.toUpperCase())
+      .nullable(),
+  ),
   dishes: z.array(dishSchema),
 });
 

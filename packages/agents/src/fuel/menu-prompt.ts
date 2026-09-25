@@ -1,10 +1,10 @@
 import { MODE_GUIDANCE } from './mode';
 import { CONTAINS_TAGS, DISH_TRAITS, type FuelMode } from './types';
 
-export const MENU_EXTRACTION_PROMPT_VERSION = 'v1';
+export const MENU_EXTRACTION_PROMPT_VERSION = 'v2';
 
 const SYSTEM_PROMPT = `You read photos of a menu (one or more pages of the same menu) for a professional tennis player deciding what to order tonight.
-Report: whether the photos are a readable menu or food shelf at all (readable), the venue name as printed (or null), the venue type (restaurant, room-service, shop, other), the languages printed (ISO 639-1 codes), and the menu currency as ISO 4217 (use the venue's country when the symbol is ambiguous; null if no prices).
+Report: whether the photos are a readable menu or food shelf at all (readable), the venue name as printed (or null), the venue type (restaurant, room-service, shop, other), the languages printed (ISO 639-1 codes), and the menu currency as ISO 4217 (null if no prices; for a symbol several currencies share, such as a bare $, follow the currency hint below unless the menu itself says otherwise).
 List every dish or item, in menu order, once. For each:
 - original: the name exactly as printed; english: a short English name; gloss: one short English description.
 - price: the number printed, in the menu currency, or null if none.
@@ -26,13 +26,22 @@ export interface MenuExtractionPrompt {
 export interface MenuExtractionInput {
   imageDataUrls: string[];
   mode: FuelMode;
+  /**
+   * The currency to assume for an ambiguous symbol: the player's home
+   * currency, since without a current tournament that is where they most
+   * likely are. Found live: a bare "$" on an Australian menu was read as
+   * USD and converted, overstating the price by about 40 percent.
+   */
+  currencyHint: string;
+  /** "Sibiu, ROU" when a current tournament places the player, else null. */
+  place: string | null;
 }
 
 export function buildMenuExtractionPrompt(input: MenuExtractionInput): MenuExtractionPrompt {
   const pages = input.imageDataUrls.length;
   return {
     system: SYSTEM_PROMPT,
-    user: `Tonight: ${MODE_GUIDANCE[input.mode]}\nRead ${pages === 1 ? 'this menu page' : `these ${pages} pages of one menu`}.`,
+    user: `Tonight: ${MODE_GUIDANCE[input.mode]}\n${input.place ? `The player is in ${input.place}. ` : ''}Currency hint for an ambiguous symbol: ${input.currencyHint}.\nRead ${pages === 1 ? 'this menu page' : `these ${pages} pages of one menu`}.`,
     imageDataUrls: input.imageDataUrls,
   };
 }

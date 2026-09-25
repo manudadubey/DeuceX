@@ -294,8 +294,6 @@ next session should start at **step 5.1 (Admin console)** in `docs/BUILD-PLAN-CL
 assuming anything about the current state; this paragraph is a pointer, not the full record.
 
 **Open follow-ups** (none block step 5.1):
-- Run one real Fuel scan of a photographed menu against the live model (only the fixture path
-  and tests have run; the browser pane can't upload a camera photo).
 - Settings > Agents still says the Tournament Agent "arrives with step 3.2"; it shipped.
 - Roll the Stripe sandbox secret key (pasted in chat).
 - Set `STRIPE_WEBHOOK_SECRET` once `apps/api` has a public URL; no live webhook has run yet.

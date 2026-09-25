@@ -142,6 +142,10 @@ export async function scanMenu(
               (p) => `data:${p.contentType};base64,${p.buffer.toString('base64')}`,
             ),
             mode,
+            currencyHint: player.homeCurrency,
+            place: tournament?.city
+              ? [tournament.city, tournament.country].filter(Boolean).join(', ')
+              : null,
           });
           return { output: result.output as unknown as Json, usage: result.usage };
         } catch (err) {

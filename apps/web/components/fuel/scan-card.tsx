@@ -78,7 +78,9 @@ function PickRow({
       </span>
       <div className="min-w-0">
         <div className="font-medium">{pick.dishOriginal}</div>
-        <div className="text-[0.8125rem] text-muted-foreground">{pick.dishEnglish}</div>
+        {pick.dishEnglish.trim().toLowerCase() !== pick.dishOriginal.trim().toLowerCase() && (
+          <div className="text-[0.8125rem] text-muted-foreground">{pick.dishEnglish}</div>
+        )}
       </div>
       <div className="text-right" title={title}>
         {pick.priceHome !== null ? (

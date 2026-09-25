@@ -2490,6 +2490,27 @@ Not done, deliberately:
 - A logged meal is "Dinner", "Lunch" or "Breakfast" by local hour only.
 - The last match is taken from the newest saved match note's recorded time, as a stand-in for a
   match end time.
-- A real model scan against a photographed menu wasn't run this session: the browser pane can't
-  upload a camera photo. The mock and fixture path is covered end to end in tests. It's listed as
-  a follow-up in CLAUDE.md.
+
+**Real scan, run by the owner** (same session, after the PR opened): a one-page English menu
+photographed through the live page against the real model and production.
+
+What worked:
+- The photo was kept only as its hash, with a deletion time recorded.
+- 7 dishes were read, the mode was correctly Practice (next match about 21 hours away), and
+  both picks were shown with the unread-ingredients warning up front (FU-AC-6), since no dish's
+  ingredients were readable.
+- Logging wrote a Fuel ledger line at the day's rate.
+- One `agent_runs` row, at US$0.0059, under the A$0.05 target.
+
+Three bugs found and fixed:
+- **Venue stored as the text "null":** the model returned the word "null" rather than JSON null,
+  and it reached the ledger as "Lunch · Pasta · null". Nullable text is now normalised in the
+  schema.
+- **A bare "$" read as USD:** it was converted at 1.42, so 50 showed as A$71. The prompt now
+  carries a currency hint (the home currency) and the current tournament's place. The prompt
+  version is bumped to v2.
+- **Name shown twice:** when the English name equals the printed one ("Pasta / Pasta"), it now
+  appears once.
+
+The owner's test log (50 USD) is left in place for them to undo or keep.
+

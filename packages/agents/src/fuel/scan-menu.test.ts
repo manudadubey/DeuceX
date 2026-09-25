@@ -8,11 +8,14 @@ import {
 } from './menu-mock-client';
 import type { MenuExtractionModelClient } from './menu-model-client';
 import { menuModelOutputSchema } from './menu-schema';
+import { buildMenuExtractionPrompt } from './menu-prompt';
 import { UnreadableMenuError, extractMenu, stripNutritionClaims } from './scan-menu';
 
 const INPUT = {
   imageDataUrls: ['data:image/jpeg;base64,AAAA', 'data:image/jpeg;base64,BBBB'],
   mode: 'pre-match' as const,
+  currencyHint: 'AUD',
+  place: null,
 };
 
 describe('extractMenu', () => {
@@ -62,6 +65,33 @@ describe('extractMenu', () => {
     await expect(extractMenu(createUnreadableMenuExtractionClient(), INPUT)).rejects.toBeInstanceOf(
       UnreadableMenuError,
     );
+  });
+});
+
+describe('found live on the first real scan (step 4.3)', () => {
+  it('reads the word "null" or an empty venue as no venue', () => {
+    for (const venueName of ['null', 'NULL', '', '  ', 'n/a']) {
+      const parsed = menuModelOutputSchema.parse({ ...SIBIU_MENU_FIXTURE, venueName });
+      expect(parsed.venueName).toBeNull();
+    }
+    expect(
+      menuModelOutputSchema.parse({ ...SIBIU_MENU_FIXTURE, menuCurrency: 'null' }).menuCurrency,
+    ).toBeNull();
+    expect(
+      menuModelOutputSchema.parse({ ...SIBIU_MENU_FIXTURE, menuCurrency: 'aud' }).menuCurrency,
+    ).toBe('AUD');
+  });
+
+  it('tells the model which currency a bare symbol means, and where the player is', () => {
+    const home = buildMenuExtractionPrompt(INPUT).user;
+    expect(home).toContain('Currency hint for an ambiguous symbol: AUD.');
+    expect(home).not.toContain('The player is in');
+    const away = buildMenuExtractionPrompt({
+      ...INPUT,
+      currencyHint: 'AUD',
+      place: 'Sibiu, ROU',
+    }).user;
+    expect(away).toContain('The player is in Sibiu, ROU.');
   });
 });
 
