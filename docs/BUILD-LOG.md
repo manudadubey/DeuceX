@@ -3001,9 +3001,17 @@ Verified:
   - the Notifications pane showed the digest note and the push control;
   - with the entry-deadline row fully off, Save was disabled with the message.
 
-Not verified:
-- **A real email or push end to end.** The sweep used capturing fakes, and the in-app browser
-  blocks notification permission. A real check needs apps/api running and a normal browser.
+**Real email and push, end to end** (same day, owner-approved):
+- the owner turned on "Push on this device" in their own Chrome on macOS, which stored one
+  `push_subscriptions` row;
+- with apps/api running this branch, one labelled test notification for the fixture player ("Step
+  5.2 test: email and push", an entry deadline 12 hours out) was inserted at 00:24 Rome time;
+- within 8 seconds the sweep sent the email through Resend and the push through Web Push. Both
+  deliveries were `sent` with no retries, and the subscription recorded its first success;
+- neither was held for quiet hours, which exercised the 24-hour deadline exception for real.
+
+An earlier "it worked" turned out to be only the subscribe step: no API was running at the time,
+so nothing had been delivered. The database showed that, and the test above was then run properly.
 
 Not done:
 - The 3-day and 1-day entry-deadline countdown notices ("Entry deadline in 3 days and 1 day").

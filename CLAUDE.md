@@ -339,8 +339,6 @@ are in apps/web. VAPID keys are in the owner's local `.env` (four `WEB_PUSH_*` v
 native push behind the same `PushClient`.
 
 **Open follow-ups** (none block step 5.3):
-- Real email and push haven't been checked end to end: run apps/api, turn on push in a normal
-  browser, and trigger a notification.
 - The 3-day and 1-day entry-deadline countdown notices don't exist yet (only "entry closes soon"
   carries `deadline_at`).
 - **Launch blocker:** the staff passkey is off locally (`ADMIN_PASSKEY_REQUIRED=false` in the
