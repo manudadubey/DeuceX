@@ -1,4 +1,4 @@
-// The '@procircuit/actions/account' subpath (package.json's `exports` map):
+// The '@deucex/actions/account' subpath (package.json's `exports` map):
 // account.ts and resend-client.ts kept off the main barrel because
 // resend-client.ts imports the real 'resend' SDK, and the main barrel is
 // already imported into apps/web's client bundle transitively (packages/

@@ -12,7 +12,7 @@ import Stripe from 'stripe';
 // Stripe Connect Express account. Every call below that touches a patron,
 // a product, a price, a checkout session or a payout passes
 // `stripeAccount`, so the object lives on the player's own account and
-// Stripe's own fee is charged there, with ProCircuit's cut as
+// Stripe's own fee is charged there, with DeuceX's cut as
 // application_fee_percent on the subscription (worksheet 5 and 6: taken on
 // the gross, Stripe's charge separate).
 
@@ -178,7 +178,7 @@ export function createStripeFansClient(config: { secretKey: string }): FansStrip
     // platforms; found live in the sandbox, step 4.1). Owner decision, same
     // session: Stripe's Managed Risk (losses_collector stripe) with the
     // Express dashboard, and fees_collector stripe so Stripe takes its own
-    // charge from the player's account and ProCircuit's cut stays exactly
+    // charge from the player's account and DeuceX's cut stays exactly
     // application_fee_percent (worksheet 5 and 6). Express with Managed Risk
     // is a Stripe public preview, hence the pinned preview API version on
     // this one call.
@@ -422,6 +422,8 @@ export function createStripeFansClient(config: { secretKey: string }): FansStrip
             products: input.products.map((p) => ({ product: p.productId, prices: [p.priceId] })),
           },
         };
+        // The `procircuit` metadata tag predates the DeuceX rebrand; kept so the
+        // portal configuration already created in Stripe is still found.
         const existing = (
           await stripe.billingPortal.configurations.list({ limit: 100 }, opts)
         ).data.find((c) => c.metadata?.procircuit === 'fans' && c.active);

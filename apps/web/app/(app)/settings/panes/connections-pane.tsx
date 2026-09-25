@@ -1,12 +1,4 @@
-import {
-  Badge,
-  Card,
-  CardHeader,
-  CardTitle,
-  Item,
-  ItemDescription,
-  ItemTitle,
-} from '@procircuit/ui';
+import { Badge, Card, CardHeader, CardTitle, Item, ItemDescription, ItemTitle } from '@deucex/ui';
 import { StripeConnectionItem } from '@/components/fans/patron-settings';
 
 const CONNECTIONS: { name: string; description: string; status: 'not_yet' | 'not_offered' }[] = [
@@ -58,7 +50,7 @@ export function ConnectionsPane({ playerId }: { playerId: string }) {
           <div className="flex-1">
             <ItemTitle>Bank</ItemTitle>
             <ItemDescription>
-              Not offered. Balances are entered by you; receipts are scanned. ProCircuit never holds
+              Not offered. Balances are entered by you; receipts are scanned. DeuceX never holds
               bank logins.
             </ItemDescription>
           </div>

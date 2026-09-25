@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@procircuit/ui';
+import { Button } from '@deucex/ui';
 import { createClient } from '@/lib/supabase/client';
 
 export function PasskeyRegister() {

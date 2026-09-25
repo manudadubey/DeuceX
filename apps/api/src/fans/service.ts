@@ -26,16 +26,16 @@ import {
   type PatronNoteKind,
   type PatronNoteModelClient,
   type PatronSource,
-} from '@procircuit/agents';
-import { recordRun, type AgentRunsDb } from '@procircuit/actions';
-import { cancellationReason, PAUSED_MEMBERSHIP_DAYS } from '@procircuit/shared';
-import type { EmailClient } from '@procircuit/actions/account';
+} from '@deucex/agents';
+import { recordRun, type AgentRunsDb } from '@deucex/actions';
+import { cancellationReason, PAUSED_MEMBERSHIP_DAYS } from '@deucex/shared';
+import type { EmailClient } from '@deucex/actions/account';
 import {
   endPausedMembership,
   type CheckoutSessionSummary,
   FansStripeClient,
   StripeWebhookEvent,
-} from '@procircuit/actions/fans';
+} from '@deucex/actions/fans';
 import type { FansStore, StoredPatron, StoredProgramme, StoredTier } from './store';
 
 // apps/api's half of Fans (PRD-04 section 3): applying Stripe's own events
@@ -103,6 +103,8 @@ export async function applyJoinFromSession(
   if (session.status !== 'complete' || !session.subscriptionId || !programme.stripeAccountId) {
     return null;
   }
+  // Stripe metadata keys keep their pre-rebrand `procircuit_` prefix, since live
+  // Stripe objects already carry them.
   if (session.metadata.procircuit_player_id !== programme.playerId) return null;
 
   const subscription = await deps.stripe.retrieveSubscription({

@@ -1,4 +1,4 @@
-# ProCircuit requirements pack: review register
+# DeuceX requirements pack: review register
 
 Version 0.2 · 13 September 2026 · Owner: Manu Dubey · Companion to PRD-00 through PRD-13
 
@@ -100,7 +100,7 @@ Status 13 Sep (v0.3 of both player files): B1 to B10, B12 to B20 fixed or alread
 
 **B21. Fan Q&A toggle and the preview disagree.** The profile's "Fan Q&A" toggle renders disabled and unchecked regardless of tier while `#/agent/fan` behaves as a live tappable Pro preview. Found by PRD-10.
 
-**B22. Admin prototype fee tile assumes 8 percent on gross.** `procircuit-admin.html` shows A$1,412 as 8 percent of A$17,650 patron gross and flags A1 and A2 as open. Whichever way A1 and A2 go, the tile and its tooltip change. Found by PRD-13. Admin v0.2 now states the assumed basis on the Money page rather than only in a tooltip.
+**B22. Admin prototype fee tile assumes 8 percent on gross.** `deucex-admin.html` shows A$1,412 as 8 percent of A$17,650 patron gross and flags A1 and A2 as open. Whichever way A1 and A2 go, the tile and its tooltip change. Found by PRD-13. Admin v0.2 now states the assumed basis on the Money page rather than only in a tooltip.
 
 **B23. Overview attention count and alert badge differ.** The admin prototype's Overview sidebar badge shows the needs-action alert count (4) while the attention list holds five rows, because the past-due item is FYI. Either the badge counts rows or the fifth row moves to Money only. Found by PRD-13. Fixed 13 Sep in admin v0.2: the badge counts attention rows.
 

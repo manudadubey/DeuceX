@@ -1,5 +1,5 @@
 import { openDB, type IDBPDatabase } from 'idb';
-import type { NoteCtx } from '@procircuit/db';
+import type { NoteCtx } from '@deucex/db';
 
 // A note recorded with no signal (S-18, M-PLAT-2): stored here until
 // connectivity returns, with a visible queue state ("Waiting for signal ·
@@ -18,6 +18,7 @@ export interface QueuedNote {
   queuedAt: string;
 }
 
+// Pre-rebrand name, kept: renaming it would strand notes already queued on devices.
 const DB_NAME = 'procircuit-match-scribe';
 const STORE_NAME = 'pending-notes';
 const DB_VERSION = 1;

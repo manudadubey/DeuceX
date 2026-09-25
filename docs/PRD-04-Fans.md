@@ -40,7 +40,7 @@ Cost. Drafted notes are the only model spend: target under A$0.03 per note, gene
 
 ### 4.1 Fans page (`#/fans`)
 
-Header: the description quoted in section 1; Copy patron page link (toast "Copied procircuit.ai/p/arya-dubey"); Post an update (to `#/agent/content`).
+Header: the description quoted in section 1; Copy patron page link (toast "Copied deucex.ai/p/arya-dubey"); Post an update (to `#/agent/content`).
 
 KPI row: Patrons "12 · +2 this month" with "Courtside 8 · Locker Room 3 · Inside Track 1"; Kept over 12 months "92%" in green with "1 left in the last 90 days" and the tooltip "Share of patrons from a year ago who are still with you. The relationship number that matters more than MRR."; Average time with you "7.4 months" with "Longest: Gerhard B. · 20 months"; Next payout · Fri 19 Sep "A$549" with "A$612 gross · 8% fee · Stripe Connect".
 
@@ -50,7 +50,7 @@ Tiers card: three rows from `TIERS` with colour dot, name, "A$29/mo · 8 people"
 
 People card: "Who they are, how long they've been here, and whether they're still reading. Squares are your last six updates."; filters All, Courtside, Locker Room, Inside Track, Needs attention; search `#patQ` "Search by name or city"; the list `#patList` from `renderPatrons`, one row per `PATRONS` entry: initials avatar in the tier colour, name, tier badge, a state badge (New in lime, "Gone quiet" in amber, "Payment failed" in red, "Left 25 Aug" in grey), the meta line (flag and city, "since Jan 2025", "20 months", the note such as "Dad. Came to Poznań." or "Card payment failed on 10 Sep · Stripe retries Fri"), the six-square open strip with "5 of 6 opened", and one action (Send a note, Nudge gently for a failed card, Send a thank-you for a departed patron). Tapping the action opens an inline textarea pre-filled with the drafted note, the provenance line quoted in section 3, Cancel and "Send to <first name>"; sending toasts "Sent to Anna P." Empty state: "No one matches · Try another name or clear the filter."
 
-Payouts card: "Weekly, every Friday, through Stripe Connect."; the connection row "Stripe Connect Express · verified · Bank ending 4821 is held by Stripe, not ProCircuit. Change it in the Stripe dashboard." with an Active badge; the table Friday, Gross, Fee 8%, Stripe, Paid to you, Status (19 Sep A$612, −A$49, −A$14, A$549, Scheduled; 12 Sep Paid; 5 Sep A$554, −A$44, −A$13, A$497, Paid; 29 Aug Paid); footer "The platform fee is 8% of what patrons pay (5% on Elite), taken on the gross. Stripe's 1.75% + 30c per charge is shown separately. Payouts appear in the Financial Agent as patron income."
+Payouts card: "Weekly, every Friday, through Stripe Connect."; the connection row "Stripe Connect Express · verified · Bank ending 4821 is held by Stripe, not DeuceX. Change it in the Stripe dashboard." with an Active badge; the table Friday, Gross, Fee 8%, Stripe, Paid to you, Status (19 Sep A$612, −A$49, −A$14, A$549, Scheduled; 12 Sep Paid; 5 Sep A$554, −A$44, −A$13, A$497, Paid; 29 Aug Paid); footer "The platform fee is 8% of what patrons pay (5% on Elite), taken on the gross. Stripe's 1.75% + 30c per charge is shown separately. Payouts appear in the Financial Agent as patron income."
 
 Monthly recurring revenue card: "Shown last on purpose. Six months, gross, before fees."; badge "A$612 · +19% mo/mo"; the chart `#mrrChart` from `drawMRR` with six bars Apr to Sep labelled A$380, A$410, A$455, A$490, A$514, A$612.
 

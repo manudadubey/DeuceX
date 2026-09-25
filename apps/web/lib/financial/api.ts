@@ -1,8 +1,8 @@
 'use client';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import type { ReceiptProposal } from '@procircuit/agents';
+import type { Database } from '@deucex/db';
+import type { ReceiptProposal } from '@deucex/agents';
 
 // The Financial Agent's one apps/api call with a real vendor side effect
 // (the receipt-scanning vision model) — everything else about this page is

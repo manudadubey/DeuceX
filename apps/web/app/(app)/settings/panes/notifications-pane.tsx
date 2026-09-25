@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
   TableWrap,
-} from '@procircuit/ui';
+} from '@deucex/ui';
 import {
   NOTIFICATION_AGENTS,
   hasAtLeastOneChannel,
@@ -26,7 +26,7 @@ import {
   type NotificationChannel,
   type NotificationPrefs,
   type Player,
-} from '@procircuit/db';
+} from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 
 const AGENT_LABELS: Record<NotificationAgent, { label: string; forYou: string; fyi: string }> = {

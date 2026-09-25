@@ -11,8 +11,8 @@ import {
   FieldGroup,
   FieldLabel,
   Input,
-} from '@procircuit/ui';
-import { updateAccount, type Player } from '@procircuit/db';
+} from '@deucex/ui';
+import { updateAccount, type Player } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 import { PasskeyRegister } from '../passkey-register';
 

@@ -12,8 +12,8 @@ import {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-} from '@procircuit/ui';
-import { buildLedgerCsv } from '@procircuit/agents';
+} from '@deucex/ui';
+import { buildLedgerCsv } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import { loadFinancialSnapshot, type FinancialSnapshot } from '@/lib/financial/load';
 import { RunwayChart } from '@/components/financial/runway-chart';
@@ -91,7 +91,7 @@ export function FinancialClient({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `procircuit-ledger-${monthStart}.csv`;
+    a.download = `deucex-ledger-${monthStart}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };

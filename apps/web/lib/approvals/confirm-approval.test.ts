@@ -6,7 +6,7 @@ vi.mock('@/lib/supabase/client', () => ({
 }));
 
 const createApproval = vi.fn().mockResolvedValue({ id: 'approval-1', payloadHash: 'hash-1' });
-vi.mock('@procircuit/db', () => ({ createApproval }));
+vi.mock('@deucex/db', () => ({ createApproval }));
 
 const { confirmApproval } = await import('./confirm-approval');
 

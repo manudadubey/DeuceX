@@ -20,7 +20,7 @@ export default function ConfirmAccountDeletionPage({
 
   return (
     <main>
-      <p>ProCircuit</p>
+      <p>DeuceX</p>
       <h1>Confirm account deletion</h1>
       <p>
         Clicking below starts a 14-day cooling-off period. Your plan, patron billing and agents

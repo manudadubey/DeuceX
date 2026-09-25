@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import type { AgentRunsDb } from '@procircuit/actions';
-import { createMockReceiptExtractionClient } from '@procircuit/agents';
+import type { Database } from '@deucex/db';
+import type { AgentRunsDb } from '@deucex/actions';
+import { createMockReceiptExtractionClient } from '@deucex/agents';
 import Fastify from 'fastify';
 import { FakeDb } from '../test-support/fake-db';
 import { registerFinancialRoutes, type FinancialRoutesDeps } from './routes';
@@ -31,7 +31,7 @@ function buildMultipart(file: {
   contentType: string;
   data: Buffer;
 }): { body: Buffer; contentType: string } {
-  const boundary = '----procircuittestboundary';
+  const boundary = '----deucextestboundary';
   const parts: Buffer[] = [
     Buffer.from(
       `--${boundary}\r\nContent-Disposition: form-data; name="${file.field}"; filename="${file.filename}"\r\nContent-Type: ${file.contentType}\r\n\r\n`,
@@ -100,7 +100,7 @@ describe('POST /financial/receipts', () => {
 
   it('returns 400 when no image is attached', async () => {
     const app = await buildApp(new FakeDb());
-    const boundary = '----procircuittestboundary';
+    const boundary = '----deucextestboundary';
     const emptyMultipart = Buffer.from(`--${boundary}--\r\n`);
 
     const res = await app.inject({

@@ -1,4 +1,4 @@
-import type { Database, Json } from '@procircuit/db';
+import type { Database, Json } from '@deucex/db';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { type ApprovalGateDb, runGatedAction } from './gate';
 import type { EmailClient } from './resend-client';
@@ -42,7 +42,7 @@ export interface AccountDeletionDb {
 export interface RequestAccountDeletionInput {
   approvalId: string;
   playerId: string;
-  /** e.g. https://app.procircuit.app — server-configured, never client-supplied, so the emailed link can't be pointed at an attacker's domain. */
+  /** e.g. https://app.deucex.ai — server-configured, never client-supplied, so the emailed link can't be pointed at an attacker's domain. */
   appBaseUrl: string;
 }
 
@@ -82,8 +82,8 @@ export async function requestAccountDeletion(
       const confirmUrl = `${input.appBaseUrl}/account/delete/confirm?token=${token}`;
       await email.sendEmail({
         to: playerEmail,
-        subject: 'Confirm your ProCircuit account deletion',
-        html: `<p>Someone (hopefully you) asked to delete your ProCircuit account.</p>
+        subject: 'Confirm your DeuceX account deletion',
+        html: `<p>Someone (hopefully you) asked to delete your DeuceX account.</p>
 <p>Nothing happens until you click this link. Once you do, your account enters a 14-day cooling-off period — plenty of time to change your mind.</p>
 <p><a href="${confirmUrl}">Confirm account deletion</a></p>
 <p>Didn't ask for this? Ignore this email and nothing will happen.</p>`,
@@ -275,8 +275,8 @@ export async function requestDataExport(
 
       await email.sendEmail({
         to: playerEmail,
-        subject: 'Your ProCircuit export is ready',
-        html: `<p>Attached: everything ProCircuit has on file for you — notes, transcripts, expenses and check-ins — as JSON and CSV.</p>`,
+        subject: 'Your DeuceX export is ready',
+        html: `<p>Attached: everything DeuceX has on file for you — notes, transcripts, expenses and check-ins — as JSON and CSV.</p>`,
         attachments: [
           { filename: 'data.json', content: toBase64(buildExportJson(bundle)) },
           { filename: 'expenses.csv', content: toBase64(buildExpensesCsv(bundle)) },

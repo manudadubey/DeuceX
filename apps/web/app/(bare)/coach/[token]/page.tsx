@@ -1,5 +1,5 @@
-import { Badge, Card, CardHeader, CardTitle, Empty } from '@procircuit/ui';
-import { formatPatronMoney } from '@procircuit/agents';
+import { Badge, Card, CardHeader, CardTitle, Empty } from '@deucex/ui';
+import { formatPatronMoney } from '@deucex/agents';
 
 // PRD-12 §4.9/§10, M-SHARE-1/M-SHARE-2. Server-fetched (no client bundle,
 // no CORS concern — this is server-to-server, not a browser request): the

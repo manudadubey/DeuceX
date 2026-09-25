@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import type {
   RankingCandidate,
   RankingLookupAdapter,
@@ -37,7 +37,7 @@ function toVerified(row: SnapshotRow): RankingLookupResult | null {
   if (row.tour_singles_rank === null) return null;
   return {
     status: 'verified',
-    source: row.source === 'csv_import' ? 'ProCircuit ranking import' : 'feed',
+    source: row.source === 'csv_import' ? 'DeuceX ranking import' : 'feed',
     tourRank: row.tour_singles_rank,
     tourPoints: row.tour_singles_points ?? 0,
     itfRank: row.itf_rank,

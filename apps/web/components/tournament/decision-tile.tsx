@@ -2,13 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import {
-  Badge,
-  PulseTileBadge,
-  PulseTileLabel,
-  PulseTileSub,
-  PulseTileValue,
-} from '@procircuit/ui';
+import { Badge, PulseTileBadge, PulseTileLabel, PulseTileSub, PulseTileValue } from '@deucex/ui';
 import { createClient } from '@/lib/supabase/client';
 import { daysUntil, loadTournamentSnapshot, type TournamentSnapshot } from '@/lib/tournament/load';
 

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import type { StorageAdapter } from '../storage/adapter';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;

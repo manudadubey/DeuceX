@@ -11,7 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@procircuit/ui';
+} from '@deucex/ui';
 
 // `#nt` (Baseline §Feedback and overlays): the notification rail. No agent writes
 // notifications yet (that starts in Phase 1), so this is a real, honest empty state

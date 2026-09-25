@@ -1,14 +1,14 @@
 import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, Json } from '@procircuit/db';
-import { recordRun, type AgentRunsDb } from '@procircuit/actions';
+import type { Database, Json } from '@deucex/db';
+import { recordRun, type AgentRunsDb } from '@deucex/actions';
 import {
   MAX_BRIEFS_PER_PROSE_CALL,
   PROSE_MODEL,
   generateConditionsProse,
   type ProseBriefInput,
   type ProseModelClient,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 import {
   computeBriefForTournament,
   loadEquipmentProfileInput,

@@ -1,7 +1,7 @@
 'use client';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, NoteCtx } from '@procircuit/db';
+import type { Database, NoteCtx } from '@deucex/db';
 
 // The apps/api calls that have a real vendor side effect (R2 upload/delete,
 // Whisper) or a status transition apps/api owns — everything else about a

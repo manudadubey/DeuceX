@@ -1,5 +1,5 @@
 {
-  "name": "@procircuit/actions",
+  "name": "@deucex/actions",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -21,8 +21,8 @@
     "vitest": "^2.1.4"
   },
   "dependencies": {
-    "@procircuit/db": "workspace:*",
-    "@procircuit/shared": "workspace:*",
+    "@deucex/db": "workspace:*",
+    "@deucex/shared": "workspace:*",
     "@supabase/supabase-js": "^2.116.0",
     "pg-boss": "^12.33.2",
     "resend": "^6.28.1",

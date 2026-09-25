@@ -12,8 +12,8 @@ import {
   FieldDescription,
   FieldLabel,
   Input,
-} from '@procircuit/ui';
-import { updateEmergencyContact, type Player } from '@procircuit/db';
+} from '@deucex/ui';
+import { updateEmergencyContact, type Player } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 import { confirmApproval } from '@/lib/approvals/confirm-approval';
 import {

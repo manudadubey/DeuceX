@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, Json } from '@procircuit/db';
-import { convertAtRate, getFxRates } from '@procircuit/db';
+import type { Database, Json } from '@deucex/db';
+import { convertAtRate, getFxRates } from '@deucex/db';
 import { loadPatronIncome } from '../fans/income';
 import type {
   ActionCandidate,
@@ -8,7 +8,7 @@ import type {
   FinancialLedgerLine,
   FinancialPendingReceivable,
   GenerateFinancialActionResult,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 
 const LOOKBACK_DAYS = 60; // covers the 4-week burn window, the current Mon-Sun week and month-to-date
 

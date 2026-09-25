@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import Fastify from 'fastify';
 import { createFixtureRankingAdapter } from './fixture-adapter';
 import { createUnverifiedRankingAdapter } from './unverified-adapter';

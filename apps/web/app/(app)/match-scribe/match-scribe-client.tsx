@@ -8,8 +8,8 @@ import {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-} from '@procircuit/ui';
-import { getSavedNotesThisMonth } from '@procircuit/db';
+} from '@deucex/ui';
+import { getSavedNotesThisMonth } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 import { uploadNote } from '@/lib/match-scribe/api';
 import { drainOfflineQueue, queuedNoteCount } from '@/lib/match-scribe/offline-queue';

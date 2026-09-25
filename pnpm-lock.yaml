@@ -60,24 +60,24 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.699.0
         version: 3.1136.0
+      '@deucex/actions':
+        specifier: workspace:*
+        version: link:../../packages/actions
+      '@deucex/agents':
+        specifier: workspace:*
+        version: link:../../packages/agents
+      '@deucex/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@deucex/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@fastify/cors':
         specifier: ^10.0.1
         version: 10.1.0
       '@fastify/multipart':
         specifier: ^9.0.1
         version: 9.4.0
-      '@procircuit/actions':
-        specifier: workspace:*
-        version: link:../../packages/actions
-      '@procircuit/agents':
-        specifier: workspace:*
-        version: link:../../packages/agents
-      '@procircuit/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@procircuit/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@supabase/supabase-js':
         specifier: ^2.116.0
         version: 2.116.0
@@ -106,16 +106,16 @@ importers:
 
   apps/web:
     dependencies:
-      '@procircuit/agents':
+      '@deucex/agents':
         specifier: workspace:*
         version: link:../../packages/agents
-      '@procircuit/db':
+      '@deucex/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@procircuit/shared':
+      '@deucex/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@procircuit/ui':
+      '@deucex/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@supabase/ssr':
@@ -179,10 +179,10 @@ importers:
 
   packages/actions:
     dependencies:
-      '@procircuit/db':
+      '@deucex/db':
         specifier: workspace:*
         version: link:../db
-      '@procircuit/shared':
+      '@deucex/shared':
         specifier: workspace:*
         version: link:../shared
       '@supabase/supabase-js':
@@ -210,10 +210,10 @@ importers:
 
   packages/agents:
     dependencies:
-      '@procircuit/actions':
+      '@deucex/actions':
         specifier: workspace:*
         version: link:../actions
-      '@procircuit/db':
+      '@deucex/db':
         specifier: workspace:*
         version: link:../db
       zod:
@@ -229,7 +229,7 @@ importers:
 
   packages/db:
     dependencies:
-      '@procircuit/shared':
+      '@deucex/shared':
         specifier: workspace:*
         version: link:../shared
       '@supabase/supabase-js':

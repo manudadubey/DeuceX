@@ -1,4 +1,4 @@
-import type { TokenUsage } from '@procircuit/actions';
+import type { TokenUsage } from '@deucex/actions';
 import type { InsightPrompt } from './prompt';
 
 // Same shape as match-scribe/model-client.ts: a plain fetch against the

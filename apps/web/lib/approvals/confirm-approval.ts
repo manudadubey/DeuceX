@@ -1,7 +1,7 @@
 'use client';
 
-import { createApproval, type ApprovalActionType, type CreatedApproval } from '@procircuit/db';
-import type { Json } from '@procircuit/db';
+import { createApproval, type ApprovalActionType, type CreatedApproval } from '@deucex/db';
+import type { Json } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 
 export interface ConfirmApprovalInput {

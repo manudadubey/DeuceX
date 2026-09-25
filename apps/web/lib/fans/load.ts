@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { convertAtRate, getFxRates, type Database } from '@procircuit/db';
+import { convertAtRate, getFxRates, type Database } from '@deucex/db';
 import {
   activePatrons,
   estimatePayout,
@@ -23,7 +23,7 @@ import {
   type PatronRecord,
   type PatronSource,
   type PatronStatus,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 
 // Everything /fans shows, read through the player's own RLS-scoped session
 // and computed live from the rows on every load (the Financial Agent's own

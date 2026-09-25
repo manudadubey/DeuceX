@@ -13,8 +13,8 @@ import {
   FieldLabel,
   InputGroup,
   InputGroupInput,
-} from '@procircuit/ui';
-import { enterReserveBalance } from '@procircuit/db';
+} from '@deucex/ui';
+import { enterReserveBalance } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 import { confirmApproval } from '@/lib/approvals/confirm-approval';
 import { receiveReceivable, requestFinancialRecompute } from '@/lib/financial/api';
@@ -184,7 +184,7 @@ export function ReservesCard({
         )}
 
         <p className="text-xs text-muted-foreground">
-          No bank connection. ProCircuit never holds your login or card details; the only money data
+          No bank connection. DeuceX never holds your login or card details; the only money data
           stored is what you type or scan here.
         </p>
       </div>

@@ -1,4 +1,4 @@
-import type { NoteCtx, NoteMood } from '@procircuit/db';
+import type { NoteCtx, NoteMood } from '@deucex/db';
 
 // Shared input shapes across rules.ts, distress.ts and generate-insight.ts —
 // a trimmed, agent-facing view of the notes/check_ins columns (step 1.1),

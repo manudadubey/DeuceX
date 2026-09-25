@@ -1,5 +1,5 @@
 {
-  "name": "@procircuit/db",
+  "name": "@deucex/db",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@procircuit/shared": "workspace:*",
+    "@deucex/shared": "workspace:*",
     "@supabase/supabase-js": "^2.45.4"
   },
   "devDependencies": {

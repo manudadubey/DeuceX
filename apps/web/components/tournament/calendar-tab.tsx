@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
   TableWrap,
-} from '@procircuit/ui';
+} from '@deucex/ui';
 import type { TournamentCandidateView } from '@/lib/tournament/load';
 
 function mondayOf(date: Date): Date {

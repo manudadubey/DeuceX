@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'ProCircuit Admin',
+  title: 'DeuceX Admin',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

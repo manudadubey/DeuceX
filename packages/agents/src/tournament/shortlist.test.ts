@@ -4,7 +4,7 @@ import type { CostModelPlayer, ShortlistFilters, TournamentCandidateInput } from
 
 // PRD-01 T-AC-1/T-AC-2's own fixture player: Stage 2, budget A$1,200/wk,
 // blocked 26 Oct to 1 Nov. Seven candidate events across weeks 40-45, named
-// after the prototype's own shortlist (docs/procircuit-dashboard-neumayer.html
+// after the prototype's own shortlist (docs/deucex-dashboard-neumayer.html
 // #/agent/tournament) but with cost/prize numbers computed through this
 // engine's own formulas (PRD-01 section 7) rather than copied from the
 // prototype's hand-authored mock data — see docs/BUILD-LOG.md's step 3.2

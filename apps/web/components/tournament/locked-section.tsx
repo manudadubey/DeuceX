@@ -1,4 +1,4 @@
-import { Badge, Button } from '@procircuit/ui';
+import { Badge, Button } from '@deucex/ui';
 
 // M-TIER-1 / decisions worksheet 14: "Free sees the shortlist and the full
 // Conditions brief; cost, outcomes, runway effect and the entry controls are

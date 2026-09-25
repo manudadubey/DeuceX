@@ -180,7 +180,7 @@ export function Logo({ className, ...props }: Omit<SVGAttributes<SVGSVGElement>,
     <svg
       viewBox="0 0 193 202"
       className={cn('block size-[1.875rem] fill-current text-foreground', className)}
-      aria-label="ProCircuit"
+      aria-label="DeuceX"
       {...props}
     >
       <use href="#logo" />

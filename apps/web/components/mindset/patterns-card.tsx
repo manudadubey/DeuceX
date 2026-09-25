@@ -11,8 +11,8 @@ import {
   CardTitle,
   Empty,
   buttonVariants,
-} from '@procircuit/ui';
-import { setPatternDismissed, type Pattern } from '@procircuit/db';
+} from '@deucex/ui';
+import { setPatternDismissed, type Pattern } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 
 function EvidenceDots({ evidence }: { evidence: { noteId: string; hit: boolean }[] }) {

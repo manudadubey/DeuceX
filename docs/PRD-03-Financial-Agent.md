@@ -50,7 +50,7 @@ One thing to do this week card: badge "07:00 UTC"; the action in bold, "Publish 
 
 Budget vs actual card: badge "Budget A$1,200/wk"; the weekly bar (`#wkSpent`, `#wkBar`, `#wkSub`); the table `#estact` from `renderBudget`, one row per `EST` entry with estimate and actual bars and a signed variance or "not started"; the line "The agent learns from the gap: Italian car hire now estimated +40%, apartments −11%."
 
-Where reserves come from card: `#balStamp`; "Cash · entered by you" `#balV`; input `#balIn` with Update `#balSave`; the pending step "Pending prize · A$890 · Genoa Q2 · expected Fri 3 Oct · not counted as cash"; the switch `#balRemind` "Remind me to update every Sunday at 20:00"; the statement "No bank connection. ProCircuit never holds your login or card details; the only money data stored is what you type or scan here."
+Where reserves come from card: `#balStamp`; "Cash · entered by you" `#balV`; input `#balIn` with Update `#balSave`; the pending step "Pending prize · A$890 · Genoa Q2 · expected Fri 3 Oct · not counted as cash"; the switch `#balRemind` "Remind me to update every Sunday at 20:00"; the statement "No bank connection. DeuceX never holds your login or card details; the only money data stored is what you type or scan here."
 
 Monthly P&L card: chart `#plChart` from `drawPL`, six months of income, spend and net.
 
@@ -68,7 +68,7 @@ Runway tile in grey: "Enter today's cash balance and the Financial Agent runs to
 
 ### 4.4 Settings (`#/settings`)
 
-Agents row "Financial Agent · GPT-4o · daily, plus live on each expense" with schedule select and pause switch. Connections row "Bank · Not offered. Balances are entered by you; receipts are scanned. ProCircuit never holds bank logins." badged "By design".
+Agents row "Financial Agent · GPT-4o · daily, plus live on each expense" with schedule select and pause switch. Connections row "Bank · Not offered. Balances are entered by you; receipts are scanned. DeuceX never holds bank logins." badged "By design".
 
 ## 5. Functional requirements
 

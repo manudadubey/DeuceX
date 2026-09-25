@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import type { PgBoss } from 'pg-boss';
 import type { StorageAdapter } from '../storage/adapter';
 import { ACCOUNT_DELETION_SWEEP_QUEUE } from '../money/queue';

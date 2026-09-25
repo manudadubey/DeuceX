@@ -1,7 +1,7 @@
 'use client';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 
 // Data & safety's apps/api calls (PRD-12 §4.10): the two gated actions
 // (delete/export requests, a real Resend send behind each) plus the plain

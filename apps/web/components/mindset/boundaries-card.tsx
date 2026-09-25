@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Card, CardDescription, CardHeader, CardTitle, Switch } from '@procircuit/ui';
-import { pauseOneWeekFrom, updateMindsetBoundaries, type MindsetBoundaries } from '@procircuit/db';
+import { Button, Card, CardDescription, CardHeader, CardTitle, Switch } from '@deucex/ui';
+import { pauseOneWeekFrom, updateMindsetBoundaries, type MindsetBoundaries } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 
 // "Your boundaries" (PRD-06 §4.1): the three player-set switches, plus the

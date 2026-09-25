@@ -12,8 +12,8 @@ import {
   TableHeader,
   TableRow,
   TableWrap,
-} from '@procircuit/ui';
-import { computeRunwayWeeks, type Unit } from '@procircuit/agents';
+} from '@deucex/ui';
+import { computeRunwayWeeks, type Unit } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import { daysUntil, type TournamentCandidateView } from '@/lib/tournament/load';
 import { useEntryActions } from './use-entry-actions';

@@ -1,4 +1,4 @@
-<title>ProCircuit Admin</title>
+<title>DeuceX Admin</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
 <style>
 /* ── shadcn preset b3REZz9P6 · style Vega · base Neutral · chart Lime · Geist ── */
@@ -933,8 +933,8 @@
   <aside class="sidebar">
     <button class="sb-rail" id="sbRail" aria-label="Toggle sidebar" tabindex="-1"></button>
     <div class="sb-head">
-      <svg class="logo" aria-label="ProCircuit"><use href="#logo"/></svg>
-      <div><div class="t">ProCircuit Admin</div><div class="s">Operations console</div></div>
+      <svg class="logo" aria-label="DeuceX"><use href="#logo"/></svg>
+      <div><div class="t">DeuceX Admin</div><div class="s">Operations console</div></div>
     </div>
     <div class="sb-group">
       <div class="sb-label">Console</div>
@@ -961,7 +961,7 @@
         <div><div class="t">Manu Dubey</div><div class="s" id="roleLbl">Owner · all areas</div></div>
       </button>
       <div class="umenu" id="umenu" role="menu" hidden>
-        <div class="uh"><div class="t">Manu Dubey</div><div class="s">manu@procircuit.app</div></div>
+        <div class="uh"><div class="t">Manu Dubey</div><div class="s">manu@deucex.ai</div></div>
         <div class="uh" style="padding-top:2px"><div class="s">Preview as role</div></div>
         <button role="menuitem" data-role="owner"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>Owner <span class="badge secondary" style="margin-left:auto">money, deletes, kill switches</span></button>
         <button role="menuitem" data-role="ops"><svg class="ic" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Ops <span class="badge secondary" style="margin-left:auto">agents, ingestion</span></button>
@@ -1149,7 +1149,7 @@
     <!-- ── Money ── -->
     <main class="content" data-route="money" hidden>
       <div class="page-h">
-        <div><div class="page-t">Money</div><div class="page-d">What ProCircuit earns, what it costs to run, and what is stuck. Card data, refunds and invoices live in Stripe; this page reconciles against it.</div></div>
+        <div><div class="page-t">Money</div><div class="page-d">What DeuceX earns, what it costs to run, and what is stuck. Card data, refunds and invoices live in Stripe; this page reconciles against it.</div></div>
         <div class="page-a"><a class="btn outline sm" href="#/soon/stripe"><svg class="ic" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>Open Stripe</a></div>
       </div>
       <div class="stats">
@@ -1584,7 +1584,7 @@
     const target = $(`main[data-route="${path}"]`) ? path : path.startsWith('soon/') ? 'soon' : 'overview';
     $$('main[data-route]').forEach(m => m.hidden = m.dataset.route !== target);
     if (target === 'soon') { $('#soonTitle').textContent = r.crumb; $('#soonDesc').textContent = r.desc || ''; }
-    $('#crumb').textContent = r.crumb; document.title = r.crumb + ' · ProCircuit Admin';
+    $('#crumb').textContent = r.crumb; document.title = r.crumb + ' · DeuceX Admin';
     const href = '#/' + (path === 'overview' ? '' : path);
     $$('.sb-item, .tabbar a.tab').forEach(a => a.classList.toggle('active', a.getAttribute('href') === href));
     window.scrollTo({ top: 0, behavior: 'auto' });

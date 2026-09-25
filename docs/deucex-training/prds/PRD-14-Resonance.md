@@ -2,7 +2,7 @@
 
 Version 0.1 · 19 September 2026 · Owner: Manu Dubey · Status: draft for review · Parent: PRD-00 · Siblings: PRD-06 (Mindset Coach), PRD-08 (Conditions and equipment), PRD-12 (Settings)
 
-Prototype reference: `procircuit-resonance.html` v0.2, published as a standalone Baseline-styled file. It carries the three session modes, the resonance rate test, the live phase-lock panel, the still pacer, the session summary, the calm trend and the boundary card. It is the visual and behavioural reference for this document; it is not yet ported into the three player files (section 13.3).
+Prototype reference: `deucex-resonance.html` v0.2, published as a standalone Baseline-styled file. It carries the three session modes, the resonance rate test, the live phase-lock panel, the still pacer, the session summary, the calm trend and the boundary card. It is the visual and behavioural reference for this document; it is not yet ported into the three player files (section 13.3).
 
 ---
 
@@ -12,7 +12,7 @@ A player at #487 has no sports psychologist, no team and no room of her own. She
 
 Resonance is that something. It is a paced breathing tool set to the player's own resonance frequency, the breathing rate at which her heart rate swing is largest and the breath and the heart reinforce each other rather than fight. The rate is found once with a five-block test and then used for the rest of the season. Three lengths cover the three moments that matter: five minutes before she goes on, ninety seconds at a changeover, and eight minutes with a longer out breath after a late finish, which is the night she cannot sleep.
 
-It is the first ProCircuit surface that makes no model call at all. There is no prompt, no structured output and no per-run token cost, which matters against the unit economics in TECH-ARCHITECTURE section 5 (A$10.83 against a A$7.35 cap). It is also the first surface that touches physiological data, which is what makes section 11 the most important section in this document.
+It is the first DeuceX surface that makes no model call at all. There is no prompt, no structured output and no per-run token cost, which matters against the unit economics in TECH-ARCHITECTURE section 5 (A$10.83 against a A$7.35 cap). It is also the first surface that touches physiological data, which is what makes section 11 the most important section in this document.
 
 Job statement: "Before I go on, at the changeover and after a late match, give me one thing to do with my breath that works without thinking, and tell me honestly whether it is working."
 
@@ -291,7 +291,7 @@ Nothing about a missed session, a broken streak or a declining trend. A tool tha
 
 This is the section that decides whether the feature is safe to ship.
 
-Heart rate, inter-beat intervals and anything derived from them are health information under the Privacy Act and the Australian Privacy Principles. Collecting them takes ProCircuit from a business tool into a category with its own consent, retention, access and breach obligations.
+Heart rate, inter-beat intervals and anything derived from them are health information under the Privacy Act and the Australian Privacy Principles. Collecting them takes DeuceX from a business tool into a category with its own consent, retention, access and breach obligations.
 
 **Proposed new master requirement, M-PRIV-4 (physiological data).** Physiological signals are processed on the device and never transmitted or stored in raw form. Only the derived per-session figures in PRD-14 section 7 are persisted. They are excluded from every share scope by default, carry their own consent at first use, are deletable independently of the account, are included in the player export, and are never used to produce a score describing the player's health, readiness or recovery. The `console` role has no access to them. Under-18 accounts require guardian consent before collection.
 
@@ -343,13 +343,13 @@ Prompt: "Add measurement to Resonance from `docs/PRD-14-Resonance.md` sections 7
 
 ### 13.3 Porting the prototype
 
-`procircuit-resonance.html` is standalone and needs porting into the three player files before it can be reviewed in context. Follow the discipline in PROCIRCUIT-CONTEXT section 10: read the Arya lines, apply the persona adapter, apply insertions bottom-up by line number, then grep for leaked words.
+`deucex-resonance.html` is standalone and needs porting into the three player files before it can be reviewed in context. Follow the discipline in DEUCEX-CONTEXT section 10: read the Arya lines, apply the persona adapter, apply insertions bottom-up by line number, then grep for leaked words.
 
 Storage keys follow the existing convention: `pc.breath`, `pc.res`, `pc.rprefs` in the Arya file; `pc.ln.*` in Neumayer; `pc.sb.*` in Berger.
 
-Persona adaptation: Arya's rate is 5.5, measured 22 August 2026. Neumayer needs an invented rate and history under the real-player governance in PROCIRCUIT-CONTEXT section 6.2, with no fabricated staff involvement. Berger needs the same with German cities. The leak word list for the Berger port gains nothing new; the Neumayer list gains "Marko" in the coach-link line of the boundary card.
+Persona adaptation: Arya's rate is 5.5, measured 22 August 2026. Neumayer needs an invented rate and history under the real-player governance in DEUCEX-CONTEXT section 6.2, with no fabricated staff involvement. Berger needs the same with German cities. The leak word list for the Berger port gains nothing new; the Neumayer list gains "Marko" in the coach-link line of the boundary card.
 
-The port is also the moment to carry Baseline v1.1's reduced-motion and reduced-transparency rules into the three player files, which PROCIRCUIT-CONTEXT section 2 already flags as outstanding. `procircuit-resonance.html` v0.2 has them and should be the source.
+The port is also the moment to carry Baseline v1.1's reduced-motion and reduced-transparency rules into the three player files, which DEUCEX-CONTEXT section 2 already flags as outstanding. `deucex-resonance.html` v0.2 has them and should be the source.
 
 ## 14. Out of scope and open questions
 

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, Json } from '@procircuit/db';
-import { recordRun, type AgentRunsDb, type AgentRunTriggerType } from '@procircuit/actions';
+import type { Database, Json } from '@deucex/db';
+import { recordRun, type AgentRunsDb, type AgentRunTriggerType } from '@deucex/actions';
 import {
   FINANCIAL_ACTION_MODEL,
   FINANCIAL_ACTION_SCHEMA_VERSION,
@@ -13,7 +13,7 @@ import {
   type ActionCandidate,
   type FinancialActionModelClient,
   type GenerateFinancialActionResult,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 import { loadFinancialInputs, loadFinancialPlayer, sendFinancialNotification } from './service';
 
 export interface FinancialRunLogger {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AgentValidationError } from '@procircuit/actions';
+import { AgentValidationError } from '@deucex/actions';
 import {
   PRO_PATRON_CAP,
   activePatrons,

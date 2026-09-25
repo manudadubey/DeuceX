@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import { convertAtRate, getFxRates } from '@procircuit/db';
-import { parseBlockedDateRanges, type TournamentCandidateInput } from '@procircuit/agents';
+import type { Database } from '@deucex/db';
+import { convertAtRate, getFxRates } from '@deucex/db';
+import { parseBlockedDateRanges, type TournamentCandidateInput } from '@deucex/agents';
 import { isInStageScope, type PlayerStage, type PlayerTour } from './stage-scope';
 
 const SCAN_WEEKS_AHEAD = 8;

@@ -8,11 +8,11 @@ Prototype reference: `#/onboarding` (the four-step bare shell, `obSteps`, `obNam
 
 ## 1. Purpose and job to be done
 
-A player who has just heard about ProCircuit from another player in a locker room decides, in about four minutes on a phone, whether this is a tool worth trusting with their ranking, their money and their patrons. Onboarding is the only surface with no sidebar, no agent status cards and no history, so it has to prove three things fast: the ranking is real and verified, not typed in and trusted; the season ahead has been read correctly (tournaments, surfaces, money available); and turning an agent on this minute produces something concrete by Sunday evening, not a vague promise. Everything captured here seeds every other agent: the Tournament Agent's first shortlist, the Financial Agent's first runway number, the Mindset Coach's first check-in.
+A player who has just heard about DeuceX from another player in a locker room decides, in about four minutes on a phone, whether this is a tool worth trusting with their ranking, their money and their patrons. Onboarding is the only surface with no sidebar, no agent status cards and no history, so it has to prove three things fast: the ranking is real and verified, not typed in and trusted; the season ahead has been read correctly (tournaments, surfaces, money available); and turning an agent on this minute produces something concrete by Sunday evening, not a vague promise. Everything captured here seeds every other agent: the Tournament Agent's first shortlist, the Financial Agent's first runway number, the Mindset Coach's first check-in.
 
 The public profile is the product's storefront and shares an owner with onboarding, the player alone, with no coach or manager surface: turn a private season into something a stranger, a patron or a sponsor can read and act on in under thirty seconds, without exposing anything the player has not chosen to show.
 
-Job statement, onboarding: "In about four minutes, verify who I am, understand the season I'm about to play, let me pick a plan without a card, and get one agent running today, so that Sunday evening isn't the first time I see what ProCircuit actually does." Job statement, public profile: "Give me one page that shows my ranking, my story and my tiers, that I control completely and that updates itself as the season moves, so that a patron or sponsor who finds me mid-season can act on the spot."
+Job statement, onboarding: "In about four minutes, verify who I am, understand the season I'm about to play, let me pick a plan without a card, and get one agent running today, so that Sunday evening isn't the first time I see what DeuceX actually does." Job statement, public profile: "Give me one page that shows my ranking, my story and my tiers, that I control completely and that updates itself as the season moves, so that a patron or sponsor who finds me mid-season can act on the spot."
 
 Success: at least 80 percent of players who start step 1 reach "Open my dashboard" in one sitting; median time to a live profile is under one day; the walkthrough is completed, not abandoned mid-scrim, at least 70 percent of the time it is shown; profile visits convert to a new patron at a rate the player can see improving week over week.
 
@@ -42,7 +42,7 @@ The public profile has three audiences who never sign in: the anonymous visitor,
 
 ### 4.1 Onboarding shell (`#/onboarding`)
 
-The route renders with no sidebar and no topbar (the `.bare` layout), centred, with the ProCircuit logo and the line "Set up in about four minutes." A left rail (`#obSteps`) lists all four steps at all times: the active step is marked "now," completed steps are reachable, and locked steps are disabled buttons showing only their title and a one-line description ("Verified from ATP and ITF," "Goals, surfaces, budget," "Free, Pro or Elite," "Your first shortlist Sunday"). A note under the rail states, "Your email is verified. Everything here can be changed later in Settings; nothing is shown publicly until you build your profile page."
+The route renders with no sidebar and no topbar (the `.bare` layout), centred, with the DeuceX logo and the line "Set up in about four minutes." A left rail (`#obSteps`) lists all four steps at all times: the active step is marked "now," completed steps are reachable, and locked steps are disabled buttons showing only their title and a one-line description ("Verified from ATP and ITF," "Goals, surfaces, budget," "Free, Pro or Elite," "Your first shortlist Sunday"). A note under the rail states, "Your email is verified. Everything here can be changed later in Settings; nothing is shown publicly until you build your profile page."
 
 **Step 1, "Who's playing?"** Name (`obName`), country (plain `<select>`, no flags), date of birth, a handedness toggle, a photo with Change/Remove, an ATP ID with "Look up" (`obLookup`), and an ITF ID. Look up shows a spinner and after roughly 900 ms reveals `obVerified`: "ATP #487 · 96 points" ("TDI live feed · updated Mon 7 Sep 02:00 UTC · career high #461") and "ITF #212 · WTN 8.4" ("ITF API · weekly"), each with a Verified badge, plus "Stage 2 · ATP Emerging" ("Detected from your ATP ranking (above ~450). Your ATP number gets the hero spot; ITF shows as a chip; WTN and UTR stay hidden") with an override select. Footer helper text steps through "We'll look up your ranking from the IDs above," "Looking up your ranking…," then "Stage detected. Continue when it looks right."
 
@@ -64,13 +64,13 @@ Six fixed steps, shown once automatically and replayable from the topbar tour ic
 
 A visits panel shows 30-day figures ("Visits · 30 days" 1,240, up 38 percent after the Poznań draw; "Became patrons" 3, named; "Found you via" Search 52 percent, the draw page 31 percent, Instagram 17 percent), beside an edit card with four tabs (About, What's shown, Media kit, Links) and a live phone preview of the actual `/p/<slug>` page.
 
-**About** holds the slug (`procircuit.ai/p/arya-dubey`), a headline (`#ppHead`), a bio (`#ppBio`) and a season goal (`#ppGoal`), each updating the preview's `#pvHead`, `#pvBio` and `#pvGoal` on every keystroke.
+**About** holds the slug (`deucex.ai/p/arya-dubey`), a headline (`#ppHead`), a bio (`#ppBio`) and a season goal (`#ppGoal`), each updating the preview's `#pvHead`, `#pvBio` and `#pvGoal` on every keystroke.
 
 **What's shown** is five toggles (ranking and the 52-week line; next tournament, an accepted entry only; the latest update's teaser; patron tiers; patron names, opt-in per patron), plus a locked Fan Q&A toggle labelled "Elite." A fixed line states what is never shown under any combination: "runway, expenses, Match Scribe transcripts, Mindset insights."
 
-**Media kit** shows following/reach figures from connected accounts and Stripe, a three-line editable story, open sponsor categories (Racquets, Apparel, Nutrition, Travel, Finance), and "Download PDF" producing a one-page kit. **Links** holds Instagram, TikTok, an optional YouTube handle and a sponsor contact email, noting "Patron messages still come through ProCircuit, not your inbox."
+**Media kit** shows following/reach figures from connected accounts and Stripe, a three-line editable story, open sponsor categories (Racquets, Apparel, Nutrition, Travel, Finance), and "Download PDF" producing a one-page kit. **Links** holds Instagram, TikTok, an optional YouTube handle and a sponsor contact email, noting "Patron messages still come through DeuceX, not your inbox."
 
-The preview (`#pub`) renders the hero (photo, name, flag, age, "Challenger circuit," rank badge), headline, a season section with a small trajectory chart, bio, the next-tournament line when set, the latest teaser, three patron tiers with prices, a "Become a patron" call to action, and a socials row. Publishing flips the badge to green "Live · updated just now" with "Published · procircuit.ai/p/arya-dubey rebuilt (ISR)."
+The preview (`#pub`) renders the hero (photo, name, flag, age, "Challenger circuit," rank badge), headline, a season section with a small trajectory chart, bio, the next-tournament line when set, the latest teaser, three patron tiers with prices, a "Become a patron" call to action, and a socials row. Publishing flips the badge to green "Live · updated just now" with "Published · deucex.ai/p/arya-dubey rebuilt (ISR)."
 
 ## 5. Functional requirements
 
@@ -124,7 +124,7 @@ OB-24 (Should). The visits panel shows 30-day visits, named conversions to patro
 
 OB-25 (Could). The player can preview the page as a patron, a sponsor or a stranger to confirm what each toggle combination actually hides.
 
-OB-26 (Won't, Release 1). A custom domain or subdomain in place of `procircuit.ai/p/<slug>`.
+OB-26 (Won't, Release 1). A custom domain or subdomain in place of `deucex.ai/p/<slug>`.
 
 ## 6. Data dictionary
 
@@ -198,7 +198,7 @@ OB-AC-9. Given the walkthrough was already completed once, when the player click
 
 OB-AC-10. Given the player edits the bio field on `#/profile`, when they type, then the preview's bio updates on every keystroke and the badge changes from "Live · updated Thu 4 Sep" to amber "Unpublished changes."
 
-OB-AC-11. Given unpublished changes exist, when "Publish changes" is tapped, then the badge returns to green "Live · updated just now" with the toast "Published · procircuit.ai/p/arya-dubey rebuilt (ISR)."
+OB-AC-11. Given unpublished changes exist, when "Publish changes" is tapped, then the badge returns to green "Live · updated just now" with the toast "Published · deucex.ai/p/arya-dubey rebuilt (ISR)."
 
 OB-AC-12. Given "Patron names" is off, when the page renders, then no first names appear in the tiers section; switched on, it reads "Thanks to Mira, Daniel, Chris, Jonas and 8 more."
 

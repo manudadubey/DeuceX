@@ -1,5 +1,5 @@
-import { AgentValidationError, type TokenUsage } from '@procircuit/actions';
-import type { NoteCtx } from '@procircuit/db';
+import { AgentValidationError, type TokenUsage } from '@deucex/actions';
+import type { NoteCtx } from '@deucex/db';
 import { buildCorrectiveExtractionPrompt, buildExtractionPrompt } from './prompt';
 import {
   buildExtractionModelOutputSchema,

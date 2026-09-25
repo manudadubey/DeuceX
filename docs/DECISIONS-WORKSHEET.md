@@ -1,6 +1,6 @@
 DECISIONS WORKSHEET
 
-ProCircuit, prepared for Manu Dubey. Version 0.2, 13 September 2026. All seventeen decisions recorded on 13 September 2026 by Manu Dubey; two (Fan Agent label, mood window) differ from the drafted recommendation only in wording. Companion to PRD-00 through PRD-12 and the PRD Review Register.
+DeuceX, prepared for Manu Dubey. Version 0.2, 13 September 2026. All seventeen decisions recorded on 13 September 2026 by Manu Dubey; two (Fan Agent label, mood window) differ from the drafted recommendation only in wording. Companion to PRD-00 through PRD-12 and the PRD Review Register.
 
 HOW TO USE THIS
 
@@ -16,7 +16,7 @@ Ordered as the register's section F suggests: child safety and identity first, t
 
 1. Guardian flow for players under 18 (A11)
 
-Should ProCircuit require a guardian's email before an under-18 sign-up can finish, and switch on privacy defaults automatically? Onboarding step 1 today has a plain date-of-birth field feeding nothing downstream. M-ID-3 requires a guardian email, the guardian defaulted as the manager-link recipient, and the public profile off by default; none of it is built (PRD-11, section 12).
+Should DeuceX require a guardian's email before an under-18 sign-up can finish, and switch on privacy defaults automatically? Onboarding step 1 today has a plain date-of-birth field feeding nothing downstream. M-ID-3 requires a guardian email, the guardian defaulted as the manager-link recipient, and the public profile off by default; none of it is built (PRD-11, section 12).
 
 Options: build the branch now (a conditional field, an email trigger, two defaults), or decline sign-ups under 18 until it exists. A launch with no check at all is not a real option. Cost is roughly three to five days, touching PRD-11 OB-6, OB-23 and PRD-12's sharing surface.
 
@@ -68,7 +68,7 @@ Decision record: Build the fourteen-day cooling-off. Clicking the confirmation l
 
 5. Platform fee: 8 percent or 10 percent (A1)
 
-Does ProCircuit take 8 percent of a Pro player's patron income, as PRD-00, the Fans footer and the Stripe notification all say, or 10 percent, as the prototype's payout arithmetic actually deducts? The 8 percent path is a bug fix, a few hours, correcting one function to match everything already written, including the onboarding pitch ("minus the 8% platform fee"). The 10 percent path means rewriting PRD-00's tier table, the Fans footer, onboarding copy and the Stripe template, plus a legal read of a pricing change made this late.
+Does DeuceX take 8 percent of a Pro player's patron income, as PRD-00, the Fans footer and the Stripe notification all say, or 10 percent, as the prototype's payout arithmetic actually deducts? The 8 percent path is a bug fix, a few hours, correcting one function to match everything already written, including the onboarding pitch ("minus the 8% platform fee"). The 10 percent path means rewriting PRD-00's tier table, the Fans footer, onboarding copy and the Stripe template, plus a legal read of a pricing change made this late.
 
 On A$612 gross MRR the difference is roughly A$12 to A$18 a month to the player. Changing the fee after real patrons are live is a visible cut needing its own communication, which is why the Australian Consumer Law's no-drip-pricing principle, already invoked elsewhere in PRD-00, matters here: the figure must be the same wherever shown, before and after checkout.
 

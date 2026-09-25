@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import { convertAtRate, getFxRates } from '@procircuit/db';
+import type { Database } from '@deucex/db';
+import { convertAtRate, getFxRates } from '@deucex/db';
 import {
   computeBurnState,
   computeGrossWeeklySpend,
@@ -15,7 +15,7 @@ import {
   type FinancialLedgerLine,
   type MonthlyPnl,
   type RunwayColour,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 import { loadPatronIncome } from '../fans/income';
 
 const LOOKBACK_DAYS = 60;

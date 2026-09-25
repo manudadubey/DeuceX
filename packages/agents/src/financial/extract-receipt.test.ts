@@ -1,4 +1,4 @@
-import { AgentValidationError } from '@procircuit/actions';
+import { AgentValidationError } from '@deucex/actions';
 import { describe, expect, it } from 'vitest';
 import { extractReceipt } from './extract-receipt';
 import {

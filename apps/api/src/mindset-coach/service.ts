@@ -1,11 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, Json, NoteCtx, NoteMood } from '@procircuit/db';
+import type { Database, Json, NoteCtx, NoteMood } from '@deucex/db';
 import type {
   ExistingPatternWithId,
   GenerateInsightResult,
   MindsetCheckIn,
   MindsetNote,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 
 const PATTERN_LOOKBACK_DAYS = 90;
 const CHECKIN_LOOKBACK_DAYS = 30;

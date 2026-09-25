@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { Toast, ToastProvider, ToastTitle, ToastViewport, cn } from '@procircuit/ui';
-import type { Player } from '@procircuit/db';
-import type { Database } from '@procircuit/db';
+import { Toast, ToastProvider, ToastTitle, ToastViewport, cn } from '@deucex/ui';
+import type { Player } from '@deucex/db';
+import type { Database } from '@deucex/db';
 import { AccountPane } from './panes/account-pane';
 import { PreferencesPane } from './panes/preferences-pane';
 import { BillingPane } from './panes/billing-pane';

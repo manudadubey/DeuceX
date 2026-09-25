@@ -11,8 +11,8 @@ import {
   TabsTrigger,
   el,
   tagChartEnter,
-} from '@procircuit/ui';
-import type { NoteMood } from '@procircuit/db';
+} from '@deucex/ui';
+import type { NoteMood } from '@deucex/db';
 
 // MC-6/section 7's mood scale ("MV" in the prototype): note moods map onto
 // the check-in's 1-5 scale; row 3 (unlabelled) is reached only by check-ins.

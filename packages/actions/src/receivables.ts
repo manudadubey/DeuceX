@@ -1,4 +1,4 @@
-import type { Database, Json } from '@procircuit/db';
+import type { Database, Json } from '@deucex/db';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { type ApprovalGateDb, runGatedAction } from './gate';
 

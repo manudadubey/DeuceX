@@ -1,7 +1,7 @@
 'use client';
 
-import { Badge, Card, CardDescription, CardHeader, CardTitle } from '@procircuit/ui';
-import type { BudgetVsActualRow, WeeklyBudgetBar } from '@procircuit/agents';
+import { Badge, Card, CardDescription, CardHeader, CardTitle } from '@deucex/ui';
+import type { BudgetVsActualRow, WeeklyBudgetBar } from '@deucex/agents';
 
 function formatMoney(amount: number, currency: string): string {
   return new Intl.NumberFormat('en-AU', {

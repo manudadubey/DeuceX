@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, Json } from '@procircuit/db';
-import { recordRun, type AgentRunsDb } from '@procircuit/actions';
+import type { Database, Json } from '@deucex/db';
+import { recordRun, type AgentRunsDb } from '@deucex/actions';
 import {
   RECEIPT_EXTRACTION_MODEL,
   RECEIPT_EXTRACTION_PROMPT_VERSION,
@@ -9,7 +9,7 @@ import {
   extractReceipt,
   type ReceiptExtractionModelClient,
   type ReceiptProposal,
-} from '@procircuit/agents';
+} from '@deucex/agents';
 
 export interface ScanReceiptDeps {
   db: SupabaseClient<Database>;

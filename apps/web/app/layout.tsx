@@ -1,8 +1,8 @@
-import { FlagSprite } from '@procircuit/ui';
+import { FlagSprite } from '@deucex/ui';
 import './globals.css';
 
 export const metadata = {
-  title: 'ProCircuit',
+  title: 'DeuceX',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

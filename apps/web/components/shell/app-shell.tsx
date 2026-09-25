@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@procircuit/ui';
+import { cn } from '@deucex/ui';
 import { Fab } from './fab';
 import { Sidebar } from './sidebar';
 import { TabBar } from './tab-bar';
@@ -13,7 +13,7 @@ export interface AppShellProps {
 }
 
 // `.shell` (Baseline §Shells and routes): sidebar + topbar + content, with the mobile tab
-// bar and FAB swapped in under 900px. See docs/PROCIRCUIT-CONTEXT.md 4.2/4.3.
+// bar and FAB swapped in under 900px. See docs/DEUCEX-CONTEXT.md 4.2/4.3.
 export function AppShell({ email, children }: AppShellProps) {
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
 

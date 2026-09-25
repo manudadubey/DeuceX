@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, Json } from '@procircuit/db';
-import { detectStage } from '@procircuit/db';
+import type { Database, Json } from '@deucex/db';
+import { detectStage } from '@deucex/db';
 import type { RankingFeedRow } from './csv';
 
 type PlayerStage = '1' | '2' | '3';

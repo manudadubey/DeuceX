@@ -6,9 +6,9 @@ import {
   type Json,
   type Note,
   type NoteCtx,
-} from '@procircuit/db';
-import type { AgentRunsDb } from '@procircuit/actions';
-import type { ExtractionModelClient } from '@procircuit/agents';
+} from '@deucex/db';
+import type { AgentRunsDb } from '@deucex/actions';
+import type { ExtractionModelClient } from '@deucex/agents';
 import type { StorageAdapter } from '../storage/adapter';
 import type { TranscriptionAdapter } from '../transcription/adapter';
 import { computeNoteStamp } from '../conditions/stamp';

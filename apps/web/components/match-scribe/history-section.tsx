@@ -17,9 +17,9 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@procircuit/ui';
-import { listNotes, type Note, type NoteCtx } from '@procircuit/db';
-import { isStampChipAt } from '@procircuit/agents';
+} from '@deucex/ui';
+import { listNotes, type Note, type NoteCtx } from '@deucex/db';
+import { isStampChipAt } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import { deleteNoteRemote } from '@/lib/match-scribe/api';
 

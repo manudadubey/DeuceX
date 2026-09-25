@@ -12,7 +12,7 @@ import {
   FieldLabel,
   ToggleGroup,
   ToggleGroupItem,
-} from '@procircuit/ui';
+} from '@deucex/ui';
 import {
   updatePreferences,
   type AppLanguage,
@@ -21,7 +21,7 @@ import {
   type Player,
   type SpokenLanguage,
   type Units,
-} from '@procircuit/db';
+} from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 
 const DATE_FORMATS: { value: DateFormat; label: string }[] = [

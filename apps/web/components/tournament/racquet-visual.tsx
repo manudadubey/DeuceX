@@ -1,7 +1,7 @@
 // PRD-08 section 4.1: the racquet visual `.rq`, `clipPath` `rqHeadT`, mains
 // in chart-2 and crosses in chart-4 — markup ported verbatim from
-// docs/procircuit-dashboard.html's own `<svg viewBox="0 0 150 190">`
-// (PROCIRCUIT-CONTEXT.md 5.4), just with hard-coded colours swapped for the
+// docs/deucex-dashboard.html's own `<svg viewBox="0 0 150 190">`
+// (DEUCEX-CONTEXT.md 5.4), just with hard-coded colours swapped for the
 // Baseline tokens the rest of apps/web already uses.
 const MAINS_X = [31, 37, 43, 49, 55, 61, 67, 73, 79, 85, 91, 97, 103, 109, 115];
 const CROSSES_Y = [8, 14, 20, 26, 32, 38, 44, 50, 56, 62, 68, 74, 80, 86, 92, 98, 104, 110, 116];

@@ -1,4 +1,4 @@
-import { Empty } from '@procircuit/ui';
+import { Empty } from '@deucex/ui';
 
 // One placeholder per step 0.5 route (docs/BUILD-PLAN-CLAUDE-CODE.md): "every route renders
 // a placeholder page with the right title." The title itself comes from the topbar crumb

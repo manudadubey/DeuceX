@@ -1,4 +1,4 @@
-import { Card, CardDescription, CardHeader, CardTitle } from '@procircuit/ui';
+import { Card, CardDescription, CardHeader, CardTitle } from '@deucex/ui';
 
 // M-PRIV-3/MC-16: replaces the insight whenever the distress rule fires.
 // No dismiss control and no disabling setting, by design — see

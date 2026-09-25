@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import type { Database, Json } from '@procircuit/db';
+import type { Database, Json } from '@deucex/db';
 import {
   billingPauseNotice,
   billingResumeNotice,
@@ -7,7 +7,7 @@ import {
   membershipEndedNotice,
   pausedMembershipEndDate,
   type PatronNotice,
-} from '@procircuit/shared';
+} from '@deucex/shared';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { type ApprovalGateDb, runGatedAction } from './gate';
 import type { EmailClient } from './resend-client';
@@ -167,7 +167,7 @@ export interface FansActionsDb {
 
 export type PatronNoteKind = 'thanks' | 'nudge' | 'checkin' | 'welcome';
 
-/** "Arya Dubey" -> "arya-dubey" (PRD-04: procircuit.ai/p/arya-dubey). */
+/** "Arya Dubey" -> "arya-dubey" (PRD-04: deucex.ai/p/arya-dubey). */
 export function slugFromName(name: string): string {
   const base = name
     .normalize('NFKD')
@@ -230,6 +230,7 @@ export async function startConnectOnboarding(
         const account = await stripe.createExpressAccount({
           email: player.email,
           country: stripeCountryCode(player.country),
+          // Pre-rebrand key name, kept to match existing Stripe objects.
           metadata: { procircuit_player_id: player.id },
         });
         const slug = programme?.slug ?? (await uniqueSlug(db, player.name));
@@ -567,7 +568,7 @@ export async function createPatronCheckout(
 // ---------------------------------------------------------------------------
 // Step 4.1b · P-17: the Stripe customer portal for patrons.
 //
-// Patrons have no ProCircuit account, so ownership of the email address is
+// Patrons have no DeuceX account, so ownership of the email address is
 // the credential: the public page emails a short-lived link signed with a
 // server-only secret, and only that link opens a portal session. Like
 // createPatronCheckout, this is the patron's own request about their own

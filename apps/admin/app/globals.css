@@ -1,6 +1,6 @@
-/* Deliberately plain: apps/admin has no design-system wiring yet (@procircuit/ui
+/* Deliberately plain: apps/admin has no design-system wiring yet (@deucex/ui
    needs a Tailwind + token setup this step doesn't build), and step 5.1's own
-   admin console (PRD-13, procircuit-admin.html) replaces this page entirely.
+   admin console (PRD-13, deucex-admin.html) replaces this page entirely.
    This exists only so the ingestion page (step 3.1) is legible, not to
    anticipate the real console's visual design. */
 

@@ -40,12 +40,11 @@ export class EmailSendFailedError extends Error {
   }
 }
 
-// Resend's own sandbox sender, which works without any domain verification
-// — the real procircuit.app domain is not verified in Resend yet (found
-// live, this session: a 403 "domain is not verified" on the first real
-// send attempt), so this is the honest default until the owner verifies a
-// real sending domain, not a placeholder pretending to be production-ready.
-const DEFAULT_FROM_ADDRESS = 'ProCircuit <onboarding@resend.dev>';
+// Resend's own sandbox sender, which works without any domain verification.
+// It stays the default until mail.deucex.ai is verified in Resend and
+// RESEND_FROM_ADDRESS is set (an unverified domain fails with a 403,
+// found live in step 2.3).
+const DEFAULT_FROM_ADDRESS = 'DeuceX <onboarding@resend.dev>';
 
 export function createResendEmailClient(config: { apiKey: string; from?: string }): EmailClient {
   const resend = new Resend(config.apiKey);
@@ -77,7 +76,7 @@ export function createResendEmailClient(config: { apiKey: string; from?: string 
   };
 }
 
-/** "ProCircuit <onboarding@resend.dev>" -> "onboarding@resend.dev". */
+/** "DeuceX <onboarding@resend.dev>" -> "onboarding@resend.dev". */
 function fromAddress(from: string): string {
   return /<([^>]+)>/.exec(from)?.[1] ?? from;
 }

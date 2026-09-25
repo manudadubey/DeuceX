@@ -46,7 +46,7 @@ export {
 } from './pricing';
 
 // AGENT_RUN_QUEUE/createBoss/enqueueAgentRun/registerAgentWorker live at the
-// '@procircuit/actions/queue' subpath, not here, because './queue/queue.ts'
+// '@deucex/actions/queue' subpath, not here, because './queue/queue.ts'
 // imports pg-boss, which imports the real `pg` driver (fs/net/tls/dns —
 // Node built-ins with no browser shim). Everything below this comment has
 // no such dependency, which is what lets packages/agents' financial module
@@ -82,7 +82,7 @@ export {
 
 // requestAccountDeletion/requestDataExport (account.ts) and
 // createResendEmailClient (resend-client.ts) live at the
-// '@procircuit/actions/account' subpath, not here, same reasoning as the
+// '@deucex/actions/account' subpath, not here, same reasoning as the
 // './queue' split above: resend-client.ts imports the real 'resend' SDK,
 // and packages/agents' financial module already imports symbols from this
 // main barrel for apps/web's own client bundle (AgentValidationError,

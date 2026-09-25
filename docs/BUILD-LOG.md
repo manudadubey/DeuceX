@@ -18,16 +18,16 @@ existing Supabase project already named "ProCircuit" (`gpzpmrumwaqyfkyvqbgl`) ha
 security gap (RLS disabled on all 5 of its existing tables, `matches`/`points`/`stats_*`, which
 belong to an unrelated app). Owner decided to reuse that project rather than create a new one, so
 RLS was enabled on those 5 tables (no policies yet — this only blocks anon/authenticated access,
-not the service role). ProCircuit's own schema has not been added yet.
+not the service role). DeuceX's own schema has not been added yet.
 
 Skipped: Fly/Render and Cloudflare R2 not provisioned (not needed until later steps).
 
 ## Follow-up · Push, CI and Vercel wiring — 20 September 2026
 
 Turned out the GitHub remote set up above pointed at the wrong repo: `matsudadubey/ProCircuit`
-and `manudadubey/ProCircuit` are two different, unrelated GitHub accounts that each happen to own
-a repo called `ProCircuit`. The one connected to Vercel is `manudadubey`. Remote was repointed to
-`https://github.com/manudadubey/ProCircuit.git` and the local commit pushed there.
+and `manudadubey/DeuceX` are two different, unrelated GitHub accounts that each happen to own
+a repo called `DeuceX`. The one connected to Vercel is `manudadubey`. Remote was repointed to
+`https://github.com/manudadubey/DeuceX.git` and the local commit pushed there.
 
 Push auth needed `gh auth login` (device flow, approved in the owner's already-signed-in browser
 session) plus a scope refresh (`gh auth refresh -s workflow`) because GitHub blocked a push that
@@ -40,8 +40,8 @@ First CI run failed: pnpm 11.21.0 requires Node 22.13+, but the workflow pinned 
 bumping `.nvmrc`, `package.json` engines, and the workflow's `setup-node` version to 22. Second
 run passed clean.
 
-Vercel: created two projects via `create_git_project`, both linked to `manudadubey/ProCircuit` on
-`main` — `procircuit` (root `apps/web`, Next.js) and `procircuit-admin` (root `apps/admin`,
+Vercel: created two projects via `create_git_project`, both linked to `manudadubey/DeuceX` on
+`main` — `deucex` (root `apps/web`, Next.js) and `deucex-admin` (root `apps/admin`,
 Next.js). The linking API was flaky during setup (create calls reported success but the project
 didn't persist, twice, before one finally stuck) — if wiring a third Vercel project later, expect
 to possibly retry. Both projects deployed READY on the first real push and the Node-version-fix
@@ -58,7 +58,7 @@ Acceptance checks restated before starting: (1) an integration test proves a pla
 only their own rows, (2) `fx_rates_daily` refuses updates and deletes at the database level, (3)
 the migration applies cleanly on a fresh branch and is a no-op on a second run.
 
-Built: the first ProCircuit migration (`packages/db/migrations/20260920090527_step_0_2_foundation.sql`),
+Built: the first DeuceX migration (`packages/db/migrations/20260920090527_step_0_2_foundation.sql`),
 covering exactly the tables step 0.2 names — `players`, `fx_rates_daily`, `agent_runs`,
 `approvals`, `admin_actions`, `notifications`, `share_links` — plus an empty `pgboss` schema
 (pg-boss will create its own job tables inside it once a worker exists, in a later step) and a
@@ -79,7 +79,7 @@ function had a mutable search_path, a real privilege-escalation vector); `202609
 removes two rows that had to be inserted into the live `fx_rates_daily` table to verify the
 insert-only trigger (see below) — a no-op on any environment that never had them.
 
-Decision: the user chose to apply directly to the main ProCircuit Supabase project rather than a
+Decision: the user chose to apply directly to the main DeuceX Supabase project rather than a
 throwaway branch, after being asked (branching costs $0.01344/hour and there was no strong reason
 to spend it for a schema that has no data yet). This is a one-time deviation from
 `CLAUDE.md`'s "MCP writes go to branches only" default, made with explicit approval; nothing here
@@ -164,7 +164,7 @@ what was actually done and verified). What's left, before this works anywhere bu
 
 1. ~~**Auth > URL Configuration**~~ Done for local dev (Site URL defaulted to
    `http://localhost:3000` already; added `http://localhost:3000/**` to Redirect URLs). Redo for
-   the Vercel `procircuit` URL and later the production domain when those exist.
+   the Vercel `deucex` URL and later the production domain when those exist.
 2. ~~**Auth > Email Templates > Magic Link**~~ Done: repointed to
    `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink`, verified delivering
    through Resend with that exact link.
@@ -175,7 +175,7 @@ what was actually done and verified). What's left, before this works anywhere bu
    worth remembering: Supabase's passkey API is marked experimental ("the API may change without
    notice").
 4. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (the publishable
-   key, not the service role key) as environment variables on the `procircuit` Vercel project —
+   key, not the service role key) as environment variables on the `deucex` Vercel project —
    done locally in `apps/web/.env.local` (gitignored) for this session's testing, not yet done on
    Vercel itself.
 
@@ -195,7 +195,7 @@ The owner logged into the Supabase dashboard mid-session so this could be tested
 than left as an untested plan. Configured, with the dashboard open in the browser: URL
 Configuration (Site URL was already `http://localhost:3000` by default; added
 `http://localhost:3000/**` to Redirect URLs), and Auth > Passkeys (enabled; Relying Party display
-name "ProCircuit", RP ID `localhost`, origin `http://localhost:3000` — dev-only values, need
+name "DeuceX", RP ID `localhost`, origin `http://localhost:3000` — dev-only values, need
 redoing against the real domain before launch, which will invalidate any passkeys registered
 against `localhost`). The Magic Link email template could **not** be edited: Supabase's built-in
 mailer only sends its fixed default templates, and "Set up custom SMTP to edit templates" gates
@@ -232,7 +232,7 @@ SMTP is set up and the template is repointed (checklist item 2 above).
 ### Follow-up · custom SMTP wired up, full loop verified, same day
 
 The owner created a Resend account and handed over access to finish the job. Generated a Resend
-API key, configured it as ProCircuit's custom SMTP in Supabase (`smtp.resend.com:587`, sender
+API key, configured it as DeuceX's custom SMTP in Supabase (`smtp.resend.com:587`, sender
 `onboarding@resend.dev` until a domain is verified — Resend's shared onboarding domain, which
 exists for exactly this bootstrapping case), and rewrote the Magic Link template's source to
 `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink` (the Supabase dashboard's
@@ -243,7 +243,7 @@ Supabase's built-in 2/hour to the custom-SMTP default of 30/hour, confirmed in `
 
 Ran the real flow end to end this time, no shortcuts: submitted the sign-in form from a running
 `apps/web` instance, confirmed in Resend's own dashboard that the mail was generated from
-ProCircuit's actual template and marked `Delivered`, then opened the exact link from that email
+DeuceX's actual template and marked `Delivered`, then opened the exact link from that email
 (`/auth/confirm?token_hash=pkce_...&type=magiclink`) and clicked "Sign in". Landed on `/`
 correctly reading "Signed in as manu.dadubey@gmail.com." From there, "Register a passkey"
 succeeded (`Registered passkey (Chromium Browser)`), proving `registerPasskey()` works once a
@@ -270,7 +270,7 @@ in both themes and matches Baseline visually, (2) a Playwright check confirms no
 scroll at 390px.
 
 Built `packages/ui`: the Baseline tokens (`src/styles/globals.css`) copied verbatim from
-`docs/procircuit-baseline.html`'s `:root`, dark-media-query and `data-theme="dark"` blocks,
+`docs/deucex-baseline.html`'s `:root`, dark-media-query and `data-theme="dark"` blocks,
 reorganised for Tailwind v4's CSS-first theming (`@theme inline` mapping `--color-*`/
 `--radius-*`/`--font-*` onto the same runtime custom properties, the shadcn v4 idiom, since
 Baseline predates v4 and the build plan's own "Tailwind theme mapping" sample is v3-style
@@ -296,9 +296,9 @@ component. Styling is Tailwind utility classes plus `class-variance-authority` f
 "Lucide icons" preset note).
 
 Wired `apps/web` only (not `apps/admin`, out of scope for this step): `transpilePackages:
-['@procircuit/ui']` in `next.config.mjs`, `postcss.config.mjs` with `@tailwindcss/postcss`,
+['@deucex/ui']` in `next.config.mjs`, `postcss.config.mjs` with `@tailwindcss/postcss`,
 `app/globals.css` importing the package's token file directly (`@import
-'@procircuit/ui/src/styles/globals.css'`), and `@source` directives inside that token file
+'@deucex/ui/src/styles/globals.css'`), and `@source` directives inside that token file
 (Tailwind v4 doesn't scan `node_modules` by default, and a pnpm workspace package is reached
 through a symlinked `node_modules` entry) pointing at `packages/ui`'s own component/chart
 directories and at `apps/web/app` and `apps/admin/app`, so utility classes used in either app
@@ -345,20 +345,20 @@ Built two route groups in `apps/web/app`: `(app)` (the full shell) and `(bare)` 
 sign-in, the coach view). `(app)/layout.tsx` gates every route it wraps on a session in one
 place (`supabase.auth.getClaims()`, redirect to `/signin`) instead of each page repeating
 step 0.3's check, then renders `components/shell/app-shell.tsx`: a 256px sidebar (48px
-collapsed, `Cmd/Ctrl+B`, persisted to `pc.sidebar` per PROCIRCUIT-CONTEXT 4.5) built from
+collapsed, `Cmd/Ctrl+B`, persisted to `pc.sidebar` per DEUCEX-CONTEXT 4.5) built from
 Baseline's own sidebar groups (Workspace, Agents, Account) minus the Sponsor and Fan agents,
 which are Elite-only and don't exist yet; a sticky translucent topbar (title looked up from
 the route, a date/week chip, share, tour, bell, theme); a `main` column whose max-width grows
 from 1400px to 1600px when collapsed; a floating "Match Scribe" capture button under 900px
 replaced by a five-tab bottom bar (Home, Tournaments, Scribe, Fans, Money), matching
-`docs/procircuit-dashboard.html`'s actual markup exactly (900px, not the 1180px the context
+`docs/deucex-dashboard.html`'s actual markup exactly (900px, not the 1180px the context
 doc's prose gives elsewhere — the build-plan step itself says 900px, and it's also what
 `packages/ui`'s own mobile-target rule already uses, so there's no real conflict once the
 prototype's CSS is checked directly). `components/shell/bare-shell.tsx` is the centred-column,
 logo-then-content wrapper for the other group. The ten `(app)` routes and the `/onboarding`
 and `/coach/[token]` `(bare)` routes are honest placeholders (an `Empty` block naming what
 will eventually fill them, not fixture data); the dashboard (`/`) is the one exception, built
-out as the real "three answers" empty state (PROCIRCUIT-CONTEXT 5.1) — an unverified-ranking
+out as the real "three answers" empty state (DEUCEX-CONTEXT 5.1) — an unverified-ranking
 notice plus three `PulseTile`-styled links (Runway, Decision required, Patrons since last
 login) that go to their eventual agent route and say why they're empty, rather than showing
 placeholder numbers. `/signin` (moved from `app/signin` into `(bare)/signin`, logic
@@ -518,7 +518,7 @@ reason. The mechanism is built and tested; the first real screen to use it is Ph
 Verified: `pnpm typecheck`, `pnpm lint`, `pnpm format`, `pnpm test` all green across every
 package (74 tests passing, 7 skipped without a live database connection — 5 pre-existing RLS
 integration tests plus the 2 new queue integration tests, all skipped for the identical,
-documented reason); `pnpm --filter @procircuit/web build` still succeeds (no new routes; this
+documented reason); `pnpm --filter @deucex/web build` still succeeds (no new routes; this
 step has no UI surface of its own). `pnpm exec playwright test` still passes all 11 tests
 (unaffected, as expected).
 
@@ -655,10 +655,10 @@ to turn on without further backend changes.
 Found and fixed a latent bug in step 0.6's own code, not new to this step: `hashApprovalPayload`
 (`packages/shared/src/approval-hash.ts`) used `node:crypto`, which `apps/web/lib/approvals/
 confirm-approval.ts` (a client component, step 0.6) already imported transitively through
-`@procircuit/db`'s barrel export — but nothing had ever actually rendered a page that imported
+`@deucex/db`'s barrel export — but nothing had ever actually rendered a page that imported
 it client-side, so Next.js's client webpack bundle had never needed to resolve `node:crypto`
 and the break stayed invisible. This step's `match-scribe-client.tsx` is the first real screen
-to import anything from `@procircuit/db` into a client bundle (for `getSavedNotesThisMonth`),
+to import anything from `@deucex/db` into a client bundle (for `getSavedNotesThisMonth`),
 which surfaced it immediately as a hard webpack build failure. Fixed by switching to Web Crypto
 (`crypto.subtle.digest`), a Node 20+ and browser standard, making `hashApprovalPayload` async;
 updated both call sites (`packages/db/src/approvals.ts`, `packages/actions/src/gate.ts`, both
@@ -1357,7 +1357,7 @@ worksheet 7's fix: September reads 612 in with the Genoa receivable excluded ent
 pending. `extract-receipt.test.ts` reproduces F-AC-5 and F-AC-6 against the Trattoria da Gino and
 Farmacia Centrale fixtures — merchant, amount, currency, category all extracted, one low-confidence
 field flagged without blocking Save. The route matches `#/agent/financial`, checked directly
-against `docs/procircuit-dashboard-neumayer.html`'s own prototype (see below).
+against `docs/deucex-dashboard-neumayer.html`'s own prototype (see below).
 
 **Verified against the real Supabase project** (`gpzpmrumwaqyfkyvqbgl`), not just fixtures, since
 this project can't branch (owner confirmed applying the migration directly): applied
@@ -1384,12 +1384,12 @@ added to `runway.ts` with its own tests so the "With pending prize" tile has a r
 `requestFinancialRecompute`'s fire-and-forget call to `apps/api` threw an unhandled promise
 rejection whenever the API wasn't reachable (visible as a real Next.js dev-overlay error caught
 live in the browser), fixed by catching and logging it as a non-fatal warning, matching what its own
-comment already claimed it did. (3) `@procircuit/actions`'s single barrel export unconditionally
+comment already claimed it did. (3) `@deucex/actions`'s single barrel export unconditionally
 pulled `pg-boss` (and so the real `pg` driver — `fs`/`net`/`tls`/`dns`) into `apps/web`'s client
 bundle the moment `packages/agents/financial` needed `AgentValidationError`/`TokenUsage` from it,
 breaking `next build` outright; fixed by splitting the queue-dependent exports
 (`createBoss`/`registerAgentWorker`/`enqueueAgentRun`/`AGENT_RUN_QUEUE`) onto a
-`@procircuit/actions/queue` subpath (a new `exports` map in its `package.json`) that only
+`@deucex/actions/queue` subpath (a new `exports` map in its `package.json`) that only
 `apps/api` imports, leaving the main package entry browser-safe. (4) Running `pnpm build` against
 `apps/web` while its dev server was live corrupted the dev server's shared `.next` cache (a
 production `BUILD_ID` colliding with the dev server's own manifest format), breaking the page for
@@ -1408,7 +1408,7 @@ at all (stricter than F-15's letter, not weaker: nothing unredacted is ever pers
 ledger line's receipt-button expansion has nothing to show); patron MRR and payouts — always 0,
 step 4.1; F-21's "the agent learns from the gap" cost-prior adjustment — needs the Tournament
 Agent's cost model, step 3.2; the Sunday reminder's quiet hours and per-player toggle — step 2.3
-(Settings), as step 2.1's entry already flagged. `docs/procircuit-dashboard-neumayer.html`'s own
+(Settings), as step 2.1's entry already flagged. `docs/deucex-dashboard-neumayer.html`'s own
 `#/agent/financial` view was read directly (served over a local static HTTP server, since the
 built-in browser only executes JS for `file://` prototypes when served, not opened directly) to
 check the build against it field by field; the milestone bar and the three runway summary tiles
@@ -1452,7 +1452,7 @@ Settings writes with a real vendor side effect, matching TECH-ARCHITECTURE secti
 **The first real Resend integration.** `packages/actions/src/resend-client.ts` is the only file
 outside `packages/actions` allowed to `import 'resend'` (the lint rule already covered it); its
 `createResendEmailClient` and `account.ts`'s `requestAccountDeletion`/`confirmAccountDeletion`/
-`cancelAccountDeletion`/`requestDataExport` live at a new `@procircuit/actions/account` subpath,
+`cancelAccountDeletion`/`requestDataExport` live at a new `@deucex/actions/account` subpath,
 not the main barrel, for the exact `pg-boss`-in-the-client-bundle reason step 2.2's own BUILD-LOG
 entry already documents — apps/web's client bundle already pulls symbols from the main barrel
 transitively, and a real vendor SDK must never ride along. `requestAccountDeletion` and
@@ -1547,7 +1547,7 @@ the export email outright the first time it ran against a real account with zero
 empty-string `content` as missing entirely ("must have either a `content` or `path`"). Fixed by
 passing CSV headers explicitly rather than inferring them from `rows[0]`, so a header-only CSV is
 always non-empty. (3) The real `RESEND_API_KEY` this session's owner supplied sends from an
-unverified `procircuit.app` domain, which Resend refuses with a 403 — switched the default sender
+unverified `deucex.ai` domain, which Resend refuses with a 403 — switched the default sender
 to Resend's own sandbox address (`onboarding@resend.dev`, no verification needed) behind a new
 optional `RESEND_FROM_ADDRESS` env var, so the real domain can be swapped in the moment it's
 verified. (4) A fourth `pg-boss` instance (this step's own, for the deletion sweep) tipped the
@@ -1570,7 +1570,7 @@ already superseded PRD-12 §4.3's multi-select prose; the schema was already bui
 the notification matrix used the two-category For-you/FYI shape (decisions worksheet 13), not the
 per-event matrix the prototype shows.
 
-[PR #12](https://github.com/manudadubey/ProCircuit/pull/12) is open.
+[PR #12](https://github.com/manudadubey/DeuceX/pull/12) is open.
 
 ## Step 3.1 · Rankings and calendars, with the manual path first — 23 September 2026
 
@@ -1655,7 +1655,7 @@ per-player before/after diff and stage-change count (AD-18), a missing-deadline 
 with a date-entry action (AD-21 — the "re-runs shortlists" half doesn't apply yet, since no
 shortlist exists until step 3.2), and fact-sheet correction propose/apply/reject with a
 before/after diff (AD-20). `apps/admin` had zero styling or path-alias infrastructure (still the
-step-0.1 placeholder); added a plain `globals.css` (explicitly not `@procircuit/ui` — wiring the
+step-0.1 placeholder); added a plain `globals.css` (explicitly not `@deucex/ui` — wiring the
 full design system into a bare Next.js app is its own yak-shave step 5.1 should do properly, not a
 corner of this step) and the `@/*` path alias plus `next-env.d.ts` apps/web already had. Missed
 feed windows raise an `alerts` row via a pure `findOverdueFeeds` plus `checkFeedWindows`
@@ -1711,9 +1711,9 @@ first"); AD-21's shortlist re-run on a deadline change and AD-20's fact-correcti
 shortlist re-run (no shortlist exists until step 3.2's Tournament Agent); a 52-week ranking chart
 on the dashboard (mentioned in PRD-00's tier table but not in this step's own "Build" list, and no
 general "full" dashboard exists yet to hang it on — still `FirstWeekDashboard` only); apps/admin's
-real design system (`@procircuit/ui`/Tailwind wiring, plain CSS instead, see above).
+real design system (`@deucex/ui`/Tailwind wiring, plain CSS instead, see above).
 
-[PR #13](https://github.com/manudadubey/ProCircuit/pull/13) is open.
+[PR #13](https://github.com/manudadubey/DeuceX/pull/13) is open.
 
 ## Step 3.2 · Tournament Agent — 23 September 2026
 
@@ -1735,7 +1735,7 @@ rather than checking an LLM's prose against it after the fact. The LLM-authored 
 the recommendation memo card are a named follow-up, not attempted here.
 
 **A real inconsistency in the prototype, found before writing the fixture test, not after.**
-`docs/procircuit-dashboard-neumayer.html`'s own `#/agent/tournament` mock data ranks Poznań first
+`docs/deucex-dashboard-neumayer.html`'s own `#/agent/tournament` mock data ranks Poznań first
 (ratio 0.42) ahead of Bratislava (ratio 0.36), even though PRD-01 T-3 says ranking is by ratio
 ascending (lower is better) with only a defence week getting a force-include exception — Bratislava
 is not a defence week. The prototype's own numbers do not satisfy its own stated rule; it reads as
@@ -1829,7 +1829,7 @@ decision card (cost, outcome, runway-if-you-lose/reach tiles, the two-step Accep
 `packages/ui`'s `Confirm` — the same M-GATE-2 "consequence sentence beside the control" shape
 `ReservesCard`'s receivable-received flow already established) below the pulse-tile row. Runway
 tiles call `computeRunwayWeeks(reserves + netOfRound, netBurn)` directly
-(`@procircuit/agents`, already built and already proven against PRD-03's own fixture numbers by
+(`@deucex/agents`, already built and already proven against PRD-03's own fixture numbers by
 `runway.test.ts`) rather than routing through `computeProjection`'s 14-week `scenarioDeltas`
 machinery — PRD-01 section 7's own formula is the single-step version, and `runway.ts`'s own
 comment already anticipated this exact call shape. `/agent/tournament` (`tournament-client.tsx`
@@ -1943,7 +1943,7 @@ doesn't. Named precisely rather than left as the vaguer step-1.3 comment it was.
 The tension rule (section 7) has three OR'd conditions that can all fire at once with no stated
 priority; this step picks heat first, then altitude-plus-ball, then humidity-plus-wind, matching
 which single driver each of the PRD's own worked examples names, and verified every one of the
-prototype's five fixture events (Poznań, Sibiu, Bratislava, Lisboa, Antalya — `docs/procircuit-
+prototype's five fixture events (Poznań, Sibiu, Bratislava, Lisboa, Antalya — `docs/deucex-
 dashboard.html`'s own `T` array) against the acceptance criteria's exact numbers and copy. Frames
 prototype B10 ("Antalya says bring 5 while the default profile carries 4"): implemented literally as
 written — the default stays 4, the rule caps at whatever the profile actually carries, and a capped
@@ -2173,7 +2173,7 @@ Deliberately skipped, each for a named reason:
 
 Closed the two gaps step 4.1 flagged as launch blockers, before any real patron is charged.
 
-**P-17, the Stripe customer portal.** Patrons have no ProCircuit login, so owning the email
+**P-17, the Stripe customer portal.** Patrons have no DeuceX login, so owning the email
 address is the credential. The public `/p/<slug>` page gains "Already backing <name>? Change
 tier, update your card or cancel", a form that emails a one-hour link. `/p/<slug>/manage` swaps
 that link's token for a Stripe customer-portal session on the player's connected account, where
@@ -2260,3 +2260,32 @@ ends and 89 days doesn't, idempotent on a second run, a Stripe failure leaving t
 real date, and a missing space ("Pro by24 December") was caught and fixed there. Not run live
 end to end: nothing in the sandbox has been paused for 90 days, and waiting 90 days, or faking the
 clock against a real Stripe subscription, isn't worth it given the tests cover the sweep.
+
+### Rebrand · ProCircuit becomes DeuceX — 25 September 2026
+
+Owner decisions this session: rename everything in the repo, including the package scope and doc
+file names; keep identifiers already stored outside the code; rename the GitHub repo and both
+Vercel projects too.
+
+- Text: every "ProCircuit" in code, UI copy, emails, tests and docs is now "DeuceX", including the
+  Resend fallback sender (`DeuceX <onboarding@resend.dev>`), the ledger CSV name
+  (`deucex-ledger-<month>.csv`), and the old `procircuit.app`/`procircuit.ai` placeholder domains,
+  which now read `deucex.ai`. Past build-log entries were renamed too, so their file paths still
+  resolve. The package scope is `@deucex/*` and the root package is `deucex`; the lockfile was
+  regenerated. Doc files were renamed: `PRD-00-DeuceX-Master.md`, `DEUCEX-CONTEXT.md`,
+  `deucex-*.html`, and `docs/deucex-training/`.
+- Kept, with a comment at each spot: the Stripe metadata keys `procircuit_player_id` and
+  `procircuit_tier_id`, and the portal configuration tag `procircuit: 'fans'` (the sandbox's
+  connected account, checkout sessions and portal configuration already carry them), plus the
+  IndexedDB name `procircuit-match-scribe` (renaming it strands notes queued offline on a device).
+  Also kept: the `pc.sidebar` localStorage key, and applied migration files, whose comments still
+  mention the old doc paths. Applied migrations are never edited.
+- Outside the repo: GitHub `manudadubey/ProCircuit` is now `manudadubey/DeuceX` (GitHub redirects
+  the old URL; the local `origin` was updated), and the Vercel projects `procircuit` and
+  `procircuit-admin` are now `deucex` and `deucex-admin` (same project ids). Not renamed: the
+  Supabase project and the Stripe sandbox account (both only renameable in their dashboards, and
+  nothing reads those display names), and the local checkout folder.
+
+Verified: typecheck, lint, format check and every unit suite pass. The web dev server, started
+through the renamed `@deucex/web` filter, renders "DeuceX" in the sidebar and the page title in a
+real signed-in session.

@@ -1,7 +1,7 @@
 'use client';
 
 import { Mic } from 'lucide-react';
-import { cn } from '@procircuit/ui';
+import { cn } from '@deucex/ui';
 import { QuickActionsSheet } from './quick-actions-sheet';
 
 // `.fab` (Baseline §Shells and routes "floating capture button"): desktop only. Under

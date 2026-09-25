@@ -1,4 +1,4 @@
-<title>ProCircuit System Architecture</title>
+<title>DeuceX System Architecture</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
 <style>
   :root {
@@ -135,8 +135,8 @@
 
 <div class="wrap">
   <header class="top">
-    <svg class="logo" aria-label="ProCircuit"><use href="#logo"/></svg>
-    <div><div class="t">ProCircuit</div><div class="s">System architecture and tech stack</div></div>
+    <svg class="logo" aria-label="DeuceX"><use href="#logo"/></svg>
+    <div><div class="t">DeuceX</div><div class="s">System architecture and tech stack</div></div>
     <span class="badge secondary">v0.4 · 14 Sep 2026 · from TECH-ARCHITECTURE.md</span>
   </header>
 
@@ -161,7 +161,7 @@
   <main>
     <section id="intro">
       <div class="eyebrow">Reference</div>
-      <h1>What ProCircuit is built on, and why each piece is there</h1>
+      <h1>What DeuceX is built on, and why each piece is there</h1>
       <p class="lede">A single-page companion to the thirteen requirements documents. It shows the stack, how a scheduled agent run becomes a proposal and never an action, where every kind of data lives, and what it costs to run. Numbers marked as estimates come with their working.</p>
       <div class="meta"><span class="badge lime">Release 1 scope</span><span>ATP and WTA players · Free and Pro tiers · Elite and the Studio agents in Release 2</span></div>
     </section>
@@ -171,13 +171,13 @@
       <p>A deliberately boring stack a team of three to five can run without a platform engineer. Every layer below names the choice, the reason, and the alternative that was weighed.</p>
       <div class="grid">
         <div class="layer"><div class="l">Player app</div><div class="v">Next.js PWA + Capacitor</div><div class="s">One web codebase, installable, offline queue. Capacitor wraps it for iOS and Android so background upload and native push work where Safari's PWA does not.</div><div class="alt"><b>Weighed:</b> React Native or full native. Doubles surface for a small team; nothing in the PRDs needs it.</div></div>
-        <div class="layer"><div class="l">Admin console</div><div class="v">Second Next.js deployment</div><div class="s">Same repository, own hostname (admin.procircuit.app), staff auth with mandatory passkey, a database role limited to what the console needs.</div><div class="alt"><b>Weighed:</b> a route group in the player app. Smaller, but a staff-auth bug would sit next to every player.</div></div>
+        <div class="layer"><div class="l">Admin console</div><div class="v">Second Next.js deployment</div><div class="s">Same repository, own hostname (admin.deucex.ai), staff auth with mandatory passkey, a database role limited to what the console needs.</div><div class="alt"><b>Weighed:</b> a route group in the player app. Smaller, but a staff-auth bug would sit next to every player.</div></div>
         <div class="layer"><div class="l">API and workers</div><div class="v">Fastify on Fly.io</div><div class="s">Owns everything with an external side effect: agent runs, webhooks, the actions module. Long-running processes for cron and queue workers.</div><div class="alt"><b>Weighed:</b> NestJS (more ceremony), Vercel functions (no long-running workers).</div></div>
         <div class="layer"><div class="l">Database</div><div class="v">PostgreSQL via Supabase</div><div class="s">Row-level security for per-player isolation, check constraints for the money model, auth and realtime bundled.</div><div class="alt"><b>Weighed:</b> Neon or RDS plus a separate auth provider: less lock-in, a few more weeks of plumbing.</div></div>
         <div class="layer"><div class="l">Jobs and schedules</div><div class="v">pg-boss on Postgres</div><div class="s">Six scheduled agents and every webhook run through one queue table with idempotency keys. No Redis to operate.</div><div class="alt"><b>Weighed:</b> BullMQ on Redis. The right next step if Postgres-as-queue ever becomes the bottleneck.</div></div>
         <div class="layer"><div class="l">Object storage</div><div class="v">Cloudflare R2</div><div class="s">Voice notes and photos under player-scoped keys, no egress fees, S3-compatible. A daily worker deletes audio at seven days.</div><div class="alt"><b>Weighed:</b> S3. Egress cost and no reason to prefer it.</div></div>
         <div class="layer"><div class="l">Models</div><div class="v">Structured-output LLM · Whisper · TimesFM</div><div class="s">Every agent call is JSON-schema constrained and Zod-validated. Whisper for transcription. TimesFM self-hosted for the Elite forecast.</div><div class="alt"><b>Policy:</b> providers used under no-training terms; the model behind each label is configuration, not copy.</div></div>
-        <div class="layer"><div class="l">Money and email</div><div class="v">Stripe Billing + Connect Express · Resend</div><div class="s">Card data never touches ProCircuit (PCI SAQ A). Connect Express pays patrons out weekly. Resend sends patron updates.</div><div class="alt"><b>Weighed:</b> Paddle (no Connect equivalent for payouts).</div></div>
+        <div class="layer"><div class="l">Money and email</div><div class="v">Stripe Billing + Connect Express · Resend</div><div class="s">Card data never touches DeuceX (PCI SAQ A). Connect Express pays patrons out weekly. Resend sends patron updates.</div><div class="alt"><b>Weighed:</b> Paddle (no Connect equivalent for payouts).</div></div>
       </div>
     </section>
 
@@ -198,7 +198,7 @@
             <text x="44" y="156" class="mut">read-only · 128-bit tokens · 90 days</text>
             <rect x="32" y="176" width="206" height="44" rx="8" class="box warn"/>
             <text x="44" y="196" font-weight="500">Admin console</text>
-            <text x="44" y="212" class="mut">admin.procircuit.app · passkey</text>
+            <text x="44" y="212" class="mut">admin.deucex.ai · passkey</text>
             <rect x="32" y="250" width="206" height="84" rx="8" class="box dark"/>
             <text x="44" y="270" font-weight="500">Not in the picture, by decision</text>
             <text x="44" y="288" class="mut">No bank aggregation.</text>
@@ -377,7 +377,7 @@
       <div class="two">
         <div>
           <h3>Repository layout</h3>
-          <pre>procircuit/
+          <pre>deucex/
   apps/
     web/        Next.js PWA (players, share links)
     admin/      Next.js console (staff)
@@ -542,5 +542,5 @@
     </section>
   </main>
 
-  <footer class="foot">Source: TECH-ARCHITECTURE.md v0.3 and PRD-00 v0.4 to PRD-13, ProCircuit, 13 September 2026. Figures marked as estimates are shown with their basis; the ranking-data licence cost is unknown until negotiated.</footer>
+  <footer class="foot">Source: TECH-ARCHITECTURE.md v0.3 and PRD-00 v0.4 to PRD-13, DeuceX, 13 September 2026. Figures marked as estimates are shown with their basis; the ranking-data licence cost is unknown until negotiated.</footer>
 </div>

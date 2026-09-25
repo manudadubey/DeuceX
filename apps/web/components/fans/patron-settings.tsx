@@ -12,8 +12,8 @@ import {
   ItemDescription,
   ItemTitle,
   Switch,
-} from '@procircuit/ui';
-import { setPatronNamesLine } from '@procircuit/db';
+} from '@deucex/ui';
+import { setPatronNamesLine } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 
 // PRD-04 section 4.3: the Fans pieces that live outside /fans. The Stripe

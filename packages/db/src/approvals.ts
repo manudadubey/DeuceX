@@ -1,4 +1,4 @@
-import { hashApprovalPayload } from '@procircuit/shared';
+import { hashApprovalPayload } from '@deucex/shared';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from './database.types';
 

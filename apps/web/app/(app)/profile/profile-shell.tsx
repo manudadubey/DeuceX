@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { Empty, Toast, ToastProvider, ToastTitle, ToastViewport } from '@procircuit/ui';
-import type { Player } from '@procircuit/db';
+import { Empty, Toast, ToastProvider, ToastTitle, ToastViewport } from '@deucex/ui';
+import type { Player } from '@deucex/db';
 import { StagePinCard } from '@/components/profile/stage-pin-card';
 import { PatronPageCard } from '@/components/fans/patron-settings';
 

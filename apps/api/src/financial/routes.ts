@@ -1,12 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import {
   AgentValidationError,
   ApprovalActionMismatchError,
   ApprovalAlreadyConsumedError,
   ApprovalNotFoundError,
   ApprovalPayloadMismatchError,
-} from '@procircuit/actions';
+} from '@deucex/actions';
 import multipart from '@fastify/multipart';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { authenticateRequest, UnauthorizedError } from '../auth';

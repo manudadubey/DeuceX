@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
+import type { Database } from '@deucex/db';
 import { describe, expect, it } from 'vitest';
 import { FakeDb } from '../test-support/fake-db';
 import { createDirectoryRankingAdapter } from './directory-adapter';
@@ -58,7 +58,7 @@ describe('createDirectoryRankingAdapter', () => {
 
     expect(result).toEqual({
       status: 'verified',
-      source: 'ProCircuit ranking import',
+      source: 'DeuceX ranking import',
       tourRank: 487,
       tourPoints: 96,
       itfRank: 212,

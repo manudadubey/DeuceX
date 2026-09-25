@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@procircuit/db';
-import { SupabaseApprovalGateDb } from '@procircuit/actions';
+import type { Database } from '@deucex/db';
+import { SupabaseApprovalGateDb } from '@deucex/actions';
 import {
   MissingPlayerEmailError,
   SupabaseAccountDb,
@@ -9,7 +9,7 @@ import {
   requestAccountDeletion,
   requestDataExport,
   type EmailClient,
-} from '@procircuit/actions/account';
+} from '@deucex/actions/account';
 
 // The two Settings writes with a real vendor side effect (an email through
 // Resend), gated the same as receiveReceivable (../financial/receivables.ts)

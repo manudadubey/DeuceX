@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@procircuit/ui';
+import { cn } from '@deucex/ui';
 import { TAB_ITEMS } from './routes';
 
 // `.tabbar` (Baseline §Shells and routes): appears under 900px in place of the sidebar.

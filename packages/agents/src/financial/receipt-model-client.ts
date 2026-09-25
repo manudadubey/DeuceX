@@ -1,4 +1,4 @@
-import type { TokenUsage } from '@procircuit/actions';
+import type { TokenUsage } from '@deucex/actions';
 import type { ReceiptExtractionPrompt } from './receipt-prompt';
 
 // Same shape as match-scribe/model-client.ts, extended with an image: a

@@ -70,7 +70,7 @@ describe('requestAccountDeletion', () => {
     const { token } = await requestAccountDeletion(gateDb, email, db, {
       approvalId: 'approval-1',
       playerId: 'player-1',
-      appBaseUrl: 'https://app.procircuit.app',
+      appBaseUrl: 'https://app.deucex.ai',
     });
 
     expect(token).toMatch(/^[0-9a-f]{32}$/);
@@ -96,7 +96,7 @@ describe('requestAccountDeletion', () => {
       requestAccountDeletion(gateDb, email, db, {
         approvalId: 'approval-1',
         playerId: 'player-1',
-        appBaseUrl: 'https://app.procircuit.app',
+        appBaseUrl: 'https://app.deucex.ai',
       }),
     ).rejects.toThrow(MissingPlayerEmailError);
     expect(email.sent).toHaveLength(0);
@@ -115,7 +115,7 @@ describe('requestAccountDeletion', () => {
       requestAccountDeletion(gateDb, email, db, {
         approvalId: 'approval-1',
         playerId: 'player-1',
-        appBaseUrl: 'https://app.procircuit.app',
+        appBaseUrl: 'https://app.deucex.ai',
       });
 
     await call();
@@ -136,7 +136,7 @@ describe('requestAccountDeletion', () => {
       requestAccountDeletion(gateDb, email, db, {
         approvalId: 'approval-1',
         playerId: 'player-1',
-        appBaseUrl: 'https://app.procircuit.app',
+        appBaseUrl: 'https://app.deucex.ai',
       }),
     ).rejects.toThrow();
   });

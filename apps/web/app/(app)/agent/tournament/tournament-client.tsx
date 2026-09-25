@@ -12,9 +12,9 @@ import {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-} from '@procircuit/ui';
-import { parseBlockedDateRanges, type Unit } from '@procircuit/agents';
-import { updateUnits, type Units } from '@procircuit/db';
+} from '@deucex/ui';
+import { parseBlockedDateRanges, type Unit } from '@deucex/agents';
+import { updateUnits, type Units } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 import { daysUntil, loadTournamentSnapshot, type TournamentSnapshot } from '@/lib/tournament/load';
 import { CalendarTab } from '@/components/tournament/calendar-tab';
