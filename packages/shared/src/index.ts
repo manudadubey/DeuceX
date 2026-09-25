@@ -12,3 +12,18 @@ export type Units = 'metric' | 'imperial';
 export type Stage = 1 | 2 | 3;
 
 export { hashApprovalPayload } from './approval-hash';
+
+// Step 4.1b: the patron-facing notice texts (PRD-04 P-18, "a notice the
+// player has seen first"). Shared so apps/web's confirm step and
+// packages/actions' email print the exact same words; copy, not logic.
+export {
+  billingPauseNotice,
+  billingResumeNotice,
+  membershipEndedNotice,
+  pausedMembershipEndDate,
+  PAUSED_MEMBERSHIP_DAYS,
+  manageLinkNotice,
+  cancellationReason,
+  type PatronNotice,
+  type PatronNoticeInput,
+} from './patron-notices';

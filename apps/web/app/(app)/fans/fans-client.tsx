@@ -19,6 +19,7 @@ import {
   FansKpis,
   MovementCard,
   MrrCard,
+  PausedBillingCard,
   PayoutsCard,
   SetupCard,
   WaitlistCard,
@@ -53,6 +54,7 @@ function lede(active: number): string {
 // 30 days and Tiers, People, then Payouts and MRR last "on purpose".
 export function FansClient({
   playerId,
+  playerName,
   homeCurrency,
   plan,
 }: {
@@ -188,6 +190,13 @@ export function FansClient({
               onToast={showToast}
             />
           </section>
+          <PausedBillingCard
+            snapshot={view}
+            playerId={playerId}
+            playerName={playerName}
+            onChanged={load}
+            onToast={showToast}
+          />
           <WaitlistCard snapshot={view} playerId={playerId} onChanged={load} onToast={showToast} />
           <PeopleCard
             playerId={playerId}

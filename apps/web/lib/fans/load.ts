@@ -63,6 +63,8 @@ export interface FansPatronView {
   since: string;
   tenureMonths: number;
   leftAt: string | null;
+  /** When billing was paused (step 4.1b); the 90-day clock. */
+  pausedAt: string | null;
   note: string | null;
   opens: OpenMark[];
   opened: number;
@@ -262,6 +264,7 @@ export async function loadFansSnapshot(
         since: row.since,
         tenureMonths: tenureMonths(record, now),
         leftAt: row.left_at,
+        pausedAt: row.paused_at,
         note: row.note,
         opens: record.opens,
         opened,
@@ -469,6 +472,7 @@ export function sampleFansSnapshot(homeCurrency: string, now = new Date()): Fans
       since: new Date(now.getTime() - months * 30 * DAY_MS).toISOString(),
       tenureMonths: months,
       leftAt: null,
+      pausedAt: null,
       note: null,
       opens: [1, 1, 1, 1, 1, 1],
       opened: 6,

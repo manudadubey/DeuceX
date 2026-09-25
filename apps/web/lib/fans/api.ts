@@ -96,3 +96,20 @@ export function inviteFromWaitlist(
     },
   );
 }
+
+export interface PatronBillingResult {
+  changed: number;
+  failed: string[];
+  /** Billing changed, but the notice email didn't reach them (or no email on file). */
+  unnotified: string[];
+}
+
+// Step 4.1b · P-18: both run after confirmApproval created the matching
+// patron_billing_pause / patron_billing_resume approval (payload {}).
+export function pausePatronBilling(supabase: SupabaseClient<Database>, approvalId: string) {
+  return post<PatronBillingResult>(supabase, '/fans/billing/pause', { approvalId });
+}
+
+export function resumePatronBilling(supabase: SupabaseClient<Database>, approvalId: string) {
+  return post<PatronBillingResult>(supabase, '/fans/billing/resume', { approvalId });
+}

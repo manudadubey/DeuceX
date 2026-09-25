@@ -20,6 +20,7 @@ function deps(overrides: Partial<FansRoutesDeps> = {}): FansRoutesDeps {
     noteClient: createMockPatronNoteClient(),
     agentRuns: { async insertAgentRun() {} },
     appBaseUrl: 'https://app.test',
+    linkSecret: 'test-secret',
     ...overrides,
   };
 }

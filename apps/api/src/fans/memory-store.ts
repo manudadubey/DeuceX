@@ -48,6 +48,12 @@ export class MemoryFansStore implements FansStore {
     this.webhooks.set(id, { appliedAt: error ? null : new Date().toISOString(), error });
   }
 
+  playerEmails = new Map<string, string>();
+
+  async getPlayerEmail(playerId: string) {
+    return this.playerEmails.get(playerId) ?? null;
+  }
+
   async getPlayer(playerId: string) {
     return this.players.get(playerId) ?? null;
   }
@@ -125,6 +131,7 @@ export class MemoryFansStore implements FansStore {
       leftReason: null,
       cardFailedAt: null,
       cardRetryAt: null,
+      pausedAt: null,
     };
     this.patrons.push(patron);
     return { patron, inserted: true };

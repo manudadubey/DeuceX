@@ -28,8 +28,11 @@ import {
   type PatronSource,
 } from '@procircuit/agents';
 import { recordRun, type AgentRunsDb } from '@procircuit/actions';
-import type {
-  CheckoutSessionSummary,
+import { cancellationReason, PAUSED_MEMBERSHIP_DAYS } from '@procircuit/shared';
+import type { EmailClient } from '@procircuit/actions/account';
+import {
+  endPausedMembership,
+  type CheckoutSessionSummary,
   FansStripeClient,
   StripeWebhookEvent,
 } from '@procircuit/actions/fans';
@@ -358,6 +361,14 @@ async function applyEventBody(
         account: event.account,
         id: patron.stripeSubscriptionId,
       });
+      // Step 4.1b: keep the paused state in step with Stripe (P-18). The
+      // gated pause/resume actions already set it directly; this covers a
+      // change made in Stripe's own dashboard, and replays.
+      if (subscription.paused && patron.status !== 'paused' && patron.status !== 'left') {
+        await deps.store.updatePatron(patron.id, { status: 'paused', pausedAt: event.createdAt });
+      } else if (!subscription.paused && patron.status === 'paused') {
+        await deps.store.updatePatron(patron.id, { status: 'active', pausedAt: null });
+      }
       const tiers = await deps.store.listTiers(programme.playerId);
       const newTier = tiers.find((t) => t.stripeProductId === subscription.productId);
       const oldTier = tierById(tiers, patron.tierId);
@@ -405,7 +416,10 @@ async function applyEventBody(
         id: patron.stripeSubscriptionId,
       });
       const leftAt = subscription.endedAt ?? subscription.canceledAt ?? event.createdAt;
-      const reason = subscription.cancellationComment?.trim() || null;
+      const reason = cancellationReason(
+        subscription.cancellationComment,
+        subscription.cancellationFeedback,
+      );
       await deps.store.updatePatron(patron.id, {
         status: 'left',
         leftAt,
@@ -692,6 +706,89 @@ export async function runAttentionPassTick(deps: FansReadDeps): Promise<number> 
     ran++;
   }
   return ran;
+}
+
+// ---------------------------------------------------------------------------
+// Step 4.1b follow-up: end memberships paused for 90 days (owner decision,
+// 25 September 2026). Runs on the same hourly tick for every programme; it
+// only ever acts on patrons past the 90-day mark, so it is idempotent. A
+// Stripe failure leaves that patron paused for the next tick to retry.
+// ---------------------------------------------------------------------------
+
+export interface PausedExpiryDeps extends FansServiceDeps {
+  email: EmailClient;
+  appBaseUrl: string;
+}
+
+export const PAUSED_EXPIRY_ENDED_REASON = 'Ended after 90 days paused';
+
+export async function runPausedExpirySweep(
+  deps: PausedExpiryDeps,
+): Promise<{ ended: number; failed: number }> {
+  const now = (deps.now ?? (() => new Date()))();
+  const cutoff = now.getTime() - PAUSED_MEMBERSHIP_DAYS * 24 * 60 * 60 * 1000;
+  let ended = 0;
+  let failed = 0;
+  for (const programme of await deps.store.listProgrammes()) {
+    if (!programme.stripeAccountId) continue;
+    const due = (await deps.store.listPatrons(programme.playerId)).filter(
+      (p) =>
+        p.status === 'paused' && p.pausedAt !== null && new Date(p.pausedAt).getTime() <= cutoff,
+    );
+    if (due.length === 0) continue;
+    const player = await deps.store.getPlayer(programme.playerId);
+    const playerEmail = await deps.store.getPlayerEmail(programme.playerId);
+    if (!player || !playerEmail) continue;
+    const tiers = await deps.store.listTiers(programme.playerId);
+    for (const patron of due) {
+      try {
+        await endPausedMembership(deps.stripe, deps.email, {
+          account: programme.stripeAccountId,
+          subscriptionId: patron.stripeSubscriptionId,
+          patronEmail: patron.email,
+          playerName: player.name,
+          playerEmail,
+          pageUrl: `${deps.appBaseUrl}/p/${programme.slug}`,
+        });
+      } catch {
+        failed++;
+        continue;
+      }
+      const leftAt = now.toISOString();
+      await deps.store.updatePatron(patron.id, {
+        status: 'left',
+        leftAt,
+        leftReason: PAUSED_EXPIRY_ENDED_REASON,
+        pausedAt: null,
+        flag: 'none',
+        note: null,
+      });
+      const months = tenureMonths({ since: patron.since, leftAt }, now);
+      const tier = tierById(tiers, patron.tierId);
+      await deps.store.insertEvent({
+        playerId: programme.playerId,
+        patronId: patron.id,
+        kind: 'leave',
+        at: leftAt,
+        attribution: `${months === 1 ? '1 month' : `${months} months`}. ${PAUSED_EXPIRY_ENDED_REASON}.`,
+        fromTierId: patron.tierId,
+      });
+      await deps.store.insertNotification({
+        playerId: programme.playerId,
+        agent: 'fans',
+        category: 'fyi',
+        title: eventTitle({
+          kind: 'leave',
+          patronName: patron.name,
+          tierName: tier?.name ?? 'your page',
+        }),
+        body: `Their membership had been paused for ${PAUSED_MEMBERSHIP_DAYS} days, so it has ended. Nothing more is charged.`,
+        actionHref: '/fans',
+      });
+      ended++;
+    }
+  }
+  return { ended, failed };
 }
 
 // ---------------------------------------------------------------------------

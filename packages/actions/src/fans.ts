@@ -1,4 +1,13 @@
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { Database, Json } from '@procircuit/db';
+import {
+  billingPauseNotice,
+  billingResumeNotice,
+  manageLinkNotice,
+  membershipEndedNotice,
+  pausedMembershipEndDate,
+  type PatronNotice,
+} from '@procircuit/shared';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { type ApprovalGateDb, runGatedAction } from './gate';
 import type { EmailClient } from './resend-client';
@@ -138,6 +147,22 @@ export interface FansActionsDb {
     convertedAt: string | null;
   } | null>;
   markWaitlistInvited(entryId: string, at: string): Promise<void>;
+  /** Step 4.1b: patrons on this programme with this email, any status but left. */
+  findCurrentPatronsByEmail(playerId: string, email: string): Promise<Array<{ id: string }>>;
+  getPatronBilling(patronId: string): Promise<{
+    id: string;
+    playerId: string;
+    stripeCustomerId: string | null;
+    status: string;
+  } | null>;
+  listPatronsByStatus(
+    playerId: string,
+    statuses: readonly string[],
+  ): Promise<
+    Array<{ id: string; name: string; email: string | null; stripeSubscriptionId: string }>
+  >;
+  setPatronStatus(patronId: string, status: 'active' | 'paused'): Promise<void>;
+  listTiers(playerId: string): Promise<FansTier[]>;
 }
 
 export type PatronNoteKind = 'thanks' | 'nudge' | 'checkin' | 'welcome';
@@ -540,6 +565,296 @@ export async function createPatronCheckout(
 }
 
 // ---------------------------------------------------------------------------
+// Step 4.1b · P-17: the Stripe customer portal for patrons.
+//
+// Patrons have no ProCircuit account, so ownership of the email address is
+// the credential: the public page emails a short-lived link signed with a
+// server-only secret, and only that link opens a portal session. Like
+// createPatronCheckout, this is the patron's own request about their own
+// membership, not something sent on the player's behalf, so there is no
+// player approval behind it; it never reveals whether an email is a patron.
+// ---------------------------------------------------------------------------
+
+export const MANAGE_LINK_TTL_MS = 60 * 60 * 1000;
+/** A pause or resume notice may be read days later, so its link lives longer than an on-request one. */
+export const NOTICE_LINK_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+export class ManageLinkInvalidError extends Error {
+  constructor(reason: string) {
+    super(`This link can't be used: ${reason}`);
+    this.name = 'ManageLinkInvalidError';
+  }
+}
+
+function sign(secret: string, body: string): string {
+  return createHmac('sha256', secret).update(body).digest('base64url');
+}
+
+/** `<patronId>.<expiresMs>.<hmac>`: stateless, so no token table is needed. */
+export function createManageToken(
+  secret: string,
+  patronId: string,
+  now: Date = new Date(),
+  ttlMs: number = MANAGE_LINK_TTL_MS,
+): string {
+  const body = `${patronId}.${now.getTime() + ttlMs}`;
+  return `${body}.${sign(secret, body)}`;
+}
+
+export function verifyManageToken(secret: string, token: string, now: Date = new Date()): string {
+  const parts = token.split('.');
+  if (parts.length !== 3) throw new ManageLinkInvalidError('malformed');
+  const [patronId, expires, mac] = parts as [string, string, string];
+  const expected = sign(secret, `${patronId}.${expires}`);
+  const a = Buffer.from(mac);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b))
+    throw new ManageLinkInvalidError('bad signature');
+  if (!(Number(expires) > now.getTime())) throw new ManageLinkInvalidError('expired');
+  return patronId;
+}
+
+function noticeHtml(notice: PatronNotice, link: { href: string; label: string } | null): string {
+  const paras = notice.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join('\n');
+  return link ? `${paras}\n<p><a href="${link.href}">${escapeHtml(link.label)}</a></p>` : paras;
+}
+
+export interface RequestManageLinkInput {
+  slug: string;
+  email: string;
+  appBaseUrl: string;
+  linkSecret: string;
+}
+
+/** Always resolves the same way, patron or not, so the form can't be used to probe who backs whom. */
+export async function requestPatronManageLink(
+  db: FansActionsDb,
+  email: EmailClient,
+  input: RequestManageLinkInput,
+): Promise<void> {
+  const programme = await db.getProgrammeBySlug(input.slug);
+  if (!programme) return;
+  const address = input.email.trim().toLowerCase();
+  const matches = await db.findCurrentPatronsByEmail(programme.playerId, address);
+  const player = await db.getPlayer(programme.playerId);
+  if (!player || matches.length === 0) return;
+  const token = createManageToken(input.linkSecret, matches[0]!.id);
+  const notice = manageLinkNotice({ playerName: player.name });
+  await email.sendEmail({
+    to: address,
+    fromName: player.name,
+    replyTo: player.email,
+    subject: notice.subject,
+    html: noticeHtml(notice, {
+      href: `${input.appBaseUrl}/p/${programme.slug}/manage?t=${encodeURIComponent(token)}`,
+      label: 'Manage your membership',
+    }),
+  });
+}
+
+export interface OpenPatronPortalInput {
+  slug: string;
+  token: string;
+  appBaseUrl: string;
+  linkSecret: string;
+}
+
+export async function openPatronPortal(
+  db: FansActionsDb,
+  stripe: FansStripeClient,
+  input: OpenPatronPortalInput,
+): Promise<{ url: string }> {
+  const patronId = verifyManageToken(input.linkSecret, input.token);
+  const programme = await db.getProgrammeBySlug(input.slug);
+  const patron = await db.getPatronBilling(patronId);
+  if (!programme?.stripeAccountId || !patron || patron.playerId !== programme.playerId) {
+    throw new ManageLinkInvalidError('no such membership');
+  }
+  if (!patron.stripeCustomerId) throw new ManageLinkInvalidError('no Stripe customer on file');
+  const tiers = await db.listTiers(programme.playerId);
+  return stripe.createPortalSession({
+    account: programme.stripeAccountId,
+    customerId: patron.stripeCustomerId,
+    returnUrl: `${input.appBaseUrl}/p/${programme.slug}`,
+    products: tiers
+      .filter((t) => t.stripeProductId && t.stripePriceId)
+      .map((t) => ({ productId: t.stripeProductId!, priceId: t.stripePriceId! })),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Step 4.1b · P-18 / M-TIER-2: pause and resume patron billing.
+// ---------------------------------------------------------------------------
+
+export interface PatronBillingInput {
+  approvalId: string;
+  playerId: string;
+  appBaseUrl: string;
+  linkSecret: string;
+}
+
+export interface PatronBillingResult {
+  changed: number;
+  /** Patrons whose Stripe call failed; left in their previous state and not emailed. */
+  failed: string[];
+  /**
+   * Patrons whose billing did change but whose notice email didn't send
+   * (or who have no email on file). An email failure never undoes or stops
+   * the billing change: a half-paused programme is worse than a missed email.
+   */
+  unnotified: string[];
+}
+
+async function changeBilling(
+  db: FansActionsDb,
+  stripe: FansStripeClient,
+  email: EmailClient,
+  input: PatronBillingInput,
+  mode: 'pause' | 'resume',
+): Promise<PatronBillingResult> {
+  const player = await db.getPlayer(input.playerId);
+  const programme = await db.getProgramme(input.playerId);
+  if (!player || !programme?.stripeAccountId) throw new FansProgrammeMissingError(input.playerId);
+  const patrons = await db.listPatronsByStatus(
+    input.playerId,
+    mode === 'pause' ? ['active', 'past_due'] : ['paused'],
+  );
+  const notice =
+    mode === 'pause'
+      ? billingPauseNotice({ playerName: player.name, endsOn: pausedMembershipEndDate(new Date()) })
+      : billingResumeNotice({ playerName: player.name });
+  let changed = 0;
+  const failed: string[] = [];
+  const unnotified: string[] = [];
+  for (const patron of patrons) {
+    try {
+      await stripe.setSubscriptionPaused({
+        account: programme.stripeAccountId,
+        subscriptionId: patron.stripeSubscriptionId,
+        paused: mode === 'pause',
+      });
+    } catch {
+      failed.push(patron.id);
+      continue;
+    }
+    await db.setPatronStatus(patron.id, mode === 'pause' ? 'paused' : 'active');
+    changed++;
+    if (!patron.email) {
+      unnotified.push(patron.id);
+      continue;
+    }
+    const token = createManageToken(input.linkSecret, patron.id, new Date(), NOTICE_LINK_TTL_MS);
+    try {
+      await email.sendEmail({
+        to: patron.email,
+        fromName: player.name,
+        replyTo: player.email,
+        subject: notice.subject,
+        html: noticeHtml(notice, {
+          href: `${input.appBaseUrl}/p/${programme.slug}/manage?t=${encodeURIComponent(token)}`,
+          label: mode === 'pause' ? 'End or change your membership' : 'Cancel or change tier',
+        }),
+      });
+    } catch {
+      unnotified.push(patron.id);
+    }
+  }
+  return { changed, failed, unnotified };
+}
+
+/**
+ * "Downgrade to Free" (P-18): pauses every paying patron's subscription so
+ * nothing more is charged, and emails each the notice the player saw in
+ * the confirm step. Runs before the plan change itself, so a Free account
+ * never keeps charging patrons.
+ */
+export async function pausePatronBilling(
+  gateDb: ApprovalGateDb,
+  db: FansActionsDb,
+  stripe: FansStripeClient,
+  email: EmailClient,
+  input: PatronBillingInput,
+): Promise<PatronBillingResult> {
+  return runGatedAction(
+    gateDb,
+    {
+      approvalId: input.approvalId,
+      playerId: input.playerId,
+      actionType: 'patron_billing_pause',
+      payload: {},
+    },
+    () => changeBilling(db, stripe, email, input, 'pause'),
+  );
+}
+
+/** Back on Pro or Elite: resumes those same subscriptions, no re-signup (P-18). */
+export async function resumePatronBilling(
+  gateDb: ApprovalGateDb,
+  db: FansActionsDb,
+  stripe: FansStripeClient,
+  email: EmailClient,
+  input: PatronBillingInput,
+): Promise<PatronBillingResult> {
+  return runGatedAction(
+    gateDb,
+    {
+      approvalId: input.approvalId,
+      playerId: input.playerId,
+      actionType: 'patron_billing_resume',
+      payload: {},
+    },
+    async () => {
+      const player = await db.getPlayer(input.playerId);
+      if (player?.tier !== 'pro' && player?.tier !== 'elite') {
+        throw new TierNotSellableError('patron billing resumes only on Pro or Elite');
+      }
+      return changeBilling(db, stripe, email, input, 'resume');
+    },
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Step 4.1b follow-up: a membership paused for 90 days ends (owner decision,
+// 25 September 2026). Not a new player approval: it is the stated, scheduled
+// consequence of the pause the player already approved, whose confirm step
+// and patron notice both name the end date. apps/api's daily sweep calls
+// this; it does the Stripe cancel and the goodbye only, and the caller
+// records the departure.
+// ---------------------------------------------------------------------------
+
+export interface EndPausedMembershipInput {
+  account: string;
+  subscriptionId: string;
+  patronEmail: string | null;
+  playerName: string;
+  playerEmail: string;
+  pageUrl: string;
+}
+
+/** Returns whether the goodbye email went out; a send failure never blocks the cancellation. */
+export async function endPausedMembership(
+  stripe: FansStripeClient,
+  email: EmailClient,
+  input: EndPausedMembershipInput,
+): Promise<{ notified: boolean }> {
+  await stripe.cancelSubscription({ account: input.account, subscriptionId: input.subscriptionId });
+  if (!input.patronEmail) return { notified: false };
+  const notice = membershipEndedNotice({ playerName: input.playerName });
+  try {
+    await email.sendEmail({
+      to: input.patronEmail,
+      fromName: input.playerName,
+      replyTo: input.playerEmail,
+      subject: notice.subject,
+      html: noticeHtml(notice, { href: input.pageUrl, label: 'Visit the patron page' }),
+    });
+    return { notified: true };
+  } catch {
+    return { notified: false };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // The Supabase-backed implementation (service role, apps/api only).
 // ---------------------------------------------------------------------------
 
@@ -752,5 +1067,67 @@ export class SupabaseFansActionsDb implements FansActionsDb {
       .update({ invited_at: at })
       .eq('id', entryId);
     if (error) throw error;
+  }
+
+  async findCurrentPatronsByEmail(playerId: string, email: string) {
+    const { data, error } = await this.client
+      .from('patrons')
+      .select('id')
+      .eq('player_id', playerId)
+      .ilike('email', email)
+      .neq('status', 'left');
+    if (error) throw error;
+    return data ?? [];
+  }
+
+  async getPatronBilling(patronId: string) {
+    const { data, error } = await this.client
+      .from('patrons')
+      .select('id, player_id, stripe_customer_id, status')
+      .eq('id', patronId)
+      .maybeSingle();
+    if (error) throw error;
+    return data
+      ? {
+          id: data.id,
+          playerId: data.player_id,
+          stripeCustomerId: data.stripe_customer_id,
+          status: data.status,
+        }
+      : null;
+  }
+
+  async listPatronsByStatus(playerId: string, statuses: readonly string[]) {
+    const { data, error } = await this.client
+      .from('patrons')
+      .select('id, name, email, stripe_subscription_id')
+      .eq('player_id', playerId)
+      .in('status', [...statuses]);
+    if (error) throw error;
+    return (data ?? []).map((p) => ({
+      id: p.id,
+      name: p.name,
+      email: p.email,
+      stripeSubscriptionId: p.stripe_subscription_id,
+    }));
+  }
+
+  // paused_at starts the 90-day clock (owner decision, 25 Sep 2026); resume clears it.
+  async setPatronStatus(patronId: string, status: 'active' | 'paused') {
+    const { error } = await this.client
+      .from('patrons')
+      .update({ status, paused_at: status === 'paused' ? new Date().toISOString() : null })
+      .eq('id', patronId);
+    if (error) throw error;
+  }
+
+  async listTiers(playerId: string): Promise<FansTier[]> {
+    const { data, error } = await this.client
+      .from('patron_tiers')
+      .select('*')
+      .eq('player_id', playerId)
+      .order('position');
+    if (error) throw error;
+    return (data ?? []).map((t) => this.toTier(t));
   }
 }

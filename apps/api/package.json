@@ -17,6 +17,7 @@
     "@procircuit/actions": "workspace:*",
     "@procircuit/agents": "workspace:*",
     "@procircuit/db": "workspace:*",
+    "@procircuit/shared": "workspace:*",
     "@supabase/supabase-js": "^2.116.0",
     "dotenv": "^16.4.5",
     "fastify": "^5.0.0",

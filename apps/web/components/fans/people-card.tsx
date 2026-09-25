@@ -22,6 +22,7 @@ import {
   Textarea,
 } from '@procircuit/ui';
 import { patronNoteOpening } from '@procircuit/agents';
+import { pausedMembershipEndDate } from '@procircuit/shared';
 import { createClient } from '@/lib/supabase/client';
 import { confirmApproval } from '@/lib/approvals/confirm-approval';
 import { draftPatronNote, sendPatronNote } from '@/lib/fans/api';
@@ -81,6 +82,14 @@ function initials(displayName: string): string {
 function StateBadge({ patron }: { patron: FansPatronView }) {
   if (patron.status === 'left' && patron.leftAt) {
     return <Badge variant="secondary">Left {dayMonth(patron.leftAt)}</Badge>;
+  }
+  if (patron.status === 'paused') {
+    return (
+      <Badge variant="secondary">
+        Paused
+        {patron.pausedAt ? ` · ends ${pausedMembershipEndDate(new Date(patron.pausedAt))}` : ''}
+      </Badge>
+    );
   }
   if (patron.flag === 'card') {
     return (

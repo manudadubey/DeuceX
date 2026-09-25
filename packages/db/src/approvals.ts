@@ -20,7 +20,9 @@ export type ApprovalActionType =
   | 'account_deletion_request'
   | 'data_export_request'
   | 'connect_onboard'
-  | 'waitlist_invite';
+  | 'waitlist_invite'
+  | 'patron_billing_pause'
+  | 'patron_billing_resume';
 
 export interface CreateApprovalInput {
   playerId: string;

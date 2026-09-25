@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createAnonClient, createServiceRoleClient } from '@procircuit/db';
 import { SupabaseAgentRunsDb } from '@procircuit/actions';
@@ -309,7 +310,6 @@ async function main() {
   });
   await registerConditionsStampBackfillScheduler(moneyBoss, { db, weatherAdapter });
   const fansStore = new SupabaseFansStore(db);
-  await registerFansAttentionScheduler(moneyBoss, { store: fansStore });
 
   const resendApiKey = process.env.RESEND_API_KEY;
   const resendFromAddress = process.env.RESEND_FROM_ADDRESS;
@@ -421,7 +421,23 @@ async function main() {
     noteClient,
     agentRuns,
     appBaseUrl,
+    // Step 4.1b: the HMAC key for patrons' emailed manage links. Set
+    // PATRON_LINK_SECRET in production; locally it falls back to a key
+    // derived from the service-role key, which is server-only too, so links
+    // still can't be forged without it.
+    linkSecret:
+      process.env.PATRON_LINK_SECRET ??
+      createHash('sha256').update(`patron-link:${serviceRoleKey}`).digest('hex'),
   };
+
+  // The 06:00 attention pass, plus (step 4.1b) the 90-day paused-membership
+  // sweep, which needs Stripe to cancel and so only runs when a key is set.
+  await registerFansAttentionScheduler(moneyBoss, {
+    store: fansStore,
+    expiry: fansDeps.stripe
+      ? { store: fansStore, stripe: fansDeps.stripe, email, appBaseUrl }
+      : null,
+  });
 
   const app = buildServer(
     notesDeps,

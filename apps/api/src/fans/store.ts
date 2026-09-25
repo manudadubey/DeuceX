@@ -63,12 +63,14 @@ export interface StoredPatron {
   namesOptIn: boolean;
   cardFailedAt: string | null;
   cardRetryAt: string | null;
+  /** When billing was paused; the 90-day clock (owner decision, 25 Sep 2026). */
+  pausedAt: string | null;
   source: PatronSource;
 }
 
 export type NewPatron = Omit<
   StoredPatron,
-  'id' | 'leftAt' | 'leftReason' | 'cardFailedAt' | 'cardRetryAt'
+  'id' | 'leftAt' | 'leftReason' | 'cardFailedAt' | 'cardRetryAt' | 'pausedAt'
 > & {
   stripeCustomerId: string | null;
   city: string | null;
@@ -115,6 +117,8 @@ export interface FansStore {
   markWebhookApplied(id: string, error: string | null): Promise<void>;
 
   getPlayer(playerId: string): Promise<StoredPlayer | null>;
+  /** The player's own address, used as Reply-To on patron-facing notices. */
+  getPlayerEmail(playerId: string): Promise<string | null>;
   getProgrammeByAccount(accountId: string): Promise<StoredProgramme | null>;
   getProgrammeBySlug(slug: string): Promise<StoredProgramme | null>;
   getProgramme(playerId: string): Promise<StoredProgramme | null>;
@@ -183,6 +187,7 @@ function toPatron(row: PatronRow): StoredPatron {
     namesOptIn: row.names_opt_in,
     cardFailedAt: row.card_failed_at,
     cardRetryAt: row.card_retry_at,
+    pausedAt: row.paused_at,
     source: row.source as PatronSource,
   };
 }
@@ -198,6 +203,7 @@ const PATCH_COLUMNS: Partial<Record<keyof StoredPatron, keyof PatronRow>> = {
   note: 'note',
   cardFailedAt: 'card_failed_at',
   cardRetryAt: 'card_retry_at',
+  pausedAt: 'paused_at',
   opens: 'opens',
 };
 
@@ -246,6 +252,16 @@ export class SupabaseFansStore implements FansStore {
       .update({ applied_at: error ? null : new Date().toISOString(), error })
       .eq('id', id);
     if (res.error) throw res.error;
+  }
+
+  async getPlayerEmail(playerId: string) {
+    const { data, error } = await this.db
+      .from('players')
+      .select('email')
+      .eq('id', playerId)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.email ?? null;
   }
 
   async getPlayer(playerId: string) {

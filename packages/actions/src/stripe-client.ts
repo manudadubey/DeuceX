@@ -51,6 +51,9 @@ export interface SubscriptionSummary {
   cancellationFeedback: string | null;
   endedAt: string | null;
   canceledAt: string | null;
+  /** Billing paused by the player's downgrade to Free (P-18). */
+  paused: boolean;
+  cancelAtPeriodEnd: boolean;
 }
 
 export interface PayoutBalanceLineMinor {
@@ -106,6 +109,22 @@ export interface FansStripeClient {
     payoutId: string;
   }): Promise<PayoutBalanceLineMinor[]>;
   verifyWebhook(rawBody: Buffer | string, signature: string, secret: string): StripeWebhookEvent;
+  /** P-17: a Stripe customer-portal session for one patron on the player's account. */
+  createPortalSession(input: {
+    account: string;
+    customerId: string;
+    returnUrl: string;
+    /** Every tier's product and its current price, so the portal can switch tiers. */
+    products: Array<{ productId: string; priceId: string }>;
+  }): Promise<{ url: string }>;
+  /** P-18: pause (no further invoices) or resume one subscription's billing. */
+  setSubscriptionPaused(input: {
+    account: string;
+    subscriptionId: string;
+    paused: boolean;
+  }): Promise<void>;
+  /** Ends a subscription now (a membership paused for 90 days; owner decision 25 Sep 2026). */
+  cancelSubscription(input: { account: string; subscriptionId: string }): Promise<void>;
 }
 
 export class StripeCallFailedError extends Error {
@@ -341,6 +360,8 @@ export function createStripeFansClient(config: { secretKey: string }): FansStrip
           cancellationFeedback: sub.cancellation_details?.feedback ?? null,
           endedAt: iso(sub.ended_at),
           canceledAt: iso(sub.canceled_at),
+          paused: sub.pause_collection != null,
+          cancelAtPeriodEnd: sub.cancel_at_period_end,
         };
       }),
 
@@ -373,5 +394,71 @@ export function createStripeFansClient(config: { secretKey: string }): FansStrip
           (data.previous_attributes as Record<string, unknown> | undefined) ?? null,
       };
     },
+
+    // One portal configuration per connected account, found by metadata and
+    // kept in step with the tiers (a grandfathered price change mints a new
+    // price, so the switchable prices are refreshed every time). Cancel is
+    // at period end with Stripe's reason picker, so a departing patron keeps
+    // what they paid for and P-17's reason is recorded when they give one.
+    createPortalSession: (input) =>
+      wrap(async () => {
+        const opts = { stripeAccount: input.account };
+        const features: Stripe.BillingPortal.ConfigurationCreateParams.Features = {
+          customer_update: { enabled: false },
+          invoice_history: { enabled: true },
+          payment_method_update: { enabled: true },
+          subscription_cancel: {
+            enabled: true,
+            mode: 'at_period_end',
+            cancellation_reason: {
+              enabled: true,
+              options: ['too_expensive', 'unused', 'switched_service', 'other'],
+            },
+          },
+          subscription_update: {
+            enabled: input.products.length > 1,
+            default_allowed_updates: ['price'],
+            proration_behavior: 'none',
+            products: input.products.map((p) => ({ product: p.productId, prices: [p.priceId] })),
+          },
+        };
+        const existing = (
+          await stripe.billingPortal.configurations.list({ limit: 100 }, opts)
+        ).data.find((c) => c.metadata?.procircuit === 'fans' && c.active);
+        const configuration = existing
+          ? await stripe.billingPortal.configurations.update(existing.id, { features }, opts)
+          : await stripe.billingPortal.configurations.create(
+              { features, metadata: { procircuit: 'fans' }, default_return_url: input.returnUrl },
+              opts,
+            );
+        const session = await stripe.billingPortal.sessions.create(
+          {
+            customer: input.customerId,
+            configuration: configuration.id,
+            return_url: input.returnUrl,
+          },
+          opts,
+        );
+        return { url: session.url };
+      }),
+
+    setSubscriptionPaused: (input) =>
+      wrap(async () => {
+        await stripe.subscriptions.update(
+          input.subscriptionId,
+          // 'void': invoices due while paused are voided, so nothing is owed on resume.
+          input.paused ? { pause_collection: { behavior: 'void' } } : { pause_collection: '' },
+          { stripeAccount: input.account },
+        );
+      }),
+
+    cancelSubscription: (input) =>
+      wrap(async () => {
+        await stripe.subscriptions.cancel(
+          input.subscriptionId,
+          { cancellation_details: { comment: 'Ended after 90 days paused' } },
+          { stripeAccount: input.account },
+        );
+      }),
   };
 }

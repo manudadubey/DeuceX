@@ -24,6 +24,75 @@ export interface PublicPatronPage {
   feePercent: number | null;
 }
 
+// Step 4.1b · P-17: a patron's way to change tier, update their card or
+// cancel. Patrons have no ProCircuit login, so the page emails a one-hour
+// link to Stripe's own portal. The reply is identical whether or not the
+// email backs this player, so the form can't reveal who does.
+function ManageMembership({ page, firstName }: { page: PublicPatronPage; firstName: string }) {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [state, setState] = useState<'idle' | 'sending' | 'done'>('idle');
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setState('sending');
+    setError(null);
+    const res = await fetch(`${API_URL}/public/p/${page.slug}/manage`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    if (res.ok) {
+      setState('done');
+    } else {
+      setError(
+        ((await res.json().catch(() => ({}))) as { error?: string }).error ?? 'Please try again.',
+      );
+      setState('idle');
+    }
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className="min-h-11 justify-self-start text-sm underline"
+        onClick={() => setOpen(true)}
+      >
+        Already backing {firstName}? Change tier, update your card or cancel
+      </button>
+    );
+  }
+  if (state === 'done') {
+    return (
+      <p className="text-sm">
+        If that email backs {firstName}, a link to manage your membership is on its way. It works
+        for one hour.
+      </p>
+    );
+  }
+  return (
+    <form onSubmit={submit} className="grid gap-3">
+      <Field>
+        <FieldLabel htmlFor="manage-email">The email you signed up with</FieldLabel>
+        <Input
+          id="manage-email"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </Field>
+      <Button type="submit" variant="outline" disabled={state === 'sending'}>
+        {state === 'sending' ? 'Sending…' : 'Email me a link'}
+      </Button>
+      {error ? <p className="text-xs text-danger">{error}</p> : null}
+    </form>
+  );
+}
+
 function Waitlist({ page, firstName }: { page: PublicPatronPage; firstName: string }) {
   const [email, setEmail] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'done'>('idle');
@@ -177,6 +246,8 @@ export function PatronPage({ page, source }: { page: PublicPatronPage; source: s
       )}
 
       {page.thanksLine ? <p className="text-sm text-muted-foreground">{page.thanksLine}</p> : null}
+
+      <ManageMembership page={page} firstName={firstName} />
     </div>
   );
 }

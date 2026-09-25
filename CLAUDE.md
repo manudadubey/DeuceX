@@ -5,7 +5,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1, step 2.1 through step 4.1 done, start step 4.2
+## Status: Phase 0, Phase 1, step 2.1 through step 4.1b done, start step 4.2
 
 The monorepo scaffold is built and deploying; the database has RLS-protected ProCircuit tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -249,8 +249,13 @@ round trip then passed against the sandbox (a real test checkout recorded a patr
 seconds). Connected accounts use **Accounts v2 with Stripe's Managed Risk and the Express
 dashboard** (a Stripe preview, pinned API version); the sandbox's connected account, three tiers
 and one test patron are left in place for step 4.2. `STRIPE_WEBHOOK_SECRET` is still unset, so no
-real payout webhook has run yet. **P-17 (the Stripe customer portal) and P-18 (pausing patron
-billing on a downgrade to Free) are launch blockers**, not built this step. Also found and fixed
+real payout webhook has run yet. P-17 (the Stripe customer portal) and P-18 (pausing patron billing
+on a downgrade to Free), launch blockers step 4.1 flagged, were closed in **step 4.1b**: an emailed,
+HMAC-signed one-hour link to Stripe's portal for patrons, and gated `patron_billing_pause` /
+`patron_billing_resume` actions that the downgrade confirm runs first, with the exact patron notice
+shown beforehand; both verified live against the sandbox. A membership paused for 90 days now ends
+automatically with a goodbye email (owner decision; `patrons.paused_at`, a sweep on the hourly Fans
+tick). Still open: an in-app upgrade back to Pro. Also found and fixed
 live: pg-boss's default 10-connection pool per instance tipped the session pooler's 15-client cap;
 all three instances now set `max`. [PR #16](https://github.com/manudadubey/ProCircuit/pull/16) is merged. The next
 session should
