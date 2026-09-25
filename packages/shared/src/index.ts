@@ -27,3 +27,11 @@ export {
   type PatronNotice,
   type PatronNoticeInput,
 } from './patron-notices';
+
+// Step 4.2: the Content Agent's publish approval payload, built identically
+// by apps/web (at confirm) and packages/actions (at send).
+export {
+  contentPublishPayload,
+  type ContentPublishPayload,
+  type ContentPublishPayloadInput,
+} from './content-publish';
