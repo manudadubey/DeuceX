@@ -1758,6 +1758,123 @@ describeIfConfigured('agent pause switches', () => {
   });
 });
 
+// Step 5.2: notification delivery tables. A player manages only their own
+// push subscriptions, never sees delivery bookkeeping, and can mark their
+// own notifications read but change nothing else about them.
+describeIfConfigured('notification delivery (step 5.2)', () => {
+  let client: Client;
+  const player = randomUUID();
+  const other = randomUUID();
+  let notificationId = '';
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
+      player,
+      `rls-test-notif-${player}@deucex.test`,
+      other,
+      `rls-test-notif-${other}@deucex.test`,
+    ]);
+    for (const id of [player, other]) {
+      await client.query(
+        `insert into public.players
+           (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+         values ($1, 'atp', 'Notif Test Player', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney')`,
+        [id, `rls-test-notif-${id}@deucex.test`],
+      );
+    }
+    const { rows } = await client.query(
+      `insert into public.notifications (player_id, agent, category, title, body, delivery_planned_at)
+       values ($1, 'tournament', 'fyi', 'RLS test', 'Body', now()) returning id`,
+      [player],
+    );
+    notificationId = rows[0].id;
+    await client.query(
+      `insert into public.notification_deliveries (notification_id, player_id, channel, due_at)
+       values ($1, $2, 'email', now())`,
+      [notificationId, player],
+    );
+    await client.query(
+      `insert into public.push_subscriptions (player_id, endpoint, p256dh, auth)
+       values ($1, $2, 'k', 'a')`,
+      [other, `https://push.example/${other}`],
+    );
+  });
+
+  afterAll(async () => {
+    await client.query(`delete from public.push_subscriptions where player_id in ($1, $2)`, [
+      player,
+      other,
+    ]);
+    await client.query(`delete from public.notifications where player_id in ($1, $2)`, [
+      player,
+      other,
+    ]);
+    await client.query(`delete from public.players where id in ($1, $2)`, [player, other]);
+    await client.query(`delete from auth.users where id in ($1, $2)`, [player, other]);
+    await client.end();
+  });
+
+  it('lets a player add, list and remove only their own push subscription', async () => {
+    await asPlayer(client, player, async () => {
+      await client.query(
+        `insert into public.push_subscriptions (player_id, endpoint, p256dh, auth)
+         values ($1, $2, 'k', 'a')`,
+        [player, `https://push.example/${player}`],
+      );
+      const { rows } = await client.query('select player_id from public.push_subscriptions');
+      expect(rows).toEqual([{ player_id: player }]);
+      const removed = await client.query('delete from public.push_subscriptions');
+      expect(removed.rowCount).toBe(1);
+    });
+  });
+
+  it('refuses a push subscription for someone else, and hides theirs', async () => {
+    await asPlayer(client, player, async () => {
+      await expect(
+        client.query(
+          `insert into public.push_subscriptions (player_id, endpoint, p256dh, auth)
+           values ($1, 'https://push.example/x', 'k', 'a')`,
+          [other],
+        ),
+      ).rejects.toThrow(/row-level security/);
+    });
+    await asPlayer(client, player, async () => {
+      const res = await client.query('delete from public.push_subscriptions where player_id = $1', [
+        other,
+      ]);
+      expect(res.rowCount).toBe(0);
+    });
+  });
+
+  it('never shows a player the delivery bookkeeping', async () => {
+    for (const table of ['notification_deliveries', 'notification_digests']) {
+      await asPlayer(client, player, async () => {
+        await expect(client.query(`select id from public.${table}`)).rejects.toThrow(
+          /permission denied/,
+        );
+      });
+    }
+  });
+
+  it('lets a player mark their notification read but not rewrite or reschedule it', async () => {
+    await asPlayer(client, player, async () => {
+      const res = await client.query('update public.notifications set read = true where id = $1', [
+        notificationId,
+      ]);
+      expect(res.rowCount).toBe(1);
+    });
+    await asPlayer(client, player, async () => {
+      await expect(
+        client.query('update public.notifications set delivery_planned_at = null where id = $1', [
+          notificationId,
+        ]),
+      ).rejects.toThrow(/permission denied/);
+    });
+  });
+});
+
 // PRD-13 AD-13: an approval answering an agent run's proposal records that
 // run, written by the player's own session through approvals_insert_own.
 describeIfConfigured('approvals.agent_run_id', () => {

@@ -122,13 +122,16 @@ export function FinancialClient({
         <div>
           <h1 className="text-2xl font-semibold">Financial Agent</h1>
           <p className="text-sm text-muted-foreground">
-            Runway, P&amp;L and the one thing to do about it. Updates daily at 07:00 UTC and the
-            moment you log an expense.
+            Runway, P&amp;L and the one thing to do about it. Updates daily at 07:00 your time and
+            the moment you log an expense.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" title="Runs daily at 07:00 UTC, plus live on each expense.">
-            Daily · 07:00 UTC
+          <Badge
+            variant="secondary"
+            title="Runs daily at 07:00 your time, plus live on each expense."
+          >
+            Daily · 07:00 your time
           </Badge>
           <Button size="sm" variant="outline" onClick={handleExport} disabled={!loaded}>
             Export

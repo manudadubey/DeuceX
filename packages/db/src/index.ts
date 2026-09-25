@@ -123,6 +123,8 @@ export {
   updateUnits,
   updateNotificationPrefs,
   isNotificationChannelEnabled,
+  prefsAgentFor,
+  showsInApp,
   hasAtLeastOneChannel,
   setAgentPaused,
   updateEmergencyContact,

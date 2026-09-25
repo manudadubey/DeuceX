@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
@@ -28,6 +28,7 @@ import {
   type Player,
 } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
+import { pushState, turnOffPush, turnOnPush, type PushState } from '@/lib/push';
 
 const AGENT_LABELS: Record<NotificationAgent, { label: string; forYou: string; fyi: string }> = {
   tournament: {
@@ -83,6 +84,36 @@ export function NotificationsPane({
   const [quietEnd, setQuietEnd] = useState(player.quiet_hours_end.slice(0, 5));
   const [reminderEnabled, setReminderEnabled] = useState(player.reserve_reminder_enabled);
   const [saving, setSaving] = useState(false);
+  const [push, setPush] = useState<PushState | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    void pushState().then(setPush);
+  }, []);
+
+  // ST-9: entry deadlines (the Tournament Agent's For-you row) always keep
+  // at least one channel, so Save stays off while that row has none.
+  const guardrailBroken = !hasAtLeastOneChannel(prefs, 'tournament', 'for_you');
+
+  async function handlePush(on: boolean) {
+    setPushBusy(true);
+    try {
+      const supabase = createClient();
+      const next = on ? await turnOnPush(supabase, player.id) : await turnOffPush(supabase);
+      setPush(next);
+      onToast(
+        next === 'on'
+          ? 'Push is on for this device'
+          : next === 'blocked'
+            ? 'Notifications are blocked for this site in your browser settings'
+            : 'Push is off for this device',
+      );
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : 'Push could not be changed');
+    } finally {
+      setPushBusy(false);
+    }
+  }
 
   function toggle(
     agent: NotificationAgent,
@@ -102,6 +133,7 @@ export function NotificationsPane({
   }
 
   async function handleSave() {
+    if (guardrailBroken) return;
     setSaving(true);
     try {
       const supabase = createClient();
@@ -145,8 +177,10 @@ export function NotificationsPane({
           <TableBody>
             {NOTIFICATION_AGENTS.map((agent) =>
               (['for_you', 'fyi'] as const).map((category) => {
-                const guardrailBroken =
-                  category === 'for_you' && !hasAtLeastOneChannel(prefs, agent, category);
+                const rowGuardrailBroken =
+                  agent === 'tournament' &&
+                  category === 'for_you' &&
+                  !hasAtLeastOneChannel(prefs, agent, category);
                 return (
                   <TableRow key={`${agent}-${category}`}>
                     <TableCell>
@@ -158,7 +192,7 @@ export function NotificationsPane({
                           ? AGENT_LABELS[agent].forYou
                           : AGENT_LABELS[agent].fyi}
                       </div>
-                      {guardrailBroken && (
+                      {rowGuardrailBroken && (
                         <div className="text-xs text-destructive">
                           Keep at least one channel on.
                         </div>
@@ -202,6 +236,10 @@ export function NotificationsPane({
           Only entry deadlines under 24 hours break through. Everything else is held until quiet
           hours end.
         </FieldDescription>
+        <FieldDescription>
+          After five FYI emails in a week, the rest arrive together in one digest on Monday morning.
+          For-you emails always arrive on their own.
+        </FieldDescription>
 
         <div className="flex items-center gap-3">
           <Switch
@@ -213,10 +251,38 @@ export function NotificationsPane({
         </div>
       </div>
 
-      <div className="border-t border-border pt-6">
-        <Button onClick={handleSave} disabled={saving}>
+      <div className="flex flex-col gap-2 border-t border-border pt-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <Switch
+            checked={push === 'on'}
+            disabled={
+              pushBusy || push === null || push === 'unsupported' || push === 'unconfigured'
+            }
+            onCheckedChange={(v) => void handlePush(v)}
+            aria-label="Push notifications on this device"
+          />
+          <span className="text-sm font-medium">Push on this device</span>
+        </div>
+        <FieldDescription>
+          {push === 'unsupported'
+            ? 'This browser cannot receive push. On iPhone, add DeuceX to your Home Screen first.'
+            : push === 'unconfigured'
+              ? 'Push is not set up in this environment yet.'
+              : push === 'blocked'
+                ? 'Notifications are blocked for this site. Allow them in your browser settings, then try again.'
+                : 'The Push column above decides what arrives. Turn it on for each phone or computer you use.'}
+        </FieldDescription>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 border-t border-border pt-6">
+        <Button onClick={handleSave} disabled={saving || guardrailBroken}>
           Save
         </Button>
+        {guardrailBroken ? (
+          <span className="text-xs text-destructive">
+            Entry deadlines need at least one channel on.
+          </span>
+        ) : null}
       </div>
     </Card>
   );

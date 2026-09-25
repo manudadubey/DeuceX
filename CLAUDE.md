@@ -16,7 +16,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1, step 2.1 through step 5.1 and step 5.0 done, start step 5.2
+## Status: Phase 0, Phase 1, step 2.1 through step 5.2 done, start step 5.3
 
 The monorepo scaffold is built and deploying; the database has RLS-protected DeuceX tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -324,7 +324,23 @@ didn't do what they said:
   ways. A `paused: false` row means the same as no row. Don't write player-side code that relies
   on deleting that table's rows.
 
-**Open follow-ups** (none block step 5.2):
+Step 5.2 (Notifications, digest and the morning run): the morning run is one batch per player at
+**07:00 in their own time zone** (owner decision; replaces Financial's 07:00 UTC and Mindset's 06:00
+local), in `apps/api/src/morning-run`. Notification email and Web Push go through
+`@deucex/actions/notifications`. A player's own notification settings are the consent for these
+(owner decision). The senders take no recipient: an email goes only to the delivery's own player,
+and a push only to their own subscriptions. `apps/api/src/notifications` plans each new
+notification (the channel matrix, quiet hours with the 24-hour deadline exception, and the weekly
+FYI digest from the sixth email) and sends once a minute. It also emails staff alerts by routing
+and escalates unconfirmed distress cases at 24 hours. The rail and a "Push on this device" control
+are in apps/web. VAPID keys are in the owner's local `.env` (four `WEB_PUSH_*` vars; see
+`.env.example`), and must also be set wherever apps/api and apps/web are deployed. See
+`docs/BUILD-LOG.md`'s step 5.2 entry. [PR #28](https://github.com/manudadubey/DeuceX/pull/28), merged 26 September 2026. Next is **step 5.3** (mobile shells and stores), which adds
+native push behind the same `PushClient`.
+
+**Open follow-ups** (none block step 5.3):
+- The 3-day and 1-day entry-deadline countdown notices don't exist yet (only "entry closes soon"
+  carries `deadline_at`).
 - **Launch blocker:** the staff passkey is off locally (`ADMIN_PASSKEY_REQUIRED=false` in the
   owner's `.env`; the API refuses it in production). Before launch: clear stray localhost
   passkeys, register one per staff member, add `https://admin.deucex.ai` to Supabase Auth >
