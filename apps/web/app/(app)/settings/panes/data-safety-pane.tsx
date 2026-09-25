@@ -15,6 +15,7 @@ import {
 } from '@deucex/ui';
 import { updateEmergencyContact, type Player } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
+import { AuditLogSection } from './audit-log-section';
 import { confirmApproval } from '@/lib/approvals/confirm-approval';
 import {
   cancelAccountDeletion,
@@ -252,6 +253,8 @@ export function DataSafetyPane({
           </Button>
         )}
       </div>
+
+      <AuditLogSection playerId={player.id} />
     </Card>
   );
 }

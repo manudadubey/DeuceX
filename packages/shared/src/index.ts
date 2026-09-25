@@ -35,3 +35,15 @@ export {
   type ContentPublishPayload,
   type ContentPublishPayloadInput,
 } from './content-publish';
+
+// Step 5.1: the admin console's staff roles and the areas each holds.
+export {
+  ADMIN_ROLES,
+  ADMIN_ROLE_LABELS,
+  adminAreas,
+  canAccessArea,
+  effectiveRole,
+  roleAtLeast,
+  type AdminArea,
+  type AdminRole,
+} from './admin-roles';

@@ -2514,3 +2514,154 @@ Three bugs found and fixed:
 
 The owner's test log (50 USD) is left in place for them to undo or keep.
 
+
+## Step 5.1 · Admin console — 25 September 2026
+
+Read first: PRD-13 (all), `docs/deucex-admin.html`, TECH-ARCHITECTURE.md 2.4 and 3a.
+
+Owner decisions this session (none were in the worksheet or register):
+- **Staff-triggered emails go through an admin-action gate**, the staff twin of the approval
+  gate: a player-facing email started by staff (the deletion notice, a sign-in link, an export)
+  sends only after its `admin_actions` row (name, role, consequence, reason where AD-5 needs one)
+  exists and is claimed once. The rule is now "a player-authored approval or an accountable staff
+  action"; nothing staff can do sends to patrons, sponsors or fans, publishes, pays or enters.
+- **The first owner** is `matsudadubey@gmail.com`, shown to players as "Manu Dubey, owner". The
+  fixture player uses `manu.dadubey@gmail.com`, and AD-1 forbids a player holding a staff role.
+- **Design**: "use ui.shadcn.com/create" and "consistent with the players dashboard". The
+  player app's own preset is `b3REZz9P6` (Vega, Neutral, Lime charts, Geist, Base UI), and
+  `@deucex/ui` already carries its tokens verbatim, so the console uses `@deucex/ui` and the
+  player shell's recipes. `apps/admin/components.json` pins that preset, so the shadcn CLI
+  generates missing primitives in the same style (`dropdown-menu`, on Base UI, for the user
+  menu). The CLI imported `cn` from an unrelated npm package named `cn`; the import was repointed
+  at `@deucex/ui`'s helper and the package removed.
+
+Built:
+- **Migrations** (both owner-confirmed, applied to production):
+  - `20260927090000_step_5_1_admin_console`:
+    - new tables: `admin_users`, `admin_action_consumptions`, `agent_global_pauses`,
+      `run_failures`, `agent_health_daily` and `alert_routes`;
+    - new columns: `players.created_at` (backfilled from `auth.users`), `trial_ends_at` and the
+      comp columns; `admin_actions.admin_name` and `ip`; `alerts.player_id` and `dedupe_key`;
+      the distress confirmation columns on `cases`;
+    - two triggers that keep staff and player identities apart in both directions (AD-1);
+    - the `console` role's explicit column grants, with a permissive `to console` policy per
+      table (the grants are the limit; see below);
+    - the player's `admin_actions` select narrowed to named columns, so device and ip stay
+      staff-only.
+  - `20260927091000_step_5_1_console_set_role`: `grant console to postgres with set true,
+    inherit false`. Supabase had recorded that membership with `set_option = false`, so
+    `set role console` was refused. Found by the new live tests.
+- **The console role's grants.** apps/api opens a transaction and runs `set local role
+  console`, so every console query is bounded by grants, not screens (AD-6). No grant on:
+  - note content (transcript, audio, mood and the rest);
+  - `check_ins.value` or `.sentence` (the daily mood);
+  - `agent_runs.output` or `approvals.payload` (either can carry draft or transcript-derived
+    text);
+  - Fuel scans and meals, patron names or emails, share-link tokens;
+  - `players.emergency_contact` or the deletion token.
+- **`packages/actions`**:
+  - `admin.ts`: `runAdminGatedAction` and three staff emails (the deletion notice, a player
+    sign-in link, and the staff console link, which isn't player-facing and so isn't gated).
+  - `sendStaffDataExport` in `account.ts`, sharing the player path's delivery.
+  - A read-only `retrievePlatformBalance` on the Stripe client.
+  - Queue hooks for failed attempts and successes, `retryAgentRunNow` (no singleton key, so a
+    console retry isn't collapsed into the failed job), and per-agent required providers.
+- **A pre-existing queue bug, fixed**: Mindset Coach, Financial and Tournament each registered
+  their own worker on the one `agent-run` queue and returned early on other agents' jobs, but
+  pg-boss gives a job to whichever worker polls first, so a job could be completed without
+  running. One dispatcher (`apps/api/src/agent-dispatcher.ts`) now routes by agent name, with
+  one pause check (per player and global), provider switches, and the `run_failures` record for
+  every agent.
+- **`apps/api/src/admin`**:
+  - Staff auth (`staff-auth.ts`):
+    - a Supabase session plus an unrevoked `admin_users` row;
+    - at least one registered passkey (checked server-side with the auth admin passkey list);
+    - a session that was itself opened with a passkey (the token's `amr` claim). A magic link
+      alone never reaches the console.
+  - Role guard on every route, from the shared role map in `@deucex/shared` (the role preview
+    only narrows).
+  - Read models for every page, run as the `console` role.
+  - Player actions with server-built consequence sentences (preview, then confirm), each writing
+    its audit row in the same transaction as the change.
+  - Agent pause and resume, provider kill switches, run retry and dismiss, case resolution,
+    alert acknowledgement and routing.
+  - The nightly aggregation (02:00 UTC on the money boss) into `agent_health_daily`, raising the
+    approval-under-threshold and spend-at-80-percent owner alerts and ending expired comps.
+  - Stripe balance reconciliation.
+  - Step 3.1's ingestion routes now need a staff session with the ops role, write an audit row
+    per change, and need a reason to apply a snapshot (AD-5). Setting a deadline, or applying a
+    deadline correction, re-runs the Tournament Agent for every player who shortlisted the event
+    (AD-20, AD-21). The missing-deadline table's shortlisted count is now real.
+  - Transcription kill switch: while it's off, transcription jobs wait 10 minutes and retry
+    instead of calling the vendor (AD-AC-6).
+- **`apps/admin`**, rebuilt:
+  - The player app's shell recipes: sidebar with badges, the Elsewhere link-outs, a user menu
+    with role preview, my audit log, routing and sign out, and a topbar with the date chip,
+    environment badge, ⌘K player search, Alerts sheet and theme toggle.
+  - The tab bar under 900px shows only the role's areas.
+  - Its own session cookie name (`sb-deucex-admin-auth`), since localhost:3000 and :3001 share
+    one cookie jar.
+  - Sign-in by staff magic link (sent by apps/api through Resend, pointing at the console's own
+    `/auth/confirm`, so Supabase's redirect-URL list and email template aren't involved), then
+    the passkey step (register once, then confirm every session).
+  - Pages: Overview, Players (filters plus the detail panel with every AD-9 action, the owner's
+    comp and danger zone, the player's audit log), Agent health (kill switches confirm on a
+    second click within 5 seconds), Ingestion (restyled), Money, Trust and safety, the admin
+    audit log (the owner sees every admin's) and Alert routing.
+  - Every hidden area redirects to Overview by URL, and the API refuses it regardless.
+- **`apps/web`**:
+  - An Activity log in Settings, Data and safety: the player's approvals and every staff action
+    on their account, marked Admin with name, role and reason (AD-4).
+  - A plain paused notice on the Financial, Tournament and Mindset pages, and on Match Scribe
+    for transcription (AD-15, AD-16).
+
+Verified:
+- 8 new live integration tests against production:
+  - the console role gets a permission error on `notes.transcript`, mood, audio, check-in value,
+    emergency contact and share token;
+  - it can see that a note exists and when;
+  - `admin_actions` stays append-only for it;
+  - a reasonless delete is refused;
+  - the player sees their admin row's name, role and reason but gets a permission error on ip;
+  - both identity triggers fire.
+- The full live suite passes (59 tests).
+- 11 route tests:
+  - no session is a 401;
+  - a magic-link-only session and a missing passkey are each a 403 with their code;
+  - support gets 403 on `/admin/money` and on the agents and routing areas, and so does an owner
+    previewing support;
+  - support can't delete;
+  - a delete without a reason is a 400 with nothing written or sent; with a reason the account
+    is scheduled 14 days out, audited and emailed;
+  - a trial extension's preview shows the new date, and that sentence is stored as the audit
+    consequence with a player notification.
+- 7 gate tests: no action on record, the wrong player or type, a missing AD-5 reason, a replay,
+  and no email or export built without the gate.
+- 4 role-map tests.
+- Every console read model was run live as the console role against production. That found two
+  bugs, both fixed: `pg` returned timestamps as `Date` objects (the audit-log sort crashed), and
+  parallel queries on one client triggered a `pg` deprecation.
+- The nightly aggregation was run live for six days.
+- Unauthenticated calls to the console and to the formerly open ingestion routes return 401.
+- Workspace typecheck, lint, format and all unit tests are green.
+
+Found live and handled: **no approval writer sets `approvals.agent_run_id`** (0 of 20 production
+approvals), and PRD-13's approval rate is measured through that link. So the aggregation leaves
+an agent's rate null ("Not measured yet", and no alert) until its approvals are linked, rather
+than reporting a false 0 percent that would trigger the 30 percent alert on missing data.
+Linking the writers is flagged as a separate task.
+
+Not done, deliberately:
+- Role grants in the UI (owner-only; staff are seeded by SQL for now).
+- AD-10's time-boxed note-summary access.
+- The guardian resend (the guardian email itself was never built in step 1.4; the console says
+  so rather than offering a button that fails).
+- AD-26's governance checks and demo-account registry.
+- Push and email delivery of staff alerts (routing is stored; delivery is step 5.2's
+  notification service), and the 24-hour distress escalation job.
+- Refunds and chargebacks (no webhook yet; Stripe is linked).
+- The patron-payouts and ranking-forecast kill switches (shown as not wired).
+- Conversions on the sign-ups chart (needs Stripe Billing).
+- Analytics events.
+- `admin.deucex.ai` itself (the domain isn't attached to the `deucex-admin` Vercel project, and
+  apps/api isn't deployed, so the console runs locally for now).

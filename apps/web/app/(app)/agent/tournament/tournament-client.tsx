@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase/client';
 import { daysUntil, loadTournamentSnapshot, type TournamentSnapshot } from '@/lib/tournament/load';
 import { CalendarTab } from '@/components/tournament/calendar-tab';
 import { DetailPanel } from '@/components/tournament/detail-panel';
+import { PausedNotice } from '@/components/agents/paused-notice';
 
 function mondayIso(date: Date): string {
   const d = new Date(date);
@@ -133,6 +134,7 @@ export function TournamentClient({
           </Badge>
         </div>
       </header>
+      <PausedNotice agent="tournament" label="The Tournament Agent" />
 
       {loaded && (
         <section className="grid grid-cols-4 gap-4 max-[900px]:grid-cols-2">

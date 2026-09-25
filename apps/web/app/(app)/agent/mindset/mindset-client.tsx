@@ -24,6 +24,9 @@ import { BoundariesCard } from '@/components/mindset/boundaries-card';
 import { MoodChart } from '@/components/mindset/mood-chart';
 import { PatternsCard } from '@/components/mindset/patterns-card';
 import { RecentMorningsCard } from '@/components/mindset/recent-mornings-card';
+import { PausedNotice } from '@/components/agents/paused-notice';
+
+const OPENAI = ['openai'] as const;
 
 export interface MindsetClientProps {
   playerId: string;
@@ -99,6 +102,7 @@ export function MindsetClient({ playerId, timezone, isFree, started }: MindsetCl
           </Badge>
         </div>
       </header>
+      <PausedNotice agent="mindset-coach" providers={OPENAI} label="The Mindset Coach" />
 
       {!loaded ? null : distress ? (
         <SomeoneToCallCard />

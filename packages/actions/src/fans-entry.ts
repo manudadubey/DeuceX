@@ -14,6 +14,7 @@ export {
   type SubscriptionSummary,
   type PayoutBalanceLineMinor,
   type StripeWebhookEvent,
+  type PlatformBalanceLineMinor,
 } from './stripe-client';
 
 export {

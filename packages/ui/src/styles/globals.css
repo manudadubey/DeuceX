@@ -13,6 +13,7 @@
 @source '../charts';
 @source '../../../../apps/web/app';
 @source '../../../../apps/admin/app';
+@source '../../../../apps/admin/components';
 
 :root {
   --radius: 0.625rem;

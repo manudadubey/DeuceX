@@ -179,6 +179,9 @@ function fakeStripe(overrides: Partial<FansStripeClient> = {}): FansStripeClient
     async setSubscriptionPaused() {
       throw new Error('unused');
     },
+    async retrievePlatformBalance() {
+      return [];
+    },
     async cancelSubscription() {
       throw new Error('unused');
     },
@@ -640,6 +643,9 @@ describe('step 4.1b follow-up · the 90-day paused-membership sweep', () => {
     const cancelled: string[] = [];
     const sent: Array<{ to: string; subject: string }> = [];
     const stripe = fakeStripe({
+      async retrievePlatformBalance() {
+        return [];
+      },
       async cancelSubscription({ subscriptionId }) {
         cancelled.push(subscriptionId);
       },
@@ -712,6 +718,9 @@ describe('step 4.1b follow-up · the 90-day paused-membership sweep', () => {
       patron({ id: 'mira', name: 'Mira Kovac', status: 'paused', pausedAt: pausedDaysAgo(120) }),
     );
     const { deps, sent } = sweepDeps({
+      async retrievePlatformBalance() {
+        return [];
+      },
       async cancelSubscription() {
         throw new Error('Stripe down');
       },
