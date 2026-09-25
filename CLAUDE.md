@@ -308,8 +308,10 @@ workers on one queue could complete each other's jobs). The owner staff identity
   owner's `.env`; the API refuses it in production). Before launch: clear stray localhost
   passkeys, register one per staff member, add `https://admin.deucex.ai` to Supabase Auth >
   Passkeys origins (`http://localhost:3001` was added 25 September 2026).
-- No approval writer sets `approvals.agent_run_id`, so the console's approval rates read "Not
-  measured yet" until it does (a separate task was started for this).
+- Approvals now record `approvals.agent_run_id` (tournament, content, fans patron notes,
+  financial chase), but production has no linked rows until `apps/api` is deployed, so the
+  console's approval rates still read "Not measured yet". See `docs/BUILD-LOG.md`'s approvals
+  follow-up for the rate caveats (content rewrites, first-week dilution).
 - Settings > Agents still says the Tournament Agent "arrives with step 3.2"; it shipped.
 - Roll the Stripe sandbox secret key (pasted in chat).
 - Set `STRIPE_WEBHOOK_SECRET` once `apps/api` has a public URL; no live webhook has run yet.

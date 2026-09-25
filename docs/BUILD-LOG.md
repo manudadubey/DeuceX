@@ -2771,7 +2771,7 @@ and passes against production.
 
 **Verified against production**, in a transaction that was rolled back (0 fixture rows left
 after): a fixture player with tournament, fans/patron-note and financial runs, with linked
-approvals on two of them. Step 5.1's own `aggregateDay` (still uncommitted in the main checkout)
+approvals on two of them. Step 5.1's own `aggregateDay` (uncommitted at the time, since merged as PR #24)
 then gave tournament an `approval_rate_7d` of 0.5, fans/patron-note 0.2 (its four real, unlinked
 runs from 23 September are in the window), and left financial and content null. Production itself
 stays unlinked until this code runs: `apps/api` isn't deployed, and the 20 existing approvals
