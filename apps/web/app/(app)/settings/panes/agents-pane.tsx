@@ -16,6 +16,7 @@ import {
   Switch,
 } from '@deucex/ui';
 import { setAgentPaused, type Database } from '@deucex/db';
+import { AGENT_NAMES } from '@deucex/shared';
 import { createClient } from '@/lib/supabase/client';
 import { startNewUpdate } from '@/lib/content/api';
 
@@ -29,8 +30,16 @@ type AgentSchedule = Database['public']['Tables']['agent_schedules']['Row'];
 // honesty this pane already owes Equipment and Connections. Sponsor/Fan are
 // Elite-only previews (M-TIER-4), always shown dimmed.
 const BUILT_AGENTS = [
-  { key: 'mindset', label: 'Mindset Coach', cadence: 'Structured-output model · daily' },
-  { key: 'financial', label: 'Financial Agent', cadence: 'Structured-output model · daily' },
+  {
+    key: AGENT_NAMES.mindsetCoach,
+    label: 'Mindset Coach',
+    cadence: 'Structured-output model · daily',
+  },
+  {
+    key: AGENT_NAMES.financial,
+    label: 'Financial Agent',
+    cadence: 'Structured-output model · daily',
+  },
 ] as const;
 
 const UNBUILT_AGENTS = [
@@ -106,7 +115,7 @@ export function AgentsPane({
     return agentSchedules.find((s) => s.agent_name === agentName)?.paused ?? false;
   }
 
-  async function handleToggle(agentName: string, paused: boolean) {
+  async function handleToggle(agentName: string, paused: boolean, label: string) {
     setPending(agentName);
     try {
       const supabase = createClient();
@@ -124,7 +133,7 @@ export function AgentsPane({
           ]
         : agentSchedules.filter((s) => s.agent_name !== agentName);
       onAgentSchedulesChange(next);
-      onToast(paused ? `${agentName} paused` : `${agentName} resumed`);
+      onToast(paused ? `${label} paused` : `${label} resumed`);
     } finally {
       setPending(null);
     }
@@ -149,7 +158,7 @@ export function AgentsPane({
             <Switch
               checked={!isPaused(a.key)}
               disabled={pending === a.key}
-              onCheckedChange={(v) => handleToggle(a.key, !v)}
+              onCheckedChange={(v) => handleToggle(a.key, !v, a.label)}
               aria-label={`${a.label} enabled`}
             />
           </div>
@@ -189,7 +198,7 @@ export function AgentsPane({
           <Switch
             checked={!isPaused('content')}
             disabled={pending === 'content'}
-            onCheckedChange={(v) => handleToggle('content', !v)}
+            onCheckedChange={(v) => handleToggle(AGENT_NAMES.content, !v, 'Content Agent')}
             aria-label="Content Agent enabled"
           />
         </div>

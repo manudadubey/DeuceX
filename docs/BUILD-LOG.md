@@ -2868,3 +2868,30 @@ Noticed, not changed:
   dispatcher's `mindset-coach`. Worth checking which name Settings writes.
 - `pg` logs its parallel-query deprecation warning when a console-pool connection opens, because
   the on-connect `set role console` overlaps the first query. This predates this step.
+
+## Fix: the Mindset Coach pause name — 26 September 2026
+
+Found during step 5.0's live check. Onboarding step 4 and Settings > Agents wrote the Mindset
+Coach's `agent_schedules` row as `mindset`. The runner's pickup pause check, the console, the
+admin registry and the paused notice all read `mindset-coach`. So a player who turned the Mindset
+Coach off still got daily insights, and a staff pause of that player's agents didn't show in their
+Settings.
+
+Fixed:
+- `AGENT_NAMES` in `@deucex/shared` holds the stored agent names.
+- Onboarding keeps `mindset` as its UI toggle key, but writes through `ONBOARDING_AGENT_NAMES`
+  (`packages/db/src/players.ts`).
+- Settings > Agents and the Mindset scheduler use the constant. The pane's toast now names the
+  agent ("Mindset Coach paused") rather than printing its key.
+- A new test (`apps/api/src/agent-names.test.ts`) fails if any player-facing pause name isn't an
+  agent apps/api runs. Checked by putting `mindset` back: it fails.
+- Migration `20260928100000_fix_mindset_agent_name` (owner-confirmed, data only) renames existing
+  rows. Where a player had both rows, the merged row is paused if either was, so a player's own
+  "off" is never undone. Production had one such pair, the fixture player's: their Mindset Coach
+  is now paused, as they had chosen in Settings.
+
+Not checked in the browser: another session held the dev ports. Typecheck, lint and every unit
+test pass.
+
+Not changed: the notification preferences' `mindset` key is a separate namespace (per-agent
+notification channels, not a pause), so it stays.

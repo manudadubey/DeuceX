@@ -218,7 +218,7 @@ describe('finishOnboarding', () => {
     expect(upsertArg).toMatchObject({ tier: 'free', tier_status: 'free' });
   });
 
-  it('writes a paused agent_schedules row only for agents turned off (mindset by default)', async () => {
+  it('writes a paused agent_schedules row only for agents turned off (the Mindset Coach by default), under the name the runner reads', async () => {
     const playersQuery = fakeUpsertQuery({ data: { id: 'player-1' }, error: null });
     const schedulesQuery = { upsert: vi.fn().mockResolvedValue({ error: null }) };
     const from = vi.fn((table: string) => (table === 'players' ? playersQuery : schedulesQuery));
@@ -227,7 +227,7 @@ describe('finishOnboarding', () => {
     await finishOnboarding(client, baseInput);
 
     expect(schedulesQuery.upsert).toHaveBeenCalledWith(
-      [{ player_id: 'player-1', agent_name: 'mindset', paused: true }],
+      [{ player_id: 'player-1', agent_name: 'mindset-coach', paused: true }],
       { onConflict: 'player_id,agent_name' },
     );
   });
