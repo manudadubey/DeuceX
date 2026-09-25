@@ -16,7 +16,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1, step 2.1 through step 4.3 done, step 5.1 built (PR pending), then step 5.0
+## Status: Phase 0, Phase 1, step 2.1 through step 5.1 done, start step 5.0
 
 The monorepo scaffold is built and deploying; the database has RLS-protected DeuceX tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -294,8 +294,8 @@ next session should start at **step 5.1 (Admin console)** in `docs/BUILD-PLAN-CL
 (step 5.0 comes after it): read that step plus whatever it names, and check `gh pr list` first. Check `docs/BUILD-LOG.md` for what each prior step actually did before
 assuming anything about the current state; this paragraph is a pointer, not the full record.
 
-Step 5.1 (Admin console) is built on branch `step-5.1-admin-console`, stacked on the unpushed
-`fix-fx-home-currency` commit: staff auth, the `console` role's explicit grants (a live test
+Step 5.1 (Admin console), [PR #24](https://github.com/manudadubey/DeuceX/pull/24), merged 26
+September 2026 (it also carried the FX home-currency fix): staff auth, the `console` role's explicit grants (a live test
 proves it can't read `notes.transcript`), three roles enforced by the API, every PRD-13 page, the
 admin-action gate for staff-triggered emails (owner decision), the nightly aggregation, and admin
 actions in the player's Data & safety log. It also fixed a pre-existing queue bug (three agent
