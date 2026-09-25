@@ -2890,8 +2890,30 @@ Fixed:
   "off" is never undone. Production had one such pair, the fixture player's: their Mindset Coach
   is now paused, as they had chosen in Settings.
 
-Not checked in the browser: another session held the dev ports. Typecheck, lint and every unit
-test pass.
+**A second, older bug, found by testing it in the browser.** Resuming any agent in Settings >
+Agents has never worked. The pane "resumed" an agent by deleting its `agent_schedules` row, but
+players have select, insert and update policies on that table and no delete policy. So the delete
+matched nothing, raised no error, and the pane said "resumed" while the agent stayed paused. This
+dates from step 2.3 and hit every agent; its unit test mocked the delete, which is why nothing
+caught it. `setAgentPaused` now upserts `paused` in both directions, which the existing policies
+allow; no migration was needed. A `paused: false` row means the same as no row to every reader,
+and the console's resume already writes one. Three new live RLS tests:
+- a player can pause and then resume their own agent;
+- a player's delete matches nothing, which is why resuming must not delete;
+- a player can't pause someone else's agent.
+
+Verified in the browser as the fixture player, against production:
+- the pane read the migrated row (Mindset Coach off);
+- before the second fix, turning it on showed "Mindset Coach resumed" while the row stayed paused;
+- after it, turning it on wrote `mindset-coach`, `paused = false`, and turning it off wrote
+  `paused = true`, with the toast naming the agent;
+- no console errors;
+- the player is left as they chose, Mindset Coach off.
+
+Typecheck, lint and every unit test pass.
+
+Still open (step 1.4's known OB-17 gap): replaying onboarding with an agent switched back on
+doesn't unpause it, because onboarding only ever writes rows for agents left off.
 
 Not changed: the notification preferences' `mindset` key is a separate namespace (per-agent
 notification channels, not a pause), so it stays.

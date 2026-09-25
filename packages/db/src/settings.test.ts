@@ -123,19 +123,25 @@ describe('setAgentPaused', () => {
 
     expect(from).toHaveBeenCalledWith('agent_schedules');
     expect(query.upsert).toHaveBeenCalledWith(
-      { player_id: 'player-1', agent_name: 'tournament', paused: true },
+      expect.objectContaining({ player_id: 'player-1', agent_name: 'tournament', paused: true }),
       { onConflict: 'player_id,agent_name' },
     );
   });
 
-  it('deletes the row when unpausing, rather than writing paused: false', async () => {
+  // Players have no delete policy on agent_schedules, so a delete would
+  // match nothing under RLS and leave the agent paused. The live check is
+  // in rls.integration.test.ts.
+  it('upserts paused: false when resuming, never deletes', async () => {
     const query = fakeQuery({ data: null, error: null });
     const client = { from: vi.fn().mockReturnValue(query) } as unknown as SupabaseClient<Database>;
 
     await setAgentPaused(client, 'player-1', 'tournament', false);
 
-    expect(query.delete).toHaveBeenCalled();
-    expect(query.eq).toHaveBeenCalledWith('agent_name', 'tournament');
+    expect(query.delete).not.toHaveBeenCalled();
+    expect(query.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ player_id: 'player-1', agent_name: 'tournament', paused: false }),
+      { onConflict: 'player_id,agent_name' },
+    );
   });
 });
 
