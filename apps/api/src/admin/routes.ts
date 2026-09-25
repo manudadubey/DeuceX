@@ -145,7 +145,12 @@ export async function registerAdminRoutes(
           q.query(`update public.admin_users set last_seen_at = now() where id = $1`, [staff.id]),
         );
       }
+      if (!deps.auth.requirePasskey) {
+        passkeyReady = true;
+        passkeySession = true;
+      }
       return reply.send({
+        passkeyRequired: deps.auth.requirePasskey,
         id: staff.id,
         name: staff.name,
         email: staff.email,

@@ -2665,3 +2665,37 @@ Not done, deliberately:
 - Analytics events.
 - `admin.deucex.ai` itself (the domain isn't attached to the `deucex-admin` Vercel project, and
   apps/api isn't deployed, so the console runs locally for now).
+
+**Staff passkey, deferred to launch (owner decision, same session).** Registering the owner's
+passkey first failed because Supabase's allowed passkey origins held only
+`http://localhost:3000`; `http://localhost:3001` was added in Auth > Passkeys (RP ID
+`localhost` unchanged). Registration then worked, but every passkey sign-in failed with
+"Unable to find the credential for the returned credential ID": the earlier rejected attempts
+had left orphan localhost passkeys on the owner's device, and Supabase's discoverable passkey
+sign-in can't be narrowed to one account. The owner chose to turn the requirement off until
+launch:
+- `ADMIN_PASSKEY_REQUIRED=false` (set in the owner's local `.env`) lets a staff email-link
+  session through.
+- apps/api refuses to start with it off when `NODE_ENV=production`, so it can't ship disabled.
+- Every other check stays: staff-only links, the role guard, audit rows. A route test covers
+  both modes.
+- The sign-in field no longer asks the browser for a passkey on load (`autocomplete="webauthn"`
+  triggered a prompt the browser pane couldn't complete).
+
+Before launch: clear the stray localhost passkeys, register one per staff member on the real
+origin, add `https://admin.deucex.ai` to the passkey origins, and remove the flag.
+
+**Live browser pass** (in-app browser pane, signed in as the owner by staff magic link):
+- Overview, Players (detail panel, share links, actions, audit log, danger zone), Agent health
+  (the runs-per-hour chart from real runs, and the kill switches, two shown as not wired), and
+  Ingestion (feed cards) all rendered from production data.
+- So did Money (spend by category converted from USD), Trust and safety (the real export
+  request), the admin audit log and alert routing.
+- Previewing as Support left only Overview, Players and Trust and safety in the sidebar and tab
+  bar, showed MRR as "Owner only", and sent `/money` by URL to Overview (AD-AC-1).
+- Bugs found and fixed in the pass:
+  - the role preview rendered the old role's navigation until the next page load (it now
+    reloads);
+  - routing showed "Owned By Ops" (a CSS capitalise).
+- No state-changing console action was run against production in the browser; those are
+  covered by the route and live database tests above.

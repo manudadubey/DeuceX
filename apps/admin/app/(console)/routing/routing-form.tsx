@@ -21,6 +21,7 @@ import type { RoutingRow } from '@/lib/api';
 import { browserApi } from '@/lib/browser-api';
 
 const ROLES = ['support', 'ops', 'owner'] as const;
+const ROLE_LABELS = { support: 'Support', ops: 'Ops', owner: 'Owner' } as const;
 
 export function RoutingForm({ rows }: { rows: RoutingRow[] }) {
   const router = useRouter();
@@ -93,8 +94,8 @@ export function RoutingForm({ rows }: { rows: RoutingRow[] }) {
                 <TableRow key={r.kind}>
                   <TableCell>
                     {r.label}
-                    <span className="block text-xs text-muted-foreground capitalize">
-                      Owned by {r.owner}
+                    <span className="block text-xs text-muted-foreground">
+                      Owned by {ROLE_LABELS[r.owner as keyof typeof ROLE_LABELS] ?? r.owner}
                     </span>
                   </TableCell>
                   {r.routes.map((x) => (

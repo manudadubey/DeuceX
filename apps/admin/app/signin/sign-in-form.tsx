@@ -61,15 +61,12 @@ export function SignInForm({ initialError }: { initialError: string | null }) {
         <Input
           id="email"
           type="email"
-          autoComplete="username webauthn"
+          autoComplete="username"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <FieldDescription>
-          We email a link to staff addresses only. A registered passkey is required before the
-          console opens.
-        </FieldDescription>
+        <FieldDescription>We email a sign-in link to staff addresses only.</FieldDescription>
         {error ? (
           <p role="alert" className="text-sm text-danger">
             {error}

@@ -122,7 +122,12 @@ export default async function AgentsPage() {
                   </TableCell>
                   <TableCell className="min-w-28">
                     {a.approvalRate === null ? (
-                      <span className="text-xs text-muted-foreground" title="Approvals are not linked to agent runs yet">Not measured</span>
+                      <span
+                        className="text-xs text-muted-foreground"
+                        title="Approvals are not linked to agent runs yet"
+                      >
+                        Not measured
+                      </span>
                     ) : (
                       <div className="flex items-center gap-2">
                         <Progress value={a.approvalRate * 100} className="w-16" />

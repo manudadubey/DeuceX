@@ -44,6 +44,13 @@ export interface StaffAuthDeps {
   /** Service-role client with auth.experimental.passkey on, for the admin passkey list. */
   passkeyAdmin: SupabaseClient<Database>;
   consoleDb: ConsoleDb;
+  /**
+   * AD-1's mandatory passkey. Owner decision, 25 September 2026: off for
+   * local development until launch (a registration mix-up on the owner's
+   * device made it unusable), back on before launch. index.ts refuses to
+   * start with it off when NODE_ENV is production.
+   */
+  requirePasskey: boolean;
 }
 
 const BEARER = /^Bearer (.+)$/;
@@ -110,7 +117,7 @@ export async function authenticateStaff(
   if (!row) throw new StaffAuthError(403, 'not_staff', 'This account has no console access.');
 
   const passkeys = await countPasskeys(deps.passkeyAdmin, row.id);
-  if (!options.allowWithoutPasskey) {
+  if (deps.requirePasskey && !options.allowWithoutPasskey) {
     if (passkeys === 0) {
       throw new StaffAuthError(
         403,

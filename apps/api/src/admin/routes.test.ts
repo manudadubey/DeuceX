@@ -108,7 +108,7 @@ function fakeConsoleDb(state: FakeState, userIdByToken: Map<string, string>): Co
   return { tx: (fn) => fn(q), end: async () => undefined };
 }
 
-function setup(options: { passkeys?: number } = {}) {
+function setup(options: { passkeys?: number; requirePasskey?: boolean } = {}) {
   const state: FakeState = {
     staff: {
       support: { id: 'staff-support', name: 'Sam Park', email: 'sam@deucex.test', role: 'support' },
@@ -168,7 +168,7 @@ function setup(options: { passkeys?: number } = {}) {
   };
 
   const deps = {
-    auth: { anonClient, passkeyAdmin, consoleDb },
+    auth: { anonClient, passkeyAdmin, consoleDb, requirePasskey: options.requirePasskey ?? true },
     consoleDb,
     gateDb: new ConsoleAdminGateDb(consoleDb),
     email: { sendEmail },
@@ -216,6 +216,22 @@ describe('staff sessions', () => {
     });
     expect(res.statusCode).toBe(403);
     expect(res.json().code).toBe('passkey_sign_in_required');
+  });
+
+  it('accepts an email-link session with no passkey when the requirement is off (development only)', async () => {
+    const { app, as } = setup({ passkeys: 0, requirePasskey: false });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/admin/money',
+      headers: as('owner', MAGIC_LINK_TOKEN),
+    });
+    expect(res.statusCode).not.toBe(403);
+    const support = await app.inject({
+      method: 'GET',
+      url: '/admin/money',
+      headers: as('support'),
+    });
+    expect(support.statusCode).toBe(403);
   });
 
   it('asks for enrolment before a passkey exists', async () => {

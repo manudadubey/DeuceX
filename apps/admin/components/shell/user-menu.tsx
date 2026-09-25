@@ -51,8 +51,9 @@ export function UserMenu({
 
   function preview(next: AdminRole) {
     setRolePreview(next === role ? null : next);
-    router.push('/');
-    router.refresh();
+    // A full load, so every server component re-reads the role cookie at
+    // once (a client push could render the old role's navigation first).
+    window.location.assign('/');
   }
 
   return (

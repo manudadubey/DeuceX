@@ -530,9 +530,7 @@ export async function getOverview(q: ConsoleQuery, role: AdminRole, now: Date) {
        group by 1 order by 1`,
       [now.toISOString()],
     ),
-    q.query<{ at: string | null }>(
-      `select max(computed_at) as at from public.agent_health_daily`,
-    ),
+    q.query<{ at: string | null }>(`select max(computed_at) as at from public.agent_health_daily`),
     audPerUsd(q, now),
   ]);
 

@@ -583,7 +583,21 @@ async function main() {
   const passkeyAdmin = createClient<Database>(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false, experimental: { passkey: true } },
   });
-  const staffAuth: StaffAuthDeps = { anonClient, passkeyAdmin, consoleDb };
+  // AD-1's mandatory passkey: on unless ADMIN_PASSKEY_REQUIRED=false, and
+  // never off in production (owner decision 25 September 2026: off for local
+  // development until launch).
+  const requirePasskey = process.env.ADMIN_PASSKEY_REQUIRED !== 'false';
+  if (!requirePasskey && process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'ADMIN_PASSKEY_REQUIRED=false is refused in production: staff sign-in needs a passkey (PRD-13 AD-1).',
+    );
+  }
+  if (!requirePasskey) {
+    console.warn(
+      'ADMIN_PASSKEY_REQUIRED=false: the admin console accepts a staff magic link without a passkey. Development only.',
+    );
+  }
+  const staffAuth: StaffAuthDeps = { anonClient, passkeyAdmin, consoleDb, requirePasskey };
   const adminStripe = stripeSecretKey
     ? createStripeFansClient({ secretKey: stripeSecretKey })
     : null;
