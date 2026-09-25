@@ -2379,3 +2379,138 @@ a CAA `0 issue "amazon.com"` on the root, next to Vercel's existing `letsencrypt
 `pki.goog` and `sectigo.com` entries (it only adds a permitted issuer, so Vercel's certificates
 are unaffected; it can't live on `links.mail` because that name holds a CNAME). Resend verified
 both within about a minute and the domain is fully verified with open tracking on.
+
+---
+
+## Step 4.3 · Fuel — 25 September 2026
+
+Read first: PRD-07 (all), decisions worksheet 15, register A10, B12, B13, C2, C3, C5.
+
+Owner decisions this session (none were in the worksheet or register):
+- **Daily food money** is a player-set amount in the home currency
+  (`players.daily_food_allowance`), set in a new "Daily food money" row on the Financial Agent's
+  Budget card. Fuel shows it less today's Food lines and never edits it (PRD-07 open question;
+  register B13).
+- **The dietary profile** is edited only from Fuel's Preferences sheet (FU-21). There's no
+  onboarding step, so the chip tooltip now says "From your Fuel preferences" rather than "From
+  onboarding" (B13).
+- **Outcome inference from mood** is built as specified (FU-15, FU-AC-9), even though PRD-07
+  itself questions it. A player's tap always wins.
+- **The next match** is player-set on the Fuel page (`players.next_match_at` and
+  `next_match_label`, overwritten each time): nothing in the codebase records a match time or a
+  travel leg.
+
+Built:
+- **Migration** `20260926090000_step_4_3_fuel` (owner-confirmed, applied to production), plus a
+  follow-up that revokes `anon`'s default execute grant on the two new functions. It adds:
+  - three `players` columns (added to the column grant list) and `'fuel'` in
+    `ledger_lines.source`;
+  - `fuel_profiles`: exclusions and allergies are closed lists (allergies are the EU 14), with
+    no console grant because allergies are health-adjacent;
+  - `menu_scans`: written by the service role, readable by the player; photo hashes and
+    `photos_deleted_at` only;
+  - `meal_logs`: one per scan; the player can update only the outcome columns;
+  - `log_fuel_pick` and `unlog_fuel_meal`, SECURITY DEFINER functions that write or remove the
+    meal and its Food ledger line together. The dish and price come from the stored scan, never
+    the client. The line keeps the menu amount and currency, with `fx_rate_date` set to the
+    scan's rate date, so the logged line converts at the rate the player was shown (B12,
+    M-DATA-1). Undo is refused after local midnight (M-GATE-3).
+- **`packages/agents/src/fuel`**:
+  - One vision call (`gpt-4o-mini`, the receipts account) reads and describes every page of a
+    menu, with a schema, one corrective retry and an unreadable path.
+  - A deterministic `rankMenu` decides the picks: hard rules first (a set intersection between
+    the profile's closed lists and the extractor's closed `contains` tags), then the mode's Heavy
+    and Fried restrictions, then scoring for mode fit, city familiarity, preferences and price.
+    It also handles the unread-ingredients last resort (FU-AC-6), the over-budget flag and the
+    second-visit rule. The model never decides what's safe.
+  - `stripNutritionClaims` makes FU-16 structural rather than a prompt request.
+  - `deriveMode` implements section 7's thresholds as named constants. An unknown next match is
+    never Rest.
+  - Outcome inference and the chip text.
+  - The Sibiu fixture: 14 dishes that rank into exactly the prototype's three picks for the
+    PRD's player.
+- **`apps/api/src/fuel`**:
+  - `POST /fuel/scans`: multipart, up to four pages. A Free player gets a 403 before any byte is
+    read (FU-18, worksheet 15). The photos are held in memory only (the step 2.2 receipt
+    precedent), and a failed or unreadable scan is still recorded with its deletion time.
+  - An hourly outcome sweep on the money boss (no new pg-boss instance).
+- **`apps/web`**:
+  - The real `/fuel` page: context strip with the next-match editor, scan / reading / result
+    states, picks with both prices and the rate on hover, the FU-8 confirm line on every pick,
+    "Not tonight", fallback line, safety footer, log and Undo, history with the outcome tap, the
+    "won't do" card, and the Preferences sheet.
+  - The Free lock: the dimmed Sibiu sample, one line and one Start Pro trial.
+  - "Scan a menu" is live in the quick-actions sheet: Pro goes to `/fuel?take=1`, which focuses
+    Take photo; Free sees the lock icon and gets the locked page. That needed the tier passed
+    down from the app layout.
+  - The next-day "Worked, or flat?" line in the Match Scribe and Mindset check-ins (not the
+    dashboard's).
+  - A "· Fuel" marker and the original amount on ledger rows.
+- **Copy**:
+  - The photo line follows M-PRIV-1 (C2).
+  - No model name in the interface (C3); the processing state just says "Reading the menu".
+
+Verified:
+- Unit tests: 31 agent tests (including the sample's three picks in order at 42/36/28 lei →
+  14/12/9 in home currency), 6 API service tests and 4 route tests (Free refused before any
+  model call; 401; 422 on an unreadable photo).
+- Nine new live RLS tests against production:
+  - own profile only, and a closed-list violation refused;
+  - no direct `menu_scans` or `meal_logs` insert;
+  - `log_fuel_pick` writes a 42 RON Fuel line at the scan's rate date, and `unlog_fuel_meal`
+    removes both rows;
+  - someone else's scan is refused, and so is an undo after midnight;
+  - the outcome can be set on your own meal only;
+  - `anon` can't execute the function.
+- All 51 live RLS tests pass. Test rows were confirmed gone afterwards.
+- Full workspace typecheck, lint, format and unit tests are green.
+- A signed-in browser pass against production showed:
+  - the context strip reading "Match tomorrow 10:24 · Q1 vs Pedro" and "A$50 left for food
+    today";
+  - the sample as Pre-match with the account's real profile applied: beef soup under "Not
+    tonight" for "no beef", and Mici tagged Allergen for mustard, so the allergy outranks its
+    beef tag;
+  - lei and A$ side by side;
+  - "I'm having this" on the sample toasting "nothing was logged", with zero `meal_logs` and
+    zero Fuel ledger lines confirmed in the database afterwards.
+
+Bug found live and fixed: the sample ran in the player's current mode (Practice) while its why
+sentences are written for the PRD's 10:00-match night, so the text contradicted the badge. The
+sample now always reads as its own pre-match scenario, with the player's rules and money still
+applied.
+
+Not done, deliberately:
+- Offline scan queue (FU-20, Should).
+- Supermarket-shelf phrasing (FU-19, Should).
+- The "anything with fish?" re-rank (FU-22, Could).
+- Travel legs, so Travel mode can't fire in production yet; the rule is tested.
+- Analytics events.
+- `menu_scans.agent_run_id` is always null, because `recordRun` doesn't return an id; the run is
+  linked by inputs hash.
+- A logged meal is "Dinner", "Lunch" or "Breakfast" by local hour only.
+- The last match is taken from the newest saved match note's recorded time, as a stand-in for a
+  match end time.
+
+**Real scan, run by the owner** (same session, after the PR opened): a one-page English menu
+photographed through the live page against the real model and production.
+
+What worked:
+- The photo was kept only as its hash, with a deletion time recorded.
+- 7 dishes were read, the mode was correctly Practice (next match about 21 hours away), and
+  both picks were shown with the unread-ingredients warning up front (FU-AC-6), since no dish's
+  ingredients were readable.
+- Logging wrote a Fuel ledger line at the day's rate.
+- One `agent_runs` row, at US$0.0059, under the A$0.05 target.
+
+Three bugs found and fixed:
+- **Venue stored as the text "null":** the model returned the word "null" rather than JSON null,
+  and it reached the ledger as "Lunch · Pasta · null". Nullable text is now normalised in the
+  schema.
+- **A bare "$" read as USD:** it was converted at 1.42, so 50 showed as A$71. The prompt now
+  carries a currency hint (the home currency) and the current tournament's place. The prompt
+  version is bumped to v2.
+- **Name shown twice:** when the English name equals the printed one ("Pasta / Pasta"), it now
+  appears once.
+
+The owner's test log (50 USD) is left in place for them to undo or keep.
+

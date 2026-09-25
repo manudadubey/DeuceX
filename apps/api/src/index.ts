@@ -26,6 +26,9 @@ import {
   createMockContentRewriteClient,
   createOpenAIContentDraftClient,
   createOpenAIContentRewriteClient,
+  MENU_EXTRACTION_MODEL,
+  createMockMenuExtractionClient,
+  createOpenAIMenuExtractionClient,
 } from '@deucex/agents';
 import cors from '@fastify/cors';
 import { config as loadEnv } from 'dotenv';
@@ -82,6 +85,9 @@ import { registerContentRoutes, type ContentRoutesDeps } from './content/routes'
 import { registerContentScheduler } from './content/scheduler';
 import { latestTeaser, onNoteSaved } from './content/service';
 import { SupabaseContentStore } from './content/store';
+import { registerFuelRoutes, type FuelRoutesDeps } from './fuel/routes';
+import { registerFuelOutcomeScheduler } from './fuel/scheduler';
+import { SupabaseFuelStore } from './fuel/store';
 
 // This service owns anything with an external side effect or a scheduled
 // job (webhooks, the queue worker, structured-output calls). Simple CRUD
@@ -108,6 +114,7 @@ export function buildServer(
   conditionsDeps?: ConditionsRoutesDeps,
   fansDeps?: FansRoutesDeps,
   contentDeps?: ContentRoutesDeps,
+  fuelDeps?: FuelRoutesDeps,
 ) {
   const app = Fastify({ logger: true });
 
@@ -123,7 +130,8 @@ export function buildServer(
     tournamentDeps ||
     conditionsDeps ||
     fansDeps ||
-    contentDeps
+    contentDeps ||
+    fuelDeps
   ) {
     void app.register(cors, {
       origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000').split(','),
@@ -185,6 +193,12 @@ export function buildServer(
   if (contentDeps) {
     void app.register(async (instance) => {
       await registerContentRoutes(instance, contentDeps);
+    });
+  }
+
+  if (fuelDeps) {
+    void app.register(async (instance) => {
+      await registerFuelRoutes(instance, fuelDeps);
     });
   }
 
@@ -490,6 +504,34 @@ async function main() {
   fansDeps.latestTeaser = (playerId) => latestTeaser(contentDeps, playerId);
   await registerContentScheduler(moneyBoss, contentDeps);
 
+  // Step 4.3: Fuel's menu scan, the same OpenAI account and vision model as
+  // receipts. The hourly outcome sweep shares the money boss.
+  const menuExtractionClient = openaiApiKey
+    ? createOpenAIMenuExtractionClient({ apiKey: openaiApiKey, model: MENU_EXTRACTION_MODEL })
+    : (() => {
+        console.warn(
+          'OPENAI_API_KEY not set: falling back to the mock menu extraction client (the Sibiu sample menu). Set OPENAI_API_KEY for real menu scanning.',
+        );
+        return createMockMenuExtractionClient();
+      })();
+  const fuelStore = new SupabaseFuelStore(db);
+  const fuelDeps: FuelRoutesDeps = {
+    anonClient,
+    store: fuelStore,
+    extractionClient: menuExtractionClient,
+    agentRuns,
+    async getTier(playerId) {
+      const { data, error } = await db
+        .from('players')
+        .select('tier')
+        .eq('id', playerId)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.tier ?? null;
+    },
+  };
+  await registerFuelOutcomeScheduler(moneyBoss, { store: fuelStore });
+
   const app = buildServer(
     notesDeps,
     rankingsDeps,
@@ -501,6 +543,7 @@ async function main() {
     conditionsDeps,
     fansDeps,
     contentDeps,
+    fuelDeps,
   );
   const port = Number(process.env.PORT ?? 8787);
   await app.listen({ port, host: '0.0.0.0' });

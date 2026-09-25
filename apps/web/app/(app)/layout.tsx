@@ -15,5 +15,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const email = typeof data.claims.email === 'string' ? data.claims.email : undefined;
 
-  return <AppShell email={email}>{children}</AppShell>;
+  // The quick-actions sheet shows "Scan a menu" locked on Free (decisions
+  // worksheet 15), so the shell needs the tier. No tier yet reads as Free,
+  // the same conservative default every agent page uses.
+  const { data: player } = await supabase
+    .from('players')
+    .select('tier')
+    .eq('id', data.claims.sub)
+    .maybeSingle();
+  const isFree = player?.tier !== 'pro' && player?.tier !== 'elite';
+
+  return (
+    <AppShell email={email} isFree={isFree}>
+      {children}
+    </AppShell>
+  );
 }

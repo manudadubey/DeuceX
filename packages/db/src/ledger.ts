@@ -13,7 +13,7 @@ export type LedgerCategory =
   | 'entry_fees'
   | 'other';
 
-export type LedgerSource = 'manual' | 'scanned' | 'planned';
+export type LedgerSource = 'manual' | 'scanned' | 'planned' | 'fuel';
 
 export type LedgerLine = Database['public']['Tables']['ledger_lines']['Row'];
 
@@ -219,4 +219,57 @@ export function convertLedgerLine(
     currencyOriginal: line.currency_original,
     fxRateDate: line.fx_rate_date,
   };
+}
+
+export interface RateBetween {
+  /** Units of `to` per one unit of `from`. */
+  rate: number;
+  /** The fx_rates_daily date the rate comes from. */
+  date: string;
+}
+
+// The newest archived date on or before `onOrBefore` that has both
+// currencies (ECB rows preferred over provisional ones on the same date),
+// looking back at most `maxDaysBack` days. Fuel (step 4.3) shows a menu
+// price at this rate and locks the logged line to its date, so a scan on a
+// weekend or before ECB's daily publish still converts at the last
+// published rate rather than showing nothing.
+export async function latestRateBetween(
+  client: SupabaseClient<Database>,
+  from: string,
+  to: string,
+  onOrBefore: string,
+  maxDaysBack = 10,
+): Promise<RateBetween | null> {
+  const needed = [from, to].filter((c) => c !== 'EUR');
+  if (needed.length === 0 || from === to) return { rate: 1, date: onOrBefore };
+
+  const earliest = new Date(`${onOrBefore}T00:00:00Z`);
+  earliest.setUTCDate(earliest.getUTCDate() - maxDaysBack);
+  const { data, error } = await client
+    .from('fx_rates_daily')
+    .select('date, currency, rate_to_eur, source')
+    .in('currency', needed)
+    .lte('date', onOrBefore)
+    .gte('date', earliest.toISOString().slice(0, 10))
+    .order('date', { ascending: false });
+  if (error) throw error;
+
+  const byDate = new Map<string, Record<string, { rate: number; ecb: boolean }>>();
+  for (const row of data ?? []) {
+    const day = byDate.get(row.date) ?? {};
+    const current = day[row.currency];
+    const ecb = row.source === 'ecb';
+    if (!current || (ecb && !current.ecb)) day[row.currency] = { rate: row.rate_to_eur, ecb };
+    byDate.set(row.date, day);
+  }
+  const dates = [...byDate.keys()].sort().reverse();
+  for (const date of dates) {
+    const day = byDate.get(date)!;
+    if (needed.every((c) => day[c])) {
+      const ratesToEur = Object.fromEntries(Object.entries(day).map(([c, v]) => [c, v.rate]));
+      return { rate: convertAtRate(1, from, to, ratesToEur), date };
+    }
+  }
+  return null;
 }

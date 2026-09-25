@@ -1,7 +1,20 @@
 'use client';
 
-import { Badge, Card, CardDescription, CardHeader, CardTitle } from '@deucex/ui';
+import { useMemo, useState } from 'react';
+import {
+  Badge,
+  Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Field,
+  FieldLabel,
+  Input,
+} from '@deucex/ui';
 import type { BudgetVsActualRow, WeeklyBudgetBar } from '@deucex/agents';
+import { setDailyFoodAllowance } from '@deucex/db';
+import { createClient } from '@/lib/supabase/client';
 
 function formatMoney(amount: number, currency: string): string {
   return new Intl.NumberFormat('en-AU', {
@@ -15,14 +28,90 @@ function formatMoney(amount: number, currency: string): string {
 // budget_estimates, which stands in for a real tournament reference until
 // step 3.1 (see the step 2.2 migration's own design note) — a player names
 // their own upcoming trips here, there is no shortlist to pull from yet.
+// Step 4.3 (owner decision): the daily food amount Fuel's "left for food
+// today" chip reads. Player-set in the home currency; Fuel never edits it.
+function DailyFoodRow({
+  playerId,
+  amount,
+  currency,
+  onSaved,
+}: {
+  playerId: string;
+  amount: number | null;
+  currency: string;
+  onSaved: (amount: number | null) => void;
+}) {
+  const supabase = useMemo(() => createClient(), []);
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(amount === null ? '' : String(amount));
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    const parsed = value.trim() === '' ? null : Number(value);
+    if (parsed !== null && !(parsed > 0)) return;
+    setSaving(true);
+    try {
+      await setDailyFoodAllowance(supabase, playerId, parsed);
+      onSaved(parsed);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!editing) {
+    return (
+      <div className="flex items-center justify-between border-t border-border pt-3 text-sm">
+        <span>
+          Daily food money{' '}
+          <span className="text-muted-foreground">
+            {amount === null ? '· not set' : `· ${formatMoney(amount, currency)} a day`}
+          </span>
+        </span>
+        <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+          {amount === null ? 'Set' : 'Edit'}
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-end gap-2 border-t border-border pt-3">
+      <Field className="min-w-[10rem] flex-1">
+        <FieldLabel htmlFor="daily-food">Daily food money ({currency})</FieldLabel>
+        <Input
+          id="daily-food"
+          type="number"
+          inputMode="decimal"
+          min={1}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+        />
+      </Field>
+      <Button size="sm" onClick={() => void save()} disabled={saving}>
+        Save
+      </Button>
+      <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+        Cancel
+      </Button>
+    </div>
+  );
+}
+
 export function BudgetCard({
   weeklyBudgetBar,
   rows,
   currency,
+  playerId,
+  dailyFoodAllowance,
+  onFoodAllowanceSaved,
 }: {
   weeklyBudgetBar: WeeklyBudgetBar | null;
   rows: BudgetVsActualRow[];
   currency: string;
+  playerId: string;
+  dailyFoodAllowance: number | null;
+  onFoodAllowanceSaved: (amount: number | null) => void;
 }) {
   return (
     <Card>
@@ -36,7 +125,7 @@ export function BudgetCard({
           <CardDescription>Set a weekly travel budget in onboarding to see this.</CardDescription>
         )}
       </CardHeader>
-      <div className="flex flex-col gap-4 px-6">
+      <div className="flex flex-col gap-4 px-6 pb-6">
         {weeklyBudgetBar && (
           <div>
             <div className="mb-1 flex items-baseline justify-between text-sm">
@@ -90,6 +179,13 @@ export function BudgetCard({
             ))}
           </div>
         )}
+
+        <DailyFoodRow
+          playerId={playerId}
+          amount={dailyFoodAllowance}
+          currency={currency}
+          onSaved={onFoodAllowanceSaved}
+        />
       </div>
     </Card>
   );
