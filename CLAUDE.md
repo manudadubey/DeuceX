@@ -284,6 +284,9 @@ line is a pointer, not the full record.
 - The payout footer's "1.75% + 30c" is only true for domestic charges (the Italian sandbox account
   paid about 6.5% with currency conversion): a PRD-04 copy fix.
 - Em dashes left in step 2.3's Settings copy (billing pane), against the copy rule.
+- Add `https://deucex.vercel.app/**` to Supabase Auth's redirect URLs (dashboard only), or
+  magic-link sign-in on the deployed app bounces.
+- Deploy `apps/api` (Fly.io or Render) and set `NEXT_PUBLIC_API_URL` on the `deucex` project.
 - Rename the Supabase project and the Stripe sandbox account to DeuceX in their dashboards
   (optional; nothing depends on those display names).
 
@@ -329,8 +332,14 @@ line is a pointer, not the full record.
   on push to `main`:
   - `deucex` — the player app, root directory `apps/web`, framework Next.js.
   - `deucex-admin` — the staff console, root directory `apps/admin`, framework Next.js.
-  Both currently deploy the placeholder pages from step 0.1; both sit behind Vercel's default SSO
-  protection (no custom domain yet). A few empty, unlinked stray projects (`procircuit-web` and an
+  Build commands come from `apps/web/vercel.json` and `apps/admin/vercel.json` (the dashboard fields
+  still say `@procircuit/*` and are overridden). `deucex` serves the real app at
+  **`deucex.vercel.app`**, the one address that skips Vercel's SSO wall (the per-deployment and
+  `-md-labs` addresses keep it); `procircuit.vercel.app` 308-redirects there via `vercel.json`.
+  `deucex` has exactly two env vars, `NEXT_PUBLIC_SUPABASE_URL` and
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (set 25 September 2026; before that it had none and every
+  page returned 500). `NEXT_PUBLIC_API_URL` is unset because `apps/api` isn't deployed, so
+  anything that calls the API fails in production. `deucex-admin` has no env vars. No custom domain yet. A few empty, unlinked stray projects (`procircuit-web` and an
   earlier bare `procircuit` under the other team) were left behind during setup and can be deleted
   from the dashboard whenever — harmless, no deployments, not referenced by anything.
 - **Supabase** project **ProCircuit** (the project is still named that; `gpzpmrumwaqyfkyvqbgl`, org `MD Labs`, `ap-northeast-1`).
