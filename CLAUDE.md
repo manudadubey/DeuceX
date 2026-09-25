@@ -335,7 +335,7 @@ FYI digest from the sixth email) and sends once a minute. It also emails staff a
 and escalates unconfirmed distress cases at 24 hours. The rail and a "Push on this device" control
 are in apps/web. VAPID keys are in the owner's local `.env` (four `WEB_PUSH_*` vars; see
 `.env.example`), and must also be set wherever apps/api and apps/web are deployed. See
-`docs/BUILD-LOG.md`'s step 5.2 entry. Next is **step 5.3** (mobile shells and stores), which adds
+`docs/BUILD-LOG.md`'s step 5.2 entry. [PR #28](https://github.com/manudadubey/DeuceX/pull/28), merged 26 September 2026. Next is **step 5.3** (mobile shells and stores), which adds
 native push behind the same `PushClient`.
 
 **Open follow-ups** (none block step 5.3):
