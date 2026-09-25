@@ -1,4 +1,10 @@
-# ProCircuit
+# ProCircuit (becoming DeuceX)
+
+**Rebrand in progress (owner, 25 September 2026): the product is being renamed DeuceX, domain
+`deucex.ai`.** The codebase, UI copy, PRDs, repo and Vercel projects still say "ProCircuit"; the
+rename is a planned step of its own that hasn't started. Until then, keep new code consistent with
+the existing ProCircuit naming, but anything that reaches the outside world for the first time
+(email sender, domains) uses DeuceX. Don't do a partial rename in passing.
 
 Agentic SaaS for ATP and WTA players ranked roughly #150 to #1500. The agent proposes, the
 player decides: nothing leaves the app (entry, payment, email, post, message) without a
@@ -266,6 +272,17 @@ branch off it rather than `main`, the same stacking step 0.5/0.6 used. Check
 step actually did (including follow-ups) before assuming anything about the current state — this
 line is a pointer, not the full record.
 
+**Open follow-ups before or alongside step 4.2** (none block starting it):
+- Resend verification of `mail.deucex.ai`, then one real test send to a real inbox (the owner OK'd
+  manu.dadubey@gmail.com as a patron manage-link email; set the test patron's email back after).
+- Roll the Stripe sandbox secret key (pasted in chat).
+- Set `STRIPE_WEBHOOK_SECRET` once `apps/api` has a public URL; no live webhook has run yet.
+- De-duplicate the "Stripe needs something from you" notification (fired twice in one KYC pass).
+- The payout footer's "1.75% + 30c" is only true for domestic charges (the Italian sandbox account
+  paid about 6.5% with currency conversion): a PRD-04 copy fix.
+- Em dashes left in step 2.3's Settings copy (billing pane), against the copy rule.
+- The DeuceX rebrand, as its own planned step.
+
 ## Read before coding
 
 - `docs/BUILD-PLAN-CLAUDE-CODE.md` (the step you are on), `docs/TECH-ARCHITECTURE.md`, the PRD
@@ -340,13 +357,34 @@ line is a pointer, not the full record.
 - **OpenAI** (step 1.1): a Whisper-capable API key, owner's own account, confirmed working
   (`whisper-1`) and with credits after an initial `insufficient_quota` failure during testing.
   Key lives only in the owner's local `.env`.
-- **Resend** (step 2.3): a working API key, owner's own account, confirmed sending real email
-  (account-deletion confirmation and data-export delivery). The `procircuit.app` sending domain is
-  **not verified yet** — a real send against it fails with a 403, discovered live while building
-  step 2.3 — so `apps/api` defaults to Resend's own sandbox sender (`onboarding@resend.dev`, no
-  verification needed) unless `RESEND_FROM_ADDRESS` is set. Verify a real domain at
-  resend.com/domains and set that env var before this needs to reach a real patron inbox (step
-  4.2, Content Agent). Key lives only in the owner's local `.env`.
+- **Resend** (step 2.3): a working API key, owner's own account; key only in the owner's local
+  `.env`. Sending domain **`mail.deucex.ai`** (Resend domain id
+  `26ac35a2-7651-460f-aeb7-bd7b21897401`, region `ap-northeast-1`) was added on 25 September 2026,
+  with its DKIM, SPF (MX and TXT) and return-path CNAME records added to deucex.ai's DNS in Vercel
+  and confirmed correct on Vercel's nameservers and public DNS. Resend's own verification was
+  still **pending** at the end of that session: check its status before assuming mail sends. The
+  owner's local `.env` sets `RESEND_FROM_ADDRESS="DeuceX <updates@mail.deucex.ai>"` (quoted, so
+  shell `. ./.env` works); without it `apps/api` falls back to Resend's sandbox sender
+  (`onboarding@resend.dev`), which only delivers to the Resend account owner's own inbox and
+  refuses `example.com` addresses. The old `procircuit.app` domain was never registered; don't
+  use it. A real test send to a real inbox is still owed once Resend verifies.
+- **Domain**: **`deucex.ai`**, bought 25 September 2026 through Vercel in the `md-labs` team
+  (auto-renews, expires 2028), DNS on Vercel's nameservers. Only the Resend records above plus
+  Vercel's defaults exist; it isn't attached to either Vercel project yet. Add DNS records one at a
+  time in the dashboard: the Vercel connector's only DNS write replaces the whole zone file.
+- **Stripe** (step 4.1): the **ProCircuit sandbox** account (`acct_1UJAD5HFJcPzP6oW`, test mode
+  only), key `STRIPE_SECRET_KEY` in the owner's local `.env` (it was pasted in chat on 24 September,
+  so it should be rolled). Connect was enabled through the Stripe connector's sandbox-only
+  `EnableConnect`. Connected accounts must be **Accounts v2** (v1 creation is refused for new
+  platforms) with Stripe's Managed Risk and the Express dashboard, pinned to the preview API
+  version in `packages/actions/src/stripe-client.ts`. Live sandbox state kept for step 4.2: the
+  fixture player's connected account `acct_1UJBZpHFJctJN0Mp` (Italy, EUR settlement), three
+  published tiers, and one test patron (Mira, active, Courtside). `STRIPE_WEBHOOK_SECRET` is not
+  set, so no live webhook has ever run; the checkout-return reconcile covers new patrons.
+  `PATRON_LINK_SECRET` (step 4.1b) must be set wherever `apps/api` is deployed.
+- **Local dev URLs**: `APP_BASE_URL=http://localhost:3000` in the owner's `.env` (it had drifted to
+  an old dev-server port, which sent Stripe's onboarding return to a dead page); keep it matching
+  the web dev server's port.
 
 ## MCP servers to connect
 
