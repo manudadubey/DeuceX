@@ -151,31 +151,24 @@ export async function updateNotificationPrefs(
 }
 
 // Agents pane (PRD-12 4.6): one pause switch per agent, mapping directly
-// onto agent_schedules.paused — the same "off = a paused=true row, on = no
-// row" idiom onboarding's step 4 toggles already use (step 1.4). Called
-// with `paused: false` this deletes the row rather than writing paused:
-// false, keeping "no row" the one true default state.
+// onto agent_schedules.paused. Both directions upsert the row: players have
+// insert and update policies on agent_schedules but no delete policy, so the
+// old "resume = delete the row" silently matched nothing under RLS and the
+// agent stayed paused while the pane said it had resumed. A paused: false
+// row means the same as no row to every reader (the pickup check, the
+// console), and the console's own resume already writes one.
 export async function setAgentPaused(
   client: SupabaseClient<Database>,
   playerId: string,
   agentName: string,
   paused: boolean,
 ): Promise<void> {
-  if (paused) {
-    const { error } = await client
-      .from('agent_schedules')
-      .upsert(
-        { player_id: playerId, agent_name: agentName, paused: true },
-        { onConflict: 'player_id,agent_name' },
-      );
-    if (error) throw error;
-    return;
-  }
   const { error } = await client
     .from('agent_schedules')
-    .delete()
-    .eq('player_id', playerId)
-    .eq('agent_name', agentName);
+    .upsert(
+      { player_id: playerId, agent_name: agentName, paused, updated_at: new Date().toISOString() },
+      { onConflict: 'player_id,agent_name' },
+    );
   if (error) throw error;
 }
 

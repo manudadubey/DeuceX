@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { AGENT_NAMES, type AgentName } from '@deucex/shared';
 import type { Database } from './database.types';
 
 // Hand-maintained unions for players' check constraints (step 0.2 and step
@@ -104,6 +105,14 @@ export function countryDefaults(country: string): CountryDefaults {
 // The four v1 agents step 4 offers (build plan step 1.4 / PRD-11 OB-12).
 export const ONBOARDING_AGENTS = ['tournament', 'content', 'financial', 'mindset'] as const;
 export type OnboardingAgent = (typeof ONBOARDING_AGENTS)[number];
+
+/** The agent_schedules name each step 4 toggle pauses (the toggle keys are UI keys only). */
+export const ONBOARDING_AGENT_NAMES: Record<OnboardingAgent, AgentName> = {
+  tournament: AGENT_NAMES.tournament,
+  content: AGENT_NAMES.content,
+  financial: AGENT_NAMES.financial,
+  mindset: AGENT_NAMES.mindsetCoach,
+};
 
 export interface AgentToggles {
   tournament: boolean;
@@ -233,7 +242,7 @@ export async function finishOnboarding(
     const { error: scheduleError } = await client.from('agent_schedules').upsert(
       pausedAgents.map((agent) => ({
         player_id: input.playerId,
-        agent_name: agent,
+        agent_name: ONBOARDING_AGENT_NAMES[agent],
         paused: true,
       })),
       { onConflict: 'player_id,agent_name' },
