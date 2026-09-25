@@ -30,7 +30,26 @@ export interface SendEmailInput {
 // gated actions depend on this interface, not on the Resend SDK, so their
 // tests need no real API key or network access.
 export interface EmailClient {
-  sendEmail(input: SendEmailInput): Promise<void>;
+  /**
+   * Step 4.2: resolves with Resend's email id where the client has one, so
+   * the Content Agent can poll the email's status back for open rates.
+   * Callers that don't need it ignore it, and mocks may return nothing.
+   */
+  sendEmail(input: SendEmailInput): Promise<SentEmail | void>;
+}
+
+export interface SentEmail {
+  id: string | null;
+}
+
+/**
+ * Step 4.2 (owner decision): open rates are polled from Resend rather than
+ * pushed by a webhook, since apps/api has no public URL yet. Returns the
+ * email's latest event ("delivered", "opened", "clicked", "bounced", ...),
+ * or null when Resend doesn't know the id.
+ */
+export interface EmailStatusClient {
+  getLastEvent(emailId: string): Promise<string | null>;
 }
 
 export class EmailSendFailedError extends Error {
@@ -51,8 +70,8 @@ export function createResendEmailClient(config: { apiKey: string; from?: string 
   const from = config.from ?? DEFAULT_FROM_ADDRESS;
 
   return {
-    async sendEmail(input: SendEmailInput): Promise<void> {
-      const { error } = await resend.emails.send({
+    async sendEmail(input: SendEmailInput): Promise<SentEmail> {
+      const { data, error } = await resend.emails.send({
         from: input.fromName ? `${input.fromName} <${fromAddress(from)}>` : from,
         to: input.to,
         ...(input.replyTo ? { replyTo: input.replyTo } : {}),
@@ -72,6 +91,21 @@ export function createResendEmailClient(config: { apiKey: string; from?: string 
           : {}),
       });
       if (error) throw new EmailSendFailedError(error.message);
+      return { id: data?.id ?? null };
+    },
+  };
+}
+
+export function createResendEmailStatusClient(config: { apiKey: string }): EmailStatusClient {
+  const resend = new Resend(config.apiKey);
+  return {
+    async getLastEvent(emailId) {
+      const { data, error } = await resend.emails.get(emailId);
+      if (error) {
+        if (/not.?found/i.test(error.name ?? '') || /not found/i.test(error.message)) return null;
+        throw new EmailSendFailedError(error.message);
+      }
+      return data?.last_event ?? null;
     },
   };
 }

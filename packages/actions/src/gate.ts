@@ -90,6 +90,34 @@ export interface RunGatedActionInput {
   agentRunId?: string | null;
 }
 
+/**
+ * The approval checks runGatedAction makes before claiming: the row exists
+ * for this player, has this action type, and its payload hashes the same as
+ * the one supplied. Returns the hash. Exported for step 4.2's scheduled
+ * patron updates, which verify an approval when the player schedules and
+ * only claim it (through runGatedAction) at the send time, so a cancelled
+ * schedule never consumes one.
+ */
+export async function assertApprovalMatches(
+  db: ApprovalGateDb,
+  input: RunGatedActionInput,
+): Promise<string> {
+  const approval = await db.getApproval(input.approvalId, input.playerId);
+  if (!approval) {
+    throw new ApprovalNotFoundError(input.approvalId);
+  }
+  if (approval.actionType !== input.actionType) {
+    throw new ApprovalActionMismatchError(input.approvalId, input.actionType, approval.actionType);
+  }
+
+  const expectedHash = await hashApprovalPayload(approval.payload);
+  const suppliedHash = await hashApprovalPayload(input.payload);
+  if (expectedHash !== suppliedHash) {
+    throw new ApprovalPayloadMismatchError(input.approvalId);
+  }
+  return suppliedHash;
+}
+
 // The gate itself. Any function that calls a vendor SDK (Stripe, Resend,
 // ICS, the entry client) is expected to call this first and only proceed
 // inside `sideEffect`. Claims the approval before running `sideEffect`
@@ -104,19 +132,7 @@ export async function runGatedAction<T>(
   input: RunGatedActionInput,
   sideEffect: () => Promise<T>,
 ): Promise<T> {
-  const approval = await db.getApproval(input.approvalId, input.playerId);
-  if (!approval) {
-    throw new ApprovalNotFoundError(input.approvalId);
-  }
-  if (approval.actionType !== input.actionType) {
-    throw new ApprovalActionMismatchError(input.approvalId, input.actionType, approval.actionType);
-  }
-
-  const expectedHash = await hashApprovalPayload(approval.payload);
-  const suppliedHash = await hashApprovalPayload(input.payload);
-  if (expectedHash !== suppliedHash) {
-    throw new ApprovalPayloadMismatchError(input.approvalId);
-  }
+  const suppliedHash = await assertApprovalMatches(db, input);
 
   const claimed = await db.claimApproval({
     approvalId: input.approvalId,

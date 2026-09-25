@@ -58,6 +58,8 @@ export interface FansRoutesDeps {
   appBaseUrl: string;
   /** Step 4.1b: HMAC key for patrons' emailed manage links (P-17). Server-only. */
   linkSecret: string;
+  /** Step 4.2: the Content Agent's public teaser (C-13), when wired. */
+  latestTeaser?: (playerId: string) => Promise<{ text: string; sentAt: string } | null>;
 }
 
 const NOTE_KINDS: readonly PatronNoteKind[] = ['thanks', 'nudge', 'checkin', 'welcome'];
@@ -281,6 +283,10 @@ export async function registerFansRoutes(
     const { slug } = request.params as { slug: string };
     const page = await loadPublicPage({ store: deps.store }, slug);
     if (!page) return reply.code(404).send({ error: 'No patron page here' });
+    if (deps.latestTeaser) {
+      const programme = await deps.store.getProgrammeBySlug(slug);
+      page.latestUpdate = programme ? await deps.latestTeaser(programme.playerId) : null;
+    }
     return reply.send(page);
   });
 

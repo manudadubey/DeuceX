@@ -5,6 +5,7 @@ import { Empty, Toast, ToastProvider, ToastTitle, ToastViewport } from '@deucex/
 import type { Player } from '@deucex/db';
 import { StagePinCard } from '@/components/profile/stage-pin-card';
 import { PatronPageCard } from '@/components/fans/patron-settings';
+import { TeaserCard } from '@/components/profile/teaser-card';
 
 // Public profile editor (bio, goals, media kit, social links) stays the
 // PlaceholderPage placeholder it's been since step 0.5 — that's not this
@@ -23,6 +24,7 @@ export function ProfileShell({ player }: { player: Player }) {
       <div className="flex flex-col gap-6">
         <StagePinCard player={player} onToast={showToast} />
         <PatronPageCard playerId={player.id} onToast={showToast} />
+        <TeaserCard playerId={player.id} initial={player.profile_teaser} onToast={showToast} />
         <Empty title="Coming soon">
           Edit your public profile: bio, goals, media kit, social links.
         </Empty>

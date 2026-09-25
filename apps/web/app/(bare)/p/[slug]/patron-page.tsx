@@ -22,6 +22,8 @@ export interface PublicPatronPage {
   tiers: Array<{ id: string; name: string; price: number; currency: string; perks: string }>;
   thanksLine: string | null;
   feePercent: number | null;
+  /** Step 4.2 (PRD-05 C-13): the first paragraph of the latest update, when the player allows it. */
+  latestUpdate?: { text: string; sentAt: string } | null;
 }
 
 // Step 4.1b · P-17: a patron's way to change tier, update their card or
@@ -192,6 +194,18 @@ export function PatronPage({ page, source }: { page: PublicPatronPage; source: s
         <p className="text-xs uppercase tracking-wide text-muted-foreground">Back the season</p>
         <h1 className="text-2xl font-semibold">{page.playerName}</h1>
       </header>
+
+      {page.latestUpdate ? (
+        <Card className="grid gap-2 p-5">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Latest for patrons ·{' '}
+            {new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short' }).format(
+              new Date(page.latestUpdate.sentAt),
+            )}
+          </p>
+          <p className="text-sm">{page.latestUpdate.text}</p>
+        </Card>
+      ) : null}
 
       {page.state === 'closed' ? (
         <Card className="p-5 text-sm text-muted-foreground">

@@ -2300,3 +2300,82 @@ and 2 queue integration tests (test users confirmed deleted afterward), the API'
 browser pass over the dashboard, Match Scribe, Financial, Tournament, Mindset, Fans, Settings,
 Profile, the public patron page (live tiers through the API) and the admin console, with no console
 or server errors.
+
+### Step 4.2 · Content Agent — 25 September 2026
+
+Owner decisions this session: gpt-4o writes the draft (the one voice-sensitive text in the product;
+rewrites stay on gpt-4o-mini, same OpenAI account); open rates are **polled** from Resend rather
+than pushed by webhook (apps/api has no public URL yet); Locker Room and above get the
+practice-notes section but Inside Track is proposed like any other tier (no day-early send, no
+call notes); live test sends go to Resend's `delivered@resend.dev`. The migration was
+owner-confirmed before applying, like every prior one.
+
+Built:
+- Migration `20260925120000_step_4_2_content_agent.sql`: `patron_updates` (one row per draft run,
+  one language per row per worksheet 9; player-read, apps/api-written), `patron_update_sends` (one
+  row per patron per email with Resend's id and the polled open), and three player-written
+  `players` columns (`content_window`, `content_private_names`, `profile_teaser`) added to the
+  column-grant list. Partial unique indexes enforce one open draft per player and never two
+  drafts from the same note (C-15). `content_publish` was already reserved since step 0.2.
+- `packages/agents/src/content`: the draft call (Zod schema, one corrective retry, validation of
+  150–250 words, result and full score first, no em dash, no exclamation marks unless past updates
+  use them, and no copying a past update), rewrites (Shorter/Warmer/More tactical), the four
+  checks as pure functions with one-tap fixes (voice, money/injury per section 7 so "a week of
+  costs" passes and "A$1,360" or "runway" warns, coach unnamed, opponent commentary), recipients
+  and the C-AC-4 count line, send-time options (now, tomorrow 07:00 local, the deadline day inside
+  seven days), the draft window, reading time and the teaser.
+- `packages/actions/src/content.ts` (subpath `@deucex/actions/content`): `publishUpdateNow`,
+  `scheduleUpdate` and `sendScheduledUpdate`, all `content_publish`. The payload is rebuilt from
+  the server's row (via `@deucex/shared`'s `contentPublishPayload`, the same builder the web app
+  uses), so an edit after approval can never go out under it. A schedule verifies the approval
+  when made and only claims it at the send time (new `assertApprovalMatches` split out of
+  `runGatedAction`), so a cancelled schedule never consumes one. One email per receiving patron
+  (active or past_due), Reply-To the player, the manage link step 4.1 owed in every footer. The
+  Resend client now returns the email id and gained a status reader.
+- `apps/api/src/content`: `saveNote` queues a draft for a match note with a result (Pro/Elite
+  only, not paused, not "Only when I ask"); a five-minute tick on the capped money boss drafts due
+  rows, sends due schedules and polls Resend; every editor operation; `GET /content/page`; Fans'
+  `listPublishedUpdates` is real now, `patrons.opens` is rebuilt from polled events, and the
+  public page carries "Latest for patrons". gpt-4o added to the pricing table.
+- `apps/web`: the full `/agent/content` page (editor with autosave, live checks, rewrite tools,
+  Built from, two-step confirm, skip with a required reason and Undo, schedule and Cancel,
+  history with open rates and joins in 7 days, Voice profile with the names-kept-private list,
+  Free lock), the dashboard card with worksheet 8's one tap and printed consequence sentence, the
+  Content Agent row in Settings > Agents (window, Run now, pause), Profile's teaser switch, and the
+  teaser on `/p/<slug>`.
+
+Verified: 20+2 agent tests, 12 action tests (no approval means no send; an edited draft can't go
+out under an old approval; schedules claim only at send time), 22 API service tests, and four new
+live RLS tests against production. Then a live signed-in round trip against production and the
+real APIs: a fixture note saved through `PATCH /notes/:id/save` queued a draft due exactly 30
+minutes later; "Draft it now" produced a real gpt-4o draft (174 words, score first, "Marko"
+reported as the coach and kept out, US$0.0052); typing "Marko" warned live and Fix changed it;
+Shorter (real gpt-4o-mini) and Restore worked; publish created the approval, consumed it once
+and sent through Resend (email id recorded); the tick polled Resend and recorded `delivered`; the
+public page showed the teaser; a skip with a reason, Undo, the dashboard's one-tap publish (with
+the coach warn recorded as an override), and schedule-then-cancel (approval recorded, not
+consumed, nothing sent) all behaved as specified. 375px width has no horizontal overflow. Every
+fixture row was removed afterwards and Mira's email restored; approvals, consumptions and
+`agent_runs` rows stay as the audit record.
+
+Bugs found live and fixed: a manual draft with no fresh note copied the one published update word
+for word (now: the examples are tone-only in the prompt, validation rejects a quarter or more of
+repeated sentences, and notes already written up are marked so the model finds a new angle,
+which it then did); the opponent check had no opponent on manual drafts; the waiting state showed
+an empty editor with "0 words" and "Drafting…"; an autosave response could overwrite keystrokes
+typed while it was in flight; the dashboard card showed the browser's time zone; published
+updates still said "Edit anything".
+
+Not done, deliberately: multi-language versions (Release 2 per worksheet 9); Inside Track's
+day-early send and call notes; "result recorded without a note" as a trigger (no results
+ingestion exists); the "Opened by <p>% so far" FYI at 48 hours; the Match Scribe pipeline step
+chip; analytics events; the profile bio in the voice profile (no bio column until PRD-11's
+editor); a Resend webhook route (polling covers it until apps/api is hosted).
+
+Open tracking, done the same day (owner asked for it in the dashboard): Resend only applies open
+tracking once a tracking subdomain verifies, so `mail.deucex.ai` got tracking subdomain `links`
+and two records were added in Vercel's DNS: a CNAME `links.mail` → `links2.resend-dns.com`, and
+a CAA `0 issue "amazon.com"` on the root, next to Vercel's existing `letsencrypt.org`,
+`pki.goog` and `sectigo.com` entries (it only adds a permitted issuer, so Vercel's certificates
+are unaffected; it can't live on `links.mail` because that name holds a CNAME). Resend verified
+both within about a minute and the domain is fully verified with open tracking on.

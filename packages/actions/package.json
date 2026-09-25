@@ -9,7 +9,8 @@
     ".": "./src/index.ts",
     "./queue": "./src/queue/queue.ts",
     "./account": "./src/account-entry.ts",
-    "./fans": "./src/fans-entry.ts"
+    "./fans": "./src/fans-entry.ts",
+    "./content": "./src/content-entry.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

@@ -8,8 +8,11 @@
 
 export {
   createResendEmailClient,
+  createResendEmailStatusClient,
   EmailSendFailedError,
   type EmailClient,
+  type EmailStatusClient,
+  type SentEmail,
   type EmailAttachment,
   type SendEmailInput,
 } from './resend-client';

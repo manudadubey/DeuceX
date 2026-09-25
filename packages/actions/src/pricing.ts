@@ -23,6 +23,10 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   // match-scribe/extract (step 1.2) runs on this one, the same OpenAI
   // account as Whisper transcription.
   'gpt-4o-mini': { inputPerMillionTokens: 0.15, outputPerMillionTokens: 0.6, currency: 'USD' },
+  // The Content Agent's patron-update draft (step 4.2, owner decision): the
+  // one voice-sensitive text in the product, so the larger model on the
+  // same account. Its rewrites stay on gpt-4o-mini.
+  'gpt-4o': { inputPerMillionTokens: 2.5, outputPerMillionTokens: 10, currency: 'USD' },
 };
 
 export interface TokenUsage {

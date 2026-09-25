@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createAnonClient, createServiceRoleClient } from '@deucex/db';
-import { SupabaseAgentRunsDb } from '@deucex/actions';
+import { SupabaseAgentRunsDb, SupabaseApprovalGateDb } from '@deucex/actions';
 import { createBoss } from '@deucex/actions/queue';
 import {
   EXTRACTION_MODEL,
@@ -22,6 +22,10 @@ import {
   PATRON_NOTE_MODEL,
   createMockPatronNoteClient,
   createOpenAIPatronNoteClient,
+  createMockContentDraftClient,
+  createMockContentRewriteClient,
+  createOpenAIContentDraftClient,
+  createOpenAIContentRewriteClient,
 } from '@deucex/agents';
 import cors from '@fastify/cors';
 import { config as loadEnv } from 'dotenv';
@@ -60,7 +64,11 @@ import {
 } from './account/scheduler';
 import { registerSharingRoutes, type SharingRoutesDeps } from './sharing/routes';
 import { SupabaseSharingDb } from './sharing/service';
-import { createResendEmailClient, type EmailClient } from '@deucex/actions/account';
+import {
+  createResendEmailClient,
+  createResendEmailStatusClient,
+  type EmailClient,
+} from '@deucex/actions/account';
 import { registerConditionsRoutes, type ConditionsRoutesDeps } from './conditions/routes';
 import { createOpenMeteoAdapter } from './conditions/openmeteo-adapter';
 import { registerConditionsRefreshScheduler } from './conditions/refresh-scheduler';
@@ -69,6 +77,11 @@ import { createStripeFansClient } from '@deucex/actions/fans';
 import { registerFansRoutes, type FansRoutesDeps } from './fans/routes';
 import { registerFansAttentionScheduler } from './fans/scheduler';
 import { SupabaseFansStore } from './fans/store';
+import { SupabaseContentActionsDb } from '@deucex/actions/content';
+import { registerContentRoutes, type ContentRoutesDeps } from './content/routes';
+import { registerContentScheduler } from './content/scheduler';
+import { latestTeaser, onNoteSaved } from './content/service';
+import { SupabaseContentStore } from './content/store';
 
 // This service owns anything with an external side effect or a scheduled
 // job (webhooks, the queue worker, structured-output calls). Simple CRUD
@@ -94,6 +107,7 @@ export function buildServer(
   tournamentDeps?: TournamentRoutesDeps,
   conditionsDeps?: ConditionsRoutesDeps,
   fansDeps?: FansRoutesDeps,
+  contentDeps?: ContentRoutesDeps,
 ) {
   const app = Fastify({ logger: true });
 
@@ -108,7 +122,8 @@ export function buildServer(
     adminRankingsDeps ||
     tournamentDeps ||
     conditionsDeps ||
-    fansDeps
+    fansDeps ||
+    contentDeps
   ) {
     void app.register(cors, {
       origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000').split(','),
@@ -164,6 +179,12 @@ export function buildServer(
   if (fansDeps) {
     void app.register(async (instance) => {
       await registerFansRoutes(instance, fansDeps);
+    });
+  }
+
+  if (contentDeps) {
+    void app.register(async (instance) => {
+      await registerContentRoutes(instance, contentDeps);
     });
   }
 
@@ -439,6 +460,36 @@ async function main() {
       : null,
   });
 
+  // Step 4.2: the Content Agent. Drafts on gpt-4o and rewrites on
+  // gpt-4o-mini (owner decision), the same OpenAI account again; open rates
+  // are polled back from Resend (owner decision: no public URL for a webhook
+  // yet), so without a Resend key they simply stay blank.
+  const contentStore = new SupabaseContentStore(db);
+  const contentDeps: ContentRoutesDeps = {
+    anonClient,
+    store: contentStore,
+    draftClient: openaiApiKey
+      ? createOpenAIContentDraftClient({ apiKey: openaiApiKey })
+      : (() => {
+          console.warn(
+            'OPENAI_API_KEY not set: falling back to the mock Content Agent clients. Set OPENAI_API_KEY for real patron-update drafts.',
+          );
+          return createMockContentDraftClient();
+        })(),
+    rewriteClient: openaiApiKey
+      ? createOpenAIContentRewriteClient({ apiKey: openaiApiKey })
+      : createMockContentRewriteClient(),
+    agentRuns,
+    email,
+    statusClient: resendApiKey ? createResendEmailStatusClient({ apiKey: resendApiKey }) : null,
+    gateDb: new SupabaseApprovalGateDb(db),
+    actionsDb: new SupabaseContentActionsDb(db),
+    appBaseUrl,
+  };
+  notesDeps.onNoteSaved = (input) => onNoteSaved(contentDeps, input);
+  fansDeps.latestTeaser = (playerId) => latestTeaser(contentDeps, playerId);
+  await registerContentScheduler(moneyBoss, contentDeps);
+
   const app = buildServer(
     notesDeps,
     rankingsDeps,
@@ -449,6 +500,7 @@ async function main() {
     tournamentDeps,
     conditionsDeps,
     fansDeps,
+    contentDeps,
   );
   const port = Number(process.env.PORT ?? 8787);
   await app.listen({ port, host: '0.0.0.0' });

@@ -103,6 +103,8 @@ export function SettingsShell({
           {pane === 'agents' && (
             <AgentsPane
               playerId={player.id}
+              contentWindow={player.content_window}
+              onContentWindowChange={(content_window) => onPlayerChange({ content_window })}
               agentSchedules={agentSchedules}
               onAgentSchedulesChange={setAgentSchedules}
               onToast={showToast}

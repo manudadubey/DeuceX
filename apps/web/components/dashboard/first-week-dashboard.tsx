@@ -5,7 +5,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Empty,
   Item,
   ItemActions,
   ItemDescription,
@@ -20,6 +19,7 @@ import { RunwayPulseTile } from '@/components/financial/runway-pulse-tile';
 import { DecisionTile } from '@/components/tournament/decision-tile';
 import { DecisionCardSlot } from '@/components/tournament/decision-card-slot';
 import { PatronsCard, PatronsPulseTile } from '@/components/fans/patrons-dashboard';
+import { ContentAgentCard } from '@/components/content/dashboard-card';
 
 const MINDSET_STARTS_AFTER_NOTES = 3;
 
@@ -154,13 +154,11 @@ export function FirstWeekDashboard({
       </Card>
 
       <section className="grid grid-cols-3 gap-4 max-[900px]:grid-cols-1">
-        <Card>
-          <CardHeader>
-            <CardTitle>Content Agent</CardTitle>
-            <CardDescription>Waiting for your first note</CardDescription>
-          </CardHeader>
-          <Empty title="Nothing to draft yet">Sixty seconds after a match is all it needs.</Empty>
-        </Card>
+        <ContentAgentCard
+          playerId={player.id}
+          isFree={plan === 'free'}
+          timezone={player.timezone}
+        />
 
         <CheckInCard
           playerId={player.id}
