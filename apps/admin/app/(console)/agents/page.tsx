@@ -32,8 +32,10 @@ import { RefreshButton } from './refresh-button';
 
 // PRD-13 section 4.4.
 export default async function AgentsPage() {
-  const me = await requireArea('agents');
-  const h = await serverApi<AgentHealth>('/admin/agents');
+  const [me, h] = await Promise.all([
+    requireArea('agents'),
+    serverApi<AgentHealth>('/admin/agents'),
+  ]);
   const s = h.stats;
 
   return (

@@ -105,7 +105,7 @@ function fakeConsoleDb(state: FakeState, userIdByToken: Map<string, string>): Co
     },
   };
   void userIdByToken;
-  return { tx: (fn) => fn(q), end: async () => undefined };
+  return { tx: (fn) => fn(q), read: (fn) => fn(q), end: async () => undefined };
 }
 
 function setup(options: { passkeys?: number; requirePasskey?: boolean } = {}) {

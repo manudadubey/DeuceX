@@ -15,24 +15,26 @@ interface NavCounts {
 // navigation (AD-2); each page also guards itself (lib/server-api.ts's
 // requireArea) and the API refuses them regardless.
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {
-  const me = await getMe();
+  // Both at once: the counts call is refused anyway if the session isn't staff.
+  const [me, counts] = await Promise.all([
+    getMe(),
+    serverApi<NavCounts>('/admin/nav-counts').catch(() => null),
+  ]);
   if (!me) redirect('/signin');
   if (!me.passkeyRegistered || !me.passkeySession) redirect('/passkey');
-
-  const counts = await serverApi<NavCounts>('/admin/nav-counts');
 
   return (
     <ConsoleShell
       me={{ name: me.name, email: me.email, role: me.role, actingRole: me.actingRole }}
       areas={me.areas}
       counts={{
-        players: { value: counts.players, tone: 'secondary' },
-        agents: { value: counts.failures, tone: 'danger' },
-        ingestion: { value: counts.feeds, tone: 'warn' },
-        trust: { value: counts.cases, tone: 'warn' },
+        players: { value: counts?.players ?? 0, tone: 'secondary' },
+        agents: { value: counts?.failures ?? 0, tone: 'danger' },
+        ingestion: { value: counts?.feeds ?? 0, tone: 'warn' },
+        trust: { value: counts?.cases ?? 0, tone: 'warn' },
       }}
       environment={process.env.NEXT_PUBLIC_ENVIRONMENT_LABEL ?? 'Production · ap-northeast-1'}
-      unreadAlerts={counts.unread}
+      unreadAlerts={counts?.unread ?? 0}
     >
       {children}
     </ConsoleShell>

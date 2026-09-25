@@ -94,6 +94,62 @@ export interface AuthenticateOptions {
   allowWithoutPasskey?: boolean;
 }
 
+// A verified session, remembered briefly (step 5.1 speed fix). Checking a
+// token with Supabase and listing the user's passkeys are two network round
+// trips on every console request, and one page load makes several requests.
+// The result is kept per token for at most a minute and never past the
+// token's own expiry; the staff role itself is re-read on every request.
+const SESSION_TTL_MS = 60_000;
+type SessionEntry = { userId: string; passkeys: number; until: number };
+// One cache per auth configuration (so tests with different fakes never share entries).
+const sessionCaches = new WeakMap<StaffAuthDeps, Map<string, SessionEntry>>();
+function cacheFor(deps: StaffAuthDeps): Map<string, SessionEntry> {
+  let cache = sessionCaches.get(deps);
+  if (!cache) {
+    cache = new Map();
+    sessionCaches.set(deps, cache);
+  }
+  return cache;
+}
+
+function tokenExpiryMs(token: string): number | null {
+  try {
+    const payload = JSON.parse(
+      Buffer.from(token.split('.')[1] ?? '', 'base64url').toString('utf8'),
+    );
+    return typeof payload.exp === 'number' ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+async function verifiedSession(
+  deps: StaffAuthDeps,
+  token: string,
+): Promise<{ userId: string; passkeys: number }> {
+  const now = Date.now();
+  const sessionCache = cacheFor(deps);
+  const cached = sessionCache.get(token);
+  if (cached && cached.until > now) return cached;
+
+  const { data, error } = await deps.anonClient.auth.getUser(token);
+  if (error || !data.user) {
+    sessionCache.delete(token);
+    throw new StaffAuthError(401, 'unauthenticated', 'Your session has expired. Sign in again.');
+  }
+  const passkeys = await countPasskeys(deps.passkeyAdmin, data.user.id);
+  const expiry = tokenExpiryMs(token) ?? now + SESSION_TTL_MS;
+  const entry = { userId: data.user.id, passkeys, until: Math.min(now + SESSION_TTL_MS, expiry) };
+  if (sessionCache.size > 500) sessionCache.clear();
+  sessionCache.set(token, entry);
+  return entry;
+}
+
+/** A registered or removed passkey must show at once, so enrolment drops the cached session. */
+export function forgetSession(deps: StaffAuthDeps, token: string): void {
+  cacheFor(deps).delete(token);
+}
+
 export async function authenticateStaff(
   deps: StaffAuthDeps,
   headers: { authorization?: string | undefined; 'x-role-preview'?: string | string[] | undefined },
@@ -102,21 +158,19 @@ export async function authenticateStaff(
   const token = headers.authorization?.match(BEARER)?.[1];
   if (!token) throw new StaffAuthError(401, 'unauthenticated', 'Sign in to use the console.');
 
-  const { data, error } = await deps.anonClient.auth.getUser(token);
-  if (error || !data.user) {
-    throw new StaffAuthError(401, 'unauthenticated', 'Your session has expired. Sign in again.');
-  }
+  const session = await verifiedSession(deps, token);
 
-  const row = await deps.consoleDb.tx(async (q) => {
+  // Never cached: revoking a role takes effect on the very next request.
+  const row = await deps.consoleDb.read(async (q) => {
     const result = await q.query<{ id: string; name: string; email: string; role: AdminRole }>(
       `select id, name, email, role from public.admin_users where id = $1 and revoked_at is null`,
-      [data.user.id],
+      [session.userId],
     );
     return result.rows[0] ?? null;
   });
   if (!row) throw new StaffAuthError(403, 'not_staff', 'This account has no console access.');
 
-  const passkeys = await countPasskeys(deps.passkeyAdmin, row.id);
+  const passkeys = session.passkeys;
   if (deps.requirePasskey && !options.allowWithoutPasskey) {
     if (passkeys === 0) {
       throw new StaffAuthError(

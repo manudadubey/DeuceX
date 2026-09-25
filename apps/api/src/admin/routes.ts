@@ -38,6 +38,8 @@ import {
   StaffAuthError,
   authenticateStaff,
   countPasskeys,
+  forgetSession,
+  sessionUsedPasskey,
   type Staff,
   type StaffAuthDeps,
 } from './staff-auth';
@@ -100,7 +102,7 @@ export async function registerAdminRoutes(
     const body = request.body as { email?: string } | undefined;
     const email = body?.email?.trim().toLowerCase();
     if (!email) return reply.code(400).send({ error: 'Enter your staff email.' });
-    const staff = await deps.consoleDb.tx(async (q) => {
+    const staff = await deps.consoleDb.read(async (q) => {
       const { rows } = await q.query<{ id: string }>(
         `select id from public.admin_users where lower(email) = $1 and revoked_at is null`,
         [email],
@@ -131,16 +133,11 @@ export async function registerAdminRoutes(
       const staff = await authenticateStaff(deps.auth, request.headers, {
         allowWithoutPasskey: true,
       });
+      // One authentication, not two: the session's own sign-in method decides
+      // whether it counts as a passkey session.
       let passkeyReady = staff.passkeys > 0;
-      let passkeySession = false;
-      try {
-        await authenticateStaff(deps.auth, request.headers);
-        passkeySession = true;
-      } catch (error) {
-        if (!(error instanceof StaffAuthError)) throw error;
-        passkeyReady = staff.passkeys > 0;
-      }
-      if (passkeySession) {
+      let passkeySession = passkeyReady && sessionUsedPasskey(staff.token);
+      if (passkeySession || !deps.auth.requirePasskey) {
         await deps.consoleDb.tx((q) =>
           q.query(`update public.admin_users set last_seen_at = now() where id = $1`, [staff.id]),
         );
@@ -170,6 +167,7 @@ export async function registerAdminRoutes(
       const staff = await authenticateStaff(deps.auth, request.headers, {
         allowWithoutPasskey: true,
       });
+      forgetSession(deps.auth, staff.token);
       const count = await countPasskeys(deps.passkeyAdmin, staff.id);
       if (count === 0) return reply.code(409).send({ error: 'No passkey is registered yet.' });
       await deps.consoleDb.tx((q) =>
@@ -199,36 +197,36 @@ export async function registerAdminRoutes(
       }
     });
 
-  read('/admin/nav-counts', 'overview', () => deps.consoleDb.tx((q) => getNavCounts(q, now())));
+  read('/admin/nav-counts', 'overview', () => deps.consoleDb.read((q) => getNavCounts(q, now())));
   read('/admin/overview', 'overview', (staff) =>
-    deps.consoleDb.tx((q) => getOverview(q, staff.actingRole, now())),
+    deps.consoleDb.read((q) => getOverview(q, staff.actingRole, now())),
   );
   read('/admin/players', 'players', (_staff, request) => {
     const query = request.query as { q?: string; tier?: string; status?: string };
-    return deps.consoleDb.tx((q) => listPlayers(q, query, now()));
+    return deps.consoleDb.read((q) => listPlayers(q, query, now()));
   });
   read('/admin/players/:id', 'players', async (_staff, request) => {
     const { id } = request.params as { id: string };
-    const detail = await deps.consoleDb.tx((q) => getPlayerDetail(q, id, now()));
+    const detail = await deps.consoleDb.read((q) => getPlayerDetail(q, id, now()));
     if (!detail) throw new AdminActionError(404, 'No such player.');
     return detail;
   });
   read('/admin/agents', 'agents', (staff) =>
-    deps.consoleDb.tx((q) => getAgentHealth(q, staff.actingRole, now())),
+    deps.consoleDb.read((q) => getAgentHealth(q, staff.actingRole, now())),
   );
   read('/admin/money', 'money', async () => {
-    const money = await deps.consoleDb.tx((q) => getMoney(q, now()));
+    const money = await deps.consoleDb.read((q) => getMoney(q, now()));
     return { ...money, reconciliation: await reconcile(deps, money.platformFeeAllTime) };
   });
-  read('/admin/trust', 'trust', () => deps.consoleDb.tx((q) => getTrust(q, now())));
+  read('/admin/trust', 'trust', () => deps.consoleDb.read((q) => getTrust(q, now())));
   read('/admin/alerts', 'overview', (staff) =>
-    deps.consoleDb.tx((q) => listAlerts(q, staff.actingRole)),
+    deps.consoleDb.read((q) => listAlerts(q, staff.actingRole)),
   );
   read('/admin/audit', 'audit', (staff, request) => {
     const { admin } = request.query as { admin?: string };
-    return deps.consoleDb.tx((q) => listAdminAudit(q, staff.id, staff.actingRole, admin));
+    return deps.consoleDb.read((q) => listAdminAudit(q, staff.id, staff.actingRole, admin));
   });
-  read('/admin/routing', 'routing', () => deps.consoleDb.tx((q) => getRouting(q)));
+  read('/admin/routing', 'routing', () => deps.consoleDb.read((q) => getRouting(q)));
 
   // --- Player actions: preview the consequence, then confirm.
   function parseAction(raw: string): PlayerActionType {

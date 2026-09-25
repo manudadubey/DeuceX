@@ -36,8 +36,7 @@ const PAYOUT_BADGE: Record<string, 'ok' | 'warn' | 'danger' | 'secondary'> = {
 // PRD-13 section 4.6. Owner only: support and ops never reach this page or
 // its API route (AD-AC-1).
 export default async function MoneyPage() {
-  await requireArea('money');
-  const m = await serverApi<Money>('/admin/money');
+  const [, m] = await Promise.all([requireArea('money'), serverApi<Money>('/admin/money')]);
   const spendShare =
     m.spend.perPayingPlayerAud !== null ? m.spend.perPayingPlayerAud / m.spend.capAud : null;
   const cat = m.spend.categories;

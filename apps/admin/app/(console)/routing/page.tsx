@@ -8,8 +8,10 @@ import { RoutingForm } from './routing-form';
 // delivery to staff arrives with step 5.2's notification service, so until
 // then every alert reaches staff in the console's Alerts sheet only.
 export default async function RoutingPage() {
-  const me = await requireArea('routing');
-  const rows = await serverApi<RoutingRow[]>('/admin/routing');
+  const [me, rows] = await Promise.all([
+    requireArea('routing'),
+    serverApi<RoutingRow[]>('/admin/routing'),
+  ]);
   return (
     <>
       <PageHeader

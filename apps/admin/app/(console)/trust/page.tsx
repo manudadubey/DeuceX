@@ -70,8 +70,7 @@ const KIND: Record<
 
 // PRD-13 section 4.7.
 export default async function TrustPage() {
-  await requireArea('trust');
-  const t = await serverApi<Trust>('/admin/trust');
+  const [, t] = await Promise.all([requireArea('trust'), serverApi<Trust>('/admin/trust')]);
   const byKind = t.cases.reduce<Record<string, number>>(
     (acc, c) => ({ ...acc, [c.kind]: (acc[c.kind] ?? 0) + 1 }),
     {},

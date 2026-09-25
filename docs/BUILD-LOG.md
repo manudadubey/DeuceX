@@ -2699,3 +2699,39 @@ origin, add `https://admin.deucex.ai` to the passkey origins, and remove the fla
   - routing showed "Owned By Ops" (a CSS capitalise).
 - No state-changing console action was run against production in the browser; those are
   covered by the route and live database tests above.
+
+**Console speed fix (same step, after the owner reported the console slow).** Measured first: a
+warm Overview load took 7.5 s before its first byte. Each console API call took 1.6 to 3.3 s,
+because every call repeated the full staff check (session verification, passkey list, staff
+lookup), and every database transaction spent four round trips on `begin`, `set role`, the query
+and `commit` to the Tokyo session pooler (about 130 ms each from Australia). On top of that:
+- a page load made about five calls;
+- the layout and the page each fetched `/admin/me`, and `/admin/me` authenticated twice.
+
+Fixed:
+- The console pool sets `role console` once per connection. Reads run straight on the pool, two
+  at a time, and writes keep their transaction. A live check confirmed the role is still
+  `console` and `notes.transcript` is still refused on both paths.
+- A verified session (token check plus passkey count) is remembered per token for at most 60 s
+  and never past the token's expiry. The staff row is re-read on every request, so revocation
+  stays immediate.
+- `/admin/me` authenticates once, `getMe` is deduplicated per render, and pages fetch their data
+  in parallel with the role check.
+
+Result (warm):
+
+| Page | Before | Dev server | Production build |
+|---|---|---|---|
+| Overview | 7.5 s | 1.7 s | 1.6 s |
+| Agent health | – | 1.4 s | 1.1 s |
+| Trust and safety | – | – | 0.9 s |
+| Players | – | 2.4 s | 2.4 s |
+
+The rest is database distance: apps/api runs locally against a database in Tokyo. Deployed in
+the same region (TECH-ARCHITECTURE section 1), each round trip becomes a millisecond or two. The
+player dashboard feels quicker today because its reads go through Supabase's REST API, which
+runs beside the database and fans out in parallel.
+
+A production build of apps/admin was run against the dev server's `.next` folder to take these
+timings, the same mistake step 2.2's log warns about. The folder was deleted and the dev server
+restarted cleanly.

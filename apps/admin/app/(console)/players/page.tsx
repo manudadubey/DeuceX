@@ -51,9 +51,17 @@ export default async function PlayersPage({
   if (tier) params.set('tier', tier);
   if (status) params.set('status', status);
 
-  const { stats, players } = await serverApi<PlayersResponse>(`/admin/players?${params}`);
+  // With a player already chosen, the list and the detail load together.
+  const [list, chosen] = await Promise.all([
+    serverApi<PlayersResponse>(`/admin/players?${params}`),
+    searchParams.id
+      ? serverApi<PlayerDetail>(`/admin/players/${searchParams.id}`)
+      : Promise.resolve(null),
+  ]);
+  const { stats, players } = list;
   const selectedId = searchParams.id ?? players[0]?.id ?? null;
-  const detail = selectedId ? await serverApi<PlayerDetail>(`/admin/players/${selectedId}`) : null;
+  const detail =
+    chosen ?? (selectedId ? await serverApi<PlayerDetail>(`/admin/players/${selectedId}`) : null);
 
   const linkFor = (id: string) => {
     const p = new URLSearchParams(params);

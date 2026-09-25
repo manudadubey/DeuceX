@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { canAccessArea, type AdminArea } from '@deucex/shared';
@@ -34,7 +35,9 @@ export async function serverApi<T>(path: string): Promise<T> {
   }
 }
 
-export async function getMe(): Promise<Me | null> {
+// Deduplicated per render: the console layout and the page both need it,
+// and without this each paid a separate API call and staff check.
+export const getMe = cache(async function getMe(): Promise<Me | null> {
   const a = await auth();
   if (!a.token) return null;
   try {
@@ -43,7 +46,7 @@ export async function getMe(): Promise<Me | null> {
     if (error instanceof ApiError && (error.status === 401 || error.status === 403)) return null;
     throw error;
   }
-}
+});
 
 /** Page guard: an area outside the acting role redirects to Overview (AD-2, AD-AC-1). */
 export async function requireArea(area: AdminArea): Promise<Me> {

@@ -35,8 +35,10 @@ function longToday(date: string): string {
 
 // PRD-13 section 4.2.
 export default async function OverviewPage() {
-  const me = await requireArea('overview');
-  const o = await serverApi<Overview>('/admin/overview');
+  const [me, o] = await Promise.all([
+    requireArea('overview'),
+    serverApi<Overview>('/admin/overview'),
+  ]);
   const run = o.stats.morningRun;
 
   const runSentence =
