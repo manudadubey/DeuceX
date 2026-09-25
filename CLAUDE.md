@@ -8,7 +8,8 @@ ProCircuit, each commented where it lives: the Stripe metadata keys `procircuit_
 carry them), the offline-queue IndexedDB name `procircuit-match-scribe` (renaming it strands queued
 notes), comments inside already-applied migrations (never edited), and the Supabase project and
 Stripe sandbox account names, which are only renameable in those dashboards. Use DeuceX for
-everything new.
+everything new. The rename is [PR #18](https://github.com/manudadubey/DeuceX/pull/18), merged; see
+`docs/BUILD-LOG.md`'s rebrand entry.
 
 Agentic SaaS for ATP and WTA players ranked roughly #150 to #1500. The agent proposes, the
 player decides: nothing leaves the app (entry, payment, email, post, message) without a
