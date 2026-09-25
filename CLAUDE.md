@@ -16,7 +16,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1, step 2.1 through step 5.1 done, start step 5.0
+## Status: Phase 0, Phase 1, step 2.1 through step 5.1 and step 5.0 done, start step 5.2
 
 The monorepo scaffold is built and deploying; the database has RLS-protected DeuceX tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -303,6 +303,14 @@ workers on one queue could complete each other's jobs). The owner staff identity
 `matsudadubey@gmail.com`. See `docs/BUILD-LOG.md`'s step 5.1 entry. Next is **step 5.0**
 (the admin MCP server), which the build plan orders after 5.1.
 
+Step 5.0 (Admin MCP server): `POST /mcp` in apps/api (Streamable HTTP, stateless), authenticated
+by personal tokens staff create in the console (owner decision; `admin_mcp_tokens`, hashed, 30
+days, revocable). 28 tools over the console's own functions, role-scoped, two-step via a
+confirmation token, AD-5 reasons enforced, one `admin_actions` row per call with `via = 'mcp'`
+(shown as `mcp:<name>`). Verified with transport tests, live RLS tests and a live round trip; see
+`docs/BUILD-LOG.md`'s step 5.0 entry. [PR #26](https://github.com/manudadubey/DeuceX/pull/26), merged 26 September 2026. Next is **step 5.2** (notifications, digest and the morning
+run).
+
 **Open follow-ups** (none block step 5.0):
 - **Launch blocker:** the staff passkey is off locally (`ADMIN_PASSKEY_REQUIRED=false` in the
   owner's `.env`; the API refuses it in production). Before launch: clear stray localhost
@@ -321,9 +329,13 @@ workers on one queue could complete each other's jobs). The owner staff identity
 - Em dashes left in step 2.3's Settings copy (billing pane), against the copy rule.
 - Add `https://deucex.vercel.app/**` to Supabase Auth's redirect URLs (dashboard only), or
   magic-link sign-in on the deployed app bounces.
-- Deploy `apps/api` to **Render** (owner decision 26 September 2026; `render.yaml` Blueprint,
-  Singapore, `starter` plan, since Render has no Tokyo region), raise the Supabase session pooler
-  pool size from 15 to about 40 first, then set `NEXT_PUBLIC_API_URL` on both Vercel projects.
+- Deploy `apps/api` to **Render** close to launch, not before (owner decision 26 September 2026:
+  run it locally until then; no Render service exists, and nothing is billed). The `render.yaml`
+  Blueprint on `main` is ready (Singapore, since Render has no Tokyo region; `starter` plan,
+  since free sleeps and stops the scheduled jobs). Render's GitHub connection to the repo already
+  exists. At deploy time: raise the Supabase session pooler pool size from 15 to about 40, apply
+  the Blueprint (the owner adds the card and pastes the secrets), then set `NEXT_PUBLIC_API_URL`
+  on both Vercel projects. Until then the deployed Vercel apps can't use API features.
 - Rename the Supabase project and the Stripe sandbox account to DeuceX in their dashboards
   (optional; nothing depends on those display names).
 

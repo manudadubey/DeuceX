@@ -4,6 +4,12 @@ import type { Database } from '@deucex/db';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { InvalidRankingCsvError, parseRankingCsv } from './csv';
 import {
+  DeadlineError,
+  deadlineConsequence,
+  listMissingDeadlines,
+  setEntryDeadline,
+} from './deadlines';
+import {
   applyRankingImport,
   DuplicateRankingImportError,
   previewRankingImport,
@@ -145,52 +151,31 @@ export async function registerAdminRankingsRoutes(
   // re-run half doesn't apply yet — no shortlist exists until step 3.2's
   // Tournament Agent — so this route only ever does the deadline write.
   app.get('/admin/tournaments/missing-deadline', async (_request, reply) => {
-    const { data, error } = await deps.db
-      .from('tournaments')
-      .select('id, tour, name, start_date, city, country')
-      .is('entry_deadline', null)
-      .order('start_date', { ascending: true });
-    if (error) return reply.code(500).send({ error: error.message });
-    // Step 5.1: shortlist_candidates exists since step 3.2, so the count is real.
-    const ids = (data ?? []).map((t) => t.id);
-    const counts = new Map<string, Set<string>>();
-    if (ids.length) {
-      const { data: shortlisted, error: countError } = await deps.db
-        .from('shortlist_candidates')
-        .select('tournament_id, player_id')
-        .in('tournament_id', ids);
-      if (countError) return reply.code(500).send({ error: countError.message });
-      for (const row of shortlisted ?? []) {
-        const set = counts.get(row.tournament_id) ?? new Set<string>();
-        set.add(row.player_id);
-        counts.set(row.tournament_id, set);
-      }
+    try {
+      return reply.send({ tournaments: await listMissingDeadlines(deps.db) });
+    } catch (err) {
+      if (err instanceof DeadlineError) return reply.code(err.status).send({ error: err.message });
+      throw err;
     }
-    return reply.send({
-      tournaments: (data ?? []).map((t) => ({
-        ...t,
-        shortlistedCount: counts.get(t.id)?.size ?? 0,
-      })),
-    });
   });
 
   app.post('/admin/tournaments/:id/deadline', async (request, reply) => {
     const { id } = request.params as { id: string };
     const body = request.body as { entryDeadline?: string } | undefined;
     if (!body?.entryDeadline) return reply.code(400).send({ error: 'Missing entryDeadline' });
-    const { error } = await deps.db
-      .from('tournaments')
-      .update({ entry_deadline: body.entryDeadline, updated_at: new Date().toISOString() })
-      .eq('id', id);
-    if (error) return reply.code(500).send({ error: error.message });
-    const rerun = (await deps.rerunShortlists?.(id)) ?? 0;
-    await audit(request, {
-      playerId: null,
-      actionType: 'deadline_set',
-      target: { tournamentId: id, entryDeadline: body.entryDeadline },
-      consequence: `Set the entry deadline to ${body.entryDeadline}; countdowns start and ${rerun} player${rerun === 1 ? "'s" : "s'"} shortlists re-run.`,
-    });
-    return reply.send({ ok: true, rerun });
+    try {
+      const rerun = await setEntryDeadline(deps.db, deps.rerunShortlists, id, body.entryDeadline);
+      await audit(request, {
+        playerId: null,
+        actionType: 'deadline_set',
+        target: { tournamentId: id, entryDeadline: body.entryDeadline },
+        consequence: deadlineConsequence(null, body.entryDeadline, rerun),
+      });
+      return reply.send({ ok: true, rerun });
+    } catch (err) {
+      if (err instanceof DeadlineError) return reply.code(err.status).send({ error: err.message });
+      throw err;
+    }
   });
 
   // PRD-13 AD-20: fact-sheet corrections, proposed with a source, shown as

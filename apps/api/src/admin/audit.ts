@@ -9,6 +9,8 @@ import type { Staff } from './staff-auth';
 // player_id appear in that player's own Data & safety log. The row is
 // written in the same transaction as the state change it records, so a
 // failed change leaves no entry and a recorded change always has one.
+// `via` says whether it came from the console or the admin MCP server
+// (step 5.0), shown in the admin audit log as mcp:<admin name>.
 
 export class ReasonRequiredError extends Error {
   constructor(readonly actionType: string) {
@@ -43,8 +45,8 @@ export async function recordAdminAction(
   const { rows } = await q.query<{ id: string }>(
     `insert into public.admin_actions
        (admin_id, admin_name, role_at_time, player_id, action_type, target, consequence,
-        reason, device, ip, notified_player)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        reason, device, ip, notified_player, via)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      returning id`,
     [
       staff.id,
@@ -58,6 +60,7 @@ export async function recordAdminAction(
       meta.device,
       meta.ip,
       input.notifiedPlayer ?? false,
+      staff.via ?? 'console',
     ],
   );
   return rows[0]!.id;
