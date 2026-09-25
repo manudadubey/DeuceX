@@ -29,7 +29,7 @@ export default async function AuditPage({ searchParams }: { searchParams: { admi
     <>
       <PageHeader
         title={owner ? 'Admin audit log' : 'My admin audit log'}
-        description="Everything done from this console, newest first. Players see the same entries, marked as admin actions, in their own Data and safety log. Entries are append-only and cannot be edited or deleted."
+        description="Everything done from this console or through the admin MCP server (shown as mcp:name), newest first. Players see the entries that changed their account, marked as admin actions, in their own Data and safety log. Entries are append-only and cannot be edited or deleted."
       />
       <Card>
         <CardContent className="flex flex-col gap-3">
@@ -80,7 +80,7 @@ export default async function AuditPage({ searchParams }: { searchParams: { admi
                       {dateTime(e.at)}
                     </TableCell>
                     <TableCell>
-                      {e.adminName}
+                      {e.actor ?? e.adminName}
                       <TableCellSub>
                         <Badge variant="secondary" className="capitalize">
                           {e.role}

@@ -389,6 +389,19 @@ function requireRole(staff: Staff, minimum: 'ops' | 'owner'): void {
   }
 }
 
+/** The consequence of a global agent pause or resume; throws for an agent that can't be paused. */
+export function agentPauseConsequence(agentName: string, paused: boolean): string {
+  const info = AGENTS.find((a) => a.name === agentName);
+  if (!info?.queued)
+    throw new AdminActionError(
+      400,
+      'This agent runs on its own trigger and cannot be paused here.',
+    );
+  return paused
+    ? `Pauses the ${info.label} for every player now: no new proposals until resumed. Nothing approved is undone, and players see a notice on its page.`
+    : `Resumes the ${info.label} for every player from its next scheduled run.`;
+}
+
 export async function setAgentPaused(
   deps: AdminActionDeps,
   staff: Staff,
@@ -398,15 +411,7 @@ export async function setAgentPaused(
   reason: string | null,
 ): Promise<{ consequence: string }> {
   requireRole(staff, 'ops');
-  const info = AGENTS.find((a) => a.name === agentName);
-  if (!info?.queued)
-    throw new AdminActionError(
-      400,
-      'This agent runs on its own trigger and cannot be paused here.',
-    );
-  const consequence = paused
-    ? `Pauses the ${info.label} for every player now: no new proposals until resumed. Nothing approved is undone, and players see a notice on its page.`
-    : `Resumes the ${info.label} for every player from its next scheduled run.`;
+  const consequence = agentPauseConsequence(agentName, paused);
   await deps.consoleDb.tx(async (q) => {
     await q.query(
       `insert into public.agent_global_pauses (agent_name, paused, changed_by, reason) values ($1, $2, $3, $4)`,
@@ -423,6 +428,17 @@ export async function setAgentPaused(
   return { consequence };
 }
 
+/** The consequence of a provider kill switch (AD-16); throws for an unknown or unwired provider. */
+export function providerSwitchConsequence(provider: string, state: 'on' | 'off'): string {
+  const info = PROVIDERS.find((p) => p.key === provider);
+  if (!info) throw new AdminActionError(404, 'No such provider.');
+  if (!info.wired) throw new AdminActionError(409, `${info.label}: this switch isn't wired yet.`);
+  const dependents = AGENTS.filter((a) => a.providers.includes(provider)).map((a) => a.label);
+  return state === 'off'
+    ? `Turns ${info.label} off now: ${dependents.join(', ')} pause for every player and show a plain notice. Nothing approved is undone.`
+    : `Turns ${info.label} back on; ${dependents.join(', ')} resume from their next run.`;
+}
+
 export async function setProviderState(
   deps: AdminActionDeps,
   staff: Staff,
@@ -432,14 +448,7 @@ export async function setProviderState(
   reason: string | null,
 ): Promise<{ consequence: string }> {
   requireRole(staff, 'owner');
-  const info = PROVIDERS.find((p) => p.key === provider);
-  if (!info) throw new AdminActionError(404, 'No such provider.');
-  if (!info.wired) throw new AdminActionError(409, `${info.label}: this switch isn't wired yet.`);
-  const dependents = AGENTS.filter((a) => a.providers.includes(provider)).map((a) => a.label);
-  const consequence =
-    state === 'off'
-      ? `Turns ${info.label} off now: ${dependents.join(', ')} pause for every player and show a plain notice. Nothing approved is undone.`
-      : `Turns ${info.label} back on; ${dependents.join(', ')} resume from their next run.`;
+  const consequence = providerSwitchConsequence(provider, state);
   try {
     await deps.consoleDb.tx(async (q) => {
       await q.query(
@@ -461,16 +470,8 @@ export async function setProviderState(
   return { consequence };
 }
 
-export async function retryFailedRun(
-  deps: AdminActionDeps,
-  staff: Staff,
-  meta: RequestMeta,
-  failureId: string,
-): Promise<{ consequence: string }> {
-  requireRole(staff, 'ops');
-  if (!deps.actionsBoss)
-    throw new AdminActionError(409, 'The queue is not running in this environment.');
-  const failure = await deps.consoleDb.tx(async (q) => {
+async function loadRetry(deps: AdminActionDeps, failureId: string) {
+  const failure = await deps.consoleDb.read(async (q) => {
     const { rows } = await q.query<{
       agent_name: string;
       player_id: string;
@@ -492,8 +493,29 @@ export async function retryFailedRun(
       'This agent retries on its own trigger; retry it from the player side.',
     );
   }
-
   const consequence = `Re-queues ${failure.player_name}'s ${agentInfo(failure.agent_name).label} run now with the attempt count reset. Nothing is sent to the player unless it succeeds.`;
+  return { failure, consequence };
+}
+
+/** The consequence of retrying a failed run (AD-14); throws when it can't be retried. */
+export async function previewRetryFailedRun(
+  deps: AdminActionDeps,
+  failureId: string,
+): Promise<string> {
+  return (await loadRetry(deps, failureId)).consequence;
+}
+
+export async function retryFailedRun(
+  deps: AdminActionDeps,
+  staff: Staff,
+  meta: RequestMeta,
+  failureId: string,
+): Promise<{ consequence: string }> {
+  requireRole(staff, 'ops');
+  const actionsBoss = deps.actionsBoss;
+  if (!actionsBoss)
+    throw new AdminActionError(409, 'The queue is not running in this environment.');
+  const { failure, consequence } = await loadRetry(deps, failureId);
   await deps.consoleDb.tx(async (q) => {
     // AD-14 and PRD-13 section 7: a manual retry resets the counter and is logged.
     await q.query(`update public.run_failures set attempts = 0 where id = $1`, [failureId]);
@@ -504,7 +526,7 @@ export async function retryFailedRun(
       consequence,
     });
   });
-  await retryAgentRunNow(deps.actionsBoss, {
+  await retryAgentRunNow(actionsBoss, {
     agentName: failure.agent_name,
     playerId: failure.player_id,
     scheduledWindow: failure.scheduled_window,
@@ -512,6 +534,9 @@ export async function retryFailedRun(
   });
   return { consequence };
 }
+
+export const DISMISS_RUN_CONSEQUENCE =
+  'Removes this failed run from the list without re-running it. The player keeps the notice they already had.';
 
 export async function dismissFailedRun(
   deps: AdminActionDeps,
@@ -522,8 +547,7 @@ export async function dismissFailedRun(
 ): Promise<{ consequence: string }> {
   requireRole(staff, 'ops');
   if (!reason?.trim()) throw new AdminActionError(400, 'A dismissed run needs a reason (AD-14).');
-  const consequence =
-    'Removes this failed run from the list without re-running it. The player keeps the notice they already had.';
+  const consequence = DISMISS_RUN_CONSEQUENCE;
   await deps.consoleDb.tx(async (q) => {
     const { rows } = await q.query<{ player_id: string }>(
       `update public.run_failures set resolved_at = now(), resolution = 'dismissed', dismissed_reason = $2
@@ -548,6 +572,66 @@ export async function dismissFailedRun(
 
 export type CaseOutcome = 'card_confirmed' | 'guardian_resent' | 'answer_withdrawn' | 'dismissed';
 
+interface CaseRow {
+  kind: string;
+  player_id: string;
+  resolved_at: string | null;
+  card_shown_confirmed_at: string | null;
+}
+
+async function loadCase(q: ConsoleQuery, caseId: string): Promise<CaseRow | undefined> {
+  const { rows } = await q.query<CaseRow>(
+    `select kind, player_id, resolved_at, card_shown_confirmed_at from public.cases where id = $1`,
+    [caseId],
+  );
+  return rows[0];
+}
+
+/** Validates a case outcome (AD-24, AD-25) and returns its consequence sentence. */
+function caseConsequence(
+  c: CaseRow | undefined,
+  outcome: CaseOutcome,
+  reason: string | null,
+): string {
+  if (!c) throw new AdminActionError(404, 'No such case.');
+  if (c.resolved_at) throw new AdminActionError(409, 'This case is already resolved.');
+
+  // AD-25 and AD-AC-12: a distress case can't be closed by dismissal
+  // alone; a person must first confirm the card was shown.
+  if (c.kind === 'distress' && outcome !== 'card_confirmed') {
+    throw new AdminActionError(
+      400,
+      'A distress case closes only when a person confirms the "Someone to call" card was shown.',
+    );
+  }
+  if (outcome === 'guardian_resent') {
+    throw new AdminActionError(
+      409,
+      "The guardian confirmation email isn't built yet (step 1.4 skipped it), so there is nothing to resend.",
+    );
+  }
+  if (outcome === 'dismissed' && !reason?.trim()) {
+    throw new AdminActionError(400, 'Write a reason before dismissing a case.');
+  }
+
+  return outcome === 'card_confirmed'
+    ? 'Records that the "Someone to call" card was shown and closes the case. The note itself is never opened.'
+    : outcome === 'answer_withdrawn'
+      ? 'Withdraws the reported answer and closes the case; the player is told.'
+      : 'Closes the case with no change to the account.';
+}
+
+export async function previewResolveCase(
+  deps: AdminActionDeps,
+  caseId: string,
+  outcome: CaseOutcome,
+  reason: string | null,
+): Promise<string> {
+  return deps.consoleDb.read(async (q) =>
+    caseConsequence(await loadCase(q, caseId), outcome, reason),
+  );
+}
+
 export async function resolveCase(
   deps: AdminActionDeps,
   staff: Staff,
@@ -558,43 +642,9 @@ export async function resolveCase(
 ): Promise<{ consequence: string }> {
   const now = deps.now?.() ?? new Date();
   return deps.consoleDb.tx(async (q) => {
-    const { rows } = await q.query<{
-      kind: string;
-      player_id: string;
-      resolved_at: string | null;
-      card_shown_confirmed_at: string | null;
-    }>(
-      `select kind, player_id, resolved_at, card_shown_confirmed_at from public.cases where id = $1`,
-      [caseId],
-    );
-    const c = rows[0];
+    const c = await loadCase(q, caseId);
+    const consequence = caseConsequence(c, outcome, reason);
     if (!c) throw new AdminActionError(404, 'No such case.');
-    if (c.resolved_at) throw new AdminActionError(409, 'This case is already resolved.');
-
-    // AD-25 and AD-AC-12: a distress case can't be closed by dismissal
-    // alone; a person must first confirm the card was shown.
-    if (c.kind === 'distress' && outcome !== 'card_confirmed') {
-      throw new AdminActionError(
-        400,
-        'A distress case closes only when a person confirms the "Someone to call" card was shown.',
-      );
-    }
-    if (outcome === 'guardian_resent') {
-      throw new AdminActionError(
-        409,
-        "The guardian confirmation email isn't built yet (step 1.4 skipped it), so there is nothing to resend.",
-      );
-    }
-    if (outcome === 'dismissed' && !reason?.trim()) {
-      throw new AdminActionError(400, 'Write a reason before dismissing a case.');
-    }
-
-    const consequence =
-      outcome === 'card_confirmed'
-        ? 'Records that the "Someone to call" card was shown and closes the case. The note itself is never opened.'
-        : outcome === 'answer_withdrawn'
-          ? 'Withdraws the reported answer and closes the case; the player is told.'
-          : 'Closes the case with no change to the account.';
 
     await q.query(
       `update public.cases

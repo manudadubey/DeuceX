@@ -37,6 +37,8 @@ export interface Staff {
   role: AdminRole;
   /** The role this request acts as (narrowed by the role preview, never widened). */
   actingRole: AdminRole;
+  /** Where the request came from; the admin MCP server (step 5.0) sets 'mcp'. Defaults to the console. */
+  via?: 'console' | 'mcp';
 }
 
 export interface StaffAuthDeps {

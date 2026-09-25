@@ -60,6 +60,9 @@ import { SupabaseAccountDb } from '@deucex/actions/account';
 import { retryAgentRunNow } from '@deucex/actions/queue';
 import { createConsoleDb } from './admin/console-db';
 import { registerAdminRoutes, type AdminRoutesDeps } from './admin/routes';
+import { registerAdminMcpRoutes } from './admin/mcp/server';
+import { ConfirmationTokens } from './admin/mcp/confirmation';
+import type { AdminMcpDeps } from './admin/mcp/tools';
 import { registerNightlyAggregation } from './admin/aggregation';
 import { ConsoleAdminGateDb, recordAdminAction } from './admin/audit';
 import {
@@ -136,6 +139,7 @@ export function buildServer(
   contentDeps?: ContentRoutesDeps,
   fuelDeps?: FuelRoutesDeps,
   adminDeps?: AdminRoutesDeps,
+  adminMcpDeps?: AdminMcpDeps,
 ) {
   const app = Fastify({ logger: true });
 
@@ -232,6 +236,14 @@ export function buildServer(
   if (adminDeps) {
     void app.register(async (instance) => {
       await registerAdminRoutes(instance, adminDeps);
+    });
+  }
+
+  // Step 5.0: the admin MCP server. Its own bearer tokens (console-issued,
+  // admin/mcp-tokens.ts), never a player or console session.
+  if (adminMcpDeps) {
+    void app.register(async (instance) => {
+      await registerAdminMcpRoutes(instance, adminMcpDeps);
     });
   }
 
@@ -661,6 +673,15 @@ async function main() {
     return players.length;
   };
 
+  // Step 5.0: the admin MCP server over the same console functions, with
+  // ingestion's service client for AD-21 exactly as the console's ingestion
+  // routes use it.
+  const adminMcpDeps: AdminMcpDeps = {
+    ...adminDeps,
+    ingestion: { db, rerunShortlists: adminRankingsDeps.rerunShortlists },
+    confirmations: new ConfirmationTokens(),
+  };
+
   const app = buildServer(
     notesDeps,
     rankingsDeps,
@@ -674,6 +695,7 @@ async function main() {
     contentDeps,
     fuelDeps,
     adminDeps,
+    adminMcpDeps,
   );
   const port = Number(process.env.PORT ?? 8787);
   await app.listen({ port, host: '0.0.0.0' });

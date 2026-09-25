@@ -86,6 +86,12 @@ export const ACTION_LABELS: Record<string, string> = {
   correction_apply: 'Applied a fact-sheet correction',
   correction_reject: 'Rejected a fact-sheet correction',
   deadline_set: 'Set an entry deadline',
+  mcp_token_create: 'Created an MCP token',
+  mcp_token_revoke: 'Revoked an MCP token',
+  mcp_read: 'Read through MCP',
+  mcp_preview: 'Previewed through MCP',
+  mcp_refused: 'Refused through MCP',
+  mcp_failed: 'Failed through MCP',
 };
 
 export function actionLabel(action: string): string {

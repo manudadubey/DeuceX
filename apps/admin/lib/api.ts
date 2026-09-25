@@ -316,6 +316,9 @@ export interface AdminAudit {
     id: string;
     at: string;
     adminName: string | null;
+    /** mcp:<admin name> for a call through the admin MCP server (step 5.0). */
+    actor: string | null;
+    via: 'console' | 'mcp';
     role: string;
     action: string;
     playerName: string | null;
@@ -323,6 +326,16 @@ export interface AdminAudit {
     reason: string | null;
   }>;
   admins: Array<{ id: string; name: string; role: string }>;
+}
+
+export interface McpToken {
+  id: string;
+  label: string;
+  prefix: string;
+  createdAt: string;
+  expiresAt: string;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
 }
 
 export interface RoutingRow {
