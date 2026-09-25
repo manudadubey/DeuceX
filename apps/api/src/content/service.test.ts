@@ -277,6 +277,16 @@ describe('the drafting run (C-AC-1)', () => {
     await expect(startManualDraft(w.deps, PLAYER)).rejects.toBeInstanceOf(UpdateStateError);
   });
 
+  it('checks a manual draft against the opponent from the notes it read', async () => {
+    const w = world();
+    w.setNow(new Date('2026-09-14T08:00:00Z'));
+    const d = await startManualDraft(w.deps, PLAYER);
+    const edited = await saveDraft(w.deps, PLAYER, d.id, {
+      body: `${d.body} Kovalenko was lucky on the big points.`,
+    });
+    expect(edited.checks.find((c) => c.kind === 'opponent')!.state).toBe('warn');
+  });
+
   it('describes the note relative to now', () => {
     const note = { recordedAt: SAVED.toISOString() } as never;
     expect(notePhrase(note, new Date('2026-09-12T04:12:00Z'), 'Europe/Vienna')).toBe(

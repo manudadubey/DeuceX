@@ -176,12 +176,23 @@ async function checkContextFor(
 ): Promise<CheckContext> {
   const all = past ?? (await pastUpdates(deps, player.id));
   const note = row.noteId ? await deps.store.getNote(row.noteId) : null;
+  // A manual draft has no triggering note: it was built from the recent
+  // notes, so the opponent check looks at the latest opponent among them
+  // (found live in step 4.2: without this, a manual draft naming its
+  // opponent read "No opponent named").
+  const opponent =
+    note?.opponent ??
+    (row.noteId
+      ? null
+      : ((
+          await deps.store.listNotesBefore(player.id, row.draftedAt ?? clock(deps).toISOString(), 3)
+        ).find((n) => n.opponent)?.opponent ?? null));
   return {
     examples: pickVoiceExamples(all).map((u) => u.body),
     pastUpdates: all.map((u) => u.body),
     privateNames: player.privateNames,
     people: row.people,
-    opponent: note?.opponent ?? null,
+    opponent,
   };
 }
 
@@ -317,6 +328,13 @@ function tierNames(tiers: readonly ContentTier[], ids: readonly string[]): strin
   return chosen.length ? chosen.map((t) => t.name).join(' + ') : 'No tiers selected yet';
 }
 
+/** Notes a published update was drafted from, so a new draft doesn't retell them. */
+async function coveredNotes(deps: ContentDeps, playerId: string): Promise<string[]> {
+  return (await deps.store.listUpdates(playerId, 100))
+    .filter((u) => u.status === 'published' && u.noteId)
+    .map((u) => u.noteId!);
+}
+
 /** Drafts one claimed (status drafting) row. One For-you notification per run (C-17). */
 export async function runDraft(deps: ContentDeps, row: UpdateRecord): Promise<UpdateRecord> {
   const player = await requirePlayer(deps, row.playerId);
@@ -344,6 +362,7 @@ export async function runDraft(deps: ContentDeps, row: UpdateRecord): Promise<Up
     nextDeadline: deadline
       ? `${deadline.tournamentName}, ${deadline.deadlineAt.slice(0, 10)}`
       : null,
+    coveredNoteIds: await coveredNotes(deps, player.id),
   };
   const from = builtFrom(note, note ? [] : earlier, examples, player.timezone);
   const phrase = notePhrase(note, now, player.timezone);

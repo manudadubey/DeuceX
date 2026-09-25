@@ -16,7 +16,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1, step 2.1 through step 4.1b done, start step 4.2
+## Status: Phase 0, Phase 1, step 2.1 through step 4.2 done, start step 4.3
 
 The monorepo scaffold is built and deploying; the database has RLS-protected DeuceX tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -268,16 +268,26 @@ shown beforehand; both verified live against the sandbox. A membership paused fo
 automatically with a goodbye email (owner decision; `patrons.paused_at`, a sweep on the hourly Fans
 tick). Still open: an in-app upgrade back to Pro. Also found and fixed
 live: pg-boss's default 10-connection pool per instance tipped the session pooler's 15-client cap;
-all three instances now set `max`. [PR #16](https://github.com/manudadubey/DeuceX/pull/16) is merged. [PR #17](https://github.com/manudadubey/DeuceX/pull/17) is merged. The next
-session should
-start at **step 4.2 (Content Agent)**, in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus whatever
-architecture section it names, and check `gh pr list` first — if a later PR hasn't merged yet,
-branch off it rather than `main`, the same stacking step 0.5/0.6 used. Check
-`docs/BUILD-LOG.md` for what each prior
-step actually did (including follow-ups) before assuming anything about the current state — this
-line is a pointer, not the full record.
+all three instances now set `max`. [PR #16](https://github.com/manudadubey/DeuceX/pull/16) is merged. [PR #17](https://github.com/manudadubey/DeuceX/pull/17) is merged.
 
-**Open follow-ups before or alongside step 4.2** (none block starting it):
+Step 4.2 (Content Agent) built patron updates end to end: a draft queued 30 minutes after a saved
+match note (gpt-4o, owner decision; rewrites on gpt-4o-mini), the four checks as pure functions
+shared by editor and server, `content_publish` through `packages/actions/src/content.ts` (payload
+rebuilt from the server row; schedules claim the approval only at send time), open rates polled
+from Resend (owner decision), and the page, dashboard one-tap card (worksheet 8), Settings row,
+profile teaser switch and public teaser. Verified live against production and the real OpenAI and
+Resend APIs; see `docs/BUILD-LOG.md`'s step 4.2 entry, including six bugs found live and fixed and
+what was skipped. Open tracking needs two DNS records the owner adds (see that entry). The next
+session should start at **step 4.3 (Fuel)** in `docs/BUILD-PLAN-CLAUDE-CODE.md`: read that step plus
+whatever it names, and check `gh pr list` first; if the step 4.2 PR hasn't merged yet, branch off
+it rather than `main`. Check `docs/BUILD-LOG.md` for what each prior step actually did before
+assuming anything about the current state; this paragraph is a pointer, not the full record.
+
+**Open follow-ups** (none block step 4.3):
+- Add Resend's tracking records for `mail.deucex.ai` (CNAME `links.mail` → `links2.resend-dns.com`
+  plus its CAA; mind the CAA's scope, see the step 4.2 build-log entry). Open rates stay blank
+  until then.
+- Settings > Agents still says the Tournament Agent "arrives with step 3.2"; it shipped.
 - Roll the Stripe sandbox secret key (pasted in chat).
 - Set `STRIPE_WEBHOOK_SECRET` once `apps/api` has a public URL; no live webhook has run yet.
 - De-duplicate the "Stripe needs something from you" notification (fired twice in one KYC pass).

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { AgentValidationError, type TokenUsage } from '@deucex/actions';
 import type { NamedPerson } from './checks';
-import { paragraphs, wordCount } from './text';
+import { paragraphs, sentences as sentencesOf, wordCount } from './text';
 
 // PRD-05 section 3: one schema-constrained call over a pre-assembled input
 // bundle (TECH-ARCHITECTURE.md section 3a), one corrective retry, then the
@@ -69,6 +69,8 @@ export interface ContentDraftInput {
   /** Names the player keeps private (players.content_private_names). */
   privateNames: string[];
   nextDeadline: string | null;
+  /** Notes a published update has already covered, so a new draft finds a new angle rather than repeating it. */
+  coveredNoteIds?: string[];
 }
 
 export interface ContentPrompt {
@@ -106,6 +108,7 @@ Write in ${languageName(input.lang)}, in the first person, as the player, in the
 Never use an em dash; use commas, colons, parentheses, en dashes or a new sentence.
 Open with the result and score in the first sentence when there is a result. Never call a loss acceptable or good except through the player's own reasoning in the note.
 Invent nothing: every fact must come from the notes given. If something is not in the notes, leave it out.
+The example updates show the player's tone only. Never copy their sentences or retell what they already told patrons; a note marked as already written up needs a new angle, or a brief mention at most.
 Never mention money figures, prize money amounts, runway, reserves, budgets, injuries, treatment, physios or doctors. Never name the player's coach or anyone from their team; say "my coach" instead. Say nothing about the opponent's game beyond the result; name them plainly.
 The body is ${DRAFT_MIN_WORDS} to ${DRAFT_MAX_WORDS} words in 3 to 5 short paragraphs.
 The subject is short and specific (under 60 characters, no quote marks), with two genuinely different alternatives.
@@ -114,9 +117,9 @@ people lists every person named in the notes with their role (coach, physio, doc
 Respond only with the JSON object requested.`;
 }
 
-function describeNote(note: DraftNote, label: string): string {
+function describeNote(note: DraftNote, label: string, covered = false): string {
   const facts = [
-    `${label} (${note.ctx}, recorded ${note.recordedAt.slice(0, 10)})`,
+    `${label} (${note.ctx}, recorded ${note.recordedAt.slice(0, 10)})${covered ? ' · already written up for patrons' : ''}`,
     note.result ? `Result: ${note.result}` : null,
     note.opponent ? `Opponent: ${note.opponent}` : null,
     note.round ? `Round: ${note.round}` : null,
@@ -137,7 +140,10 @@ export function buildContentDraftPrompt(input: ContentDraftInput): ContentPrompt
       'There is no fresh note. Suggest an angle from the recent notes below and write the update around it.',
     );
   }
-  input.earlierNotes.forEach((n, i) => parts.push(describeNote(n, `Earlier note ${i + 1}`)));
+  const covered = new Set(input.coveredNoteIds ?? []);
+  input.earlierNotes.forEach((n, i) =>
+    parts.push(describeNote(n, `Earlier note ${i + 1}`, covered.has(n.id))),
+  );
   if (input.examples.length) {
     parts.push(
       "Past updates in the player's voice (match their tone and sentence length):\n" +
@@ -183,6 +189,30 @@ export interface ValidatedDraft {
   people: NamedPerson[];
 }
 
+function normaliseSentence(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N} ]+/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * True when a quarter or more of the draft's sentences appear verbatim in one
+ * example. The examples are for tone; found live in step 4.2, a manual draft
+ * with no fresh note copied the one published update word for word.
+ */
+export function copiesAnExample(body: string, examples: readonly VoiceExample[]): boolean {
+  const draft = sentencesOf(body)
+    .map(normaliseSentence)
+    .filter((s) => s.split(' ').length >= 5);
+  if (draft.length === 0) return false;
+  return examples.some((e) => {
+    const seen = new Set(sentencesOf(e.body).map(normaliseSentence));
+    return draft.filter((s) => seen.has(s)).length / draft.length >= 0.25;
+  });
+}
+
 /** Returns the first problem with a model output, or null when it is usable. */
 export function checkDraftOutput(
   out: ContentDraftModelOutput,
@@ -204,6 +234,9 @@ export function checkDraftOutput(
     if (missing.length > 0) {
       return `the first paragraph must state the result and full score (${input.note.result})`;
     }
+  }
+  if (copiesAnExample(body, input.examples)) {
+    return 'it repeats sentences from a past update; write something new in the same voice';
   }
   if (out.practiceSection && wordCount(out.practiceSection) > PRACTICE_SECTION_MAX_WORDS) {
     return `practiceSection is over ${PRACTICE_SECTION_MAX_WORDS} words`;

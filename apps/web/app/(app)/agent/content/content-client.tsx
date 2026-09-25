@@ -425,6 +425,12 @@ export function ContentClient({
                 await load();
               })
             }
+            onDraftNow={() =>
+              run('new', async () => {
+                await api.startNewUpdate(supabase);
+                await load();
+              })
+            }
             onRebuild={() =>
               run('rebuild', async () => {
                 await api.rebuildDraft(supabase, current.id);
@@ -432,50 +438,61 @@ export function ContentClient({
               })
             }
           />
-          <div className="flex flex-col gap-4">
-            <RecipientsCard
-              tiers={page.tiers}
-              selected={current.tierIds}
-              reasons={current.tierReasons}
-              sendTimes={page.sendTimes}
-              sendKind={sendTime.kind}
-              teaser={current.teaser}
-              disabled={!editable || busy !== null}
-              onToggleTier={(id) =>
-                run('tiers', async () => {
-                  const tierIds = current.tierIds.includes(id)
-                    ? current.tierIds.filter((t) => t !== id)
-                    : [...current.tierIds, id];
-                  applyUpdate(await api.saveDraft(supabase, current.id, { tierIds }));
-                })
-              }
-              onSendTime={(kind) =>
-                run('when', async () => {
-                  const option = page.sendTimes.find((o) => o.kind === kind);
-                  applyUpdate(
-                    await api.saveDraft(supabase, current.id, { sendAt: option?.sendAt ?? null }),
-                  );
-                })
-              }
-              onTeaser={(teaser) =>
-                run('teaser', async () => {
-                  applyUpdate(await api.saveDraft(supabase, current.id, { teaser }));
-                })
-              }
-            />
-            <ChecksCard
-              checks={editable ? liveChecks : current.checks}
-              disabled={!editable || busy !== null}
-              busyKind={busy === 'fix' ? ('private' as CheckKind) : null}
-              onFix={(kind) =>
-                run('fix', async () => {
-                  await flush();
-                  applyText(await api.fixCheck(supabase, current.id, kind));
-                  showToast('Fixed. The check ran again.');
-                })
-              }
-            />
-          </div>
+          {current.status === 'queued' || current.status === 'drafting' ? (
+            <Card className="gap-2 p-6">
+              <CardHeader className="p-0">
+                <CardTitle>Who receives it</CardTitle>
+                <CardDescription>
+                  The agent proposes tiers when it drafts. You choose before anything is sent.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <RecipientsCard
+                tiers={page.tiers}
+                selected={current.tierIds}
+                reasons={current.tierReasons}
+                sendTimes={page.sendTimes}
+                sendKind={sendTime.kind}
+                teaser={current.teaser}
+                disabled={!editable || busy !== null}
+                onToggleTier={(id) =>
+                  run('tiers', async () => {
+                    const tierIds = current.tierIds.includes(id)
+                      ? current.tierIds.filter((t) => t !== id)
+                      : [...current.tierIds, id];
+                    applyUpdate(await api.saveDraft(supabase, current.id, { tierIds }));
+                  })
+                }
+                onSendTime={(kind) =>
+                  run('when', async () => {
+                    const option = page.sendTimes.find((o) => o.kind === kind);
+                    applyUpdate(
+                      await api.saveDraft(supabase, current.id, { sendAt: option?.sendAt ?? null }),
+                    );
+                  })
+                }
+                onTeaser={(teaser) =>
+                  run('teaser', async () => {
+                    applyUpdate(await api.saveDraft(supabase, current.id, { teaser }));
+                  })
+                }
+              />
+              <ChecksCard
+                checks={editable ? liveChecks : current.checks}
+                disabled={!editable || busy !== null}
+                busyKind={busy === 'fix' ? ('private' as CheckKind) : null}
+                onFix={(kind) =>
+                  run('fix', async () => {
+                    await flush();
+                    applyText(await api.fixCheck(supabase, current.id, kind));
+                    showToast('Fixed. The check ran again.');
+                  })
+                }
+              />
+            </div>
+          )}
         </section>
       )}
 

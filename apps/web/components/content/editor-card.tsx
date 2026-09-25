@@ -100,6 +100,8 @@ export interface EditorCardProps {
   onCancelSchedule(): void;
   onRemoveTeaser(): void;
   onRebuild(): void;
+  /** Queued only: skip the rest of the window and draft now. */
+  onDraftNow(): void;
 }
 
 export function EditorCard(props: EditorCardProps) {
@@ -119,12 +121,23 @@ export function EditorCard(props: EditorCardProps) {
         ? 'The agent is drafting from your note now.'
         : update.draftFailed
           ? "The agent couldn't draft this one. Your note and result are attached below."
-          : update.draftedAt
-            ? `Drafting model · drafted ${timeOf(update.draftedAt, timezone)}. Edit anything.`
-            : 'Edit anything.';
+          : update.status === 'published' && update.sentAt
+            ? `Sent ${dateTimeOf(update.sentAt, timezone)}. Sent emails can't be changed.`
+            : update.draftedAt
+              ? `Drafting model · drafted ${timeOf(update.draftedAt, timezone)}.${editable ? ' Edit anything.' : ''}`
+              : editable
+                ? 'Edit anything.'
+                : '';
 
   let footer: React.ReactNode;
-  if (update.status === 'queued' || update.status === 'drafting' || update.status === 'sending') {
+  if (update.status === 'queued') {
+    footer = (
+      <Button variant="outline" onClick={props.onDraftNow} disabled={props.busy !== null}>
+        {props.busy === 'new' ? <Spinner /> : null}
+        Draft it now
+      </Button>
+    );
+  } else if (update.status === 'drafting' || update.status === 'sending') {
     footer = (
       <span className="flex items-center gap-2 text-sm text-muted-foreground">
         <Spinner /> {update.status === 'sending' ? 'Sending…' : 'Drafting…'}
@@ -299,6 +312,26 @@ export function EditorCard(props: EditorCardProps) {
     );
   }
 
+  if (update.status === 'queued' || update.status === 'drafting') {
+    return (
+      <Card className="gap-4 p-6" id="caEditor">
+        <CardHeader className="p-0">
+          <CardTitle>{title(update)}</CardTitle>
+          <CardDescription>{provenance}</CardDescription>
+          <CardActions>
+            <Badge variant={badge.variant}>
+              <BadgeDot />
+              {badge.label}
+            </Badge>
+          </CardActions>
+        </CardHeader>
+        <div className="flex flex-wrap items-center gap-2" id="caFoot">
+          {footer}
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card className="gap-5 p-6" id="caEditor">
       <CardHeader className="p-0">
@@ -395,7 +428,9 @@ export function EditorCard(props: EditorCardProps) {
           className="min-h-[18rem] text-[0.9375rem] leading-relaxed"
         />
         <div className="flex justify-between text-[0.8125rem] text-muted-foreground">
-          <span id="caCount">{countLine(props.body)}</span>
+          <span id="caCount">
+            {props.body.trim() ? countLine(props.body) : 'Nothing written yet'}
+          </span>
           {editable ? (
             <span>{props.saving ? 'Saving…' : 'Autosaved · edits stay if you leave'}</span>
           ) : null}

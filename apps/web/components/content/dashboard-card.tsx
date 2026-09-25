@@ -32,7 +32,16 @@ type UpdateRow = Database['public']['Tables']['patron_updates']['Row'];
 // sentence is printed on the card beside the button. It appears only for a
 // send-now draft with patrons selected; anything else goes to the full page.
 
-export function ContentAgentCard({ playerId, isFree }: { playerId: string; isFree: boolean }) {
+export function ContentAgentCard({
+  playerId,
+  isFree,
+  timezone,
+}: {
+  playerId: string;
+  isFree: boolean;
+  /** The player's own time zone, so "Drafted 06:12" matches the Content page. */
+  timezone: string;
+}) {
   const supabase = useMemo(() => createClient(), []);
   const [draft, setDraft] = useState<UpdateRow | null>(null);
   const [tierNames, setTierNames] = useState<string>('');
@@ -112,6 +121,7 @@ export function ContentAgentCard({ playerId, isFree }: { playerId: string; isFre
         hour: '2-digit',
         minute: '2-digit',
         hourCycle: 'h23',
+        timeZone: timezone,
       }).format(new Date(draft.drafted_at))
     : null;
 

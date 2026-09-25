@@ -154,7 +154,11 @@ export function FirstWeekDashboard({
       </Card>
 
       <section className="grid grid-cols-3 gap-4 max-[900px]:grid-cols-1">
-        <ContentAgentCard playerId={player.id} isFree={plan === 'free'} />
+        <ContentAgentCard
+          playerId={player.id}
+          isFree={plan === 'free'}
+          timezone={player.timezone}
+        />
 
         <CheckInCard
           playerId={player.id}

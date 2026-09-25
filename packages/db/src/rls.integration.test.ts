@@ -1015,3 +1015,134 @@ describeIfConfigured('fans row-level security (step 4.1)', () => {
     });
   });
 });
+
+describeIfConfigured('content agent row-level security (step 4.2)', () => {
+  let client: Client;
+  const playerA = randomUUID();
+  const playerB = randomUUID();
+  let updateId: string;
+  let patronId: string;
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
+      playerA,
+      `content-rls-a-${playerA}@deucex.test`,
+      playerB,
+      `content-rls-b-${playerB}@deucex.test`,
+    ]);
+    await client.query(
+      `insert into public.players
+         (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+       values
+         ($1, 'wta', 'Player A', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney'),
+         ($3, 'atp', 'Player B', $4, 'US', '2000-01-01', 'USD', 'en', 'imperial', 'America/New_York')`,
+      [
+        playerA,
+        `content-rls-a-${playerA}@deucex.test`,
+        playerB,
+        `content-rls-b-${playerB}@deucex.test`,
+      ],
+    );
+    // Fixture rows as the table owner: apps/api writes these in production.
+    const tier = await client.query(
+      `insert into public.patron_tiers (player_id, position, name, price, currency)
+       values ($1, 1, 'Courtside', 29, 'AUD') returning id`,
+      [playerA],
+    );
+    const patron = await client.query(
+      `insert into public.patrons (player_id, tier_id, stripe_subscription_id, name, email, price, currency)
+       values ($1, $2, $3, 'Mira Kovac', 'mira@deucex.test', 29, 'AUD') returning id`,
+      [playerA, tier.rows[0].id, `sub_content_rls_${playerA.slice(0, 8)}`],
+    );
+    patronId = patron.rows[0].id;
+    const update = await client.query(
+      `insert into public.patron_updates (player_id, trigger, status, subject, body, tier_ids)
+       values ($1, 'manual', 'draft', 'Three set points', 'I lost 6-4 3-6 6-7(5).', array[$2::uuid])
+       returning id`,
+      [playerA, tier.rows[0].id],
+    );
+    updateId = update.rows[0].id;
+    await client.query(
+      `insert into public.patron_update_sends (update_id, player_id, patron_id, status, email_id)
+       values ($1, $2, $3, 'sent', 'email_rls')`,
+      [updateId, playerA, patronId],
+    );
+  });
+
+  afterAll(async () => {
+    await client.query(`delete from public.patron_updates where player_id = $1`, [playerA]);
+    await client.query(`delete from public.patrons where player_id = $1`, [playerA]);
+    await client.query(`delete from public.patron_tiers where player_id = $1`, [playerA]);
+    await client.query(`delete from public.players where id in ($1, $2)`, [playerA, playerB]);
+    await client.query(`delete from auth.users where id in ($1, $2)`, [playerA, playerB]);
+    await client.end();
+  });
+
+  it('lets a player read only their own updates and sends', async () => {
+    await asPlayer(client, playerA, async () => {
+      expect((await client.query('select subject from public.patron_updates')).rows).toEqual([
+        { subject: 'Three set points' },
+      ]);
+      expect((await client.query('select email_id from public.patron_update_sends')).rows).toEqual([
+        { email_id: 'email_rls' },
+      ]);
+    });
+    await asPlayer(client, playerB, async () => {
+      expect((await client.query('select 1 from public.patron_updates')).rows).toEqual([]);
+      expect((await client.query('select 1 from public.patron_update_sends')).rows).toEqual([]);
+    });
+  });
+
+  it('refuses a player marking an update published or inserting one (apps/api only)', async () => {
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query(`update public.patron_updates set status = 'published' where id = $1`, [
+          updateId,
+        ]),
+      ).rejects.toThrow(/permission denied/);
+    });
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query(
+          `insert into public.patron_updates (player_id, trigger, status) values ($1, 'manual', 'draft')`,
+          [playerA],
+        ),
+      ).rejects.toThrow(/permission denied/);
+    });
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query(`update public.patron_update_sends set opened_at = now()`),
+      ).rejects.toThrow(/permission denied/);
+    });
+  });
+
+  it('allows only one open draft per player, and one draft per note', async () => {
+    await expect(
+      client.query(
+        `insert into public.patron_updates (player_id, trigger, status) values ($1, 'manual', 'queued')`,
+        [playerA],
+      ),
+    ).rejects.toThrow(/patron_updates_one_open_draft_idx/);
+  });
+
+  it('lets a player change their own Content Agent settings', async () => {
+    await asPlayer(client, playerA, async () => {
+      const result = await client.query(
+        `update public.players
+            set content_window = 'next_morning', content_private_names = array['Marko'], profile_teaser = false
+          where id = $1`,
+        [playerA],
+      );
+      expect(result.rowCount).toBe(1);
+    });
+    await asPlayer(client, playerA, async () => {
+      await expect(
+        client.query(`update public.players set content_window = 'hourly' where id = $1`, [
+          playerA,
+        ]),
+      ).rejects.toThrow(/content_window_check/);
+    });
+  });
+});

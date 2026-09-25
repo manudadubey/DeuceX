@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AgentValidationError } from '@deucex/actions';
 import {
   applyFix,
+  buildContentDraftPrompt,
   countLine,
   createMockContentDraftClient,
   createMockContentRewriteClient,
@@ -357,5 +358,30 @@ describe('voice profile', () => {
     expect(voiceProfileLine([])).toBe(
       'No published updates yet · drafting from how you talk in your notes',
     );
+  });
+});
+
+describe('copying a past update (found live in step 4.2)', () => {
+  it('rejects a draft that repeats a voice example, and retries', async () => {
+    const good = (
+      await createMockContentDraftClient().complete({
+        system: '',
+        user: 'Result: L 6-4 3-6 6-7(5)\nOpponent: Kovalenko',
+      })
+    ).raw as { paragraphs: string[] };
+    const example = { subject: 'Old one', body: good.paragraphs.join('\n\n') };
+    const client = scripted(good, good);
+    await expect(generateContentDraft(client, input({ examples: [example] }))).rejects.toThrow(
+      /repeats sentences from a past update/,
+    );
+    expect(client.calls).toBe(2);
+  });
+
+  it('marks notes already written up, so the prompt asks for a new angle', () => {
+    const prompt = buildContentDraftPrompt(
+      input({ note: null, earlierNotes: [KOVALENKO_NOTE], coveredNoteIds: ['note-1'] }),
+    );
+    expect(prompt.user).toContain('already written up for patrons');
+    expect(prompt.system).toContain('Never copy their sentences');
   });
 });
