@@ -562,6 +562,8 @@ export interface PublicPatronPage {
   thanksLine: string | null;
   /** Worksheet 6's checkout disclosure: the platform fee comes out of the tier price, never on top of it. */
   feePercent: number | null;
+  /** Step 4.2 (PRD-05 C-13): "Latest for patrons", the first paragraph of the latest published update, when allowed. */
+  latestUpdate?: { text: string; sentAt: string } | null;
 }
 
 function isMinor(dob: string | null, now: Date): boolean {

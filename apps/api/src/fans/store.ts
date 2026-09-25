@@ -444,8 +444,18 @@ export class SupabaseFansStore implements FansStore {
     if (error) throw error;
   }
 
-  async listPublishedUpdates(): Promise<PublishedUpdate[]> {
-    return [];
+  // Step 4.2: the Content Agent's published updates, for P-7's attribution
+  // sentences and the dashed update lines on the MRR chart.
+  async listPublishedUpdates(playerId: string): Promise<PublishedUpdate[]> {
+    const { data, error } = await this.db
+      .from('patron_updates')
+      .select('id, subject, sent_at')
+      .eq('player_id', playerId)
+      .eq('status', 'published')
+      .not('sent_at', 'is', null)
+      .order('sent_at', { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((u) => ({ id: u.id, title: u.subject, sentAt: u.sent_at! }));
   }
 
   async getPayout(stripePayoutId: string) {

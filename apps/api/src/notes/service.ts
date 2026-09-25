@@ -50,6 +50,8 @@ export interface NotesServiceDeps {
   weatherAdapter: WeatherAdapter;
   enqueueTranscription: (noteId: string) => Promise<void>;
   enqueueExtraction: (noteId: string) => Promise<void>;
+  /** Step 4.2: queues the Content Agent's draft (PRD-05 C-1). Best-effort, never fails a save. */
+  onNoteSaved?: (input: { playerId: string; noteId: string }) => Promise<void>;
   /** Injected for tests; defaults to the real clock. */
   now?: () => Date;
   logger?: ExtractionLogger;
@@ -295,6 +297,17 @@ export async function saveNote(deps: NotesServiceDeps, input: SaveNoteInput): Pr
       }
     } catch (err) {
       deps.logger?.error(`[conditions] stamp failed for note ${input.noteId}:`, err);
+    }
+  }
+
+  // PRD-05 C-1: a saved match note with a result queues a patron-update
+  // draft. Best-effort like the stamp above: a failure here never fails the
+  // save, and the player can still start a draft by hand.
+  if (deps.onNoteSaved) {
+    try {
+      await deps.onNoteSaved({ playerId: input.playerId, noteId: input.noteId });
+    } catch (err) {
+      deps.logger?.error(`[content] queueing a draft failed for note ${input.noteId}:`, err);
     }
   }
 
