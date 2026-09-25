@@ -15,17 +15,20 @@ async function lint(filePath: string, code: string) {
   return results[0]?.messages ?? [];
 }
 
-describe.each(['stripe', 'resend', 'ics'])('no-restricted-imports for %s', (moduleName) => {
-  const code = `import x from '${moduleName}';\n`;
+describe.each(['stripe', 'resend', 'ics', 'web-push'])(
+  'no-restricted-imports for %s',
+  (moduleName) => {
+    const code = `import x from '${moduleName}';\n`;
 
-  it('fails outside packages/actions', async () => {
-    const messages = await lint('apps/web/lib/example.ts', code);
-    expect(messages.some((m) => m.ruleId === 'no-restricted-imports')).toBe(true);
-    expect(messages.some((m) => m.message.includes('packages/actions'))).toBe(true);
-  });
+    it('fails outside packages/actions', async () => {
+      const messages = await lint('apps/web/lib/example.ts', code);
+      expect(messages.some((m) => m.ruleId === 'no-restricted-imports')).toBe(true);
+      expect(messages.some((m) => m.message.includes('packages/actions'))).toBe(true);
+    });
 
-  it('is allowed inside packages/actions', async () => {
-    const messages = await lint('packages/actions/src/example.ts', code);
-    expect(messages.some((m) => m.ruleId === 'no-restricted-imports')).toBe(false);
-  });
-});
+    it('is allowed inside packages/actions', async () => {
+      const messages = await lint('packages/actions/src/example.ts', code);
+      expect(messages.some((m) => m.ruleId === 'no-restricted-imports')).toBe(false);
+    });
+  },
+);

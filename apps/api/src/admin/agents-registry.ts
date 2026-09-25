@@ -27,7 +27,7 @@ export const AGENTS: readonly AgentInfo[] = [
   {
     name: 'financial',
     label: 'Financial Agent',
-    cadence: 'Daily 07:00 UTC',
+    cadence: 'Daily 07:00, player time',
     queued: true,
     proposes: true,
     providers: ['openai'],
@@ -35,7 +35,7 @@ export const AGENTS: readonly AgentInfo[] = [
   {
     name: 'mindset-coach',
     label: 'Mindset Coach',
-    cadence: 'Daily, player time',
+    cadence: 'Daily 07:00, player time',
     queued: true,
     proposes: true,
     providers: ['openai'],

@@ -10,8 +10,8 @@ function asDb(fake: FakeDb): SupabaseClient<Database> {
 
 describe('playersDueThisHour', () => {
   it('includes only players whose local time is inside the delivery hour', () => {
-    // 2026-09-21T20:00:00Z is 06:00 in Sydney (+10) and 22:00 in Los Angeles (-8, DST).
-    const now = new Date('2026-09-21T20:00:00Z');
+    // 2026-09-21T21:00:00Z is 07:00 in Sydney (+10) and 14:00 in Los Angeles (-7, DST).
+    const now = new Date('2026-09-21T21:00:00Z');
     const players: SchedulablePlayer[] = [
       { id: 'sydney', timezone: 'Australia/Sydney' },
       { id: 'la', timezone: 'America/Los_Angeles' },

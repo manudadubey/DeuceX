@@ -45,6 +45,9 @@ import { runExtraction } from './notes/extraction';
 import { transcribeNote } from './notes/service';
 import { sweepExpiredAudio } from './notes/audio-lifecycle';
 import { registerMindsetCoach } from './mindset-coach/worker';
+import { registerMorningRun } from './morning-run/scheduler';
+import { registerNotificationDelivery } from './notifications/sweep';
+import { createWebPushClient } from '@deucex/actions/notifications';
 import { registerFinancialRoutes, type FinancialRoutesDeps } from './financial/routes';
 import { registerFinancialAgent, enqueueFinancialRecompute } from './financial/worker';
 import { registerTournamentRoutes, type TournamentRoutesDeps } from './tournament/routes';
@@ -368,6 +371,9 @@ async function main() {
     await registerTournamentAgent(actionsBoss, { db, agentRuns, weatherAdapter, proseClient }),
   ];
   await registerAgentDispatcher(actionsBoss, db, agentHandlers);
+  // Step 5.2: the morning run, every daily agent at 07:00 in the player's own
+  // time zone (owner decision), onto the same queue and dispatcher.
+  await registerMorningRun(actionsBoss, { db });
 
   // Step 2.1's own boss (money/queue.ts): the daily ECB fetch, the Sunday
   // reserve-balance reminder and (step 2.3) the fourteen-day account-
@@ -586,6 +592,29 @@ async function main() {
     },
   };
   await registerFuelOutcomeScheduler(moneyBoss, { store: fuelStore });
+
+  // Step 5.2: notification delivery by email and Web Push, quiet hours, the
+  // weekly FYI digest, staff alert emails and the distress escalation
+  // (notifications/sweep.ts). Push needs VAPID keys; without them push
+  // deliveries are skipped and email still goes.
+  const vapidPublic = process.env.WEB_PUSH_VAPID_PUBLIC_KEY;
+  const vapidPrivate = process.env.WEB_PUSH_VAPID_PRIVATE_KEY;
+  const push =
+    vapidPublic && vapidPrivate
+      ? createWebPushClient({
+          publicKey: vapidPublic,
+          privateKey: vapidPrivate,
+          subject: process.env.WEB_PUSH_SUBJECT ?? 'mailto:support@mail.deucex.ai',
+        })
+      : null;
+  if (!push) console.warn('WEB_PUSH_VAPID_* not set: push notifications are skipped.');
+  await registerNotificationDelivery(moneyBoss, {
+    db,
+    email,
+    push,
+    appBaseUrl,
+    adminBaseUrl: process.env.ADMIN_BASE_URL ?? 'http://localhost:3001',
+  });
 
   // Step 5.1: the admin console. Its database access goes through the
   // console role (admin/console-db.ts); the nightly aggregation uses its own

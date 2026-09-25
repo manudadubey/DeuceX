@@ -144,6 +144,10 @@ async function sendShortlistNotification(
       title: `${nearest.name} entry closes soon`,
       body: `Top pick of ${result.candidates.length}. Cost-to-prize ratio ${nearest.ratio.toFixed(2)}. Confirm or withdraw by ${nearest.entryDeadline}.`,
       action_href: '/agent/tournament',
+      // Step 5.2: lets this through quiet hours inside the last 24 hours
+      // (M-NOTIF-2). Deadlines are stored as dates, so the start of that day
+      // (UTC) is used: the earliest it could fall, never too late.
+      deadline_at: `${nearest.entryDeadline}T00:00:00Z`,
     });
     if (error) throw error;
     return;
