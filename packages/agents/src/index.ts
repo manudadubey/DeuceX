@@ -24,3 +24,4 @@ export * from './financial';
 export * from './tournament';
 export * from './conditions';
 export * from './fans';
+export * from './content';
