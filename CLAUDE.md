@@ -308,7 +308,7 @@ by personal tokens staff create in the console (owner decision; `admin_mcp_token
 days, revocable). 28 tools over the console's own functions, role-scoped, two-step via a
 confirmation token, AD-5 reasons enforced, one `admin_actions` row per call with `via = 'mcp'`
 (shown as `mcp:<name>`). Verified with transport tests, live RLS tests and a live round trip; see
-`docs/BUILD-LOG.md`'s step 5.0 entry. Next is **step 5.2** (notifications, digest and the morning
+`docs/BUILD-LOG.md`'s step 5.0 entry. [PR #26](https://github.com/manudadubey/DeuceX/pull/26), merged 26 September 2026. Next is **step 5.2** (notifications, digest and the morning
 run).
 
 **Open follow-ups** (none block step 5.0):
