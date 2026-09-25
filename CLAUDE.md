@@ -339,7 +339,12 @@ line is a pointer, not the full record.
   `deucex` has exactly two env vars, `NEXT_PUBLIC_SUPABASE_URL` and
   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (set 25 September 2026; before that it had none and every
   page returned 500). `NEXT_PUBLIC_API_URL` is unset because `apps/api` isn't deployed, so
-  anything that calls the API fails in production. `deucex-admin` has no env vars. No custom domain yet. A few empty, unlinked stray projects (`procircuit-web` and an
+  anything that calls the API fails in production. `deucex-admin` has no env vars and requires Vercel sign-in on **every** address (protection set to
+  "all" on 25 September 2026: its old `procircuit-admin.vercel.app` address had been open without
+  one). Both apps are kept out of search engines: `vercel.json` sends `X-Robots-Tag: noindex,
+  nofollow, noarchive` on every response and each root layout sets `robots: { index: false }`;
+  don't add a `robots.txt` block (it would hide the noindex from crawlers). Making `/p/<slug>`
+  findable at launch is a deliberate change to both. No custom domain yet. A few empty, unlinked stray projects (`procircuit-web` and an
   earlier bare `procircuit` under the other team) were left behind during setup and can be deleted
   from the dashboard whenever — harmless, no deployments, not referenced by anything.
 - **Supabase** project **ProCircuit** (the project is still named that; `gpzpmrumwaqyfkyvqbgl`, org `MD Labs`, `ap-northeast-1`).
