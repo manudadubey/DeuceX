@@ -16,6 +16,9 @@ import { drainOfflineQueue, queuedNoteCount } from '@/lib/match-scribe/offline-q
 import { RecorderCard } from '@/components/match-scribe/recorder-card';
 import { DailyCheckInCard } from '@/components/match-scribe/daily-checkin-card';
 import { HistorySection } from '@/components/match-scribe/history-section';
+import { PausedNotice } from '@/components/agents/paused-notice';
+
+const TRANSCRIPTION = ['transcription'] as const;
 
 export interface MatchScribeClientProps {
   playerId: string;
@@ -102,6 +105,7 @@ export function MatchScribeClient({ playerId, timezone, autoStart }: MatchScribe
           <Badge>Audio deleted after 7 days · transcripts kept</Badge>
         </div>
       </header>
+      <PausedNotice providers={TRANSCRIPTION} label="Transcription" />
 
       {queuedCount > 0 && (
         <div className="mb-4 rounded-lg bg-secondary px-3.5 py-2.5 text-[0.8125rem]" role="status">

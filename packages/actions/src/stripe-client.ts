@@ -125,6 +125,14 @@ export interface FansStripeClient {
   }): Promise<void>;
   /** Ends a subscription now (a membership paused for 90 days; owner decision 25 Sep 2026). */
   cancelSubscription(input: { account: string; subscriptionId: string }): Promise<void>;
+  /** Read-only: the platform account's own balance per currency (PRD-13 AD-22's reconciliation). */
+  retrievePlatformBalance(): Promise<PlatformBalanceLineMinor[]>;
+}
+
+export interface PlatformBalanceLineMinor {
+  currency: string;
+  availableMinor: number;
+  pendingMinor: number;
 }
 
 export class StripeCallFailedError extends Error {
@@ -461,6 +469,24 @@ export function createStripeFansClient(config: { secretKey: string }): FansStrip
           { cancellation_details: { comment: 'Ended after 90 days paused' } },
           { stripeAccount: input.account },
         );
+      }),
+
+    retrievePlatformBalance: () =>
+      wrap(async () => {
+        const balance = await stripe.balance.retrieve();
+        const byCurrency = new Map<string, PlatformBalanceLineMinor>();
+        const line = (currency: string) => {
+          const key = currency.toUpperCase();
+          let entry = byCurrency.get(key);
+          if (!entry) {
+            entry = { currency: key, availableMinor: 0, pendingMinor: 0 };
+            byCurrency.set(key, entry);
+          }
+          return entry;
+        };
+        for (const b of balance.available) line(b.currency).availableMinor += b.amount;
+        for (const b of balance.pending) line(b.currency).pendingMinor += b.amount;
+        return [...byCurrency.values()];
       }),
   };
 }

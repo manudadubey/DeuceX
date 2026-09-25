@@ -2,6 +2,7 @@ import type { Database, Json } from '@deucex/db';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { type ApprovalGateDb, runGatedAction } from './gate';
 import type { EmailClient } from './resend-client';
+import { type AdminActionGateDb, runAdminGatedAction } from './admin';
 
 // The two Settings writes with a real vendor side effect (PRD-12 section 3's
 // approval gate, CLAUDE.md's own opening line: "nothing leaves the app...
@@ -266,28 +267,52 @@ export async function requestDataExport(
       actionType: 'data_export_request',
       payload,
     },
-    async () => {
-      const playerEmail = await db.getPlayerEmail(input.playerId);
-      if (!playerEmail) throw new MissingPlayerEmailError(input.playerId);
+    () => deliverDataExport(email, db, input.playerId),
+  );
+}
 
-      const requestedAt = new Date().toISOString();
-      const bundle = await db.getExportBundle(input.playerId);
+async function deliverDataExport(
+  email: EmailClient,
+  db: DataExportDb,
+  playerId: string,
+): Promise<void> {
+  const playerEmail = await db.getPlayerEmail(playerId);
+  if (!playerEmail) throw new MissingPlayerEmailError(playerId);
 
-      await email.sendEmail({
-        to: playerEmail,
-        subject: 'Your DeuceX export is ready',
-        html: `<p>Attached: everything DeuceX has on file for you — notes, transcripts, expenses and check-ins — as JSON and CSV.</p>`,
-        attachments: [
-          { filename: 'data.json', content: toBase64(buildExportJson(bundle)) },
-          { filename: 'expenses.csv', content: toBase64(buildExpensesCsv(bundle)) },
-          { filename: 'notes.csv', content: toBase64(buildNotesCsv(bundle)) },
-          { filename: 'transcripts.txt', content: toBase64(buildTranscriptsText(bundle)) },
-        ],
-      });
+  const requestedAt = new Date().toISOString();
+  const bundle = await db.getExportBundle(playerId);
 
-      const deliveredAt = new Date().toISOString();
-      await db.storeExportRequest({ playerId: input.playerId, requestedAt, deliveredAt });
-    },
+  await email.sendEmail({
+    to: playerEmail,
+    subject: 'Your DeuceX export is ready',
+    html: `<p>Attached: everything DeuceX has on file for you — notes, transcripts, expenses and check-ins — as JSON and CSV.</p>`,
+    attachments: [
+      { filename: 'data.json', content: toBase64(buildExportJson(bundle)) },
+      { filename: 'expenses.csv', content: toBase64(buildExpensesCsv(bundle)) },
+      { filename: 'notes.csv', content: toBase64(buildNotesCsv(bundle)) },
+      { filename: 'transcripts.txt', content: toBase64(buildTranscriptsText(bundle)) },
+    ],
+  });
+
+  const deliveredAt = new Date().toISOString();
+  await db.storeExportRequest({ playerId, requestedAt, deliveredAt });
+}
+
+/**
+ * PRD-13 AD-9: support triggers the same export the player can request,
+ * behind the admin-action gate instead of a player approval. The bundle
+ * goes to the player's own address on file, never to staff.
+ */
+export async function sendStaffDataExport(
+  gateDb: AdminActionGateDb,
+  email: EmailClient,
+  db: DataExportDb,
+  input: { adminActionId: string; playerId: string },
+): Promise<void> {
+  await runAdminGatedAction(
+    gateDb,
+    { adminActionId: input.adminActionId, playerId: input.playerId, actionType: 'export_data' },
+    () => deliverDataExport(email, db, input.playerId),
   );
 }
 

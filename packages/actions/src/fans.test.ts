@@ -204,6 +204,9 @@ function fakeStripe(): FansStripeClient & { calls: ReturnType<typeof makeStripeC
     async retrieveAccount() {
       throw new Error('unused');
     },
+    async retrievePlatformBalance() {
+      throw new Error('unused');
+    },
     upsertTierPrice: calls.upsertTierPrice,
     createCheckoutSession: calls.createCheckoutSession,
     async retrieveCheckoutSession() {

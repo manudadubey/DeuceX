@@ -197,3 +197,4 @@ export function createServiceRoleClient(
 }
 export * from './fans';
 export * from './fuel';
+export * from './audit-log';

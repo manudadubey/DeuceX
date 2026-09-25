@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@deucex/db';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { InvalidRankingCsvError, parseRankingCsv } from './csv';
 import {
   applyRankingImport,
@@ -9,29 +9,68 @@ import {
   previewRankingImport,
 } from './import-service';
 
+export interface AdminAuditInput {
+  playerId: string | null;
+  actionType: string;
+  target?: Record<string, unknown>;
+  consequence: string;
+  reason?: string | null;
+}
+
 export interface AdminRankingsRoutesDeps {
   db: SupabaseClient<Database>;
+  /**
+   * Step 5.1: staff sign-in and the ops role for every route here, and an
+   * admin_actions row for every change. Optional only so this module's own
+   * step 3.1 tests keep exercising the routes without a staff session;
+   * index.ts always passes both.
+   */
+  guard?: (request: FastifyRequest) => Promise<AdminRouteContext>;
+  audit?: (context: AdminRouteContext, input: AdminAuditInput) => Promise<void>;
+  /** AD-20, AD-21: re-run the Tournament Agent for every player who shortlisted this event. */
+  rerunShortlists?: (tournamentId: string) => Promise<number>;
+}
+
+export interface AdminRouteContext {
+  staffName: string;
+  /** Opaque to this module: whatever the guard needs to hand back to `audit`. */
+  staff?: unknown;
+}
+
+declare module 'fastify' {
+  interface FastifyRequest {
+    adminContext?: AdminRouteContext;
+  }
 }
 
 const CORRECTABLE_FIELDS = ['ball', 'entry_deadline', 'altitude_m', 'surface'] as const;
 type CorrectableField = (typeof CORRECTABLE_FIELDS)[number];
 
-// Deliberately unauthenticated for this step: staff sign-in, roles and
-// admin_actions attribution are step 5.1's job (PRD-13 AD-1 to AD-5), and
-// this project's build plan puts the full admin console two phases later
-// than this one. Building it now anyway would mean either bolting on a
-// throwaway auth scheme this step would have to un-build, or leaving the
-// ingestion page unusable until step 5.1 — both worse than shipping the
-// same interim posture apps/admin's whole deployment already has (Vercel's
-// own account-level SSO protection, CLAUDE.md's infra notes: "both sit
-// behind Vercel's default SSO protection"). Every route here does nothing
-// Stripe/Resend/ICS/entry-client-shaped (TECH-ARCHITECTURE.md section 3's
-// hard actions-module list), so it doesn't touch the approval gate either.
-// Flagged as a known gap for step 5.1 to close (see docs/BUILD-LOG.md).
+// Step 3.1 shipped these routes unauthenticated, flagged for step 5.1 to
+// close. Step 5.1 does: index.ts passes `guard` (staff sign-in with a
+// passkey, ops role or above, PRD-13 section 2) and `audit` (an
+// admin_actions row for every change, AD-4), and applying a snapshot now
+// needs a written reason (AD-5).
 export async function registerAdminRankingsRoutes(
   app: FastifyInstance,
   deps: AdminRankingsRoutesDeps,
 ): Promise<void> {
+  if (deps.guard) {
+    const guard = deps.guard;
+    app.addHook('onRequest', async (request) => {
+      if (
+        !request.url.startsWith('/admin/rankings') &&
+        !request.url.startsWith('/admin/tournaments') &&
+        !request.url.startsWith('/admin/corrections')
+      )
+        return;
+      request.adminContext = await guard(request);
+    });
+  }
+  const audit = async (request: FastifyRequest, input: AdminAuditInput) => {
+    if (deps.audit && request.adminContext) await deps.audit(request.adminContext, input);
+  };
+
   app.get('/admin/rankings/feeds', async (_request, reply) => {
     const { data, error } = await deps.db
       .from('feed_status')
@@ -69,12 +108,26 @@ export async function registerAdminRankingsRoutes(
   });
 
   app.post('/admin/rankings/import/apply', async (request, reply) => {
-    const body = request.body as { csv?: string; appliedBy?: string } | undefined;
+    const body = request.body as { csv?: string; appliedBy?: string; reason?: string } | undefined;
     if (!body?.csv) return reply.code(400).send({ error: 'Missing csv' });
+    // AD-5: applying a snapshot needs a written reason once staff auth is on.
+    if (deps.guard && !body.reason?.trim()) {
+      return reply
+        .code(400)
+        .send({ error: 'Write a reason before applying. It is stored verbatim in the audit log.' });
+    }
     try {
       const rows = parseRankingCsv(body.csv);
       const fileHash = createHash('sha256').update(body.csv).digest('hex');
-      const result = await applyRankingImport(deps.db, rows, fileHash, body.appliedBy ?? null);
+      const appliedBy = request.adminContext?.staffName ?? body.appliedBy ?? null;
+      const result = await applyRankingImport(deps.db, rows, fileHash, appliedBy);
+      await audit(request, {
+        playerId: null,
+        actionType: 'snapshot_apply',
+        target: { importId: result.importId, fileHash },
+        consequence: `Applied a ranking snapshot to ${result.matchedCount} players with ${result.stageChangeCount} stage changes; ${result.unmatchedCount} rows unmatched. Nothing is sent to players before their next morning run.`,
+        reason: body.reason ?? null,
+      });
       return reply.send(result);
     } catch (err) {
       if (err instanceof InvalidRankingCsvError) {
@@ -98,10 +151,26 @@ export async function registerAdminRankingsRoutes(
       .is('entry_deadline', null)
       .order('start_date', { ascending: true });
     if (error) return reply.code(500).send({ error: error.message });
-    // shortlistedCount is always 0 until step 3.2's Tournament Agent exists
-    // to shortlist anything against these rows.
+    // Step 5.1: shortlist_candidates exists since step 3.2, so the count is real.
+    const ids = (data ?? []).map((t) => t.id);
+    const counts = new Map<string, Set<string>>();
+    if (ids.length) {
+      const { data: shortlisted, error: countError } = await deps.db
+        .from('shortlist_candidates')
+        .select('tournament_id, player_id')
+        .in('tournament_id', ids);
+      if (countError) return reply.code(500).send({ error: countError.message });
+      for (const row of shortlisted ?? []) {
+        const set = counts.get(row.tournament_id) ?? new Set<string>();
+        set.add(row.player_id);
+        counts.set(row.tournament_id, set);
+      }
+    }
     return reply.send({
-      tournaments: (data ?? []).map((t) => ({ ...t, shortlistedCount: 0 })),
+      tournaments: (data ?? []).map((t) => ({
+        ...t,
+        shortlistedCount: counts.get(t.id)?.size ?? 0,
+      })),
     });
   });
 
@@ -114,7 +183,14 @@ export async function registerAdminRankingsRoutes(
       .update({ entry_deadline: body.entryDeadline, updated_at: new Date().toISOString() })
       .eq('id', id);
     if (error) return reply.code(500).send({ error: error.message });
-    return reply.send({ ok: true });
+    const rerun = (await deps.rerunShortlists?.(id)) ?? 0;
+    await audit(request, {
+      playerId: null,
+      actionType: 'deadline_set',
+      target: { tournamentId: id, entryDeadline: body.entryDeadline },
+      consequence: `Set the entry deadline to ${body.entryDeadline}; countdowns start and ${rerun} player${rerun === 1 ? "'s" : "s'"} shortlists re-run.`,
+    });
+    return reply.send({ ok: true, rerun });
   });
 
   // PRD-13 AD-20: fact-sheet corrections, proposed with a source, shown as
@@ -197,20 +273,45 @@ export async function registerAdminRankingsRoutes(
 
     const { error: stateError } = await deps.db
       .from('fact_corrections')
-      .update({ state: 'applied', decided_at: new Date().toISOString() })
+      .update({
+        state: 'applied',
+        decided_at: new Date().toISOString(),
+        decided_by: request.adminContext?.staffName ?? null,
+      })
       .eq('id', id);
     if (stateError) return reply.code(500).send({ error: stateError.message });
 
-    return reply.send({ ok: true });
+    // AD-20 and AD-AC-9: a deadline change re-runs every shortlist that has the event.
+    const rerun =
+      field === 'entry_deadline'
+        ? ((await deps.rerunShortlists?.(correction.tournament_id)) ?? 0)
+        : 0;
+    await audit(request, {
+      playerId: null,
+      actionType: 'correction_apply',
+      target: { correctionId: id, tournamentId: correction.tournament_id, field },
+      consequence: `Changed ${field} from ${correction.before ?? 'unset'} to ${correction.after} (source: ${correction.source})${field === 'entry_deadline' ? `; ${rerun} shortlists re-run` : ''}.`,
+    });
+    return reply.send({ ok: true, rerun });
   });
 
   app.post('/admin/corrections/:id/reject', async (request, reply) => {
     const { id } = request.params as { id: string };
     const { error } = await deps.db
       .from('fact_corrections')
-      .update({ state: 'rejected', decided_at: new Date().toISOString() })
+      .update({
+        state: 'rejected',
+        decided_at: new Date().toISOString(),
+        decided_by: request.adminContext?.staffName ?? null,
+      })
       .eq('id', id);
     if (error) return reply.code(500).send({ error: error.message });
+    await audit(request, {
+      playerId: null,
+      actionType: 'correction_reject',
+      target: { correctionId: id },
+      consequence: 'Rejected a proposed fact-sheet correction; the tournament is unchanged.',
+    });
     return reply.send({ ok: true });
   });
 }
