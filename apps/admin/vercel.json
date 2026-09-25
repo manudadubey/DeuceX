@@ -1,3 +1,14 @@
 {
-  "buildCommand": "pnpm --filter @deucex/admin build"
+  "buildCommand": "pnpm --filter @deucex/admin build",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
+      ]
+    }
+  ]
 }
