@@ -2289,3 +2289,14 @@ Vercel projects too.
 Verified: typecheck, lint, format check and every unit suite pass. The web dev server, started
 through the renamed `@deucex/web` filter, renders "DeuceX" in the sidebar and the page title in a
 real signed-in session.
+
+Found in a follow-up test pass: both Vercel preview builds failed, because each project's build
+command (`pnpm --filter @procircuit/web build`, and the same for admin) lived only in the Vercel
+dashboard settings, where the text rename never reached. Fixed with an `apps/web/vercel.json` and an
+`apps/admin/vercel.json` whose `buildCommand` overrides the dashboard setting. The fix ships with the
+branch, so `main`'s deploys kept working until the merge. The dashboard fields still say
+`@procircuit/*`, but the files override them. Both previews then built. Also rerun live: the 38 RLS
+and 2 queue integration tests (test users confirmed deleted afterward), the API's `tsc` build, and a
+browser pass over the dashboard, Match Scribe, Financial, Tournament, Mindset, Fans, Settings,
+Profile, the public patron page (live tiers through the API) and the admin console, with no console
+or server errors.
