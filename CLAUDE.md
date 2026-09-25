@@ -319,7 +319,9 @@ workers on one queue could complete each other's jobs). The owner staff identity
 - Em dashes left in step 2.3's Settings copy (billing pane), against the copy rule.
 - Add `https://deucex.vercel.app/**` to Supabase Auth's redirect URLs (dashboard only), or
   magic-link sign-in on the deployed app bounces.
-- Deploy `apps/api` (Fly.io or Render) and set `NEXT_PUBLIC_API_URL` on the `deucex` project.
+- Deploy `apps/api` to **Render** (owner decision 26 September 2026; `render.yaml` Blueprint,
+  Singapore, `starter` plan, since Render has no Tokyo region), raise the Supabase session pooler
+  pool size from 15 to about 40 first, then set `NEXT_PUBLIC_API_URL` on both Vercel projects.
 - Rename the Supabase project and the Stripe sandbox account to DeuceX in their dashboards
   (optional; nothing depends on those display names).
 
