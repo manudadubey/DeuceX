@@ -319,9 +319,13 @@ workers on one queue could complete each other's jobs). The owner staff identity
 - Em dashes left in step 2.3's Settings copy (billing pane), against the copy rule.
 - Add `https://deucex.vercel.app/**` to Supabase Auth's redirect URLs (dashboard only), or
   magic-link sign-in on the deployed app bounces.
-- Deploy `apps/api` to **Render** (owner decision 26 September 2026; `render.yaml` Blueprint,
-  Singapore, `starter` plan, since Render has no Tokyo region), raise the Supabase session pooler
-  pool size from 15 to about 40 first, then set `NEXT_PUBLIC_API_URL` on both Vercel projects.
+- Deploy `apps/api` to **Render** close to launch, not before (owner decision 26 September 2026:
+  run it locally until then; no Render service exists, and nothing is billed). The `render.yaml`
+  Blueprint on `main` is ready (Singapore, since Render has no Tokyo region; `starter` plan,
+  since free sleeps and stops the scheduled jobs). Render's GitHub connection to the repo already
+  exists. At deploy time: raise the Supabase session pooler pool size from 15 to about 40, apply
+  the Blueprint (the owner adds the card and pastes the secrets), then set `NEXT_PUBLIC_API_URL`
+  on both Vercel projects. Until then the deployed Vercel apps can't use API features.
 - Rename the Supabase project and the Stripe sandbox account to DeuceX in their dashboards
   (optional; nothing depends on those display names).
 
