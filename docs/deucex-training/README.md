@@ -81,4 +81,4 @@ Each follows the house template: fourteen sections, surface and code placement, 
 
 None of these tools has been tested against anything. The evidence cited in each document is for the underlying paradigm, not for this implementation of it, and each tool says so in its own words on its own page. Nothing in this package should be described as validated.
 
-The pre-Training version of Arya's dashboard is not in this folder. It is in the project as `claude/deucex-dashboard-pre-training.html`.
+The pre-Training version of Arya's dashboard is not in this folder. It is in the project as `claude/procircuit-dashboard-pre-training.html` (outside this repo, under its pre-rebrand name).
