@@ -339,8 +339,16 @@ are in apps/web. VAPID keys are in the owner's local `.env` (four `WEB_PUSH_*` v
 start it until the owner says so. When it resumes, it adds native push behind the same
 `PushClient`, and needs Apple and Google developer accounts. Until then push is Web Push only, and
 the offline queue has no native background upload. Next is **step 5.4** (hardening and the cost
-pass). Its "done when" checks need a staging environment and a database branch, which this
-Supabase project can't create (it isn't on the Pro plan), so settle that with the owner first.
+pass). Its "done when" checks need a staging environment and a database branch. Owner decision,
+26 September 2026: **no Supabase upgrade until going live; use a separate free Supabase project as
+staging** (in the same MD Labs organisation, US$0 a month; the free plan allows two active
+projects, and the other two in the organisation are paused). What that means for step 5.4:
+- apply every migration to staging first, then production (still with the owner's confirmation);
+- the restore drill becomes "restore a dump of production into the staging project", since free
+  projects have no Supabase-managed backups to restore from;
+- staging pauses after about a week without activity and has to be resumed in the dashboard;
+- staging holds fixture data only, never real player data, since it gets looser handling than
+  production.
 
 **Open follow-ups** (none block step 5.4):
 - The 3-day and 1-day entry-deadline countdown notices don't exist yet (only "entry closes soon"

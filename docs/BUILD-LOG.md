@@ -3087,5 +3087,9 @@ was built for it. What stays true meanwhile:
 
 Next is step 5.4. Its checks ("a restore from snapshot succeeds on a branch", staging spend with
 fixtures) assume a database branch and a staging environment, which this Supabase project can't
-create on its current plan: a question for the owner before that step starts.
+create on its current plan. Owner decision, same day: no Supabase upgrade until going live; a
+separate free Supabase project serves as staging (US$0 a month, confirmed by Supabase's cost
+check; the MD Labs organisation has one active project and two paused ones, so there is room).
+The restore drill therefore restores a dump of production into staging, since free projects have
+no Supabase-managed backups. Staging holds fixture data only.
 
