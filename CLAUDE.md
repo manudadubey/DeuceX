@@ -361,7 +361,6 @@ projects, and the other two in the organisation are paused). What that means for
 - Replaying onboarding with an agent switched back on leaves it paused: onboarding only writes rows
   for agents left off (step 1.4's OB-17 gap). Upserting every toggle's state, like Settings now
   does, would close it.
-- The admin MCP access page (`apps/admin`, `/mcp`) hasn't had a browser pass yet (step 5.0).
 - Settings > Agents still says the Tournament Agent "arrives with step 3.2"; it shipped.
 - Roll the Stripe sandbox secret key (pasted in chat).
 - Set `STRIPE_WEBHOOK_SECRET` once `apps/api` has a public URL; no live webhook has run yet.
