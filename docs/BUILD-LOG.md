@@ -3075,3 +3075,17 @@ Left for step 5.1's aggregation to decide (not changed here):
 - The insert policy doesn't check that `agent_run_id` belongs to the same player. A player can't
   read anyone else's run ids, so the risk is only to the metric. An ownership check in the policy
   would take a migration.
+
+## Step 5.3 parked — 26 September 2026
+
+Owner decision: step 5.3 (mobile shells and stores) is parked until the owner resumes it. Nothing
+was built for it. What stays true meanwhile:
+- push is Web Push only (step 5.2); native push will slot in behind the same `PushClient`;
+- the offline queue uploads only while the app is open (no native background upload);
+- iOS players get push only from a home-screen install;
+- no Apple or Google developer account exists yet.
+
+Next is step 5.4. Its checks ("a restore from snapshot succeeds on a branch", staging spend with
+fixtures) assume a database branch and a staging environment, which this Supabase project can't
+create on its current plan: a question for the owner before that step starts.
+

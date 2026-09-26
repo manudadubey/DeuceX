@@ -16,7 +16,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1, step 2.1 through step 5.2 done, start step 5.3
+## Status: Phase 0, Phase 1, step 2.1 through step 5.2 done, step 5.3 parked, start step 5.4
 
 The monorepo scaffold is built and deploying; the database has RLS-protected DeuceX tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -335,10 +335,14 @@ FYI digest from the sixth email) and sends once a minute. It also emails staff a
 and escalates unconfirmed distress cases at 24 hours. The rail and a "Push on this device" control
 are in apps/web. VAPID keys are in the owner's local `.env` (four `WEB_PUSH_*` vars; see
 `.env.example`), and must also be set wherever apps/api and apps/web are deployed. See
-`docs/BUILD-LOG.md`'s step 5.2 entry. [PR #28](https://github.com/manudadubey/DeuceX/pull/28), merged 26 September 2026. Next is **step 5.3** (mobile shells and stores), which adds
-native push behind the same `PushClient`.
+`docs/BUILD-LOG.md`'s step 5.2 entry. [PR #28](https://github.com/manudadubey/DeuceX/pull/28), merged 26 September 2026. **Step 5.3 (mobile shells and stores) is parked** (owner decision, 26 September 2026): don't
+start it until the owner says so. When it resumes, it adds native push behind the same
+`PushClient`, and needs Apple and Google developer accounts. Until then push is Web Push only, and
+the offline queue has no native background upload. Next is **step 5.4** (hardening and the cost
+pass). Its "done when" checks need a staging environment and a database branch, which this
+Supabase project can't create (it isn't on the Pro plan), so settle that with the owner first.
 
-**Open follow-ups** (none block step 5.3):
+**Open follow-ups** (none block step 5.4):
 - The 3-day and 1-day entry-deadline countdown notices don't exist yet (only "entry closes soon"
   carries `deadline_at`).
 - **Launch blocker:** the staff passkey is off locally (`ADMIN_PASSKEY_REQUIRED=false` in the
