@@ -289,10 +289,9 @@ rest: `POST /fuel/scans` (Free refused before upload), an hourly mood-inference 
 `/fuel` page with the Free lock, "Scan a menu" live in the quick-actions sheet, the next-day
 check-in line, and a daily food money setting on the Financial Agent. There were four owner
 decisions; see `docs/BUILD-LOG.md`'s step 4.3 entry. Verified with nine new live RLS tests and a
-real scan by the owner. The work is [PR #22](https://github.com/manudadubey/DeuceX/pull/22), merged. The
-next session should start at **step 5.1 (Admin console)** in `docs/BUILD-PLAN-CLAUDE-CODE.md`
-(step 5.0 comes after it): read that step plus whatever it names, and check `gh pr list` first. Check `docs/BUILD-LOG.md` for what each prior step actually did before
-assuming anything about the current state; this paragraph is a pointer, not the full record.
+real scan by the owner. The work is [PR #22](https://github.com/manudadubey/DeuceX/pull/22), merged. Check
+`docs/BUILD-LOG.md` for what each step actually did before assuming anything about the current
+state; these paragraphs are pointers, not the full record.
 
 Step 5.1 (Admin console), [PR #24](https://github.com/manudadubey/DeuceX/pull/24), merged 26
 September 2026 (it also carried the FX home-currency fix): staff auth, the `console` role's explicit grants (a live test
@@ -300,16 +299,14 @@ proves it can't read `notes.transcript`), three roles enforced by the API, every
 admin-action gate for staff-triggered emails (owner decision), the nightly aggregation, and admin
 actions in the player's Data & safety log. It also fixed a pre-existing queue bug (three agent
 workers on one queue could complete each other's jobs). The owner staff identity is
-`matsudadubey@gmail.com`. See `docs/BUILD-LOG.md`'s step 5.1 entry. Next is **step 5.0**
-(the admin MCP server), which the build plan orders after 5.1.
+`matsudadubey@gmail.com`. See `docs/BUILD-LOG.md`'s step 5.1 entry.
 
 Step 5.0 (Admin MCP server): `POST /mcp` in apps/api (Streamable HTTP, stateless), authenticated
 by personal tokens staff create in the console (owner decision; `admin_mcp_tokens`, hashed, 30
 days, revocable). 28 tools over the console's own functions, role-scoped, two-step via a
 confirmation token, AD-5 reasons enforced, one `admin_actions` row per call with `via = 'mcp'`
 (shown as `mcp:<name>`). Verified with transport tests, live RLS tests and a live round trip; see
-`docs/BUILD-LOG.md`'s step 5.0 entry. [PR #26](https://github.com/manudadubey/DeuceX/pull/26), merged 26 September 2026. Next is **step 5.2** (notifications, digest and the morning
-run).
+`docs/BUILD-LOG.md`'s step 5.0 entry. [PR #26](https://github.com/manudadubey/DeuceX/pull/26), merged 26 September 2026.
 
 **Agent pause fix** ([PR #27](https://github.com/manudadubey/DeuceX/pull/27), found during step
 5.0's live check; see its `docs/BUILD-LOG.md` entry). Two bugs meant a player's agent switches
@@ -341,7 +338,7 @@ start it until the owner says so. When it resumes, it adds native push behind th
 the offline queue has no native background upload. Next is **step 5.4** (hardening and the cost
 pass). Its "done when" checks need a staging environment and a database branch. Owner decision,
 26 September 2026: **no Supabase upgrade until going live; use a separate free Supabase project as
-staging** (in the same MD Labs organisation, US$0 a month; the free plan allows two active
+staging** (not created yet; in the same MD Labs organisation, US$0 a month; the free plan allows two active
 projects, and the other two in the organisation are paused). What that means for step 5.4:
 - apply every migration to staging first, then production (still with the owner's confirmation);
 - the restore drill becomes "restore a dump of production into the staging project", since free
@@ -447,9 +444,11 @@ projects, and the other two in the organisation are paused). What that means for
   anon-key exposure that's now closed) but they still have no policies, so only the service role
   can reach them. DeuceX's own schema now exists (steps 0.2, 0.6, 1.1): `players`,
   `fx_rates_daily`, `agent_runs`, `approvals`, `approval_consumptions`, `agent_schedules`,
-  `provider_switches`, `admin_actions`, `notifications`, `share_links`, `notes`, `check_ins`, an
-  empty `pgboss` schema, and a `console` role with no grants yet. See `packages/db/README.md` and
-  `docs/BUILD-LOG.md` for how each table's design was resolved.
+  `provider_switches`, `admin_actions`, `notifications`, `share_links`, `notes`, `check_ins` and
+  the `pgboss` schema, plus every table each later step added (listed in its step paragraph above
+  and in `packages/db/src/database.types.ts`). The `console` role has had its explicit grant list
+  since step 5.1. See `packages/db/README.md` and `docs/BUILD-LOG.md` for how each table's design
+  was resolved.
   **Not on the Pro plan**, discovered in step 0.6: `create_branch` fails with
   `PaymentRequiredException`. Until that changes, every migration this project runs has to go
   straight to production — ask the owner to confirm before applying one (steps 0.2, 0.6 and four
@@ -508,8 +507,9 @@ projects, and the other two in the organisation are paused). What that means for
   directly, same as any other production write.
 - Do not give any product agent MCP tools: agents take a pre-assembled input bundle and make one
   schema-constrained call (TECH-ARCHITECTURE.md section 3a).
-- Phase 5 adds a DeuceX admin MCP server over the console API with the console's roles,
-  reasons and audit rows.
+- The DeuceX admin MCP server (step 5.0) is `POST /mcp` in apps/api, over the console's own
+  functions with its roles, reasons and audit rows; staff create tokens in the console's user menu
+  (MCP access).
 
 ## Working rhythm
 
