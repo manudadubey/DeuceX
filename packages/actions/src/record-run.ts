@@ -7,6 +7,8 @@ export type AgentRunTriggerType = 'schedule' | 'manual' | 'event' | 'threshold';
 export type AgentRunStatus = 'succeeded' | 'failed_validation' | 'failed_infra' | 'degraded';
 
 export interface AgentRunInsert {
+  /** Minted by recordRun so the caller learns the run id without a lookup. */
+  id: string;
   agentName: string;
   playerId: string;
   triggerType: AgentRunTriggerType;
@@ -34,6 +36,7 @@ export class SupabaseAgentRunsDb implements AgentRunsDb {
 
   async insertAgentRun(row: AgentRunInsert): Promise<void> {
     const { error } = await this.client.from('agent_runs').insert({
+      id: row.id,
       agent_name: row.agentName,
       player_id: row.playerId,
       trigger_type: row.triggerType,
@@ -67,6 +70,11 @@ export interface AgentCallResult {
   usage?: TokenUsage;
 }
 
+export interface RecordedRun extends AgentCallResult {
+  /** The agent_runs row's id: what an approval answering this run's proposal records as approvals.agent_run_id (PRD-13 AD-13). */
+  runId: string;
+}
+
 // Wraps every model call an agent makes (TECH-ARCHITECTURE.md section 3:
 // "every LLM call the worker makes is wrapped in a helper that records
 // token counts and a cost estimate onto the agent_runs row it belongs to").
@@ -78,7 +86,8 @@ export async function recordRun(
   db: AgentRunsDb,
   meta: AgentRunMeta,
   fn: () => Promise<AgentCallResult>,
-): Promise<AgentCallResult> {
+): Promise<RecordedRun> {
+  const id = globalThis.crypto.randomUUID();
   const startedAt = new Date();
 
   try {
@@ -87,6 +96,7 @@ export async function recordRun(
 
     await db.insertAgentRun({
       ...meta,
+      id,
       startedAt,
       completedAt: new Date(),
       status: 'succeeded',
@@ -95,13 +105,14 @@ export async function recordRun(
       costCurrency: cost?.currency ?? null,
     });
 
-    return result;
+    return { ...result, runId: id };
   } catch (error) {
     const status: AgentRunStatus =
       error instanceof AgentValidationError ? 'failed_validation' : 'failed_infra';
 
     await db.insertAgentRun({
       ...meta,
+      id,
       startedAt,
       completedAt: new Date(),
       status,

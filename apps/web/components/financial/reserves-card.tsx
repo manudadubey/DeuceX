@@ -18,7 +18,8 @@ import { enterReserveBalance } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 import { confirmApproval } from '@/lib/approvals/confirm-approval';
 import { receiveReceivable, requestFinancialRecompute } from '@/lib/financial/api';
-import type { FinancialSnapshot } from '@/lib/financial/load';
+import type { FinancialAction, FinancialSnapshot } from '@/lib/financial/load';
+import { receivableProposalRunId } from '@/lib/financial/proposal-link';
 
 function formatMoney(amount: number, currency: string): string {
   return new Intl.NumberFormat('en-AU', {
@@ -51,6 +52,7 @@ export function ReservesCard({
   reserves,
   lastReserveEntryAt,
   pendingReceivables,
+  action,
   onToast,
   onSaved,
 }: {
@@ -59,6 +61,7 @@ export function ReservesCard({
   reserves: number;
   lastReserveEntryAt: string | null;
   pendingReceivables: FinancialSnapshot['pendingReceivables'];
+  action: FinancialAction | null;
   onToast: (title: string) => void;
   onSaved: () => void;
 }) {
@@ -94,6 +97,7 @@ export function ReservesCard({
         playerId,
         actionType: 'receivable_received',
         payload: { receivableId, receivedDate, realisedHomeCurrency: homeCurrency },
+        agentRunId: receivableProposalRunId(action, receivableId),
       });
       const result = await receiveReceivable(supabase, {
         approvalId: approval.id,

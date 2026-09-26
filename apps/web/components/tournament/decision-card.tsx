@@ -65,7 +65,7 @@ export function DecisionCard({
 
   const handleAccept = async () => {
     try {
-      const result = await accept(candidate.tournamentId);
+      const result = await accept(candidate.tournamentId, candidate.runId);
       setToast(
         `${formatMoney(result.plannedAmount, result.plannedCurrency)} logged as a planned expense · Entered`,
       );
@@ -77,7 +77,7 @@ export function DecisionCard({
 
   const handleWithdraw = async () => {
     try {
-      await withdraw(candidate.tournamentId);
+      await withdraw(candidate.tournamentId, candidate.runId);
       setToast(`Withdrawn from ${candidate.name}`);
     } catch {
       setToast("Couldn't withdraw — the entry deadline may already have passed.");

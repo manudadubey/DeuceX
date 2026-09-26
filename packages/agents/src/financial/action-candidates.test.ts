@@ -28,6 +28,9 @@ describe('rankActionCandidates', () => {
       now,
     });
     expect(candidates[0]?.key).toBe('chase_overdue_receivable');
+    // Carried for the approval link (PRD-13 AD-13), never into the prompt's facts.
+    expect(candidates[0]?.receivableId).toBe('pz-1');
+    expect(JSON.stringify(candidates[0]?.facts)).not.toContain('pz-1');
   });
 
   it('does not flag a receivable less than 7 days past its expected date', () => {

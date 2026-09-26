@@ -76,7 +76,7 @@ export function DetailPanel({
 
   const handleAccept = async () => {
     try {
-      const result = await accept(candidate.tournamentId);
+      const result = await accept(candidate.tournamentId, candidate.runId);
       onToast(
         `${formatMoney(result.plannedAmount, result.plannedCurrency)} logged as a planned expense · Entered`,
       );
@@ -97,7 +97,7 @@ export function DetailPanel({
 
   const handleWithdraw = async () => {
     try {
-      await withdraw(candidate.tournamentId);
+      await withdraw(candidate.tournamentId, candidate.runId);
       onToast(`Withdrawn from ${candidate.name}`);
     } catch {
       onToast('The entry deadline has passed — withdraw on the player zone instead.');

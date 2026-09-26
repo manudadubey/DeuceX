@@ -368,8 +368,9 @@ export async function runDraft(deps: ContentDeps, row: UpdateRecord): Promise<Up
   const phrase = notePhrase(note, now, player.timezone);
 
   let draft = null as ValidatedDraft | null;
+  let agentRunId: string | null = null;
   try {
-    await recordRun(
+    ({ runId: agentRunId } = await recordRun(
       deps.agentRuns,
       {
         agentName: 'content',
@@ -385,7 +386,7 @@ export async function runDraft(deps: ContentDeps, row: UpdateRecord): Promise<Up
         draft = result.draft;
         return { output: result.draft as unknown as Json, usage: result.usage };
       },
-    );
+    ));
   } catch (err) {
     deps.logger?.error(`[content] draft failed for update ${row.id}:`, err);
   }
@@ -445,6 +446,9 @@ export async function runDraft(deps: ContentDeps, row: UpdateRecord): Promise<Up
     checks: checksFor(d.body, ctx, []),
     sendAt: null,
     teaser: true,
+    // Only a drafted proposal is linked: a failed draft is the player's own
+    // writing, and a rewrite is a tool they asked for, not a new proposal.
+    agentRunId,
   };
   await deps.store.patchUpdate(row.id, patch);
   await deps.store.insertNotification({

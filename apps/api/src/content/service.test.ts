@@ -234,6 +234,27 @@ describe('the drafting run (C-AC-1)', () => {
     expect(w.runs[0]).toMatchObject({ agentName: 'content', model: 'gpt-4o', status: 'succeeded' });
   });
 
+  it('PRD-13 AD-13: the draft records the run that proposed it, and a rewrite keeps that link', async () => {
+    const w = await draftedWorld();
+    expect(w.draft.agentRunId).toBe(w.runs[0]!.id);
+    await rewriteDraft(w.deps, PLAYER, w.draft.id, 'shorter');
+    expect(w.runs).toHaveLength(2);
+    expect((await w.store.getOpenDraft(PLAYER))!.agentRunId).toBe(w.runs[0]!.id);
+  });
+
+  it('PRD-13 AD-13: a failed draft links no run, since the player writes it', async () => {
+    const broken: ContentDraftModelClient = {
+      async complete() {
+        return { raw: { nope: true }, usage: { inputTokens: 10, outputTokens: 5 } };
+      },
+    };
+    const w = world({ draftClient: broken });
+    await onNoteSaved(w.deps, { playerId: PLAYER, noteId: 'note-1' });
+    w.setNow(new Date(SAVED.getTime() + 31 * 60 * 1000));
+    await runDueDrafts(w.deps);
+    expect((await w.store.getOpenDraft(PLAYER))!.agentRunId).toBeNull();
+  });
+
   it('C-17: exactly one For-you notification per run, none for edits or rewrites', async () => {
     const w = await draftedWorld();
     expect(w.store.notifications).toHaveLength(1);

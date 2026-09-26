@@ -113,6 +113,7 @@ export class MemoryContentStore implements ContentStore {
       teaser: true,
       teaserRemovedAt: null,
       rebuildNoteId: null,
+      agentRunId: null,
       approvalId: null,
       sentAt: null,
       recipientCount: null,

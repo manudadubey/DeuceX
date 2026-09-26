@@ -68,6 +68,7 @@ export interface PatronUpdate {
   teaser: boolean;
   teaserRemovedAt: string | null;
   rebuildNoteId: string | null;
+  agentRunId: string | null;
   sentAt: string | null;
   recipientCount: number | null;
   deliveredCount: number | null;

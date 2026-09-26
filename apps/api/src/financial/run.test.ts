@@ -102,6 +102,74 @@ describe('runFinancialAgent', () => {
     expect(fake.tables.agent_runs).toHaveLength(1); // no second audit row either
   });
 
+  it('PRD-13 AD-13: a chase run records which receivable it proposed chasing, so "Mark received" can link it', async () => {
+    const fake = new FakeDb();
+    seedPlayer(fake);
+    fake.tables.reserve_entries = [
+      { player_id: 'player-1', amount: 10000, entered_at: NOW.toISOString(), cause: 'manual' },
+    ];
+    fake.tables.ledger_lines = [
+      {
+        id: 'l-1',
+        player_id: 'player-1',
+        date: '2026-09-15',
+        category: 'travel',
+        what: 'Flights',
+        amount_original: 3000,
+        currency_original: 'AUD',
+        fx_rate_date: '2026-09-15',
+        tournament_id: null,
+      },
+    ];
+    fake.tables.prize_receivables = [
+      {
+        id: 'pz-1',
+        player_id: 'player-1',
+        status: 'pending',
+        tournament_id: null,
+        round: 'QF',
+        gross_amount: 2000,
+        player_share: 1,
+        withholding_amount: 0,
+        currency: 'AUD',
+        expected_date: '2026-09-01',
+      },
+    ];
+    fake.tables.fx_rates_daily = [
+      { date: '2026-09-15', currency: 'AUD', rate_to_eur: 1.6, source: 'ecb' },
+      { date: '2026-09-21', currency: 'AUD', rate_to_eur: 1.6, source: 'ecb' },
+    ];
+    const agentRuns = fakeAgentRunsDb(fake);
+
+    const result = await runFinancialAgent(
+      { db: asDb(fake), client: createMockFinancialActionClient(), agentRuns },
+      'player-1',
+      'event',
+      NOW,
+    );
+
+    expect(result?.action.candidateKey).toBe('chase_overdue_receivable');
+    expect(fake.tables.agent_runs?.[0]?.output).toMatchObject({ receivableId: 'pz-1' });
+  });
+
+  it('records no receivable for any other action', async () => {
+    const fake = new FakeDb();
+    seedPlayer(fake);
+    const agentRuns = fakeAgentRunsDb(fake);
+
+    await runFinancialAgent(
+      { db: asDb(fake), client: createMockFinancialActionClient(), agentRuns },
+      'player-1',
+      'event',
+      NOW,
+    );
+
+    expect(fake.tables.agent_runs?.[0]?.output).toMatchObject({
+      candidateKey: 'update_balance',
+      receivableId: null,
+    });
+  });
+
   it('returns null for an unknown player rather than throwing', async () => {
     const fake = new FakeDb();
     const client = createMockFinancialActionClient();

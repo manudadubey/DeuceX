@@ -37,6 +37,10 @@ export interface FinancialAction {
   effectWeeks: number;
   text: string;
   secondSentence: string | null;
+  /** Set when the action is chasing one overdue receivable (runs from before this field exist without it). */
+  receivableId?: string | null;
+  /** The agent_runs row that proposed this action. */
+  runId: string;
 }
 
 export interface FinancialSnapshot {
@@ -123,7 +127,7 @@ export async function loadFinancialSnapshot(
       .gt('snoozed_until', now.toISOString()),
     supabase
       .from('agent_runs')
-      .select('output, status')
+      .select('id, output, status')
       .eq('player_id', playerId)
       .eq('agent_name', 'financial')
       .eq('status', 'succeeded')
@@ -299,7 +303,12 @@ export async function loadFinancialSnapshot(
     snoozedKeys,
   );
 
-  const cachedAction = actionRes.data?.output as unknown as FinancialAction | undefined;
+  const cachedAction = actionRes.data?.output
+    ? ({
+        ...(actionRes.data.output as unknown as Omit<FinancialAction, 'runId'>),
+        runId: actionRes.data.id,
+      } as FinancialAction)
+    : undefined;
 
   return {
     homeCurrency,

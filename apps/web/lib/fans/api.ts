@@ -64,7 +64,7 @@ export function publishTier(
 }
 
 export function draftPatronNote(supabase: SupabaseClient<Database>, patronId: string) {
-  return post<{ kind: string; text: string | null }>(
+  return post<{ kind: string; text: string | null; runId: string | null }>(
     supabase,
     `/fans/patrons/${patronId}/draft`,
     {},

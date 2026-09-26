@@ -54,6 +54,8 @@ export interface TournamentCandidateView {
   current: boolean;
   status: 'none' | 'entered' | 'skipped' | 'withdrawn';
   plannedExpenseId: string | null;
+  /** The agent_runs row that proposed this candidate; an Accept or Withdraw approval records it (PRD-13 AD-13). */
+  runId: string | null;
   conditions: ConditionsBriefView | null;
 }
 
@@ -190,6 +192,7 @@ export async function loadTournamentSnapshot(
       current: c.current,
       status: (decision?.status ?? 'none') as TournamentCandidateView['status'],
       plannedExpenseId: decision?.planned_expense_id ?? null,
+      runId: c.run_id,
       conditions: conditions
         ? {
             tempRange: conditions.temp_range,

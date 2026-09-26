@@ -103,10 +103,10 @@ export async function aggregateDay(client: pg.ClientBase, day: string): Promise<
 
   // Rolling seven-day rates for every agent with a row that day (PRD-13
   // section 7: judged over a rolling seven days, not day by day). The
-  // approval rate is measured through approvals.agent_run_id, and no
-  // approval writer sets that link yet (found live in step 5.1: 0 of 20
-  // production approvals carry it). Until an agent's approvals do, its rate
-  // stays null ("not linked yet") rather than a false 0 percent, so the
+  // approval rate is measured through approvals.agent_run_id, which approval
+  // writers only started setting after step 5.1 (0 of 20 production
+  // approvals carried it then). Until an agent has any linked approval, its
+  // rate stays null ("not linked yet") rather than a false 0 percent, so the
   // 30 percent alert can't fire on missing data.
   await client.query(
     `update public.agent_health_daily d set

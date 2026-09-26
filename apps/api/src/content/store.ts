@@ -56,6 +56,8 @@ export interface UpdateRecord {
   teaser: boolean;
   teaserRemovedAt: string | null;
   rebuildNoteId: string | null;
+  /** The draft run whose proposal this update is; the publish approval records it (PRD-13 AD-13). */
+  agentRunId: string | null;
   approvalId: string | null;
   sentAt: string | null;
   recipientCount: number | null;
@@ -191,6 +193,7 @@ function toRecord(r: UpdateRow): UpdateRecord {
     teaser: r.teaser,
     teaserRemovedAt: r.teaser_removed_at,
     rebuildNoteId: r.rebuild_note_id,
+    agentRunId: r.agent_run_id,
     approvalId: r.approval_id,
     sentAt: r.sent_at,
     recipientCount: r.recipient_count,
@@ -226,6 +229,7 @@ const PATCH_COLUMNS: Record<keyof UpdatePatch, keyof UpdateRow> = {
   teaser: 'teaser',
   teaserRemovedAt: 'teaser_removed_at',
   rebuildNoteId: 'rebuild_note_id',
+  agentRunId: 'agent_run_id',
   approvalId: 'approval_id',
   sentAt: 'sent_at',
   recipientCount: 'recipient_count',

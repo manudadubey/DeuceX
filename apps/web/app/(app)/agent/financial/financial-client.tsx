@@ -266,6 +266,7 @@ export function FinancialClient({
               reserves={snapshot.reserves}
               lastReserveEntryAt={snapshot.lastReserveEntryAt}
               pendingReceivables={snapshot.pendingReceivables}
+              action={snapshot.action}
               onToast={showToast}
               onSaved={load}
             />

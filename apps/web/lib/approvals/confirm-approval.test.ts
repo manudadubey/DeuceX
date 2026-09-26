@@ -29,4 +29,19 @@ describe('confirmApproval', () => {
     );
     expect(result).toEqual({ id: 'approval-1', payloadHash: 'hash-1' });
   });
+
+  it('records the agent run the approval answers, outside the approved payload (PRD-13 AD-13)', async () => {
+    createApproval.mockClear();
+    await confirmApproval({
+      playerId: 'player-1',
+      actionType: 'entry_confirm',
+      payload: { tournamentId: 't-1' },
+      agentRunId: 'run-1',
+    });
+
+    expect(createApproval).toHaveBeenCalledWith(
+      fakeSupabase,
+      expect.objectContaining({ payload: { tournamentId: 't-1' }, agentRunId: 'run-1' }),
+    );
+  });
 });

@@ -35,6 +35,7 @@ export {
   type AgentRunStatus,
   type AgentRunTriggerType,
   type AgentCallResult,
+  type RecordedRun,
 } from './record-run';
 
 export {

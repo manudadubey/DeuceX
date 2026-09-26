@@ -90,4 +90,27 @@ describe('recordRun', () => {
     expect(calls).toHaveBeenCalledTimes(2);
     expect(rows).toHaveLength(2);
   });
+
+  it('returns the id it wrote, so an approval can link the run (PRD-13 AD-13)', async () => {
+    const { db, rows } = fakeDb();
+
+    const first = await recordRun(db, META, async () => ({ output: {} }));
+    const second = await recordRun(db, META, async () => ({ output: {} }));
+
+    expect(first.runId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(rows[0]?.id).toBe(first.runId);
+    expect(second.runId).not.toBe(first.runId);
+  });
+
+  it('writes the same minted id on a failed run', async () => {
+    const { db, rows } = fakeDb();
+
+    await expect(
+      recordRun(db, META, async () => {
+        throw new Error('network timeout');
+      }),
+    ).rejects.toThrow();
+
+    expect(rows[0]?.id).toMatch(/^[0-9a-f-]{36}$/);
+  });
 });
