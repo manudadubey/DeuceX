@@ -346,7 +346,7 @@ native push behind the same `PushClient`.
   passkeys, register one per staff member, add `https://admin.deucex.ai` to Supabase Auth >
   Passkeys origins (`http://localhost:3001` was added 25 September 2026).
 - Approvals now record `approvals.agent_run_id` (tournament, content, fans patron notes,
-  financial chase), but production has no linked rows until `apps/api` is deployed, so the
+  financial chase; [PR #23](https://github.com/manudadubey/DeuceX/pull/23), merged 26 September 2026), but production has no linked rows until `apps/api` is deployed, so the
   console's approval rates still read "Not measured yet". See `docs/BUILD-LOG.md`'s approvals
   follow-up for the rate caveats (content rewrites, first-week dilution).
 - Replaying onboarding with an agent switched back on leaves it paused: onboarding only writes rows
