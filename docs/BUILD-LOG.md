@@ -3093,3 +3093,31 @@ check; the MD Labs organisation has one active project and two paused ones, so t
 The restore drill therefore restores a dump of production into staging, since free projects have
 no Supabase-managed backups. Staging holds fixture data only.
 
+## Fix: the console's confirmations, and the MCP access page's browser pass — 26 September 2026
+
+Step 5.0 left the MCP access page (`apps/admin`, `/mcp`) without a browser pass. Doing it, signed
+in as the owner against production, found two real problems:
+- **The confirmation could disagree with what it did.** `ConfirmAction` (used across the console)
+  captured its consequence sentence once, when the page loaded, but sent the request body as it
+  stood at Confirm. On the MCP page, renaming the token left the confirmation saying "Claude Code"
+  while Confirm would have created the token under the new name: exactly the mismatch the two-step
+  exists to prevent (AD-3). `ConfirmAction` now snapshots the sentence and the body together when
+  it opens, and Confirm sends that snapshot. The Agents and Trust and safety pages share the
+  component, so the fix covers them too.
+- **Layout.** The create confirmation squeezed the Name field into a sliver. The revoke
+  confirmation opened inside a narrow table cell and was cut off. The name field now sits above
+  its confirmation, and "Your tokens" is a stacked list like Agent health's failed runs, so each
+  revoke confirmation gets the full width.
+
+Verified in the browser after the fix:
+- a token typed as "Preview check" showed "Preview check" in its confirmation, and the database
+  and its `mcp_token_create` audit row both say "Preview check";
+- the one-time panel showed a `dxm_` token, two Copy buttons, the `claude mcp add … /mcp` command
+  and the expiry;
+- revoking it from the list set `revoked_at`, with no console errors.
+
+The test token was left revoked. One thing is not proven: straight after the revoke, the row still
+showed Active for a couple of seconds; after a reload it showed Revoked. It is most likely the
+refresh still loading (console reads take 1 to 2 seconds against the Tokyo database), since the
+same refresh updated the list correctly after the create.
+

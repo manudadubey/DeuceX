@@ -15,13 +15,6 @@ import {
   FieldDescription,
   FieldLabel,
   Input,
-  Table,
-  TableBody,
-  TableCell,
-  TableCellSub,
-  TableHead,
-  TableHeader,
-  TableRow,
 } from '@deucex/ui';
 import { ConfirmAction } from '@/components/confirm-action';
 import { dateTime, shortDate } from '@/components/format';
@@ -105,8 +98,8 @@ export function McpTokens({
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <Field className="sm:max-w-xs sm:flex-1">
+            <div className="flex flex-col gap-3">
+              <Field className="sm:max-w-xs">
                 <FieldLabel htmlFor="mcp-token-label">Name</FieldLabel>
                 <Input
                   id="mcp-token-label"
@@ -125,7 +118,7 @@ export function McpTokens({
                 consequence={`Creates the token "${label.trim()}", valid for 30 days. Any MCP client holding it acts as ${name} with your current role, and every call is logged. You can revoke it at any time.`}
                 confirmLabel="Create token"
                 onDone={(result) => setCreated(result as { token: string; expiresAt: string })}
-                className="sm:mb-6"
+                className="self-start"
               />
             </div>
           )}
@@ -143,59 +136,50 @@ export function McpTokens({
               Create one above to use the console from an MCP client.
             </Empty>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>State</TableHead>
-                  <TableHead className="max-[900px]:hidden">Created</TableHead>
-                  <TableHead>Last used</TableHead>
-                  <TableHead className="text-right">
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tokens.map((t) => {
-                  const s = state(t);
-                  return (
-                    <TableRow key={t.id}>
-                      <TableCell>
-                        {t.label}
-                        <TableCellSub>
-                          <span className="font-mono">{t.prefix}…</span>
-                        </TableCellSub>
-                      </TableCell>
-                      <TableCell>
+            // A stacked list rather than a table, like Agent health's failed runs:
+            // Revoke's confirmation needs the full width, which a table cell can't give.
+            <ul className="flex flex-col divide-y divide-border">
+              {tokens.map((t) => {
+                const s = state(t);
+                return (
+                  <li key={t.id} className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0">
+                    <div className="flex flex-wrap items-start gap-x-6 gap-y-2">
+                      <div className="min-w-40 flex-1">
+                        <div className="font-medium">{t.label}</div>
+                        <div className="font-mono text-xs text-muted-foreground">{t.prefix}…</div>
+                      </div>
+                      <div className="flex flex-col items-start gap-1">
                         <Badge variant={s.variant}>{s.label}</Badge>
                         {s.label === 'Active' ? (
-                          <TableCellSub>Expires {shortDate(t.expiresAt)}</TableCellSub>
+                          <span className="text-xs text-muted-foreground">
+                            Expires {shortDate(t.expiresAt)}
+                          </span>
                         ) : null}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs whitespace-nowrap max-[900px]:hidden">
-                        {dateTime(t.createdAt)}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs whitespace-nowrap">
-                        {t.lastUsedAt ? dateTime(t.lastUsedAt) : 'Never'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {s.label === 'Active' ? (
-                          <ConfirmAction
-                            label="Revoke"
-                            title={`Revoke "${t.label}"`}
-                            path={`/admin/mcp-tokens/${t.id}/revoke`}
-                            consequence={`Revokes "${t.label}" now: any client using it is refused from its next call. This cannot be undone; create a new token if you need one.`}
-                            confirmLabel="Revoke token"
-                            destructive
-                            className="inline-block"
-                          />
-                        ) : null}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                      </div>
+                      <dl className="grid grid-cols-[auto_auto] gap-x-3 font-mono text-xs text-muted-foreground">
+                        <dt className="font-sans">Created</dt>
+                        <dd className="whitespace-nowrap">{dateTime(t.createdAt)}</dd>
+                        <dt className="font-sans">Last used</dt>
+                        <dd className="whitespace-nowrap">
+                          {t.lastUsedAt ? dateTime(t.lastUsedAt) : 'Never'}
+                        </dd>
+                      </dl>
+                    </div>
+                    {s.label === 'Active' ? (
+                      <ConfirmAction
+                        label="Revoke"
+                        title={`Revoke "${t.label}"`}
+                        path={`/admin/mcp-tokens/${t.id}/revoke`}
+                        consequence={`Revokes "${t.label}" now: any client using it is refused from its next call. This cannot be undone; create a new token if you need one.`}
+                        confirmLabel="Revoke token"
+                        destructive
+                        className="self-start"
+                      />
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </CardContent>
       </Card>

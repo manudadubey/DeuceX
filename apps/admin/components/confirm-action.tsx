@@ -48,7 +48,12 @@ export function ConfirmAction({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [consequence, setConsequence] = useState<string | null>(staticConsequence ?? null);
+  // What the confirmation shows and what Confirm sends are captured together
+  // when it opens, so editing a field while it's open can never make the
+  // sentence and the request disagree (found on the MCP access page: the
+  // sentence kept the name the page loaded with while Confirm sent the new one).
+  const [consequence, setConsequence] = useState<string | null>(null);
+  const [sentBody, setSentBody] = useState<Record<string, unknown> | undefined>(undefined);
   const [needsReason, setNeedsReason] = useState(reasonRequired);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -58,6 +63,8 @@ export function ConfirmAction({
   async function start() {
     setError(null);
     setDone(null);
+    setSentBody(body);
+    setConsequence(staticConsequence ?? null);
     if (previewPath) {
       setBusy(true);
       try {
@@ -82,7 +89,7 @@ export function ConfirmAction({
     setError(null);
     try {
       const result = await post<{ consequence?: string }>(path, {
-        ...body,
+        ...sentBody,
         ...(reason.trim() ? { reason: reason.trim() } : {}),
       });
       setOpen(false);
