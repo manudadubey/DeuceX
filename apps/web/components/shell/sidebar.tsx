@@ -2,18 +2,56 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Logo, cn } from '@deucex/ui';
-import { NAV_GROUPS } from './routes';
+import { FLAG_CODES, Flag, Logo, cn, type FlagCode } from '@deucex/ui';
+import { countryCode } from '@/lib/country';
+import { NAV_GROUPS, type NavItem } from './routes';
+import { useNavBadges, type NavBadges } from './use-nav-badges';
+
+export interface SidebarPlayer {
+  id: string;
+  name: string;
+  tier: string | null;
+  tour: string;
+  /** Null until the ranking is verified. */
+  tourRank: number | null;
+  country: string;
+  homeCurrency: string;
+  weeklyBudget: number | null;
+}
 
 export interface SidebarProps {
   collapsed: boolean;
   email?: string | undefined;
+  player?: SidebarPlayer | null;
+}
+
+const PLAN_LABEL: Record<string, string> = {
+  free: 'Free plan',
+  pro: 'Pro plan',
+  elite: 'Elite plan',
+};
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return (
+    (parts[0]?.[0] ?? '') + (parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '')
+  ).toUpperCase();
+}
+
+function badgeText(item: NavItem, badges: NavBadges): string | null {
+  if (item.badge === 'fans') return badges.fans ? String(badges.fans) : null;
+  if (item.badge === 'content') return badges.contentDrafts ? String(badges.contentDrafts) : null;
+  if (item.badge === 'tournament')
+    return badges.tournamentDays != null ? `${badges.tournamentDays}d` : null;
+  return null;
 }
 
 // `.sidebar` (Baseline §Shells and routes): 256px, 48px collapsed, hidden entirely under
 // 900px in favour of the mobile tab bar (see tab-bar.tsx).
-export function Sidebar({ collapsed, email }: SidebarProps) {
+export function Sidebar({ collapsed, email, player = null }: SidebarProps) {
   const pathname = usePathname();
+  const badges = useNavBadges(player);
+  const code = player ? countryCode(player.country) : null;
 
   return (
     <aside
@@ -28,6 +66,10 @@ export function Sidebar({ collapsed, email }: SidebarProps) {
         {!collapsed ? (
           <div className="leading-tight">
             <div className="text-sm font-medium">DeuceX</div>
+            <div className="text-xs text-muted-foreground">
+              {PLAN_LABEL[player?.tier ?? 'free'] ?? 'Free plan'} · Season{' '}
+              {new Date().getFullYear()}
+            </div>
           </div>
         ) : null}
       </div>
@@ -65,6 +107,20 @@ export function Sidebar({ collapsed, email }: SidebarProps) {
                         )}
                       />
                       {!collapsed ? item.label : null}
+                      {!collapsed && badgeText(item, badges) ? (
+                        <span
+                          className={cn(
+                            'ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-md px-1.5 text-xs font-medium tabular-nums',
+                            item.badge === 'tournament'
+                              ? 'bg-warn-bg text-warn'
+                              : item.badge === 'content'
+                                ? 'bg-chart-2/16 text-chart-2'
+                                : 'bg-secondary text-secondary-foreground',
+                          )}
+                        >
+                          {badgeText(item, badges)}
+                        </span>
+                      ) : null}
                     </Link>
                   </li>
                 );
@@ -85,11 +141,29 @@ export function Sidebar({ collapsed, email }: SidebarProps) {
             aria-hidden="true"
             className="grid size-8 shrink-0 place-items-center rounded-md bg-chart-2 text-xs font-semibold text-[oklch(0.2_0.05_131)]"
           >
-            {(email?.[0] ?? '?').toUpperCase()}
+            {player ? initials(player.name) : (email?.[0] ?? '?').toUpperCase()}
           </div>
           {!collapsed ? (
             <div className="min-w-0 leading-tight">
-              <div className="truncate text-sm font-medium">{email ?? 'Signed in'}</div>
+              <div className="truncate text-sm font-medium">
+                {player?.name ?? email ?? 'Signed in'}
+              </div>
+              {player ? (
+                <div className="truncate text-xs text-muted-foreground tabular-nums">
+                  {player.tourRank != null
+                    ? `${player.tour.toUpperCase()} ${player.tourRank}`
+                    : 'Unverified'}
+                  {code ? (
+                    <>
+                      {' · '}
+                      {(FLAG_CODES as readonly string[]).includes(code) ? (
+                        <Flag code={code as FlagCode} className="mr-1" />
+                      ) : null}
+                      {code}
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>

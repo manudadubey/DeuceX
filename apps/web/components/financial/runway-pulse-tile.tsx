@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Badge, PulseTileBadge, PulseTileLabel, PulseTileSub, PulseTileValue } from '@deucex/ui';
+import { Wallet } from 'lucide-react';
+import {
+  Badge,
+  PulseTileBadge,
+  PulseTileLabel,
+  PulseTileMeter,
+  PulseTileSub,
+  PulseTileValue,
+} from '@deucex/ui';
 import { createClient } from '@/lib/supabase/client';
 import { loadFinancialSnapshot, type FinancialSnapshot } from '@/lib/financial/load';
 
@@ -15,8 +23,25 @@ const BADGE: Record<
   red: { variant: 'danger', label: 'Under 4 weeks' },
 };
 
+// The meter fills at 20 weeks (the prototype's 8.3 weeks draws at 41.5%).
+const METER_FULL_WEEKS = 20;
+// Past a year the decimal stops meaning anything; the prototype never shows one.
+const RUNWAY_CAP_WEEKS = 52;
+
+const VALUE_TONE: Record<FinancialSnapshot['runwayColour'], string> = {
+  green: '',
+  amber: 'text-warn',
+  red: 'text-danger',
+};
+
+const METER_TONE: Record<FinancialSnapshot['runwayColour'], string> = {
+  green: 'bg-ok',
+  amber: 'bg-warn',
+  red: 'bg-danger',
+};
+
 function formatMoney(amount: number, currency: string): string {
-  return new Intl.NumberFormat('en-AU', {
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
     maximumFractionDigits: 0,
@@ -58,7 +83,10 @@ export function RunwayPulseTile({
       href="/agent/financial"
       className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 rounded-xl bg-card p-5 text-left text-card-foreground no-underline shadow-[0_0_0_1px_var(--border),0_1px_2px_rgba(0,0,0,.05)] transition-shadow hover:shadow-[0_0_0_1px_var(--ring),0_1px_2px_rgba(0,0,0,.05)] max-sm:p-4"
     >
-      <PulseTileLabel>Runway</PulseTileLabel>
+      <PulseTileLabel>
+        <Wallet aria-hidden="true" className="size-4" />
+        Runway
+      </PulseTileLabel>
       <PulseTileBadge>
         {notSetUp ? (
           <Badge variant="secondary">Not set up</Badge>
@@ -74,19 +102,33 @@ export function RunwayPulseTile({
             – <small>weeks</small>
           </PulseTileValue>
           <PulseTileSub>
-            Enter today&apos;s cash balance and the Financial Agent runs tomorrow at 07:00.
+            Enter today&apos;s cash balance and the Financial Agent runs tomorrow at 07:00. Takes a
+            minute.
           </PulseTileSub>
+          <PulseTileMeter percent={0} />
         </>
       ) : (
         <>
-          <PulseTileValue>
-            {Number.isFinite(snapshot.runwayWeeks) ? snapshot.runwayWeeks.toFixed(1) : '–'}{' '}
+          <PulseTileValue className={VALUE_TONE[snapshot.runwayColour]}>
+            {!Number.isFinite(snapshot.runwayWeeks)
+              ? '–'
+              : snapshot.runwayWeeks > RUNWAY_CAP_WEEKS
+                ? `${RUNWAY_CAP_WEEKS}+`
+                : snapshot.runwayWeeks.toFixed(1)}{' '}
             <small>weeks</small>
           </PulseTileValue>
           <PulseTileSub>
-            {formatMoney(snapshot.reserves, homeCurrency)} ·{' '}
+            {formatMoney(snapshot.reserves, homeCurrency)} reserves ·{' '}
             {formatMoney(snapshot.netBurn, homeCurrency)}/wk net burn
           </PulseTileSub>
+          <PulseTileMeter
+            percent={
+              Number.isFinite(snapshot.runwayWeeks)
+                ? Math.min(100, Math.max(0, (snapshot.runwayWeeks / METER_FULL_WEEKS) * 100))
+                : 100
+            }
+            fillClassName={METER_TONE[snapshot.runwayColour]}
+          />
         </>
       )}
     </Link>
