@@ -490,3 +490,266 @@ export function createStripeFansClient(config: { secretKey: string }): FansStrip
       }),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Player plans (docs/BILLING-DECISIONS.md): Pro and Elite subscriptions on
+// DeuceX's own platform account, never a connected account. Kept behind its
+// own narrow interface, apart from FansStripeClient, so billing.ts and its
+// tests depend on exactly the six calls plans need.
+// ---------------------------------------------------------------------------
+
+export interface PlanPriceSummary {
+  id: string;
+  unitAmountMinor: number | null;
+  currency: string;
+  interval: string | null;
+}
+
+export interface PlanCheckoutSummary {
+  id: string;
+  status: 'open' | 'complete' | 'expired';
+  subscriptionId: string | null;
+  customerId: string | null;
+  metadata: Record<string, string>;
+}
+
+export interface PlanSubscriptionSummary {
+  id: string;
+  /** Stripe's status: trialing, active, past_due, canceled, incomplete, and so on. */
+  status: string;
+  customerId: string;
+  priceLookupKey: string | null;
+  trialEnd: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  metadata: Record<string, string>;
+}
+
+export interface BillingStripeClient {
+  createCustomer(input: {
+    email: string;
+    name: string;
+    metadata: Record<string, string>;
+  }): Promise<{ id: string }>;
+  findPriceByLookupKey(lookupKey: string): Promise<PlanPriceSummary | null>;
+  createPlanCheckoutSession(input: {
+    customerId: string;
+    priceId: string;
+    /** Unix seconds; the first charge lands then. Null charges at once. */
+    trialEnd: number | null;
+    successUrl: string;
+    cancelUrl: string;
+    metadata: Record<string, string>;
+  }): Promise<{ id: string; url: string }>;
+  retrievePlanCheckoutSession(id: string): Promise<PlanCheckoutSummary>;
+  retrievePlanSubscription(id: string): Promise<PlanSubscriptionSummary>;
+  /** Ends a plan now, or at the end of the paid period. */
+  cancelPlanSubscription(input: {
+    subscriptionId: string;
+    atPeriodEnd: boolean;
+  }): Promise<PlanSubscriptionSummary>;
+}
+
+function planSubscriptionSummary(sub: Stripe.Subscription): PlanSubscriptionSummary {
+  const item = sub.items.data[0];
+  // Newer API versions carry the period on the item rather than the subscription.
+  const periodEnd =
+    (item as { current_period_end?: number } | undefined)?.current_period_end ??
+    (sub as { current_period_end?: number }).current_period_end ??
+    null;
+  return {
+    id: sub.id,
+    status: sub.status,
+    customerId: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
+    priceLookupKey: item?.price.lookup_key ?? null,
+    trialEnd: iso(sub.trial_end),
+    currentPeriodEnd: iso(periodEnd),
+    cancelAtPeriodEnd: sub.cancel_at_period_end,
+    metadata: strMeta(sub.metadata),
+  };
+}
+
+export function createStripeBillingClient(config: { secretKey: string }): BillingStripeClient {
+  const stripe = new Stripe(config.secretKey);
+
+  async function wrap<T>(fn: () => Promise<T>): Promise<T> {
+    try {
+      return await fn();
+    } catch (err) {
+      throw new StripeCallFailedError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  return {
+    createCustomer: (input) =>
+      wrap(async () => {
+        const customer = await stripe.customers.create({
+          email: input.email,
+          name: input.name,
+          metadata: input.metadata,
+        });
+        return { id: customer.id };
+      }),
+
+    findPriceByLookupKey: (lookupKey) =>
+      wrap(async () => {
+        const prices = await stripe.prices.list({
+          lookup_keys: [lookupKey],
+          active: true,
+          limit: 1,
+        });
+        const price = prices.data[0];
+        if (!price) return null;
+        return {
+          id: price.id,
+          unitAmountMinor: price.unit_amount,
+          currency: price.currency.toUpperCase(),
+          interval: price.recurring?.interval ?? null,
+        };
+      }),
+
+    createPlanCheckoutSession: (input) =>
+      wrap(async () => {
+        const session = await stripe.checkout.sessions.create({
+          mode: 'subscription',
+          customer: input.customerId,
+          line_items: [{ price: input.priceId, quantity: 1 }],
+          payment_method_collection: 'always',
+          subscription_data: {
+            ...(input.trialEnd ? { trial_end: input.trialEnd } : {}),
+            metadata: input.metadata,
+          },
+          metadata: input.metadata,
+          success_url: input.successUrl,
+          cancel_url: input.cancelUrl,
+        });
+        if (!session.url) throw new Error('Checkout returned no URL');
+        return { id: session.id, url: session.url };
+      }),
+
+    retrievePlanCheckoutSession: (id) =>
+      wrap(async () => {
+        const s = await stripe.checkout.sessions.retrieve(id);
+        return {
+          id: s.id,
+          status: (s.status ?? 'open') as PlanCheckoutSummary['status'],
+          subscriptionId:
+            typeof s.subscription === 'string' ? s.subscription : (s.subscription?.id ?? null),
+          customerId: typeof s.customer === 'string' ? s.customer : (s.customer?.id ?? null),
+          metadata: strMeta(s.metadata),
+        };
+      }),
+
+    retrievePlanSubscription: (id) =>
+      wrap(async () => planSubscriptionSummary(await stripe.subscriptions.retrieve(id))),
+
+    cancelPlanSubscription: (input) =>
+      wrap(async () =>
+        planSubscriptionSummary(
+          input.atPeriodEnd
+            ? await stripe.subscriptions.update(input.subscriptionId, {
+                cancel_at_period_end: true,
+              })
+            : await stripe.subscriptions.cancel(input.subscriptionId),
+        ),
+      ),
+  };
+}
+
+export interface PlanPriceSpec {
+  plan: 'pro' | 'elite';
+  productName: string;
+  lookupKey: string;
+  amountMinor: number;
+  currency: string;
+  interval: 'month' | 'year';
+}
+
+/**
+ * Stripe's product tax code for software as a service. Checkout on this
+ * account refuses a product without one. Setting it collects no tax by
+ * itself; whether GST or other tax is collected is open with the accountant
+ * (docs/BILLING-DECISIONS.md section 5).
+ */
+export const PLAN_TAX_CODE = 'txcd_10103001';
+
+export interface EnsuredPlanPrice {
+  lookupKey: string;
+  priceId: string;
+  action: 'kept' | 'created' | 'replaced';
+}
+
+/**
+ * Platform setup, not a player action: makes sure each plan's product and
+ * price exist, found by lookup key, run once per Stripe account (sandbox
+ * now, live at go-live) by apps/api/scripts/billing-prices.ts. Idempotent.
+ * A changed amount mints a new price and moves the lookup key onto it, so
+ * existing subscribers keep the price they signed up at (grandfathering,
+ * the same rule as patron tiers).
+ */
+export async function ensurePlanPrices(
+  config: { secretKey: string },
+  specs: PlanPriceSpec[],
+): Promise<EnsuredPlanPrice[]> {
+  const stripe = new Stripe(config.secretKey);
+  const results: EnsuredPlanPrice[] = [];
+  const products = new Map<string, string>();
+  for (const spec of specs) {
+    const existing = (
+      await stripe.prices.list({ lookup_keys: [spec.lookupKey], active: true, limit: 1 })
+    ).data[0];
+    // The product is found through the plan's existing price where there is
+    // one (exact), and only otherwise through search, which Stripe indexes
+    // with a delay.
+    let productId =
+      products.get(spec.plan) ??
+      (existing
+        ? typeof existing.product === 'string'
+          ? existing.product
+          : existing.product.id
+        : undefined);
+    if (!productId) {
+      const found = await stripe.products.search({
+        query: `metadata['deucex_plan']:'${spec.plan}' AND active:'true'`,
+      });
+      productId =
+        found.data[0]?.id ??
+        (
+          await stripe.products.create({
+            name: spec.productName,
+            tax_code: PLAN_TAX_CODE,
+            metadata: { deucex_plan: spec.plan },
+          })
+        ).id;
+    }
+    if (!products.has(spec.plan)) {
+      const product = await stripe.products.retrieve(productId);
+      if (!product.tax_code) await stripe.products.update(productId, { tax_code: PLAN_TAX_CODE });
+      products.set(spec.plan, productId);
+    }
+    if (
+      existing &&
+      existing.unit_amount === spec.amountMinor &&
+      existing.currency === spec.currency.toLowerCase() &&
+      existing.recurring?.interval === spec.interval
+    ) {
+      results.push({ lookupKey: spec.lookupKey, priceId: existing.id, action: 'kept' });
+      continue;
+    }
+    const price = await stripe.prices.create({
+      product: productId,
+      unit_amount: spec.amountMinor,
+      currency: spec.currency.toLowerCase(),
+      recurring: { interval: spec.interval },
+      lookup_key: spec.lookupKey,
+      transfer_lookup_key: true,
+      metadata: { deucex_plan: spec.plan },
+    });
+    results.push({
+      lookupKey: spec.lookupKey,
+      priceId: price.id,
+      action: existing ? 'replaced' : 'created',
+    });
+  }
+  return results;
+}

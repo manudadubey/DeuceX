@@ -11,7 +11,8 @@
     "./account": "./src/account-entry.ts",
     "./fans": "./src/fans-entry.ts",
     "./content": "./src/content-entry.ts",
-    "./notifications": "./src/notifications-entry.ts"
+    "./notifications": "./src/notifications-entry.ts",
+    "./billing": "./src/billing-entry.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

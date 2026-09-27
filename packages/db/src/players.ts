@@ -1,3 +1,4 @@
+import { TrialUnavailableError, startTrial } from './billing';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AGENT_NAMES, type AgentName } from '@deucex/shared';
 import type { Database } from './database.types';
@@ -211,9 +212,6 @@ export async function finishOnboarding(
         surfaces: input.surfaces,
         weekly_budget: input.weeklyBudget,
         blocked_dates: input.blockedDates,
-        tier: input.plan,
-        tier_status: input.plan === 'free' ? 'free' : 'trialing',
-        billing_cycle: input.billingCycle,
         guardian_email: input.guardianEmail,
         home_currency: defaults.homeCurrency,
         app_language: defaults.appLanguage,
@@ -246,5 +244,22 @@ export async function finishOnboarding(
   );
   if (scheduleError) throw scheduleError;
 
+  // The plan: a paid choice starts the once-per-player trial through
+  // start_trial (players can't write their own tier). A replay after the
+  // trial was used keeps whatever plan the player is on now.
+  if (input.plan !== 'free') {
+    try {
+      const endsAt = await startTrial(client, input.plan, input.billingCycle);
+      return {
+        ...player,
+        tier: input.plan,
+        tier_status: 'trialing',
+        billing_cycle: input.billingCycle,
+        trial_ends_at: endsAt,
+      };
+    } catch (err) {
+      if (!(err instanceof TrialUnavailableError)) throw err;
+    }
+  }
   return player;
 }

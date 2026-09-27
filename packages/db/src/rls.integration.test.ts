@@ -2062,3 +2062,173 @@ describeIfConfigured('hardening (step 5.4)', () => {
     expect(audit.rows).toEqual([{ player_id: null }]);
   });
 });
+
+describeIfConfigured('billing: plan columns, trials and subscriptions', () => {
+  let client: Client;
+  const player = randomUUID();
+  const other = randomUUID();
+  const newcomer = randomUUID();
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4), ($5, $6)`, [
+      player,
+      `rls-test-bill-${player}@deucex.test`,
+      other,
+      `rls-test-bill-${other}@deucex.test`,
+      newcomer,
+      `rls-test-bill-${newcomer}@deucex.test`,
+    ]);
+    await client.query(
+      `insert into public.players
+         (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+       values
+         ($1, 'wta', 'Billing A', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney'),
+         ($3, 'atp', 'Billing B', $4, 'US', '2000-01-01', 'USD', 'en', 'imperial', 'America/New_York')`,
+      [player, `rls-test-bill-${player}@deucex.test`, other, `rls-test-bill-${other}@deucex.test`],
+    );
+    await client.query(
+      `insert into public.billing_subscriptions
+         (player_id, stripe_subscription_id, stripe_customer_id, plan, billing_cycle, status)
+       values ($1, $2, 'cus_rls_other', 'pro', 'monthly', 'active')`,
+      [other, `sub_rls_${other}`],
+    );
+    await client.query(
+      `insert into public.billing_events (player_id, kind) values ($1, 'checkout_completed')`,
+      [other],
+    );
+  });
+
+  afterAll(async () => {
+    await client.query(`delete from public.players where id in ($1, $2, $3)`, [
+      player,
+      other,
+      newcomer,
+    ]);
+    await client.query(`delete from auth.users where id in ($1, $2, $3)`, [
+      player,
+      other,
+      newcomer,
+    ]);
+    await client.end();
+  });
+
+  for (const column of ['tier', 'tier_status', 'billing_cycle']) {
+    it(`refuses a player writing their own ${column}`, async () => {
+      await asPlayer(client, player, async () => {
+        await expect(
+          client.query(`update public.players set ${column} = 'elite' where id = $1`, [player]),
+        ).rejects.toThrow(/permission denied/);
+      });
+    });
+  }
+
+  it('still lets a player write their ordinary columns', async () => {
+    await asPlayer(client, player, async () => {
+      const res = await client.query(`update public.players set name = 'Renamed' where id = $1`, [
+        player,
+      ]);
+      expect(res.rowCount).toBe(1);
+    });
+  });
+
+  it('refuses a first insert that names a plan, and defaults one that does not to Free', async () => {
+    await asPlayer(client, newcomer, async () => {
+      await expect(
+        client.query(
+          `insert into public.players (id, tour, name, email, country, dob, home_currency, app_language, units, timezone, tier)
+           values ($1, 'atp', 'Newcomer', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney', 'elite')`,
+          [newcomer, `rls-test-bill-${newcomer}@deucex.test`],
+        ),
+      ).rejects.toThrow(/permission denied/);
+    });
+    await asPlayer(client, newcomer, async () => {
+      const { rows } = await client.query(
+        `insert into public.players (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+         values ($1, 'atp', 'Newcomer', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney')
+         returning tier, tier_status`,
+        [newcomer, `rls-test-bill-${newcomer}@deucex.test`],
+      );
+      expect(rows[0]).toEqual({ tier: 'free', tier_status: 'free' });
+    });
+  });
+
+  it('starts a trial once, for 14 days, and refuses a second', async () => {
+    await asPlayer(client, player, async () => {
+      const { rows } = await client.query(
+        `select public.start_trial('pro', 'annual') as ends,
+                now() + interval '14 days' as expected`,
+      );
+      expect(new Date(rows[0].ends).getTime()).toBe(new Date(rows[0].expected).getTime());
+      const row = await client.query(
+        `select tier, tier_status, billing_cycle, trial_plan from public.players where id = $1`,
+        [player],
+      );
+      expect(row.rows[0]).toEqual({
+        tier: 'pro',
+        tier_status: 'trialing',
+        billing_cycle: 'annual',
+        trial_plan: 'pro',
+      });
+      await expect(client.query(`select public.start_trial('elite', 'monthly')`)).rejects.toThrow(
+        /trial_unavailable/,
+      );
+    });
+  });
+
+  it('refuses a trial for a comped player', async () => {
+    await client.query(
+      `update public.players set tier = 'elite', tier_status = 'comped' where id = $1`,
+      [player],
+    );
+    try {
+      await asPlayer(client, player, async () => {
+        await expect(client.query(`select public.start_trial('pro', 'monthly')`)).rejects.toThrow(
+          /trial_unavailable/,
+        );
+      });
+    } finally {
+      await client.query(
+        `update public.players set tier = 'free', tier_status = 'free' where id = $1`,
+        [player],
+      );
+    }
+  });
+
+  it('refuses downgrade_to_free while a card-backed plan is live', async () => {
+    await asPlayer(client, other, async () => {
+      await expect(client.query(`select public.downgrade_to_free()`)).rejects.toThrow(
+        /subscription_active/,
+      );
+    });
+  });
+
+  it('shows a player only their own subscription and billing events, and lets them write neither', async () => {
+    await asPlayer(client, player, async () => {
+      expect((await client.query(`select * from public.billing_subscriptions`)).rows).toEqual([]);
+      expect((await client.query(`select * from public.billing_events`)).rows).toEqual([]);
+    });
+    await asPlayer(client, other, async () => {
+      expect((await client.query(`select plan from public.billing_subscriptions`)).rows).toEqual([
+        { plan: 'pro' },
+      ]);
+      expect((await client.query(`select kind from public.billing_events`)).rows).toEqual([
+        { kind: 'checkout_completed' },
+      ]);
+    });
+    await asPlayer(client, other, async () => {
+      await expect(
+        client.query(`update public.billing_subscriptions set status = 'active'`),
+      ).rejects.toThrow(/permission denied/);
+    });
+    await asPlayer(client, other, async () => {
+      await expect(
+        client.query(
+          `insert into public.billing_events (player_id, kind) values ($1, 'downgraded')`,
+          [other],
+        ),
+      ).rejects.toThrow(/permission denied/);
+    });
+  });
+});

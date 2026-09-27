@@ -1,4 +1,5 @@
-import { Badge, Button } from '@deucex/ui';
+import { Badge } from '@deucex/ui';
+import { StartTrialButton } from '@/components/billing/start-trial-button';
 
 // M-TIER-1 / decisions worksheet 14: "Free sees the shortlist and the full
 // Conditions brief; cost, outcomes, runway effect and the entry controls are
@@ -8,11 +9,11 @@ import { Badge, Button } from '@deucex/ui';
 // region of the detail panel — the shortlist rows and the why paragraph
 // stay live on Free.
 export function LockedSection({
-  onStartTrial,
+  onToast,
   label = 'Pro shows cost, outcomes and runway effect',
   children,
 }: {
-  onStartTrial: () => void;
+  onToast: (title: string) => void;
   label?: string;
   children: React.ReactNode;
 }) {
@@ -21,9 +22,7 @@ export function LockedSection({
       <div className="pointer-events-none select-none opacity-40 blur-[1px]">{children}</div>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg bg-card/60 p-4 text-center">
         <Badge variant="secondary">{label}</Badge>
-        <Button size="sm" onClick={onStartTrial}>
-          Start Pro trial
-        </Button>
+        <StartTrialButton size="sm" onToast={onToast} />
       </div>
     </div>
   );

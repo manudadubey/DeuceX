@@ -128,7 +128,6 @@ export {
   hasAtLeastOneChannel,
   setAgentPaused,
   updateEmergencyContact,
-  downgradeToFree,
   NOTIFICATION_AGENTS,
   type AppLanguage,
   type HomeCurrency,
@@ -204,3 +203,10 @@ export function createServiceRoleClient(
 export * from './fans';
 export * from './fuel';
 export * from './audit-log';
+
+export {
+  SubscriptionActiveError,
+  TrialUnavailableError,
+  downgradeToFree,
+  startTrial,
+} from './billing';

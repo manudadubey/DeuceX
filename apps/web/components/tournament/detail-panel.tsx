@@ -45,7 +45,6 @@ export function DetailPanel({
   equipmentMainsKg,
   equipmentCrossesKg,
   onDone,
-  onStartTrial,
   onToast,
 }: {
   playerId: string;
@@ -59,7 +58,6 @@ export function DetailPanel({
   equipmentMainsKg: number;
   equipmentCrossesKg: number;
   onDone: () => void;
-  onStartTrial: () => void;
   onToast: (title: string) => void;
 }) {
   const supabase = useMemo(() => createClient(), []);
@@ -280,12 +278,12 @@ export function DetailPanel({
           isFree={isFree}
           unit={unit}
           onUnitChange={onUnitChange}
-          onStartTrial={onStartTrial}
+          onToast={onToast}
         />
       )}
 
       {isFree ? (
-        <LockedSection onStartTrial={onStartTrial}>
+        <LockedSection onToast={onToast}>
           {costAndOutcome}
           <div className="mt-4">{footer}</div>
         </LockedSection>

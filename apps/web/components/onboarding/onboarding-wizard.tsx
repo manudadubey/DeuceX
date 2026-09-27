@@ -40,6 +40,13 @@ import {
 } from '@/lib/onboarding/rankings-api';
 import { createClient } from '@/lib/supabase/client';
 import type { FinishOnboardingFormInput } from '@/app/(onboarding)/onboarding/actions';
+import {
+  ANNUAL_SAVING_LABEL,
+  PLAN_PRICES_USD,
+  formatUsd,
+  planPriceLine,
+  planYearlyTotal,
+} from '@deucex/shared';
 
 const COUNTRIES = [
   'Austria',
@@ -105,11 +112,12 @@ function budgetSentence(value: number): string {
   return `At A$${value.toLocaleString()} a week, Challenger 100s with a coach block are realistic. The agent will still rank by cost-to-prize.`;
 }
 
-const PLAN_PRICES: Record<PlayerPlan, { monthly: number; annual: number }> = {
-  free: { monthly: 0, annual: 0 },
-  pro: { monthly: 49, annual: 39 },
-  elite: { monthly: 149, annual: 119 },
-};
+// USD, from @deucex/shared (docs/BILLING-DECISIONS.md): annual shows the
+// monthly equivalent with the yearly total stated beside it.
+function planCardPrice(plan: PlayerPlan, cycle: PlayerBillingCycle): number {
+  if (plan === 'free') return 0;
+  return cycle === 'monthly' ? PLAN_PRICES_USD[plan].monthly : PLAN_PRICES_USD[plan].annualMonthly;
+}
 
 export interface OnboardingWizardProps {
   email: string;
@@ -709,13 +717,13 @@ export function OnboardingWizard({
               aria-label="Billing cycle"
             >
               <ToggleGroupItem value="monthly">Monthly</ToggleGroupItem>
-              <ToggleGroupItem value="annual">Yearly · 2 months free</ToggleGroupItem>
+              <ToggleGroupItem value="annual">Yearly · {ANNUAL_SAVING_LABEL}</ToggleGroupItem>
             </ToggleGroup>
           </div>
 
           <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
             {(['free', 'pro', 'elite'] as const).map((p) => {
-              const price = PLAN_PRICES[p][billingCycle === 'monthly' ? 'monthly' : 'annual'];
+              const price = planCardPrice(p, billingCycle);
               return (
                 <button
                   key={p}
@@ -730,7 +738,7 @@ export function OnboardingWizard({
                     {p === 'pro' && <Badge variant="lime">Stage 1 and 2</Badge>}
                   </div>
                   <div className="text-2xl font-medium tracking-tight">
-                    A${price}
+                    {formatUsd(price)}
                     {p !== 'free' && (
                       <small className="text-[0.8125rem] font-normal text-muted-foreground">
                         {' '}
@@ -738,6 +746,11 @@ export function OnboardingWizard({
                       </small>
                     )}
                   </div>
+                  {p !== 'free' && billingCycle === 'annual' && (
+                    <div className="text-[0.8125rem] text-muted-foreground">
+                      {formatUsd(planYearlyTotal(p))} billed yearly
+                    </div>
+                  )}
                 </button>
               );
             })}
@@ -746,7 +759,7 @@ export function OnboardingWizard({
           <p className="text-[0.8125rem] text-muted-foreground">
             {plan === 'free'
               ? 'Free is a real plan, not a trial. Upgrade when you want the patron programme, the Financial Agent or the Mindset Coach.'
-              : "Pro and Elite start a 14-day trial. We'll ask for a card on day 12, on Stripe's page, never here."}
+              : `Pro and Elite start a 14-day trial. We'll ask for a card on day 12, on Stripe's page, never here: ${planPriceLine(plan, billingCycle)} from day 14. Without a card you move to Free, and nothing is deleted.`}
           </p>
 
           <div className="flex items-center gap-2 border-t border-border pt-6">

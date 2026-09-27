@@ -1,7 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it, vi } from 'vitest';
 import {
-  downgradeToFree,
   hasAtLeastOneChannel,
   isNotificationChannelEnabled,
   setAgentPaused,
@@ -153,16 +152,5 @@ describe('updateEmergencyContact', () => {
     await updateEmergencyContact(client, { playerId: 'player-1', emergencyContact: null });
 
     expect(query.update).toHaveBeenCalledWith({ emergency_contact: null });
-  });
-});
-
-describe('downgradeToFree', () => {
-  it('sets tier and tier_status to free', async () => {
-    const query = fakeQuery({ data: null, error: null });
-    const client = { from: vi.fn().mockReturnValue(query) } as unknown as SupabaseClient<Database>;
-
-    await downgradeToFree(client, 'player-1');
-
-    expect(query.update).toHaveBeenCalledWith({ tier: 'free', tier_status: 'free' });
   });
 });

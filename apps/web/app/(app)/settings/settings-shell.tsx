@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Toast, ToastProvider, ToastTitle, ToastViewport, cn } from '@deucex/ui';
 import type { Player } from '@deucex/db';
 import type { Database } from '@deucex/db';
@@ -39,13 +39,23 @@ export function SettingsShell({
   player: initialPlayer,
   agentSchedules: initialAgentSchedules,
   shareLinks: initialShareLinks,
+  initialPane,
+  checkoutSessionId,
 }: {
   player: Player;
   agentSchedules: AgentSchedule[];
   shareLinks: ShareLink[];
+  /** ?pane= — notifications and Stripe's return link straight to Plan & billing. */
+  initialPane?: string | undefined;
+  /** ?checkout= — Stripe Checkout's session, read back by the billing pane. */
+  checkoutSessionId?: string | null | undefined;
 }) {
-  const [pane, setPane] = useState<PaneKey>('account');
+  const [pane, setPane] = useState<PaneKey>(
+    PANES.some((p) => p.key === initialPane) ? (initialPane as PaneKey) : 'account',
+  );
   const [player, setPlayer] = useState<Player>(initialPlayer);
+  // A server refresh (starting a trial from Plan & billing) brings a new row.
+  useEffect(() => setPlayer(initialPlayer), [initialPlayer]);
   const [agentSchedules, setAgentSchedules] = useState<AgentSchedule[]>(initialAgentSchedules);
   const [shareLinks, setShareLinks] = useState<ShareLink[]>(initialShareLinks);
   const [toast, setToast] = useState<{ title: string } | null>(null);
@@ -91,7 +101,12 @@ export function SettingsShell({
             <PreferencesPane player={player} onPlayerChange={onPlayerChange} onToast={showToast} />
           )}
           {pane === 'billing' && (
-            <BillingPane player={player} onPlayerChange={onPlayerChange} onToast={showToast} />
+            <BillingPane
+              player={player}
+              onPlayerChange={onPlayerChange}
+              onToast={showToast}
+              checkoutSessionId={checkoutSessionId}
+            />
           )}
           {pane === 'notif' && (
             <NotificationsPane
