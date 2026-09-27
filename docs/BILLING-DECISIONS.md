@@ -1,7 +1,8 @@
 # Billing decisions
 
 DeuceX, prepared for Manu Dubey, 27 September 2026. All recommendations accepted by Manu Dubey on
-27 September 2026, except GST and tax, which waits on the accountant. Companion to PRD-00 section 4, PRD-11 section 12, PRD-12 section 4.4,
+27 September 2026, except GST and tax, which waits on the accountant. Corrected the same day: plans are priced and
+billed in USD, not AUD (sections 2 and 5). Companion to PRD-00 section 4, PRD-11 section 12, PRD-12 section 4.4,
 PRD-13 AD-9 and AD-22, and PRELAUNCH-CHECKLIST.md block C.
 
 Real Stripe Billing for player subscriptions has been deferred since step 2.3. Today `players.tier`
@@ -67,7 +68,21 @@ beside it. Annual cancellation runs to the end of the year, no pro-rata refund, 
 purchase (statutory consumer guarantees still apply; support can refund case by case). Send the
 7-day renewal reminder: a surprise A$1,428 charge is the fastest way to a chargeback.
 
-Decision record: Prices unchanged (A$39 and A$119 a month billed yearly). Label changes to "Save 20%" with the yearly total beside it (A$468 and A$1,428). Cancelling an annual plan keeps access to the end of the paid year, no pro-rata refund, stated at purchase; support may refund case by case. Reminder email 7 days before an annual renewal. Decided by: Manu Dubey Date: 27 September 2026
+**Correction, 27 September 2026 (owner):** plans move from AUD to USD, converting the AUD prices
+at the ECB rate of 25 September 2026 (1 AUD = 0.7030 USD, from `fx_rates_daily`) and rounding to
+whole dollars:
+
+| Plan | AUD (was) | Exact USD | USD price | Yearly total | Saving vs monthly |
+|---|---|---|---|---|---|
+| Pro monthly | A$49 | US$34.45 | **US$34** | | |
+| Pro yearly | A$39 a month | US$27.42 | **US$27 a month** | US$324 | US$84 (20.6%) |
+| Elite monthly | A$149 | US$104.75 | **US$105** | | |
+| Elite yearly | A$119 a month | US$83.66 | **US$84 a month** | US$1,008 | US$252 (20.0%) |
+
+"Save 20%" stays true for both. The AUD figures above this correction are the analysis as first
+written.
+
+Decision record: Prices in USD: Pro US$34 a month or US$27 a month billed yearly (US$324); Elite US$105 a month or US$84 a month billed yearly (US$1,008). Label changes to "Save 20%" with the yearly total beside it. Cancelling an annual plan keeps access to the end of the paid year, no pro-rata refund, stated at purchase; support may refund case by case. Reminder email 7 days before an annual renewal. Decided by: Manu Dubey Date: 27 September 2026
 
 ## 3. Changing plans (proration)
 
@@ -138,7 +153,7 @@ their own currency, and Stripe's conversion charge falls on them); or set fixed 
 prices. **Recommendation:** bill in AUD with the approximate figure shown for launch, since it's
 the smallest build and matches C2. Adaptive Pricing is a settings change later if players ask.
 
-**GST and tax.** Whether A$49 includes GST for Australian players, and whether Stripe Tax
+**GST and tax.** Whether the price includes GST for Australian players, and whether Stripe Tax
 collects elsewhere, is for your accountant and the entity (checklist N3 and C1), not for this
 sheet. The build can wait on it: Stripe prices are set tax-inclusive or tax-exclusive at creation.
 
@@ -147,7 +162,7 @@ sheet. The build can wait on it: Stripe prices are set tax-inclusive or tax-excl
 14-day trial from that day, with an email saying so. Production holds only fixture players today,
 so this matters only if a real player onboards first.
 
-Decision record: bill in AUD, with an approximate home-currency figure from the FX archive; Adaptive Pricing possible later. GST and tax: open, for the accountant (N3, C1); prices are created tax-inclusive or tax-exclusive once that's answered. Existing "trialing" players get a fresh 14-day trial from switch-on, with an email saying so. Decided by: Manu Dubey Date: 27 September 2026
+Decision record: bill in USD (owner correction, replacing the AUD recommendation), with an approximate home-currency figure from the FX archive; Adaptive Pricing possible later. GST still applies to Australian players whatever the billing currency. GST and tax: open, for the accountant (N3, C1); prices are created tax-inclusive or tax-exclusive once that's answered. Existing "trialing" players get a fresh 14-day trial from switch-on, with an email saying so. Decided by: Manu Dubey Date: 27 September 2026
 
 ## What building it involves (for scale, not a decision)
 
