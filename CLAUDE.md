@@ -383,8 +383,41 @@ Outside production apps/api accepts any `localhost` port. A web dev server that 
 had failed every API call (the ranking lookup first). Production still allows only
 `CORS_ORIGIN`.
 
+Billing session 1 (trials and Checkout), [PR #36](https://github.com/manudadubey/DeuceX/pull/36),
+merged 27 September 2026, built against `docs/BILLING-DECISIONS.md` (merged in
+[PR #35](https://github.com/manudadubey/DeuceX/pull/35) the same day):
+- **Plans are USD:** Pro US$35 or US$28 a month billed yearly (US$336), Elite US$99 or US$79
+  (US$948), "Save 20%". The prices live in `@deucex/shared`'s `plans.ts`; the four Stripe sandbox
+  prices exist, by lookup key (`apps/api/scripts/billing-prices.ts`, which refuses a live key
+  without `BILLING_PRICES_ALLOW_LIVE=1`).
+- **Players can no longer write their own plan.** `tier`, `tier_status` and `billing_cycle` left
+  the players update grant, and insert is narrowed to onboarding's columns (before this, any
+  player could make themselves Elite). The plan moves only through `start_trial` (once per
+  player, 14 days, Pro or Elite, from Free), `downgrade_to_free` (a trial with no card), apps/api,
+  or staff. Don't write player-side code that updates these columns.
+- **Stripe:** `@deucex/actions/billing` has the gated `subscription_checkout` (Checkout, first
+  charge dated to the trial end, Stripe's 48-hour minimum respected) and `subscription_cancel`
+  (now inside Stripe's trial, else at period end), on the platform account, not Connect. New
+  tables `billing_subscriptions` (apps/api writes only) and `billing_events` (append-only).
+- **The hourly billing sweep** (apps/api `billing/`, on the money boss): the day-12 reminder, the
+  day-14 lapse to Free with paying patrons paused automatically (owner decision: the
+  failed-payment exception extended to lapsed trials; held if any pause fails), conversion to
+  active once Stripe charges, and period-end downgrades.
+- **Web:** every "Start Pro trial" button is real (`StartTrialButton`), onboarding and a rebuilt
+  Plan & billing pane show USD with an approximate home-currency figure, and
+  `/settings?pane=billing` deep links work.
+- **Fixed a step 5.1 bug:** the `players_not_staff` trigger ran as the player and couldn't read
+  `admin_users`, so every brand-new sign-up failed at the end of onboarding since 26 September.
+  It's `security definer` now.
+- Both migrations (`20260930090000_billing_trials`, `20260930091000_fix_players_not_staff_definer`)
+  are applied to staging and production. Verified with 85/85 live RLS tests and a live sandbox
+  Checkout. The fixture player is on a card-backed Pro trial ending 11 October 2026 (sandbox
+  subscription left in place for session 2). See `docs/BUILD-LOG.md`'s "Billing, session 1"
+  entry.
+
 **As of 27 September 2026, no PRs are open and `main` has everything above.** The owner merges
-PRs: Claude's auto mode refuses to merge, or retarget a PR's base, without a human review. When
+PRs: Claude's auto mode usually refuses to merge, or retarget a PR's base, without a human
+review; when the owner asks, it has sometimes allowed it, otherwise the owner runs `gh pr merge`. When
 PRs are stacked, move each one's base to `main` before merging it (`gh pr edit N --base main`);
 merging into the old base branch would leave `main` without it.
 
@@ -395,19 +428,20 @@ players"). In order:
    - raise the OpenAI usage tier;
    - register staff passkeys and add `https://admin.deucex.ai` to Supabase's passkey origins;
    - add `https://deucex.vercel.app/**` to Supabase's redirect URLs.
-2. **Real Stripe Billing for player subscriptions.** Deferred since step 2.3 and never built: no
-   player is charged for Pro or Elite yet, there are no trials, and there's no upgrade back to Pro.
-   This is the biggest piece left. The owner decisions are made (27 September 2026, all in
-   `docs/BILLING-DECISIONS.md`: trial held in DeuceX, "Save 20%", proration rules, 14-day
-   dunning with an automatic patron-billing pause at lapse, and plans priced and billed in USD:
-   Pro US$35 or US$28 a month yearly, Elite US$99 or US$79); only GST waits on the accountant.
-   About two sessions of build. **Session 1 (trials and Checkout) is built** on branch
-   `billing-trials`: trials held in DeuceX via `start_trial`, Stripe Checkout with the first
-   charge on day 14, the hourly billing sweep (day-12 reminder, day-14 lapse with automatic
-   patron pause), a real Plan & billing pane, and players can no longer write their own plan.
-   Its migrations are applied to staging and production. It also fixed a step 5.1 bug that
-   broke every new sign-up. See `docs/BUILD-LOG.md`'s "Billing, session 1" entry, including the
-   GST-on-top finding. Session 2: plan changes, webhooks, dunning, invoices, portal.
+2. **Billing session 2.** Session 1 (trials and Checkout) is merged; every decision it needs is
+   already in `docs/BILLING-DECISIONS.md`, except GST (below). Session 2 builds:
+   - plan changes with the decided proration (Pro to Elite now and prorated; downgrades and
+     annual to monthly at period end; monthly to annual now with credit; the over-50-patrons
+     Elite-to-Pro rule);
+   - Stripe webhooks for renewals and failed payments (testable locally with the Stripe CLI;
+     production needs `apps/api` deployed and `STRIPE_WEBHOOK_SECRET` set);
+   - dunning: 14 days of Smart Retries, emails on the first failure, day 7 and day 12, then Free
+     with the automatic patron pause, and a 30-day restore;
+   - invoices in Plan & billing and Stripe's customer portal for card changes;
+   - the email 7 days before an annual renewal;
+   - **the erasure job must also cancel the player's own plan subscription** (today it only ends
+     patron memberships; a deleted player would keep being charged);
+   - a staff trial extension must also move Stripe's trial end when a card is on file.
 3. **Deploy `apps/api` to Render**, per the follow-up below. Then set `NEXT_PUBLIC_API_URL`,
    `STRIPE_WEBHOOK_SECRET` and the uptime check's `API_HEALTH_URL`.
 4. **Go live:**
@@ -427,6 +461,11 @@ ap-northeast-1). Owner decision, 26 September 2026: no Supabase upgrade until go
 - `.env` has `STAGING_SUPABASE_URL` and `STAGING_SUPABASE_SECRET_KEY`.
 
 **Open follow-ups:**
+- **GST, before launch (accountant):** the sandbox's Stripe Tax settings add 10% GST on top for
+  an Australian address, so Checkout showed US$38.50 instead of US$35. Australian consumers must
+  see a GST-inclusive price. Once the accountant answers (registered or not, inclusive or on
+  top), set the Stripe prices' tax behaviour or turn collection off. Plan products carry tax code
+  `txcd_10103001`, which this account requires for Checkout.
 - **Roll the staging secret key**: part of it was printed into a session log on 27 September 2026
   (Project Settings > API Keys in deucex-staging; then update `.env`).
 - **Before launch, OpenAI's rate limit:** the `gpt-4o-mini` tokens-per-minute limit is 200,000,
