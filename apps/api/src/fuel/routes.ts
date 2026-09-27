@@ -6,11 +6,13 @@ import multipart from '@fastify/multipart';
 import type { FastifyInstance } from 'fastify';
 import { authenticateRequest, UnauthorizedError } from '../auth';
 import { scanMenu, type FuelDeps, type MenuPhoto } from './service';
+import { refuseIfLimited, type OnDemandLimiter } from '../on-demand';
 
 export interface FuelRoutesDeps extends FuelDeps {
   anonClient: SupabaseClient<Database>;
   /** The player's tier, for the Free lock (worksheet 15: no free scans). */
   getTier(playerId: string): Promise<string | null>;
+  onDemand: OnDemandLimiter;
 }
 
 // Per page, the receipt route's own ceiling; a scan is at most four pages
@@ -42,6 +44,7 @@ export async function registerFuelRoutes(
     if (tier !== 'pro' && tier !== 'elite') {
       return reply.code(403).send({ error: 'fuel_requires_pro' });
     }
+    if (refuseIfLimited(reply, await deps.onDemand.claim(playerId, 'menu_scan'))) return;
 
     const photos: MenuPhoto[] = [];
     for await (const part of request.parts()) {

@@ -11,6 +11,8 @@ export interface PersistBriefInput {
   practice: string;
   equipmentVersion: number;
   forecastAt: string;
+  /** The prose input the diff/practice were written from (step 5.4's cache). Omit to leave the stored hash as it is. */
+  proseInputsHash?: string | null;
 }
 
 // One row per (player_id, tournament_id) — see the step 3.3 migration's own
@@ -48,6 +50,7 @@ export async function persistConditionsBrief(
       forecast_source: rules.forecastSource,
       refreshed: rules.refreshed,
       equipment_version: input.equipmentVersion,
+      ...(input.proseInputsHash !== undefined ? { prose_inputs_hash: input.proseInputsHash } : {}),
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'player_id,tournament_id' },

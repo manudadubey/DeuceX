@@ -29,3 +29,4 @@ export * from './conditions';
 export * from './fans';
 export * from './content';
 export * from './fuel';
+export { TIER_MODELS, modelFor } from './models';

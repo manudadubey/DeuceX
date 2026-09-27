@@ -134,6 +134,7 @@ async function completeWithRetries(
 
   throw new AgentValidationError(
     `mindset-coach/generate-insight: model output failed schema validation twice: ${secondParsed.error.message}`,
+    usage,
   );
 }
 

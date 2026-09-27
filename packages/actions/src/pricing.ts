@@ -29,6 +29,14 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   'gpt-4o': { inputPerMillionTokens: 2.5, outputPerMillionTokens: 10, currency: 'USD' },
 };
 
+// Priced per minute of audio rather than per token (TECH-ARCHITECTURE.md
+// section 4: "roughly USD 0.006 per minute of audio"). Transcription's cost
+// lands on agent_runs like every other model call (step 5.4), so the
+// console's spend figure and its 80 percent alert include it.
+export const AUDIO_PRICING: Record<string, { perMinute: number; currency: 'USD' }> = {
+  'whisper-1': { perMinute: 0.006, currency: 'USD' },
+};
+
 export interface TokenUsage {
   inputTokens: number;
   outputTokens: number;
@@ -51,4 +59,14 @@ export function calculateCost(model: string, usage: TokenUsage): CostEstimate | 
     (usage.outputTokens / 1_000_000) * pricing.outputPerMillionTokens;
 
   return { amount: Number(amount.toFixed(6)), currency: pricing.currency };
+}
+
+/** Per-minute audio cost; null for an unknown model, same reasoning as calculateCost. */
+export function calculateAudioCost(model: string, seconds: number): CostEstimate | null {
+  const pricing = AUDIO_PRICING[model];
+  if (!pricing) return null;
+  return {
+    amount: Number(((seconds / 60) * pricing.perMinute).toFixed(6)),
+    currency: pricing.currency,
+  };
 }

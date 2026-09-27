@@ -14,9 +14,11 @@ import {
   type NotesServiceDeps,
 } from './service';
 import { deleteAllAudioForPlayer } from './audio-lifecycle';
+import { refuseIfLimited, type OnDemandLimiter } from '../on-demand';
 
 export interface NotesRoutesDeps extends NotesServiceDeps {
   anonClient: SupabaseClient<Database>;
+  onDemand: OnDemandLimiter;
 }
 
 // Generous headroom over 60 seconds of compressed voice (S-2's cap);
@@ -128,6 +130,7 @@ export async function registerNotesRoutes(
     const playerId = await requirePlayerId(deps, request, reply);
     if (!playerId) return;
     const { id } = request.params as { id: string };
+    if (refuseIfLimited(reply, await deps.onDemand.claim(playerId, 'extraction_retry'))) return;
 
     try {
       await retryNote(deps, { noteId: id, playerId });

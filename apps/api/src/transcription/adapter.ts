@@ -17,6 +17,8 @@ export interface TranscriptionResult {
   confidence: number;
   model: string;
   costUsd: number;
+  /** Audio length as the vendor measured it; what the cost is priced on. */
+  durationSeconds: number;
 }
 
 export interface TranscriptionAdapter {

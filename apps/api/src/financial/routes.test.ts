@@ -6,6 +6,7 @@ import { createMockReceiptExtractionClient } from '@deucex/agents';
 import Fastify from 'fastify';
 import { FakeDb } from '../test-support/fake-db';
 import { registerFinancialRoutes, type FinancialRoutesDeps } from './routes';
+import { allowAllOnDemand } from '../on-demand';
 
 function fakeAgentRunsDb(): AgentRunsDb {
   return { insertAgentRun: async () => undefined };
@@ -45,6 +46,7 @@ function buildMultipart(file: {
 async function buildApp(fake: FakeDb, overrides: Partial<FinancialRoutesDeps> = {}) {
   const app = Fastify();
   const deps: FinancialRoutesDeps = {
+    onDemand: allowAllOnDemand,
     db: fake as unknown as SupabaseClient<Database>,
     anonClient: fakeAnonClient('good-token', 'player-1'),
     extractionClient: createMockReceiptExtractionClient(),

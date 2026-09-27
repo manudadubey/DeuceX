@@ -21,6 +21,7 @@ export { AGENT_NAMES, type AgentName } from './agent-names';
 export {
   billingPauseNotice,
   billingResumeNotice,
+  accountClosedNotice,
   membershipEndedNotice,
   pausedMembershipEndDate,
   PAUSED_MEMBERSHIP_DAYS,
@@ -49,3 +50,20 @@ export {
   type AdminArea,
   type AdminRole,
 } from './admin-roles';
+
+export {
+  MODEL_CALL_TIERS,
+  MODEL_TIER_LABELS,
+  modelLabel,
+  type ModelCall,
+  type ModelTier,
+} from './model-tiers';
+
+export {
+  ON_DEMAND_LIMITS,
+  ON_DEMAND_NOUNS,
+  ON_DEMAND_WINDOW_MS,
+  limitFor,
+  type LimitTier,
+  type OnDemandKind,
+} from './rate-limits';

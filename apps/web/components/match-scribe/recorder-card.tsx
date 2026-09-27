@@ -257,10 +257,17 @@ export function RecorderCard({
 
   const handleRetry = useCallback(async () => {
     if (!note) return;
+    const before = phase;
     setPhase('transcribing');
-    await retryNoteRemote(supabase, note.id);
+    try {
+      await retryNoteRemote(supabase, note.id);
+    } catch (err) {
+      setPhase(before);
+      onToast(err instanceof Error ? err.message : "Retry didn't go through. Try again.");
+      return;
+    }
     pollForTranscript(note.id);
-  }, [note, pollForTranscript, supabase]);
+  }, [note, onToast, phase, pollForTranscript, supabase]);
 
   const toggleTag = (tag: string) => {
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));

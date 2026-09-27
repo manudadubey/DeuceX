@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { AgentValidationError, type TokenUsage } from '@deucex/actions';
 import type { NamedPerson } from './checks';
 import { paragraphs, sentences as sentencesOf, wordCount } from './text';
+import { modelFor } from '../models';
 
 // PRD-05 section 3: one schema-constrained call over a pre-assembled input
 // bundle (TECH-ARCHITECTURE.md section 3a), one corrective retry, then the
@@ -16,7 +17,7 @@ import { paragraphs, sentences as sentencesOf, wordCount } from './text';
 // use them (C-2) are all validated here, so a model that ignores the prompt
 // gets one corrective retry and then fails loudly rather than shipping.
 
-export const CONTENT_DRAFT_MODEL = 'gpt-4o';
+export const CONTENT_DRAFT_MODEL = modelFor('contentDraft');
 export const CONTENT_DRAFT_PROMPT_VERSION = 'v1';
 export const CONTENT_DRAFT_SCHEMA_VERSION = 'v1';
 
@@ -294,6 +295,7 @@ export async function generateContentDraft(
 
   throw new AgentValidationError(
     `content/draft: output failed validation twice: ${secondResult.problem}`,
+    usage,
   );
 }
 

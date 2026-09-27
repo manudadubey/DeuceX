@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { Database, Json } from '@deucex/db';
 import {
+  accountClosedNotice,
   billingPauseNotice,
   billingResumeNotice,
   manageLinkNotice,
@@ -853,6 +854,74 @@ export async function endPausedMembership(
   } catch {
     return { notified: false };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Step 5.4: erasing a player ends every patron membership (owner decision,
+// 26 September 2026). Like endPausedMembership, not a new approval: it is the
+// stated consequence of the account deletion the player already approved
+// (account_deletion_request) and then confirmed from the emailed link, and
+// the Delete account confirm names it ("Patron subscriptions end"). Patron
+// subscriptions are direct charges on the player's connected account, so
+// without this they would keep charging after the player is gone. The
+// connected account itself is left alone: it is the player's own Stripe
+// account, and Stripe must keep its KYC and payout records.
+// ---------------------------------------------------------------------------
+
+export interface EndMembershipsForErasureInput {
+  playerId: string;
+}
+
+export interface EndMembershipsForErasureResult {
+  /** No programme or no connected account: nothing on Stripe to end. */
+  programme: boolean;
+  cancelled: number;
+  notified: number;
+  /** Patron ids whose Stripe cancellation failed. The erasure must not proceed past these. */
+  failed: string[];
+}
+
+export async function endMembershipsForErasure(
+  db: FansActionsDb,
+  stripe: FansStripeClient,
+  email: EmailClient,
+  input: EndMembershipsForErasureInput,
+): Promise<EndMembershipsForErasureResult> {
+  const programme = await db.getProgramme(input.playerId);
+  const player = await db.getPlayer(input.playerId);
+  if (!programme?.stripeAccountId || !player) {
+    return { programme: false, cancelled: 0, notified: 0, failed: [] };
+  }
+  const patrons = await db.listPatronsByStatus(input.playerId, ['active', 'past_due', 'paused']);
+  const notice = accountClosedNotice({ playerName: player.name });
+  let cancelled = 0;
+  let notified = 0;
+  const failed: string[] = [];
+  for (const patron of patrons) {
+    try {
+      await stripe.cancelSubscription({
+        account: programme.stripeAccountId,
+        subscriptionId: patron.stripeSubscriptionId,
+      });
+    } catch {
+      failed.push(patron.id);
+      continue;
+    }
+    cancelled++;
+    if (!patron.email) continue;
+    try {
+      await email.sendEmail({
+        to: patron.email,
+        fromName: player.name,
+        subject: notice.subject,
+        html: noticeHtml(notice, null),
+      });
+      notified++;
+    } catch {
+      // A missed goodbye never undoes or blocks the cancellation.
+    }
+  }
+  return { programme: true, cancelled, notified, failed };
 }
 
 // ---------------------------------------------------------------------------

@@ -26,6 +26,23 @@ function chunk<T>(items: readonly T[], size: number): T[][] {
   return chunks;
 }
 
+type ComputedBrief = Awaited<ReturnType<typeof computeBriefForTournament>>;
+
+function proseInputFor(b: ComputedBrief): ProseBriefInput {
+  return {
+    tournamentId: b.tournamentId,
+    name: b.name,
+    city: b.city,
+    rules: b.rules,
+    previousEvent: b.previousEvent,
+  };
+}
+
+/** What a brief's diff/practice sentences were written from; the prose cache's key. */
+export function proseInputsHash(input: ProseBriefInput): string {
+  return createHash('sha256').update(JSON.stringify(input)).digest('hex');
+}
+
 export interface ConditionsRunDeps {
   db: SupabaseClient<Database>;
   agentRuns: AgentRunsDb;
@@ -64,27 +81,38 @@ export async function runConditionsForCandidates(
     ),
   );
 
+  // Step 5.4's cache: a brief whose prose input (rules plus the comparison
+  // event) hashes the same as the one its stored sentences were written
+  // from keeps those sentences and skips the model. Only the rest go into
+  // the batched prose calls below.
+  const { data: stored, error: storedError } = await deps.db
+    .from('conditions_briefs')
+    .select('tournament_id, prose_inputs_hash, diff, practice')
+    .eq('player_id', playerId);
+  if (storedError) throw storedError;
+  const storedById = new Map((stored ?? []).map((row) => [row.tournament_id, row]));
+
+  const toWrite: Array<(typeof computed)[number] & { proseHash: string }> = [];
   for (const b of computed) {
+    const proseHash = proseInputsHash(proseInputFor(b));
+    const cached = storedById.get(b.tournamentId);
+    const reuse = cached?.prose_inputs_hash === proseHash && Boolean(cached.diff);
     await persistConditionsBrief(deps.db, {
       playerId,
       tournamentId: b.tournamentId,
       runId: null,
       rules: b.rules,
-      diff: '',
-      practice: '',
+      diff: reuse ? cached!.diff : '',
+      practice: reuse ? cached!.practice : '',
       equipmentVersion: equipment.version,
       forecastAt: now.toISOString(),
+      proseInputsHash: reuse ? proseHash : null,
     });
+    if (!reuse) toWrite.push({ ...b, proseHash });
   }
 
-  for (const batch of chunk(computed, MAX_BRIEFS_PER_PROSE_CALL)) {
-    const proseInputs: ProseBriefInput[] = batch.map((b) => ({
-      tournamentId: b.tournamentId,
-      name: b.name,
-      city: b.city,
-      rules: b.rules,
-      previousEvent: b.previousEvent,
-    }));
+  for (const batch of chunk(toWrite, MAX_BRIEFS_PER_PROSE_CALL)) {
+    const proseInputs: ProseBriefInput[] = batch.map(proseInputFor);
     const inputsHash = createHash('sha256')
       .update(JSON.stringify({ playerId, proseInputs }))
       .digest('hex');
@@ -124,6 +152,7 @@ export async function runConditionsForCandidates(
           practice: p.practice,
           equipmentVersion: equipment.version,
           forecastAt: now.toISOString(),
+          proseInputsHash: b.proseHash,
         });
       }
     } catch (err) {

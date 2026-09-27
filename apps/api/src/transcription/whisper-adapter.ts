@@ -1,3 +1,5 @@
+import { calculateAudioCost } from '@deucex/actions';
+import { modelFor } from '@deucex/agents';
 import {
   TranscriptionFailedError,
   type TranscriptionAdapter,
@@ -5,9 +7,9 @@ import {
   type TranscriptionResult,
 } from './adapter';
 
-// TECH-ARCHITECTURE.md section 4: "roughly USD 0.006 per minute of audio."
-const WHISPER_COST_PER_MINUTE_USD = 0.006;
-const WHISPER_MODEL = 'whisper-1';
+// Priced from packages/actions' AUDIO_PRICING (step 5.4), the same table
+// agent_runs' cost comes from, rather than a second copy of the rate here.
+const WHISPER_MODEL = modelFor('matchScribeTranscribe');
 
 // whisper-1's verbose_json response gives the detected language as a full
 // name ("german"), not the ISO 639-1 code PRD-02's data dictionary and
@@ -77,14 +79,15 @@ export function createWhisperAdapter(config: WhisperAdapterConfig): Transcriptio
       }
 
       const body = (await response.json()) as WhisperVerboseJsonResponse;
-      const durationMinutes = (body.duration ?? 60) / 60;
+      const durationSeconds = body.duration ?? 60;
 
       return {
         transcript: body.text,
         language: input.languageOverride ?? normalizeLanguage(body.language),
         confidence: input.languageOverride ? 1 : estimateConfidence(body.segments),
         model: WHISPER_MODEL,
-        costUsd: durationMinutes * WHISPER_COST_PER_MINUTE_USD,
+        costUsd: calculateAudioCost(WHISPER_MODEL, durationSeconds)?.amount ?? 0,
+        durationSeconds,
       };
     },
   };

@@ -36,9 +36,11 @@ import {
   type ContentDeps,
   type DraftEdit,
 } from './service';
+import { OnDemandLimitError, refuseIfLimited, type OnDemandLimiter } from '../on-demand';
 
 export interface ContentRoutesDeps extends ContentDeps {
   anonClient: SupabaseClient<Database>;
+  onDemand: OnDemandLimiter;
 }
 
 async function requirePlayerId(
@@ -79,6 +81,10 @@ function mapError(err: unknown, reply: FastifyReply): FastifyReply | undefined {
     return reply.code(409).send({ error: err.message });
   }
   if (err instanceof NoRecipientsError) return reply.code(422).send({ error: err.message });
+  if (err instanceof OnDemandLimitError) {
+    refuseIfLimited(reply, err.decision);
+    return reply;
+  }
   return undefined;
 }
 
@@ -157,9 +163,11 @@ export async function registerContentRoutes(
 
   app.post(
     '/content/updates/:id/rewrite',
-    handle((playerId, { id }, body) => {
+    handle(async (playerId, { id }, body) => {
       const variant = body.variant as RewriteVariant;
       if (!REWRITE_VARIANTS.includes(variant)) throw new InvalidUpdateInputError('Unknown rewrite');
+      const decision = await deps.onDemand.claim(playerId, 'content_rewrite');
+      if (!decision.allowed) throw new OnDemandLimitError(decision);
       return rewriteDraft(deps, playerId, id!, variant);
     }),
   );

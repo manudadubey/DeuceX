@@ -31,6 +31,7 @@ export function createMockTranscriptionAdapter(
         confidence: input.languageOverride ? 1 : (fixture.confidence ?? 0.95),
         model: 'mock-whisper',
         costUsd: 0,
+        durationSeconds: 0,
       };
     },
   };

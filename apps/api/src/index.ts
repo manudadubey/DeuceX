@@ -102,7 +102,11 @@ import { registerConditionsRoutes, type ConditionsRoutesDeps } from './condition
 import { createOpenMeteoAdapter } from './conditions/openmeteo-adapter';
 import { registerConditionsRefreshScheduler } from './conditions/refresh-scheduler';
 import { registerConditionsStampBackfillScheduler } from './conditions/stamp-backfill-scheduler';
-import { createStripeFansClient } from '@deucex/actions/fans';
+import {
+  SupabaseFansActionsDb,
+  createStripeFansClient,
+  endMembershipsForErasure,
+} from '@deucex/actions/fans';
 import { registerFansRoutes, type FansRoutesDeps } from './fans/routes';
 import { registerFansAttentionScheduler } from './fans/scheduler';
 import { SupabaseFansStore } from './fans/store';
@@ -112,6 +116,7 @@ import { registerContentScheduler } from './content/scheduler';
 import { latestTeaser, onNoteSaved } from './content/service';
 import { SupabaseContentStore } from './content/store';
 import { registerFuelRoutes, type FuelRoutesDeps } from './fuel/routes';
+import { SupabaseOnDemandDb, createOnDemandLimiter } from './on-demand';
 import { registerFuelOutcomeScheduler } from './fuel/scheduler';
 import { SupabaseFuelStore } from './fuel/store';
 
@@ -386,10 +391,6 @@ async function main() {
   const moneyBoss = await createMoneyBoss(dbConnectionString);
   await registerFxScheduler(moneyBoss, { db, adapter: createEcbAdapter() });
   await registerReserveReminderScheduler(moneyBoss, { db });
-  await registerAccountDeletionScheduler(moneyBoss, {
-    db: new SupabaseAccountDeletionSweepDb(db),
-    storage,
-  });
   await registerFeedWindowScheduler(moneyBoss, { db });
   await registerConditionsRefreshScheduler(moneyBoss, {
     db,
@@ -420,7 +421,12 @@ async function main() {
         };
       })();
 
+  // Step 5.4's per-tier limits on on-demand model calls, shared by every
+  // route that spends one.
+  const onDemand = createOnDemandLimiter(new SupabaseOnDemandDb(db));
+
   const notesDeps: NotesRoutesDeps = {
+    onDemand,
     db,
     anonClient,
     storage,
@@ -464,6 +470,7 @@ async function main() {
   const adminRankingsDeps: AdminRankingsRoutesDeps = { db };
 
   const financialDeps: FinancialRoutesDeps = {
+    onDemand,
     db,
     anonClient,
     extractionClient: receiptExtractionClient,
@@ -508,6 +515,7 @@ async function main() {
         return createMockPatronNoteClient();
       })();
   const fansDeps: FansRoutesDeps = {
+    onDemand,
     db,
     anonClient,
     store: fansStore,
@@ -526,6 +534,20 @@ async function main() {
       createHash('sha256').update(`patron-link:${serviceRoleKey}`).digest('hex'),
   };
 
+  // The fourteen-day account-deletion sweep, since step 5.4 the erasure job:
+  // it needs Stripe (every patron membership ends first) and the queue.
+  const fansActionsDb = new SupabaseFansActionsDb(db);
+  await registerAccountDeletionScheduler(moneyBoss, {
+    db: new SupabaseAccountDeletionSweepDb(db, moneyBoss),
+    storage,
+    endMemberships: fansDeps.stripe
+      ? (
+          (stripe) => (playerId: string) =>
+            endMembershipsForErasure(fansActionsDb, stripe, email, { playerId })
+        )(fansDeps.stripe)
+      : null,
+  });
+
   // The 06:00 attention pass, plus (step 4.1b) the 90-day paused-membership
   // sweep, which needs Stripe to cancel and so only runs when a key is set.
   await registerFansAttentionScheduler(moneyBoss, {
@@ -541,6 +563,7 @@ async function main() {
   // yet), so without a Resend key they simply stay blank.
   const contentStore = new SupabaseContentStore(db);
   const contentDeps: ContentRoutesDeps = {
+    onDemand,
     anonClient,
     store: contentStore,
     draftClient: openaiApiKey
@@ -577,6 +600,7 @@ async function main() {
       })();
   const fuelStore = new SupabaseFuelStore(db);
   const fuelDeps: FuelRoutesDeps = {
+    onDemand,
     anonClient,
     store: fuelStore,
     extractionClient: menuExtractionClient,

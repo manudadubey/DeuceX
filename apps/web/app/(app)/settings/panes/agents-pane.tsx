@@ -16,7 +16,7 @@ import {
   Switch,
 } from '@deucex/ui';
 import { setAgentPaused, type Database } from '@deucex/db';
-import { AGENT_NAMES } from '@deucex/shared';
+import { AGENT_NAMES, modelLabel } from '@deucex/shared';
 import { createClient } from '@/lib/supabase/client';
 import { startNewUpdate } from '@/lib/content/api';
 
@@ -33,12 +33,12 @@ const BUILT_AGENTS = [
   {
     key: AGENT_NAMES.mindsetCoach,
     label: 'Mindset Coach',
-    cadence: 'Structured-output model · daily',
+    cadence: `${modelLabel('mindsetInsight')} · daily`,
   },
   {
     key: AGENT_NAMES.financial,
     label: 'Financial Agent',
-    cadence: 'Structured-output model · daily',
+    cadence: `${modelLabel('financialAction')} · daily`,
   },
 ] as const;
 

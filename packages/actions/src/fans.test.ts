@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ApprovalGateDb, ApprovalRecord } from './gate';
 import { ApprovalNotFoundError, ApprovalPayloadMismatchError } from './errors';
-import { billingPauseNotice, membershipEndedNotice, pausedMembershipEndDate } from '@deucex/shared';
+import {
+  accountClosedNotice,
+  billingPauseNotice,
+  membershipEndedNotice,
+  pausedMembershipEndDate,
+} from '@deucex/shared';
 import type { EmailClient, SendEmailInput } from './resend-client';
 import type { FansStripeClient } from './stripe-client';
 import {
@@ -13,6 +18,7 @@ import {
   openPatronPortal,
   pausePatronBilling,
   endPausedMembership,
+  endMembershipsForErasure,
   requestPatronManageLink,
   resumePatronBilling,
   verifyManageToken,
@@ -796,5 +802,49 @@ describe('step 4.1b follow-up · a membership paused for 90 days ends', () => {
     const email = fakeEmail();
     await expect(endPausedMembership(stripe, email.client, input)).rejects.toThrow('Stripe down');
     expect(email.sent).toHaveLength(0);
+  });
+});
+
+describe('step 5.4 · erasing a player ends every patron membership', () => {
+  it('cancels active, past-due and paused memberships and emails each patron with an address', async () => {
+    const stripe = fakeStripe();
+    const email = fakeEmail();
+    const result = await endMembershipsForErasure(fakeDb().db, stripe, email.client, {
+      playerId: 'player-1',
+    });
+    expect(result).toEqual({ programme: true, cancelled: 3, notified: 2, failed: [] });
+    expect(stripe.calls.cancelSubscription.mock.calls.map((c) => c[0].subscriptionId)).toEqual([
+      'sub_anna',
+      'sub_tom',
+      'sub_sophie',
+    ]);
+    const notice = accountClosedNotice({ playerName: 'Arya Dubey' });
+    expect(email.sent.map((e) => e.to)).toEqual(['anna@example.com', 'tom@example.com']);
+    expect(email.sent[0]).toMatchObject({ subject: notice.subject, fromName: 'Arya Dubey' });
+    expect(email.sent[0]!.replyTo).toBeUndefined();
+  });
+
+  it('reports a failed cancellation and sends that patron nothing', async () => {
+    const stripe = fakeStripe();
+    stripe.calls.cancelSubscription.mockImplementation(async ({ subscriptionId }) => {
+      if (subscriptionId === 'sub_tom') throw new Error('Stripe down');
+    });
+    const email = fakeEmail();
+    const result = await endMembershipsForErasure(fakeDb().db, stripe, email.client, {
+      playerId: 'player-1',
+    });
+    expect(result.failed).toEqual(['tom']);
+    expect(result.cancelled).toBe(2);
+    expect(email.sent.map((e) => e.to)).toEqual(['anna@example.com']);
+  });
+
+  it('does nothing on Stripe for a player with no programme', async () => {
+    const stripe = fakeStripe();
+    const email = fakeEmail();
+    const { db } = fakeDb({ getProgramme: async () => null });
+    expect(
+      await endMembershipsForErasure(db, stripe, email.client, { playerId: 'player-1' }),
+    ).toEqual({ programme: false, cancelled: 0, notified: 0, failed: [] });
+    expect(stripe.calls.cancelSubscription).not.toHaveBeenCalled();
   });
 });

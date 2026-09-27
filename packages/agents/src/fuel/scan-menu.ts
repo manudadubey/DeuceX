@@ -96,5 +96,6 @@ export async function extractMenu(
 
   throw new AgentValidationError(
     `fuel/extract-menu: model output failed schema validation twice: ${secondParsed.error.message}`,
+    usage,
   );
 }

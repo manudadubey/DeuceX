@@ -1,6 +1,7 @@
 import type { TokenUsage } from '@deucex/actions';
 import type { MenuExtractionPrompt } from './menu-prompt';
 import { CONTAINS_TAGS, DISH_TRAITS } from './types';
+import { modelFor } from '../models';
 
 // Same shape as financial/receipt-model-client.ts, with several images: a
 // plain fetch against the vendor's REST API, not an SDK. All pages of one
@@ -16,7 +17,7 @@ export class MenuExtractionModelCallError extends Error {}
 // TECH-ARCHITECTURE section 5's model tiering (Fuel's menu translation is
 // named as small-model work) both point at the same vision-capable model
 // receipts already use, on the same OpenAI account.
-export const MENU_EXTRACTION_MODEL = 'gpt-4o-mini';
+export const MENU_EXTRACTION_MODEL = modelFor('fuelMenuScan');
 
 const RESPONSE_SCHEMA_NAME = 'menu_extraction';
 // Fourteen dishes with a why sentence and asks each run to roughly 1,500

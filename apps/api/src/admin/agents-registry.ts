@@ -49,6 +49,14 @@ export const AGENTS: readonly AgentInfo[] = [
     providers: ['openai', 'transcription'],
   },
   {
+    name: 'match-scribe-transcribe',
+    label: 'Transcription',
+    cadence: 'Each saved note',
+    queued: false,
+    proposes: false,
+    providers: ['transcription'],
+  },
+  {
     name: 'content',
     label: 'Content Agent',
     cadence: 'After a saved note',

@@ -16,7 +16,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0, Phase 1, step 2.1 through step 5.2 done, step 5.3 parked, start step 5.4
+## Status: Phase 0 through Phase 5 done (step 5.3 parked); Release 1's build plan is complete
 
 The monorepo scaffold is built and deploying; the database has RLS-protected DeuceX tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -335,19 +335,47 @@ are in apps/web. VAPID keys are in the owner's local `.env` (four `WEB_PUSH_*` v
 `docs/BUILD-LOG.md`'s step 5.2 entry. [PR #28](https://github.com/manudadubey/DeuceX/pull/28), merged 26 September 2026. **Step 5.3 (mobile shells and stores) is parked** (owner decision, 26 September 2026): don't
 start it until the owner says so. When it resumes, it adds native push behind the same
 `PushClient`, and needs Apple and Google developer accounts. Until then push is Web Push only, and
-the offline queue has no native background upload. Next is **step 5.4** (hardening and the cost
-pass). Its "done when" checks need a staging environment and a database branch. Owner decision,
-26 September 2026: **no Supabase upgrade until going live; use a separate free Supabase project as
-staging** (not created yet; in the same MD Labs organisation, US$0 a month; the free plan allows two active
-projects, and the other two in the organisation are paused). What that means for step 5.4:
-- apply every migration to staging first, then production (still with the owner's confirmation);
-- the restore drill becomes "restore a dump of production into the staging project", since free
-  projects have no Supabase-managed backups to restore from;
-- staging pauses after about a week without activity and has to be resumed in the dashboard;
-- staging holds fixture data only, never real player data, since it gets looser handling than
-  production.
+the offline queue has no native background upload.
 
-**Open follow-ups** (none block step 5.4):
+Step 5.4 (hardening and the cost pass): all three "done when" checks met. Model spend for a
+worst-case Pro month with realistic fixtures is **A$0.30** (about 4 percent of the A$7.35
+ceiling), measured with real calls (`apps/api/scripts/cost-pass.ts`). A production dump restored
+cleanly into a throwaway local Postgres (`scripts/restore-drill.sh`). The erasure job wrote a
+`completed` record on staging (`apps/api/scripts/erasure-drill.ts`). Built:
+- model tiers (`MODEL_CALL_TIERS` in `@deucex/shared`, `modelFor()` in `packages/agents`);
+- priced Whisper runs and priced validation failures in `agent_runs`;
+- the Conditions prose cache;
+- per-player 24-hour limits on the five on-demand routes (`on_demand_requests`);
+- the erasure job with `erasure_records` (Stripe memberships cancelled first; it stops rather than
+  deletes if Stripe fails);
+- two cascade blockers fixed (`admin_actions` FK, paid-payout trigger);
+- `/api/health` and a GitHub Actions uptime check, and Grafana JSON with a `grafana_reader` role;
+- `ops/README.md` as the runbook.
+
+[PR #30](https://github.com/manudadubey/DeuceX/pull/30). See `docs/BUILD-LOG.md`'s step 5.4 entry.
+
+**Staging exists:** `deucex-staging` (`asbrrmrhxmlvmvlwitmr`, same MD Labs organisation, free,
+ap-northeast-1). Owner decision, 26 September 2026: no Supabase upgrade until going live.
+- Apply every migration to staging first, then production (still with the owner's confirmation).
+  There's no staging database password (owner's choice), so staging migrations go through the
+  Supabase MCP; check parity with `scripts/schema-fingerprint.sql`.
+- Staging holds fixture data only, never real player data; restore drills go to a local Postgres,
+  never staging.
+- Staging pauses after about a week without activity; resume it in the dashboard.
+- `.env` has `STAGING_SUPABASE_URL` and `STAGING_SUPABASE_SECRET_KEY`.
+
+**Open follow-ups:**
+- **Roll the staging secret key**: part of it was printed into a session log on 27 September 2026
+  (Project Settings > API Keys in deucex-staging; then update `.env`).
+- **Before launch, OpenAI's rate limit:** the `gpt-4o-mini` tokens-per-minute limit is 200,000,
+  and a menu or receipt scan uses 26,000 to 35,000 tokens (photos aren't downscaled), so about
+  six scans a minute across all players would refuse every mini-tier agent. Raise the OpenAI usage
+  tier and/or downscale photos before upload.
+- The deletion confirm page says patron billing and agents "pause immediately", but nothing pauses
+  during the 14-day cooling-off (billing ends at erasure). Fix the behaviour or the copy.
+- Content drafts failed validation on 3 of 8 cost-pass fixtures (too short); watch it with real
+  players.
+- Show `erasure_records` on the console's Trust and safety page.
 - The 3-day and 1-day entry-deadline countdown notices don't exist yet (only "entry closes soon"
   carries `deadline_at`).
 - **Launch blocker:** the staff passkey is off locally (`ADMIN_PASSKEY_REQUIRED=false` in the

@@ -88,5 +88,10 @@ export async function retryNoteRemote(
 ): Promise<void> {
   const headers = await authHeaders(supabase);
   const res = await fetch(`${API_URL}/notes/${noteId}/retry`, { method: 'POST', headers });
+  if (res.status === 429) {
+    // The 24-hour retry limit (step 5.4); the server's sentence says when it frees up.
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new ApiError(body.error ?? 'Retry limit reached. Try again later.');
+  }
   if (!res.ok) throw new ApiError(`Retry failed: ${res.status}`);
 }

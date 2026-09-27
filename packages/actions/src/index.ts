@@ -39,6 +39,8 @@ export {
 } from './record-run';
 
 export {
+  AUDIO_PRICING,
+  calculateAudioCost,
   calculateCost,
   MODEL_PRICING,
   type CostEstimate,

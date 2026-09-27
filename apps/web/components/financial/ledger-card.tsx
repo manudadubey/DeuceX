@@ -36,6 +36,7 @@ import type { ReceiptProposal } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import {
   ReceiptExtractionFailedError,
+  ReceiptScanLimitError,
   requestFinancialRecompute,
   scanReceipt,
 } from '@/lib/financial/api';
@@ -153,8 +154,14 @@ export function LedgerCard({
       const { proposal } = await scanReceipt(supabase, files[index]!);
       setReview(proposal);
     } catch (err) {
-      if (err instanceof ReceiptExtractionFailedError) {
-        onToast("We couldn't read this one. Type it in or skip it.");
+      if (err instanceof ReceiptExtractionFailedError || err instanceof ReceiptScanLimitError) {
+        // Over the scan limit falls back to the same blank form: the
+        // expense can still be typed in, it just isn't read for you.
+        onToast(
+          err instanceof ReceiptScanLimitError
+            ? `${err.message} Type this one in or skip it.`
+            : "We couldn't read this one. Type it in or skip it.",
+        );
         setReview({
           merchant: '',
           amount: 0,

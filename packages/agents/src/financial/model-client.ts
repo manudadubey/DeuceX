@@ -1,5 +1,6 @@
 import type { TokenUsage } from '@deucex/actions';
 import type { FinancialActionPrompt } from './prompt';
+import { modelFor } from '../models';
 
 // Same shape as mindset-coach/model-client.ts: a plain fetch against the
 // vendor's REST API, not an SDK.
@@ -15,7 +16,7 @@ export class FinancialActionModelCallError extends Error {}
 // short generation; the rest is arithmetic," under A$0.10/run) has ample
 // room under this model's rate for one short sentence plus an optional
 // second.
-export const FINANCIAL_ACTION_MODEL = 'gpt-4o-mini';
+export const FINANCIAL_ACTION_MODEL = modelFor('financialAction');
 
 const RESPONSE_SCHEMA_NAME = 'financial_agent_action';
 const MAX_OUTPUT_TOKENS = 200;

@@ -43,6 +43,7 @@ import {
   syncConnectAccount,
 } from './service';
 import type { FansStore } from './store';
+import { refuseIfLimited, type OnDemandLimiter } from '../on-demand';
 
 export interface FansRoutesDeps {
   db: SupabaseClient<Database>;
@@ -60,6 +61,7 @@ export interface FansRoutesDeps {
   linkSecret: string;
   /** Step 4.2: the Content Agent's public teaser (C-13), when wired. */
   latestTeaser?: (playerId: string) => Promise<{ text: string; sentAt: string } | null>;
+  onDemand: OnDemandLimiter;
 }
 
 const NOTE_KINDS: readonly PatronNoteKind[] = ['thanks', 'nudge', 'checkin', 'welcome'];
@@ -210,6 +212,7 @@ export async function registerFansRoutes(
   app.post('/fans/patrons/:id/draft', async (request, reply) => {
     const playerId = await requirePlayerId(deps, request, reply);
     if (!playerId) return;
+    if (refuseIfLimited(reply, await deps.onDemand.claim(playerId, 'patron_note_draft'))) return;
     const { id } = request.params as { id: string };
     const result = await draftPatronNote(
       { store: deps.store, noteClient: deps.noteClient, agentRuns: deps.agentRuns },
