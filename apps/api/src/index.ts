@@ -169,8 +169,25 @@ export function buildServer(
   ) {
     // The admin console (step 5.1, localhost:3001 in dev) calls this API from
     // the browser too, with its own staff session and the role preview header.
+    // Outside production any localhost port is allowed as well: a dev server
+    // that finds 3000 taken moves to another port, and every browser call
+    // (ranking lookup, note upload, scans) then failed its CORS preflight.
+    const allowed = (
+      process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://localhost:3001'
+    ).split(',');
+    const anyLocalhost = process.env.NODE_ENV !== 'production';
     void app.register(cors, {
-      origin: (process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://localhost:3001').split(','),
+      origin: (origin, cb) => {
+        if (
+          !origin ||
+          allowed.includes(origin) ||
+          (anyLocalhost && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin))
+        ) {
+          cb(null, true);
+          return;
+        }
+        cb(null, false);
+      },
       allowedHeaders: ['authorization', 'content-type', 'x-role-preview'],
     });
   }

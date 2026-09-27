@@ -3276,3 +3276,13 @@ Small fixes from step 5.4's follow-ups, stacked on the step 5.4 branch.
   original sent when the browser can't decode it. A correction to step 5.4's finding: this does
   not reduce model tokens, because the vision model already scales images to 768 px on the short
   side. It only saves upload size. The TPM risk is fixed by raising the OpenAI tier.
+
+## Dev CORS fix — 27 September 2026
+
+Onboarding's ranking lookup failed from a web dev server on port 52396 (3000 was taken, so
+Next.js moved port). apps/api only allowed `CORS_ORIGIN` (3000 and 3001), so the browser blocked
+every API call after the preflight. Outside production the API now also accepts any
+`localhost`/`127.0.0.1` port; production (`NODE_ENV=production`, set in `render.yaml`) still
+allows only `CORS_ORIGIN`. Verified: a lookup from port 52396 with a real session returned
+`verified`; an unknown origin is still refused. The deployed app's lookup still fails until
+apps/api is on Render and `NEXT_PUBLIC_API_URL` is set.
