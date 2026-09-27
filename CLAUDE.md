@@ -400,7 +400,7 @@ players"). In order:
    This is the biggest piece left. The owner decisions are made (27 September 2026, all in
    `docs/BILLING-DECISIONS.md`: trial held in DeuceX, "Save 20%", proration rules, 14-day
    dunning with an automatic patron-billing pause at lapse, and plans priced and billed in USD:
-   Pro US$34 or US$27 a month yearly, Elite US$105 or US$84); only GST waits on the accountant.
+   Pro US$35 or US$28 a month yearly, Elite US$99 or US$79); only GST waits on the accountant.
    About two sessions of build.
 3. **Deploy `apps/api` to Render**, per the follow-up below. Then set `NEXT_PUBLIC_API_URL`,
    `STRIPE_WEBHOOK_SECRET` and the uptime check's `API_HEALTH_URL`.

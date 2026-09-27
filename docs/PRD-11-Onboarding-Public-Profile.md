@@ -48,7 +48,7 @@ The route renders with no sidebar and no topbar (the `.bare` layout), centred, w
 
 **Step 2, "What does this season look like?"** Ranking target (`obTarget`, default 400 against current #487) with a live sentence ("From #487. Roughly 30 more points; two Challenger quarter-finals," or "That's at or below where you are. Aim a little higher?"); key tournaments, defaulting to "Challenger Poznań, Challenger Bratislava"; a surfaces toggle group (Clay, Hard, Indoor hard, Grass); a weekly budget slider (`obBudget`, A$400–3,000, A$50 steps, default A$1,200) with a live label and sentence ("At A$1,200 a week, most Challenger 75s in Europe are in reach; two-flight trips and paid coach blocks will be flagged"); and blocked dates, defaulting to "26 Oct – 1 Nov · coach block, Vienna."
 
-**Step 3, "Pick a plan."** A Monthly/Yearly toggle above three plan cards, each a radio with its own feature list; Pro is marked "Stage 1 and 2 players" and pre-selected. Yearly rewrites every price in place (US$34→US$27 Pro, US$105→US$84 Elite), "Yearly · Save 20%." A note reads, "Pro pays for itself if the Financial Agent saves one bad trip a season. Patron payouts are always yours, minus the 8% platform fee. 14 days free, no card needed." The button reads "Start 14-day trial · no card" with "We'll ask for a card on day 12, on Stripe's page, never here."
+**Step 3, "Pick a plan."** A Monthly/Yearly toggle above three plan cards, each a radio with its own feature list; Pro is marked "Stage 1 and 2 players" and pre-selected. Yearly rewrites every price in place (US$35→US$28 Pro, US$99→US$79 Elite), "Yearly · Save 20%." A note reads, "Pro pays for itself if the Financial Agent saves one bad trip a season. Patron payouts are always yours, minus the 8% platform fee. 14 days free, no card needed." The button reads "Start 14-day trial · no card" with "We'll ask for a card on day 12, on Stripe's page, never here."
 
 **Step 4, "Start your first agent."** Four rows (`pickFin`, `pickMind`, Tournament, Content), each with an icon, a tailored description and a switch. Tournament, Content and Financial default on; Mindset defaults off ("Starts after your third Match Scribe note"). A card states the next run and "Nothing is entered without you." "Open my dashboard" (`obFinish`) sets the first-week state, clears the tour flag, routes to `#/`, and starts the walkthrough about half a second later.
 
@@ -170,7 +170,7 @@ Weekly-budget tiering: the sentence under the slider is keyed to bands of the va
 
 Trial mechanics: 14 days from tapping "Start 14-day trial," card requested on day 12 through Stripe's own page; a lapsed trial reverts to Free at day 14 with the same no-data-loss guarantee as any downgrade (M-TIER-2).
 
-Billing-cycle price swap: Yearly rewrites every price to the annual monthly-equivalent (Pro US$27, Elite US$84); the total annual charge must also be stated as a total at purchase, not only monthly-equivalent, per Australian Consumer Law's no-drip-pricing rule (PRD-00 section 6).
+Billing-cycle price swap: Yearly rewrites every price to the annual monthly-equivalent (Pro US$28, Elite US$79); the total annual charge must also be stated as a total at purchase, not only monthly-equivalent, per Australian Consumer Law's no-drip-pricing rule (PRD-00 section 6).
 
 Publish state: dirty the instant a field changes after a publish, live again the instant "Publish changes" succeeds; no partial or scheduled publish in Release 1.
 
@@ -188,7 +188,7 @@ OB-AC-4. Given the ranking-target field is changed from 487 to 550, when it upda
 
 OB-AC-5. Given the player drags the weekly budget slider to A$1,200, when it settles, then the label reads "A$1,200" and the sentence reads "At A$1,200 a week, most Challenger 75s in Europe are in reach; two-flight trips and paid coach blocks will be flagged."
 
-OB-AC-6. Given step 3 shows Monthly prices, when the toggle switches to Yearly, then Pro changes from US$34 to US$27 and Elite from US$105 to US$84, with no navigation away.
+OB-AC-6. Given step 3 shows Monthly prices, when the toggle switches to Yearly, then Pro changes from US$35 to US$28 and Elite from US$99 to US$79, with no navigation away.
 
 OB-AC-7. Given Pro is selected and "Start 14-day trial · no card" is tapped, when the action fires, then a toast reads "Pro trial started · 14 days, card asked for on day 12," and no card field has appeared anywhere in steps 1 to 4.
 

@@ -18,9 +18,9 @@ Three tiers, priced in Australian dollars, 14-day trial with no card.
 
 Free: ranking tracking and the dashboard, Match Scribe with limits, public profile.
 
-Pro: US$34 a month or US$27 a month billed annually. All agents except the Studio agents. 8 percent platform fee on patron income. Cap of 50 patrons.
+Pro: US$35 a month or US$28 a month billed annually. All agents except the Studio agents. 8 percent platform fee on patron income. Cap of 50 patrons.
 
-Elite: US$105 a month or US$84 a month billed annually. 5 percent patron fee, no patron cap, TimesFM ranking forecasts, early access to Sponsor Agent and Fan Agent (the "Studio" agents), Agent Studio.
+Elite: US$99 a month or US$79 a month billed annually. 5 percent patron fee, no patron cap, TimesFM ranking forecasts, early access to Sponsor Agent and Fan Agent (the "Studio" agents), Agent Studio.
 
 Scope note (13 Sep, register A21): WTA players are in Release 1 with the same stage thresholds; doubles ranking and doubles prize money are in Release 1, doubles draws and partners are Release 2. The Berger file is the WTA persona (section 2); Arya and Neumayer remain ATP. No surface should hard-code "ATP" in new work.
 
@@ -196,7 +196,7 @@ Left: edit form (photo, name, bio, goal, socials, media kit), publish status. Ri
 
 ### 5.13 Settings (`#/settings`)
 
-Left nav `#stNav` and nine panes: Account (name, email, time zone Europe/Vienna, country), Preferences (section 5.14), Plan & billing (Pro US$34 renewing 3 October, 12 of 50 patrons, upgrade to Elite, invoices), Notifications (per-agent channels and quiet hours), Agents (schedule per agent, run now, pause), Equipment (section 5.4), Connections (ATP ranking TDI live feed, ITF ranking and calendar, Stripe Connect Express, Resend patron email, Calendar feed, Bank: not connected by design, Match Scribe audio retention, Export everything, Someone to call), Sharing (Coach link: matches, shortlists, patterns, never money; Parent / manager link: runway, P&L, expenses, patrons, no notes), Data & safety.
+Left nav `#stNav` and nine panes: Account (name, email, time zone Europe/Vienna, country), Preferences (section 5.14), Plan & billing (Pro US$35 renewing 3 October, 12 of 50 patrons, upgrade to Elite, invoices), Notifications (per-agent channels and quiet hours), Agents (schedule per agent, run now, pause), Equipment (section 5.4), Connections (ATP ranking TDI live feed, ITF ranking and calendar, Stripe Connect Express, Resend patron email, Calendar feed, Bank: not connected by design, Match Scribe audio retention, Export everything, Someone to call), Sharing (Coach link: matches, shortlists, patterns, never money; Parent / manager link: runway, P&L, expenses, patrons, no notes), Data & safety.
 
 ### 5.14 Preferences (language, currency, units)
 
@@ -312,4 +312,4 @@ Global helpers: `$`, `el`, `money`, `fmtA`, `axisK`, `toU`, `convT`, `applyUnit`
 
 Storage: `pc.tour`, `pc.state`, `pc.sidebar`, `pc.unit`, `pc.prefs` (Arya); `pc.ln.*` (Neumayer).
 
-Prices (USD since 27 Sep 2026): Pro US$34 / US$27 annual, 8 percent fee, 50-patron cap. Elite US$105 / US$84 annual, 5 percent fee, forecasts, Studio agents. Trial 14 days, no card.
+Prices (USD since 27 Sep 2026): Pro US$35 / US$28 annual, 8 percent fee, 50-patron cap. Elite US$99 / US$79 annual, 5 percent fee, forecasts, Studio agents. Trial 14 days, no card.

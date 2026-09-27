@@ -128,7 +128,7 @@ The honest risk statement: the ATP and ITF feeds are the two integrations that c
 
 ## 5. Unit economics of model spend
 
-PRD-00 section 6 sets the ceiling: average Pro model and API spend under 15 percent of the Pro price, which is 15 percent of US$34, or about US$5.10 a month (about A$7.25; the price was A$49 until 27 September 2026, when plans moved to USD, so the AUD figures below were built against A$7.35). The table below builds the estimate the way the brief asks, agent by agent, from each contract's own stated cost target and a labelled assumption about how often that agent actually runs for an active Pro player in a month.
+PRD-00 section 6 sets the ceiling: average Pro model and API spend under 15 percent of the Pro price, which is 15 percent of US$35, or US$5.25 a month (about A$7.47; the price was A$49 until 27 September 2026, when plans moved to USD, so the AUD figures below were built against A$7.35). The table below builds the estimate the way the brief asks, agent by agent, from each contract's own stated cost target and a labelled assumption about how often that agent actually runs for an active Pro player in a month.
 
 | Agent | Contract's own cost target | Assumed monthly volume (estimate, not from any PRD) | Estimated monthly cost |
 |---|---|---|---|

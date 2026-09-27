@@ -68,21 +68,21 @@ beside it. Annual cancellation runs to the end of the year, no pro-rata refund, 
 purchase (statutory consumer guarantees still apply; support can refund case by case). Send the
 7-day renewal reminder: a surprise A$1,428 charge is the fastest way to a chargeback.
 
-**Correction, 27 September 2026 (owner):** plans move from AUD to USD, converting the AUD prices
-at the ECB rate of 25 September 2026 (1 AUD = 0.7030 USD, from `fx_rates_daily`) and rounding to
-whole dollars:
+**Correction, 27 September 2026 (owner):** plans move from AUD to USD. The AUD prices converted
+at the ECB rate of 25 September 2026 (1 AUD = 0.7030 USD, from `fx_rates_daily`) give the exact
+figures below; the owner then set round prices:
 
 | Plan | AUD (was) | Exact USD | USD price | Yearly total | Saving vs monthly |
 |---|---|---|---|---|---|
-| Pro monthly | A$49 | US$34.45 | **US$34** | | |
-| Pro yearly | A$39 a month | US$27.42 | **US$27 a month** | US$324 | US$84 (20.6%) |
-| Elite monthly | A$149 | US$104.75 | **US$105** | | |
-| Elite yearly | A$119 a month | US$83.66 | **US$84 a month** | US$1,008 | US$252 (20.0%) |
+| Pro monthly | A$49 | US$34.45 | **US$35** | | |
+| Pro yearly | A$39 a month | US$27.42 | **US$28 a month** | US$336 | US$84 (20.0%) |
+| Elite monthly | A$149 | US$104.75 | **US$99** | | |
+| Elite yearly | A$119 a month | US$83.66 | **US$79 a month** | US$948 | US$240 (20.2%) |
 
 "Save 20%" stays true for both. The AUD figures above this correction are the analysis as first
 written.
 
-Decision record: Prices in USD: Pro US$34 a month or US$27 a month billed yearly (US$324); Elite US$105 a month or US$84 a month billed yearly (US$1,008). Label changes to "Save 20%" with the yearly total beside it. Cancelling an annual plan keeps access to the end of the paid year, no pro-rata refund, stated at purchase; support may refund case by case. Reminder email 7 days before an annual renewal. Decided by: Manu Dubey Date: 27 September 2026
+Decision record: Prices in USD: Pro US$35 a month or US$28 a month billed yearly (US$336); Elite US$99 a month or US$79 a month billed yearly (US$948). Label changes to "Save 20%" with the yearly total beside it. Cancelling an annual plan keeps access to the end of the paid year, no pro-rata refund, stated at purchase; support may refund case by case. Reminder email 7 days before an annual renewal. Decided by: Manu Dubey Date: 27 September 2026
 
 ## 3. Changing plans (proration)
 

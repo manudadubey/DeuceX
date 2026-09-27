@@ -56,7 +56,7 @@ M-STG-2 (Must). The player can pin a stage manually in Profile; a pinned stage i
 
 Prices in US dollars, billed in USD, with an approximate home-currency figure shown from the FX archive (changed from AUD on 27 September 2026; see `docs/BILLING-DECISIONS.md`). Fourteen-day trial of Pro or Elite, once per player, with no card required. Annual billing at the discounted rate, labelled "Save 20%" with the yearly total stated. See `docs/BILLING-DECISIONS.md` (27 September 2026) for trial mechanics, proration and failed payments.
 
-| Capability | Free | Pro (US$34 / US$27 annual) | Elite (US$105 / US$84 annual) |
+| Capability | Free | Pro (US$35 / US$28 annual) | Elite (US$99 / US$79 annual) |
 |---|---|---|---|
 | Verified ranking, dashboard, 52-week chart | Yes | Yes | Yes |
 | Match Scribe | 10 notes a month, no coach share | Unlimited | Unlimited |
