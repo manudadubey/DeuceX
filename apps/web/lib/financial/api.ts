@@ -3,6 +3,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@deucex/db';
 import type { ReceiptProposal } from '@deucex/agents';
+import { downscaleImage } from '@/lib/downscale-image';
 
 // The Financial Agent's one apps/api call with a real vendor side effect
 // (the receipt-scanning vision model) — everything else about this page is
@@ -43,7 +44,7 @@ export async function scanReceipt(
 ): Promise<ScanReceiptResponse> {
   const headers = await authHeaders(supabase);
   const form = new FormData();
-  form.append('image', file, 'receipt.jpg');
+  form.append('image', await downscaleImage(file), 'receipt.jpg');
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), EXTRACTION_TIMEOUT_MS);

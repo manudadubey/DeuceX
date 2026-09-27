@@ -16,7 +16,7 @@ player decides: nothing leaves the app (entry, payment, email, post, message) wi
 player-authored row in `approvals`, and only `packages/actions` may import Stripe, Resend, the
 entry client or ICS. Never work around this.
 
-## Status: Phase 0 through Phase 5 done (step 5.3 parked); Release 1's build plan is complete
+## Status: Release 1's build plan is complete (step 5.3 parked); now launch prep
 
 The monorepo scaffold is built and deploying; the database has RLS-protected DeuceX tables
 (step 0.2); magic-link and passkey auth work end to end against production infrastructure (step
@@ -354,6 +354,38 @@ cleanly into a throwaway local Postgres (`scripts/restore-drill.sh`). The erasur
 
 [PR #30](https://github.com/manudadubey/DeuceX/pull/30). See `docs/BUILD-LOG.md`'s step 5.4 entry.
 
+Launch-prep fixes, [PR #31](https://github.com/manudadubey/DeuceX/pull/31), stacked on #30:
+- The deletion copy (confirm page and Settings dialog) now says what really happens. Nothing
+  pauses during the 14 days; the behaviour itself was not changed.
+- The Tournament Agent has a real pause switch in Settings > Agents.
+- Onboarding upserts every agent's state (OB-17 closed).
+- Every user-facing em dash is gone.
+- Menu and receipt photos shrink to 1600 px before upload.
+
+See the build log's "Launch-prep fixes" entry. **As of 27 September 2026, #30 and #31 are both
+open, with checks passing.** The owner merges them: Claude's auto mode refuses to merge a PR
+without a human review. Merge #30 first; GitHub then retargets #31 to `main`. Check `gh pr list`
+before assuming `main` has either.
+
+**What's next: launch prep.** There's no build-plan step after 5.4 (Release 2 comes "after real
+players"). In order:
+1. **Owner account steps:**
+   - roll the staging secret key and the Stripe sandbox key;
+   - raise the OpenAI usage tier;
+   - register staff passkeys and add `https://admin.deucex.ai` to Supabase's passkey origins;
+   - add `https://deucex.vercel.app/**` to Supabase's redirect URLs.
+2. **Real Stripe Billing for player subscriptions.** Deferred since step 2.3 and never built: no
+   player is charged for Pro or Elite yet, there are no trials, and there's no upgrade back to Pro.
+   This is the biggest piece left. It needs its own session and probably owner decisions first
+   (trial mechanics, the annual price, proration).
+3. **Deploy `apps/api` to Render**, per the follow-up below. Then set `NEXT_PUBLIC_API_URL`,
+   `STRIPE_WEBHOOK_SECRET` and the uptime check's `API_HEALTH_URL`.
+4. **Go live:**
+   - attach `deucex.ai` to the Vercel projects;
+   - upgrade Supabase to Pro (real backups; the restore drill then restores into a branch, and
+     staging can be retired);
+   - remove the noindex from `/p/<slug>`.
+
 **Staging exists:** `deucex-staging` (`asbrrmrhxmlvmvlwitmr`, same MD Labs organisation, free,
 ap-northeast-1). Owner decision, 26 September 2026: no Supabase upgrade until going live.
 - Apply every migration to staging first, then production (still with the owner's confirmation).
@@ -368,11 +400,10 @@ ap-northeast-1). Owner decision, 26 September 2026: no Supabase upgrade until go
 - **Roll the staging secret key**: part of it was printed into a session log on 27 September 2026
   (Project Settings > API Keys in deucex-staging; then update `.env`).
 - **Before launch, OpenAI's rate limit:** the `gpt-4o-mini` tokens-per-minute limit is 200,000,
-  and a menu or receipt scan uses 26,000 to 35,000 tokens (photos aren't downscaled), so about
-  six scans a minute across all players would refuse every mini-tier agent. Raise the OpenAI usage
-  tier and/or downscale photos before upload.
-- The deletion confirm page says patron billing and agents "pause immediately", but nothing pauses
-  during the 14-day cooling-off (billing ends at erasure). Fix the behaviour or the copy.
+  and a menu or receipt scan uses 26,000 to 35,000 tokens, so about six scans a minute across all
+  players would refuse every mini-tier agent. Raise the OpenAI usage tier. (Photos are now shrunk
+  to 1600 px before upload, which saves upload time but not tokens: the model already scales them
+  to 768 px on the short side.)
 - Content drafts failed validation on 3 of 8 cost-pass fixtures (too short); watch it with real
   players.
 - Show `erasure_records` on the console's Trust and safety page.
@@ -386,16 +417,11 @@ ap-northeast-1). Owner decision, 26 September 2026: no Supabase upgrade until go
   financial chase; [PR #23](https://github.com/manudadubey/DeuceX/pull/23), merged 26 September 2026), but production has no linked rows until `apps/api` is deployed, so the
   console's approval rates still read "Not measured yet". See `docs/BUILD-LOG.md`'s approvals
   follow-up for the rate caveats (content rewrites, first-week dilution).
-- Replaying onboarding with an agent switched back on leaves it paused: onboarding only writes rows
-  for agents left off (step 1.4's OB-17 gap). Upserting every toggle's state, like Settings now
-  does, would close it.
-- Settings > Agents still says the Tournament Agent "arrives with step 3.2"; it shipped.
 - Roll the Stripe sandbox secret key (pasted in chat).
 - Set `STRIPE_WEBHOOK_SECRET` once `apps/api` has a public URL; no live webhook has run yet.
 - De-duplicate the "Stripe needs something from you" notification (fired twice in one KYC pass).
 - The payout footer's "1.75% + 30c" is only true for domestic charges (the Italian sandbox account
   paid about 6.5% with currency conversion): a PRD-04 copy fix.
-- Em dashes left in step 2.3's Settings copy (billing pane), against the copy rule.
 - Add `https://deucex.vercel.app/**` to Supabase Auth's redirect URLs (dashboard only), or
   magic-link sign-in on the deployed app bounces.
 - Deploy `apps/api` to **Render** close to launch, not before (owner decision 26 September 2026:

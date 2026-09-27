@@ -23,9 +23,10 @@ export default function ConfirmAccountDeletionPage({
       <p>DeuceX</p>
       <h1>Confirm account deletion</h1>
       <p>
-        Clicking below starts a 14-day cooling-off period. Your plan, patron billing and agents
-        pause immediately; nothing is deleted until the 14 days pass, and you can cancel any time
-        before then from Settings &gt; Data &amp; safety.
+        Clicking below starts a 14-day cooling-off period. Everything keeps working until then, and
+        you can cancel any time before day 14 from Settings &gt; Data &amp; safety. On day 14 your
+        account and all its data are deleted for good, every patron membership ends and each patron
+        gets one email saying so. After that it can&apos;t be undone.
       </p>
       {searchParams.error && <p role="alert">That link is invalid or has expired.</p>}
       <form action={confirmAccountDeletionAction}>

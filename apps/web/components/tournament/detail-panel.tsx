@@ -82,7 +82,7 @@ export function DetailPanel({
       );
       setConfirming(false);
     } catch {
-      onToast("Couldn't log that entry — try again.");
+      onToast("Couldn't log that entry. Try again.");
     }
   };
 
@@ -91,7 +91,7 @@ export function DetailPanel({
       await skip(candidate.tournamentId);
       onToast('Skipped. The agent will drop it from next week’s run.');
     } catch {
-      onToast("Couldn't skip — try again.");
+      onToast("Couldn't skip. Try again.");
     }
   };
 
@@ -100,7 +100,7 @@ export function DetailPanel({
       await withdraw(candidate.tournamentId, candidate.runId);
       onToast(`Withdrawn from ${candidate.name}`);
     } catch {
-      onToast('The entry deadline has passed — withdraw on the player zone instead.');
+      onToast('The entry deadline has passed. Withdraw on the player zone instead.');
     }
   };
 
@@ -109,7 +109,7 @@ export function DetailPanel({
       await undo(candidate.tournamentId);
       onToast('Undone.');
     } catch {
-      onToast("Couldn't undo — try again.");
+      onToast("Couldn't undo. Try again.");
     }
   };
 

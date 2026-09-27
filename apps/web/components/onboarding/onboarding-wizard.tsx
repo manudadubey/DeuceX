@@ -501,7 +501,7 @@ export function OnboardingWizard({
                   onClick={() => chooseCandidate(null)}
                   className="text-left text-sm text-muted-foreground underline"
                 >
-                  None of these — continue unverified
+                  None of these, continue unverified
                 </button>
               </div>
             )}
@@ -561,7 +561,7 @@ export function OnboardingWizard({
               <div className="flex items-center gap-3 rounded-lg bg-surface px-3.5 py-3 text-sm shadow-[0_0_0_1px_var(--border)]">
                 <Badge variant="secondary">Unverified</Badge>
                 <span className="text-muted-foreground">
-                  We couldn&apos;t match a ranking yet. You can continue — your dashboard and public
+                  We couldn&apos;t match a ranking yet. You can continue: your dashboard and public
                   profile stay unverified until support or a later lookup confirms it.
                 </span>
               </div>

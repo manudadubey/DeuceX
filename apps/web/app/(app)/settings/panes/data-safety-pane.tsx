@@ -98,7 +98,7 @@ export function DataSafetyPane({
       });
       const supabase = createClient();
       await requestDataExport(supabase, approval.id);
-      onToast('Export requested — it will arrive by email in a few minutes');
+      onToast('Export requested. It arrives by email in a few minutes');
     } finally {
       setExporting(false);
     }
@@ -115,7 +115,7 @@ export function DataSafetyPane({
       const supabase = createClient();
       await requestAccountDeletion(supabase, approval.id);
       setConfirmingDelete(false);
-      onToast('Confirmation link emailed — nothing happens until you click it');
+      onToast('Confirmation link emailed. Nothing happens until you click it');
     } finally {
       setRequestingDelete(false);
     }
@@ -224,7 +224,7 @@ export function DataSafetyPane({
           <div className="mt-2">
             <Confirm
               title="Email a deletion confirmation link?"
-              description="Cancels the plan, deletes notes, transcripts, audio and expenses. Patron subscriptions end and payouts stop after the final one. Your public page shows a 'moved on' note for 30 days. Nothing happens until you click the emailed link, and you get 14 days after that to change your mind."
+              description="Nothing happens until you click the emailed link, and you then have 14 days to change your mind; everything keeps working meanwhile. On day 14 your notes, transcripts, audio, expenses and every other record are deleted for good, each patron's membership ends and each patron gets one email, and your public page goes offline. Your own Stripe account, and anything it has already paid out, stays with you."
               actions={
                 <>
                   <Button

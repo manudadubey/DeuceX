@@ -85,7 +85,7 @@ export default async function DashboardPage() {
           >
             <PulseTileLabel>{tile.label}</PulseTileLabel>
             <PulseTileBadge />
-            <PulseTileValue>—</PulseTileValue>
+            <PulseTileValue>–</PulseTileValue>
             <PulseTileSub>{tile.sub}</PulseTileSub>
           </Link>
         ))}

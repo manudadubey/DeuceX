@@ -2,6 +2,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@deucex/db';
+import { downscaleImage } from '@/lib/downscale-image';
 import { UNREADABLE_MESSAGE, type FuelAvoid, type FuelMode, type FuelPick } from '@deucex/agents';
 
 // Fuel's one apps/api call: the menu scan, which has the only vendor side
@@ -51,7 +52,8 @@ export async function scanMenu(
   if (!token) throw new FuelApiError('Not signed in');
 
   const form = new FormData();
-  files.forEach((f, i) => form.append('page', f, f.name || `menu-${i + 1}.jpg`));
+  const pages = await Promise.all(files.map((f) => downscaleImage(f)));
+  pages.forEach((page, i) => form.append('page', page, `menu-${i + 1}.jpg`));
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), SCAN_TIMEOUT_MS);

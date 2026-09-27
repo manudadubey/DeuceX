@@ -71,7 +71,7 @@ export function DecisionCard({
       );
       setConfirming(false);
     } catch {
-      setToast("Couldn't log that entry — try again.");
+      setToast("Couldn't log that entry. Try again.");
     }
   };
 
@@ -80,7 +80,7 @@ export function DecisionCard({
       await withdraw(candidate.tournamentId, candidate.runId);
       setToast(`Withdrawn from ${candidate.name}`);
     } catch {
-      setToast("Couldn't withdraw — the entry deadline may already have passed.");
+      setToast("Couldn't withdraw. The entry deadline may already have passed.");
     }
   };
 
@@ -174,7 +174,7 @@ export function DecisionCard({
               <div className="font-mono font-medium">
                 {runwayLoseFirst != null && Number.isFinite(runwayLoseFirst)
                   ? `${runwayLoseFirst.toFixed(1)} wks`
-                  : '—'}
+                  : '–'}
               </div>
             </div>
             <div>
@@ -184,7 +184,7 @@ export function DecisionCard({
               <div className="font-mono font-medium">
                 {runwayReachBest != null && Number.isFinite(runwayReachBest)
                   ? `${runwayReachBest.toFixed(1)} wks`
-                  : '—'}
+                  : '–'}
               </div>
             </div>
           </div>
