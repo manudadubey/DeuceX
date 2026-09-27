@@ -3310,3 +3310,13 @@ Agent nav items (not built), Fuel's "New" badge, and the prototype's sample-seas
 Verified in the browser against the owner's signed-in session and, for the verified hero with a
 populated chart, a temporary fixture page (deleted). The Financial page's own KPI tiles still
 show "2705.6 wks" and "$30,000"; they're separate components and were left alone.
+
+## Dev CORS fix — 27 September 2026
+
+Onboarding's ranking lookup failed from a web dev server on port 52396 (3000 was taken, so
+Next.js moved port). apps/api only allowed `CORS_ORIGIN` (3000 and 3001), so the browser blocked
+every API call after the preflight. Outside production the API now also accepts any
+`localhost`/`127.0.0.1` port; production (`NODE_ENV=production`, set in `render.yaml`) still
+allows only `CORS_ORIGIN`. Verified: a lookup from port 52396 with a real session returned
+`verified`; an unknown origin is still refused. The deployed app's lookup still fails until
+apps/api is on Render and `NEXT_PUBLIC_API_URL` is set.
