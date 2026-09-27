@@ -106,14 +106,12 @@ function subSummary(overrides: Partial<PlanSubscriptionSummary> = {}): PlanSubsc
 function fakeStripe(overrides: Partial<BillingStripeClient> = {}): BillingStripeClient {
   return {
     createCustomer: vi.fn().mockResolvedValue({ id: 'cus_1' }),
-    findPriceByLookupKey: vi
-      .fn()
-      .mockResolvedValue({
-        id: 'price_pro_annual',
-        unitAmountMinor: 33600,
-        currency: 'USD',
-        interval: 'year',
-      }),
+    findPriceByLookupKey: vi.fn().mockResolvedValue({
+      id: 'price_pro_annual',
+      unitAmountMinor: 33600,
+      currency: 'USD',
+      interval: 'year',
+    }),
     createPlanCheckoutSession: vi
       .fn()
       .mockResolvedValue({ id: 'cs_1', url: 'https://checkout.stripe.test/cs_1' }),
@@ -344,12 +342,10 @@ describe('completeSubscriptionCheckout', () => {
 
   it("refuses someone else's checkout and leaves an open one alone", async () => {
     const others = fakeStripe({
-      retrievePlanCheckoutSession: vi
-        .fn()
-        .mockResolvedValue({
-          ...completeSession,
-          metadata: { ...completeSession.metadata, deucex_player_id: 'player-2' },
-        }),
+      retrievePlanCheckoutSession: vi.fn().mockResolvedValue({
+        ...completeSession,
+        metadata: { ...completeSession.metadata, deucex_player_id: 'player-2' },
+      }),
     });
     await expect(
       completeSubscriptionCheckout(fakeDb(trialPlayer()).db, others, {
