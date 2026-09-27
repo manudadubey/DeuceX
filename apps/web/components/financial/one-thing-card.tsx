@@ -16,7 +16,7 @@ function nextMonday7amUtc(now: Date): Date {
 }
 
 function formatMoney(amount: number, currency: string): string {
-  return new Intl.NumberFormat('en-AU', {
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
     maximumFractionDigits: 0,

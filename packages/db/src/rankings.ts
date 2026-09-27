@@ -26,6 +26,50 @@ export async function getLatestRankingSnapshotForPlayer(
   return data;
 }
 
+// The dashboard hero's 52-week trajectory: the player's own snapshots,
+// oldest first, under the same select-own policy as the latest-row read.
+export async function listRankingSnapshotsForPlayer(
+  client: SupabaseClient<Database>,
+  playerId: string,
+  sinceWeekStart: string,
+): Promise<RankingSnapshot[]> {
+  const { data, error } = await client
+    .from('ranking_snapshots')
+    .select('*')
+    .eq('player_id', playerId)
+    .gte('week_start', sinceWeekStart)
+    .order('week_start', { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+// TECH-ARCHITECTURE.md section 2.2's shape for ranking_snapshots.points_by_tournament
+// (the same one apps/api's Tournament Agent reads for defend points).
+export interface PointsByTournamentEntry {
+  tournamentId: string;
+  event: 'singles' | 'doubles';
+  points: number;
+  expiryWeek: string;
+}
+
+/** Singles points expiring from `fromDate` up to `weeks` weeks ahead, soonest first. */
+export function pointsToDefend(
+  snapshot: Pick<RankingSnapshot, 'points_by_tournament'> | null,
+  fromDate: string,
+  weeks: number,
+): PointsByTournamentEntry[] {
+  if (!snapshot || !Array.isArray(snapshot.points_by_tournament)) return [];
+  const from = Date.parse(fromDate);
+  const until = from + weeks * 7 * 24 * 60 * 60 * 1000;
+  return (snapshot.points_by_tournament as unknown as PointsByTournamentEntry[])
+    .filter((e) => e && e.event === 'singles' && e.points > 0)
+    .filter((e) => {
+      const at = Date.parse(e.expiryWeek);
+      return at >= from && at <= until;
+    })
+    .sort((a, b) => a.expiryWeek.localeCompare(b.expiryWeek));
+}
+
 // M-STG-4: "shown as a chip beside singles when inside 500."
 export function showDoublesChip(doublesRank: number | null): boolean {
   return doublesRank !== null && doublesRank <= 500;

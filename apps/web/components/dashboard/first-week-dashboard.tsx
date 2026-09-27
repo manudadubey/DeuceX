@@ -1,84 +1,95 @@
 import Link from 'next/link';
-import {
-  Badge,
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Item,
-  ItemActions,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-  Progress,
-} from '@deucex/ui';
-import type { Player } from '@deucex/db';
-import { showDoublesChip } from '@deucex/db';
-import { CheckInCard } from '@/components/mindset/check-in-card';
+import { Badge, Card, CardDescription, CardHeader, CardTitle, CardActions, cn } from '@deucex/ui';
+import type { Player, RankingSnapshot } from '@deucex/db';
 import { RunwayPulseTile } from '@/components/financial/runway-pulse-tile';
 import { DecisionTile } from '@/components/tournament/decision-tile';
 import { DecisionCardSlot } from '@/components/tournament/decision-card-slot';
 import { PatronsCard, PatronsPulseTile } from '@/components/fans/patrons-dashboard';
 import { ContentAgentCard } from '@/components/content/dashboard-card';
+import { MindsetCard } from './mindset-card';
+import { RankingHero } from './ranking-hero';
+import type { RankChartDefence } from './rank-chart';
 
-const MINDSET_STARTS_AFTER_NOTES = 3;
+interface Step {
+  title: string;
+  sub: string;
+  href: string | null;
+  done: boolean;
+  action: string;
+}
 
-// The prototype's `#/first-week` state (PRD-11 section 4.2), wired to real
-// player data (build plan step 1.4). Runway and the Tournament Agent
-// shortlist are both real now (steps 2.2 and 3.2), and so are the Patrons
-// tile and card (step 4.1), which keep the first-week zero state until the
-// patron page is live.
+// The prototype's dashboard (docs/deucex-dashboard.html, `#/` and its
+// `#/first-week` state, PRD-11 section 4.2) wired to real player data: the
+// ranking band, the three answers, this week's decision, the first-week
+// checklist until its four steps are done ("This checklist disappears once
+// the four are done"), then the three agent cards.
 export function FirstWeekDashboard({
   player,
   notesCount,
   playerEmail,
-  doublesRank = null,
+  snapshots,
+  defences,
+  balanceEntered,
+  pageLive,
+  today,
 }: {
   player: Player;
   notesCount: number;
   playerEmail: string;
-  /** Latest ranking_snapshots.tour_doubles_rank (M-STG-4: shown when inside 500). */
-  doublesRank?: number | null;
+  snapshots: RankingSnapshot[];
+  defences: RankChartDefence[];
+  /** A reserve_entries row exists: step 3. */
+  balanceEntered: boolean;
+  /** KYC complete and a tier published: step 4. */
+  pageLive: boolean;
+  today: Date;
 }) {
-  const stageLabel =
-    player.stage === '1' ? 'Building' : player.stage === '2' ? 'Emerging' : 'Established';
   const verified = player.verification === 'verified';
-  const noteDone = notesCount > 0;
-  const doneCount = 1 + (noteDone ? 1 : 0);
   const plan = player.tier === 'pro' || player.tier === 'elite' ? player.tier : 'free';
+
+  const steps: Step[] = [
+    {
+      title: verified ? 'Ranking verified and Tournament Agent scheduled' : 'Verify your ranking',
+      sub: verified
+        ? 'Done in setup · first run Sunday 20:00 UTC'
+        : 'The Tournament Agent needs a verified ranking to build your shortlist.',
+      href: verified ? null : '/onboarding',
+      done: verified,
+      action: '2 min',
+    },
+    {
+      title: 'Record your first Match Scribe note',
+      sub: 'After today’s practice is fine. The Content Agent drafts from it within 30 minutes; the Mindset Coach starts after your third.',
+      href: '/match-scribe',
+      done: notesCount > 0,
+      action: 'Record',
+    },
+    {
+      title: 'Enter today’s balance',
+      sub: 'One number. Runway, the P&L and receipt scanning switch on.',
+      href: '/agent/financial',
+      done: balanceEntered,
+      action: '1 min',
+    },
+    {
+      title: 'Build your public page and switch on patron tiers',
+      sub: 'Headline, bio, photo, three tiers. Stripe Connect handles payouts; KYC takes about ten minutes.',
+      href: '/fans',
+      done: pageLive,
+      action: '10 min',
+    },
+  ];
+  const doneCount = steps.filter((s) => s.done).length;
+  const nowIndex = steps.findIndex((s) => !s.done);
 
   return (
     <>
-      <Card id="fwRanking" className="p-6">
-        <div className="flex flex-col gap-1">
-          <div className="text-xs text-muted-foreground">
-            {player.tour.toUpperCase()} singles ranking{' '}
-            <Badge variant="secondary">
-              Stage {player.stage ?? '1'} · {stageLabel}
-            </Badge>
-          </div>
-          {verified ? (
-            <div className="flex items-baseline gap-3">
-              <div className="font-mono text-4xl font-medium">
-                <small className="mr-0.5 text-2xl text-muted-foreground">#</small>
-                {player.tour_rank}
-              </div>
-              {showDoublesChip(doublesRank) && (
-                <Badge variant="secondary">Doubles #{doublesRank}</Badge>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">Unverified</Badge>
-              <Link href="/onboarding" className="text-sm font-medium text-foreground underline">
-                Verify your ranking
-              </Link>
-            </div>
-          )}
-        </div>
-      </Card>
+      <RankingHero player={player} snapshots={snapshots} defences={defences} today={today} />
 
-      <section aria-label="Pulse" className="grid grid-cols-3 gap-4 max-[900px]:grid-cols-1">
+      <section
+        aria-label="Pulse"
+        className="grid grid-cols-3 gap-4 max-[900px]:grid-cols-1 max-[900px]:gap-3"
+      >
         <RunwayPulseTile
           playerId={player.id}
           homeCurrency={player.home_currency}
@@ -98,88 +109,76 @@ export function FirstWeekDashboard({
         weeklyBudget={player.weekly_budget}
       />
 
-      <Card id="fwNext">
-        <CardHeader>
-          <CardTitle>Your first week</CardTitle>
-          <CardDescription>
-            Four things, in order. The agents start working as each one lands.
-          </CardDescription>
-        </CardHeader>
-        <div className="flex flex-col gap-2 px-6">
-          <Item>
-            <ItemMedia>✓</ItemMedia>
-            <ItemTitle>Ranking verified and Tournament Agent scheduled</ItemTitle>
-            <ItemDescription>Done in setup · first run Sunday 20:00 UTC</ItemDescription>
-            <ItemActions>
-              <Badge variant="ok">Done</Badge>
-            </ItemActions>
-          </Item>
-          <Link href="/match-scribe" className="no-underline">
-            <Item className={noteDone ? '' : 'bg-sidebar-accent'}>
-              <ItemMedia>{noteDone ? '✓' : '2'}</ItemMedia>
-              <ItemTitle>Record your first Match Scribe note</ItemTitle>
-              <ItemDescription>
-                The Content Agent drafts from it within 30 minutes; the Mindset Coach starts after
-                your third.
-              </ItemDescription>
-              <ItemActions>
-                <Badge variant={noteDone ? 'ok' : 'lime'}>{noteDone ? 'Done' : 'Record'}</Badge>
-              </ItemActions>
-            </Item>
-          </Link>
-          <Link href="/agent/financial" className="no-underline">
-            <Item>
-              <ItemMedia>3</ItemMedia>
-              <ItemTitle>Enter today&apos;s balance</ItemTitle>
-              <ItemDescription>One number. Runway and receipt scanning switch on.</ItemDescription>
-              <ItemActions>
-                <Badge variant="secondary">1 min</Badge>
-              </ItemActions>
-            </Item>
-          </Link>
-          <Link href="/profile" className="no-underline">
-            <Item>
-              <ItemMedia>4</ItemMedia>
-              <ItemTitle>Build your public page and switch on patron tiers</ItemTitle>
-              <ItemDescription>Headline, bio, photo, three tiers.</ItemDescription>
-              <ItemActions>
-                <Badge variant="secondary">10 min</Badge>
-              </ItemActions>
-            </Item>
-          </Link>
-        </div>
-        <p className="px-6 pt-2 text-[0.8125rem] text-muted-foreground">
-          {doneCount} of 4 done · this checklist disappears once all four are.
-        </p>
-      </Card>
+      {doneCount < steps.length ? (
+        <Card id="fwNext">
+          <CardHeader>
+            <CardTitle>Your first week</CardTitle>
+            <CardDescription>
+              Four things, in order. The agents start working as each one lands.
+            </CardDescription>
+            <CardActions>
+              <Badge variant="secondary" className="tabular-nums">
+                {doneCount} of 4 done
+              </Badge>
+            </CardActions>
+          </CardHeader>
+          <ol className="flex flex-col gap-1.5 px-6 max-sm:px-5">
+            {steps.map((step, i) => {
+              const now = i === nowIndex;
+              const body = (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'row-span-2 grid size-7 place-items-center rounded-full bg-muted text-xs font-medium text-muted-foreground',
+                      step.done && 'bg-chart-2 text-[oklch(0.2_0.05_131)]',
+                      now && 'bg-foreground text-background',
+                    )}
+                  >
+                    {step.done ? '✓' : i + 1}
+                  </span>
+                  <span className="text-sm font-medium">{step.title}</span>
+                  <span className="col-start-2 text-xs text-muted-foreground">{step.sub}</span>
+                  <span className="col-start-3 row-span-2 row-start-1">
+                    <Badge variant={step.done ? 'ok' : now ? 'lime' : 'secondary'}>
+                      {step.done ? 'Done' : step.action}
+                    </Badge>
+                  </span>
+                </>
+              );
+              const rowClass =
+                'grid grid-cols-[1.75rem_1fr_auto] items-center gap-x-3 gap-y-0.5 rounded-lg bg-secondary/50 px-3 py-2.5 text-left no-underline text-foreground';
+              return (
+                <li key={step.title}>
+                  {step.href && !step.done ? (
+                    <Link
+                      href={step.href}
+                      className={cn(rowClass, 'transition-colors hover:bg-secondary')}
+                    >
+                      {body}
+                    </Link>
+                  ) : (
+                    <div className={rowClass}>{body}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+          <p className="border-t border-border px-6 pt-6 text-[0.8125rem] text-muted-foreground max-sm:px-5">
+            This checklist disappears once the four are done.
+          </p>
+        </Card>
+      ) : null}
 
-      <section className="grid grid-cols-3 gap-4 max-[900px]:grid-cols-1">
+      <section className="grid grid-cols-3 gap-4 max-[1100px]:grid-cols-1">
         <ContentAgentCard
           playerId={player.id}
           isFree={plan === 'free'}
           timezone={player.timezone}
         />
-
-        <CheckInCard
-          playerId={player.id}
-          timezone={player.timezone}
-          source="dashboard"
-          title="Mindset Coach"
-          description={
-            notesCount >= MINDSET_STARTS_AFTER_NOTES
-              ? "Today's check-in."
-              : `${Math.min(notesCount, MINDSET_STARTS_AFTER_NOTES)} of ${MINDSET_STARTS_AFTER_NOTES} notes · until then, the daily check-in is enough.`
-          }
-        />
-
+        <MindsetCard playerId={player.id} timezone={player.timezone} notesCount={notesCount} />
         <PatronsCard playerId={player.id} plan={plan} homeCurrency={player.home_currency} />
       </section>
-
-      {notesCount < MINDSET_STARTS_AFTER_NOTES && (
-        <div className="max-w-sm">
-          <Progress value={(notesCount / MINDSET_STARTS_AFTER_NOTES) * 100} />
-        </div>
-      )}
 
       <span className="sr-only">Signed in as {playerEmail}</span>
     </>
