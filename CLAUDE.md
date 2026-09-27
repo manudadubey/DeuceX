@@ -352,9 +352,10 @@ cleanly into a throwaway local Postgres (`scripts/restore-drill.sh`). The erasur
 - `/api/health` and a GitHub Actions uptime check, and Grafana JSON with a `grafana_reader` role;
 - `ops/README.md` as the runbook.
 
-[PR #30](https://github.com/manudadubey/DeuceX/pull/30). See `docs/BUILD-LOG.md`'s step 5.4 entry.
+[PR #30](https://github.com/manudadubey/DeuceX/pull/30), merged 27 September 2026. See
+`docs/BUILD-LOG.md`'s step 5.4 entry.
 
-Launch-prep fixes, [PR #31](https://github.com/manudadubey/DeuceX/pull/31), stacked on #30:
+Launch-prep fixes, [PR #31](https://github.com/manudadubey/DeuceX/pull/31), merged 27 September 2026:
 - The deletion copy (confirm page and Settings dialog) now says what really happens. Nothing
   pauses during the 14 days; the behaviour itself was not changed.
 - The Tournament Agent has a real pause switch in Settings > Agents.
@@ -362,10 +363,30 @@ Launch-prep fixes, [PR #31](https://github.com/manudadubey/DeuceX/pull/31), stac
 - Every user-facing em dash is gone.
 - Menu and receipt photos shrink to 1600 px before upload.
 
-See the build log's "Launch-prep fixes" entry. **As of 27 September 2026, #30 and #31 are both
-open, with checks passing.** The owner merges them: Claude's auto mode refuses to merge a PR
-without a human review. Merge #30 first; GitHub then retargets #31 to `main`. Check `gh pr list`
-before assuming `main` has either.
+See the build log's "Launch-prep fixes" entry.
+
+Dashboard parity, [PR #32](https://github.com/manudadubey/DeuceX/pull/32), merged 27 September
+2026. The dashboard now matches `docs/deucex-dashboard.html` from real data:
+- The full dashboard is reachable. Checklist steps 3 and 4 had been hard-coded as not done; they
+  now read `reserve_entries` and the patron programme, and the checklist hides once all four are
+  done. `dashboard_state` itself still only ever reads `'first'`.
+- The ranking hero and 52-week chart come from `ranking_snapshots`, with points to defend from
+  `points_by_tournament` (`pointsToDefend` in `@deucex/db`).
+- The sidebar has the plan line, live counts and a player footer.
+- AUD shows as "A$" in the Financial and Tournament cards (`en-US` formatting, as Fans does).
+- Left out because nothing real backs them: a player photo, the projected EOY line, "since last
+  login", and the Sponsor and Fan Agent nav items. The Financial page's own KPI tiles still show
+  "2705.6 wks" and "$30,000"; they're separate components.
+
+Dev CORS fix, [PR #33](https://github.com/manudadubey/DeuceX/pull/33), merged 27 September 2026.
+Outside production apps/api accepts any `localhost` port. A web dev server that moved off 3000
+had failed every API call (the ranking lookup first). Production still allows only
+`CORS_ORIGIN`.
+
+**As of 27 September 2026, no PRs are open and `main` has everything above.** The owner merges
+PRs: Claude's auto mode refuses to merge, or retarget a PR's base, without a human review. When
+PRs are stacked, move each one's base to `main` before merging it (`gh pr edit N --base main`);
+merging into the old base branch would leave `main` without it.
 
 **What's next: launch prep.** There's no build-plan step after 5.4 (Release 2 comes "after real
 players"). In order:
