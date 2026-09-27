@@ -155,8 +155,11 @@ export {
 } from './sharing';
 export {
   getLatestRankingSnapshotForPlayer,
+  listRankingSnapshotsForPlayer,
+  pointsToDefend,
   showDoublesChip,
   setStagePinned,
+  type PointsByTournamentEntry,
   type RankingSnapshot,
   type Tournament,
   type FeedStatus,

@@ -7,16 +7,13 @@ import {
   Button,
   buttonVariants,
   Card,
-  CardActions,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   Empty,
   Spinner,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@deucex/ui';
+import { PenLine } from 'lucide-react';
 import { paragraphs, wordCount } from '@deucex/agents';
 import { contentPublishPayload } from '@deucex/shared';
 import type { Database } from '@deucex/db';
@@ -24,6 +21,7 @@ import { createClient } from '@/lib/supabase/client';
 import { confirmApproval } from '@/lib/approvals/confirm-approval';
 import { publishDraft } from '@/lib/content/api';
 import { dashboardConsequence, patrons } from '@/lib/content/copy';
+import { AgentHeader } from '@/components/dashboard/agent-header';
 
 type UpdateRow = Database['public']['Tables']['patron_updates']['Row'];
 
@@ -131,11 +129,12 @@ export function ContentAgentCard({
     : null;
 
   return (
-    <Card id="fwContent">
-      <CardHeader>
-        <CardTitle>Content Agent</CardTitle>
-        <CardDescription>
-          {isFree
+    <Card id="fwContent" className="self-stretch">
+      <AgentHeader
+        icon={<PenLine />}
+        title="Content Agent"
+        sub={
+          isFree
             ? 'Patron updates are on Pro'
             : !loaded
               ? 'Loading…'
@@ -145,10 +144,10 @@ export function ContentAgentCard({
                   ? draft.status === 'draft'
                     ? 'The agent could not draft this one'
                     : 'Drafting from your latest note'
-                  : 'Waiting for your next match note'}
-        </CardDescription>
-        {drafted && state !== 'sent' ? (
-          <CardActions>
+                  : 'Waiting for your next match note'
+        }
+        badge={
+          drafted && state !== 'sent' ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge variant="lime">Approve</Badge>
@@ -157,9 +156,11 @@ export function ContentAgentCard({
                 Nothing is sent to patrons until you approve it here or on the Content page
               </TooltipContent>
             </Tooltip>
-          </CardActions>
-        ) : null}
-      </CardHeader>
+          ) : !isFree && loaded && !draft ? (
+            <Badge variant="secondary">Idle</Badge>
+          ) : null
+        }
+      />
 
       {isFree ? (
         <Empty title="Drafted in your voice">
@@ -169,7 +170,7 @@ export function ContentAgentCard({
           </Link>
         </Empty>
       ) : state === 'sent' ? (
-        <div className="grid gap-2 px-5 pb-5 text-sm max-sm:px-4">
+        <div className="grid gap-2 px-6 text-sm max-sm:px-5">
           <p className="font-medium">{message}</p>
           <Link
             href="/agent/content"
@@ -189,18 +190,19 @@ export function ContentAgentCard({
           )}
         </Empty>
       ) : (
-        <div className="grid gap-3 px-5 pb-5 max-sm:px-4">
-          <p className="text-[0.9375rem] font-medium">{draft.subject}</p>
-          <p className="line-clamp-3 text-sm text-muted-foreground">{paragraphs(draft.body)[0]}</p>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary">{wordCount(draft.body)} words</Badge>
-            {tierNames ? <Badge variant="secondary">{tierNames}</Badge> : null}
+        <div className="grid gap-3 px-6 max-sm:px-5">
+          <div className="grid gap-2 rounded-lg bg-muted/40 p-3.5 shadow-[0_0_0_1px_var(--border)]">
+            <p className="text-sm font-medium">{draft.subject}</p>
+            <p className="line-clamp-4 text-[0.8125rem] leading-relaxed text-muted-foreground">
+              {paragraphs(draft.body)[0]}
+            </p>
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground tabular-nums">
+              <span>{wordCount(draft.body)} words</span>
+              {tierNames ? <span>· {tierNames}</span> : null}
+            </div>
           </div>
           {oneTap ? (
             <>
-              <p className="text-[0.8125rem] text-muted-foreground">
-                {dashboardConsequence(count)}
-              </p>
               <div className="flex flex-wrap gap-2">
                 <Button onClick={publish} disabled={state === 'sending'}>
                   {state === 'sending' ? <Spinner /> : null}
@@ -210,6 +212,7 @@ export function ContentAgentCard({
                   Edit
                 </Link>
               </div>
+              <p className="text-xs text-muted-foreground">{dashboardConsequence(count)}</p>
             </>
           ) : (
             <Link

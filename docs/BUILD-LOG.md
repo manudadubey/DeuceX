@@ -3276,3 +3276,37 @@ Small fixes from step 5.4's follow-ups, stacked on the step 5.4 branch.
   original sent when the browser can't decode it. A correction to step 5.4's finding: this does
   not reduce model tokens, because the vision model already scales images to 768 px on the short
   side. It only saves upload size. The TPM risk is fixed by raising the OpenAI tier.
+
+## Dashboard parity with the prototype — 27 September 2026
+
+The owner asked for the live dashboard to match `docs/deucex-dashboard.html` like for like.
+Stacked on the launch-prep branch.
+
+- **The full dashboard was unreachable.** Checklist steps 3 (balance) and 4 (patron page) were
+  hard-coded as not done, so the first-week layout never went away. They now read
+  `reserve_entries` and `patron_programmes`/`patron_tiers`, and the checklist hides once all four
+  are done (PRD-11 4.2). Step 1 now reads "Verify your ranking" for an unverified player instead
+  of always showing Done.
+- **Ranking hero** rebuilt to the prototype's `#ranking` band: initials tile, name, flag, country
+  code, age, handedness, the big rank, this week's move from the last two `ranking_snapshots`,
+  ITF, doubles and points-to-defend chips, and a 52-week chart (`rank-chart.tsx`, same drawing
+  as the prototype's `drawRank()`). Points to defend come from `points_by_tournament` (new
+  `pointsToDefend` and `listRankingSnapshotsForPlayer` in `@deucex/db`). Unverified players get
+  an empty chart state rather than a line.
+- **Pulse tiles:** icons, meters, a patron-income sparkline from `mrr.history`, values in the sans
+  font (Baseline's `.tile .val`; the UI kit had them in mono), Runway coloured amber/red, capped
+  at "52+ weeks", readable deadline dates.
+- **Money** in the Financial and Tournament cards now formats with `en-US`, the same as Fans'
+  `formatPatronMoney`, so AUD reads "A$".
+- **Agent cards** share an `AgentHeader` (the prototype's `.agent-h`). A new dashboard
+  `MindsetCard` shows progress to the third note, then today's insight and focus; a mood tap
+  saves at once and keeps the day's existing sentence.
+- **Sidebar:** plan line, player footer (name, tour rank, country) and live counts for Fans,
+  Tournament (days to the next undecided deadline) and Content (drafts to approve).
+
+Skipped, each because nothing real backs it: a player photo (no column), the projected
+end-of-year line (no forecast), "since last login" (no last-seen timestamp), the Sponsor and Fan
+Agent nav items (not built), Fuel's "New" badge, and the prototype's sample-season button.
+Verified in the browser against the owner's signed-in session and, for the verified hero with a
+populated chart, a temporary fixture page (deleted). The Financial page's own KPI tiles still
+show "2705.6 wks" and "$30,000"; they're separate components and were left alone.

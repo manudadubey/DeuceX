@@ -22,7 +22,7 @@ import type { FinancialAction, FinancialSnapshot } from '@/lib/financial/load';
 import { receivableProposalRunId } from '@/lib/financial/proposal-link';
 
 function formatMoney(amount: number, currency: string): string {
-  return new Intl.NumberFormat('en-AU', {
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
     maximumFractionDigits: 0,

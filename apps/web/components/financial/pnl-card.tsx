@@ -7,7 +7,7 @@ function formatMoney(amount: number, currency: string): string {
   const sign = amount < 0 ? '−' : '';
   return (
     sign +
-    new Intl.NumberFormat('en-AU', {
+    new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency,
       maximumFractionDigits: 0,

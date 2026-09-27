@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Empty, PulseTileBadge, PulseTileLabel, PulseTileSub, PulseTileValue } from '@deucex/ui';
-import { getLatestRankingSnapshotForPlayer, listNotes } from '@deucex/db';
+import { listNotes, listRankingSnapshotsForPlayer, pointsToDefend } from '@deucex/db';
 import { createClient } from '@/lib/supabase/server';
 import { CheckInCard } from '@/components/mindset/check-in-card';
 import { FirstWeekDashboard } from '@/components/dashboard/first-week-dashboard';
@@ -48,21 +48,65 @@ export default async function DashboardPage() {
     .eq('id', playerId)
     .maybeSingle();
 
+  // dashboard_state only ever reaches 'first' in this build; the checklist
+  // inside hides itself once its four steps are done, which is all the
+  // prototype's full state changes (PRD-11 section 4.2).
   if (player && player.dashboard_state === 'first') {
+    const today = new Date();
+    const todayIso = today.toISOString().slice(0, 10);
+    const yearAgo = new Date(today.getTime() - 52 * 7 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
     // A wide, practically-unbounded window rather than a new "total notes"
-    // query: the first-week checklist just needs to know whether any note
-    // exists yet, and listNotes is already RLS-scoped and tested.
-    const notes = await listNotes(supabase, { sinceDays: 3650 });
-    // Step 3.1: the doubles chip (M-STG-4) reads the player's latest
-    // ranking_snapshots row, not players.tour_rank — doubles rank has no
-    // home on players itself, only on the weekly snapshot history.
-    const latestSnapshot = await getLatestRankingSnapshotForPlayer(supabase, playerId);
+    // query: the checklist just needs to know whether any note exists, and
+    // the Mindset card whether three do.
+    const [notes, snapshots, reserve, programme, tiers] = await Promise.all([
+      listNotes(supabase, { sinceDays: 3650 }),
+      listRankingSnapshotsForPlayer(supabase, playerId, yearAgo),
+      supabase.from('reserve_entries').select('id').eq('player_id', playerId).limit(1),
+      supabase
+        .from('patron_programmes')
+        .select('kyc_status')
+        .eq('player_id', playerId)
+        .maybeSingle(),
+      supabase
+        .from('patron_tiers')
+        .select('id')
+        .eq('player_id', playerId)
+        .not('stripe_price_id', 'is', null)
+        .limit(1),
+    ]);
+
+    // Points-defence markers: singles points dropping off in the next eight
+    // weeks, named from the tournaments table where the id resolves.
+    const latest = snapshots[snapshots.length - 1] ?? null;
+    const expiring = pointsToDefend(latest, todayIso, 8);
+    const names = new Map<string, string>();
+    if (expiring.length > 0) {
+      const { data } = await supabase
+        .from('tournaments')
+        .select('id, city, name')
+        .in(
+          'id',
+          expiring.map((e) => e.tournamentId),
+        );
+      for (const t of data ?? []) names.set(t.id, t.city ?? t.name);
+    }
+
     return (
       <FirstWeekDashboard
         player={player}
         notesCount={notes.length}
         playerEmail={email ?? ''}
-        doublesRank={latestSnapshot?.tour_doubles_rank ?? null}
+        snapshots={snapshots}
+        defences={expiring.map((e) => ({
+          week: e.expiryWeek,
+          points: e.points,
+          label: names.get(e.tournamentId) ?? null,
+        }))}
+        balanceEntered={(reserve.data?.length ?? 0) > 0}
+        pageLive={programme.data?.kyc_status === 'complete' && (tiers.data?.length ?? 0) > 0}
+        today={today}
       />
     );
   }

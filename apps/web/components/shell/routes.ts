@@ -16,6 +16,8 @@ export interface NavItem {
   href: string;
   label: string;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
+  /** Which live count the sidebar shows beside it (use-nav-badges.ts). */
+  badge?: 'fans' | 'tournament' | 'content';
 }
 
 export interface NavGroup {
@@ -33,14 +35,14 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: '/', label: 'Dashboard', icon: Home },
       { href: '/match-scribe', label: 'Match Scribe', icon: Mic },
       { href: '/fuel', label: 'Fuel', icon: Fuel },
-      { href: '/fans', label: 'Fans', icon: Users },
+      { href: '/fans', label: 'Fans', icon: Users, badge: 'fans' },
     ],
   },
   {
     label: 'Agents',
     items: [
-      { href: '/agent/tournament', label: 'Tournament', icon: Calendar },
-      { href: '/agent/content', label: 'Content', icon: PenLine },
+      { href: '/agent/tournament', label: 'Tournament', icon: Calendar, badge: 'tournament' },
+      { href: '/agent/content', label: 'Content', icon: PenLine, badge: 'content' },
       { href: '/agent/mindset', label: 'Mindset Coach', icon: Brain },
       { href: '/agent/financial', label: 'Financial', icon: Banknote },
     ],

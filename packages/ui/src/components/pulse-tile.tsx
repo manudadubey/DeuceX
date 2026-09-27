@@ -62,7 +62,7 @@ export function PulseTileValue({ className, ...props }: HTMLAttributes<HTMLSpanE
     <span
       data-tile-value
       className={cn(
-        'col-span-2 mt-1.5 font-mono text-3xl leading-[1.1] font-medium tracking-[-0.02em] max-sm:text-[1.75rem]',
+        'col-span-2 mt-1.5 text-3xl leading-[1.1] font-medium tracking-[-0.02em] tabular-nums max-sm:text-[1.75rem]',
         '[&_small]:text-base [&_small]:font-medium [&_small]:tracking-normal [&_small]:text-muted-foreground',
         className,
       )}
@@ -101,13 +101,28 @@ export function PulseTileMeter({
   );
 }
 
-export function PulseTileSpark({ values, className }: { values: number[]; className?: string }) {
+export function PulseTileSpark({
+  values,
+  highlightLast = false,
+  className,
+}: {
+  values: number[];
+  /** The prototype's lime current-period bar. */
+  highlightLast?: boolean;
+  className?: string;
+}) {
   return (
-    <span className={cn('col-span-2 mt-3 flex h-7 items-end gap-[3px]', className)}>
+    <span
+      aria-hidden="true"
+      className={cn('col-span-2 mt-3 flex h-7 items-end gap-[3px]', className)}
+    >
       {values.map((v, i) => (
         <span
           key={i}
-          className="bl-spark flex-1 rounded-t-sm bg-chart-3"
+          className={cn(
+            'bl-spark flex-1 rounded-t-sm bg-chart-3',
+            highlightLast && i === values.length - 1 && 'bg-chart-2',
+          )}
           style={{ height: `${v}%`, animationDelay: `${Math.min(i * 30, 330)}ms` }}
         />
       ))}
