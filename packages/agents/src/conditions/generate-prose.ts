@@ -2,8 +2,9 @@ import { AgentValidationError, type TokenUsage } from '@deucex/actions';
 import { buildCorrectiveProsePrompt, buildProsePrompt, type ProseBriefInput } from './prose-prompt';
 import type { ProseModelClient } from './prose-model-client';
 import { proseOutputSchema, validateProseCoverage, type ProseModelOutput } from './prose-schema';
+import { modelFor } from '../models';
 
-export const PROSE_MODEL = 'gpt-4o-mini';
+export const PROSE_MODEL = modelFor('conditionsProse');
 
 export interface GenerateProseResult {
   output: ProseModelOutput;
@@ -48,5 +49,6 @@ export async function generateConditionsProse(
     `conditions/generate-prose: model output failed schema validation twice: ${
       secondParsed.success ? errorMessage : secondParsed.error.message
     }`,
+    usage,
   );
 }

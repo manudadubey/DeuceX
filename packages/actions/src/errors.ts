@@ -1,3 +1,5 @@
+import type { TokenUsage } from './pricing';
+
 // Thrown by the approval gate (gate.ts) and recordRun (record-run.ts).
 // Distinct classes, not one generic error, because a caller (and a test)
 // needs to tell "no such approval" apart from "already used" apart from
@@ -43,9 +45,14 @@ export class ApprovalAlreadyConsumedError extends Error {
 
 // Thrown by an agent's own call site (not by this module) when the model's
 // structured output fails Zod validation. recordRun() catches it specially;
-// everything else it catches is treated as 'failed_infra'.
+// everything else it catches is treated as 'failed_infra'. `usage` is what
+// both attempts cost (step 5.4): a validation failure has already paid for
+// two model calls, and recordRun prices it so the spend figure sees it.
 export class AgentValidationError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly usage?: TokenUsage,
+  ) {
     super(message);
     this.name = 'AgentValidationError';
   }

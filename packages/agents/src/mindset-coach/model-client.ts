@@ -1,5 +1,6 @@
 import type { TokenUsage } from '@deucex/actions';
 import type { InsightPrompt } from './prompt';
+import { modelFor } from '../models';
 
 // Same shape as match-scribe/model-client.ts: a plain fetch against the
 // vendor's REST API, not an SDK.
@@ -11,7 +12,7 @@ export class InsightModelCallError extends Error {}
 
 // packages/actions/src/pricing.ts already has a gpt-4o-mini row from step
 // 1.2; agent_runs.model and recordRun()'s cost lookup both key off this.
-export const INSIGHT_MODEL = 'gpt-4o-mini';
+export const INSIGHT_MODEL = modelFor('mindsetInsight');
 
 const INSIGHT_RESPONSE_SCHEMA_NAME = 'mindset_coach_insight';
 const MAX_OUTPUT_TOKENS = 400;

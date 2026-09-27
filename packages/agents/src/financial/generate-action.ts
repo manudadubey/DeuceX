@@ -53,5 +53,6 @@ export async function generateFinancialAction(
 
   throw new AgentValidationError(
     `financial/generate-action: model output failed schema validation twice: ${secondParsed.error.message}`,
+    usage,
   );
 }

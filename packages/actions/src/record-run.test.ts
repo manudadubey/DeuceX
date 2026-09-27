@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AgentValidationError } from './errors';
 import { type AgentRunInsert, type AgentRunsDb, recordRun } from './record-run';
+import { calculateAudioCost } from './pricing';
 
 function fakeDb() {
   const rows: AgentRunInsert[] = [];
@@ -64,6 +65,36 @@ describe('recordRun', () => {
 
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ status: 'failed_validation', output: null });
+  });
+
+  it('prices a failed_validation row from the attempts it already paid for (step 5.4)', async () => {
+    const { db, rows } = fakeDb();
+    const error = new AgentValidationError('failed twice', {
+      inputTokens: 2_000_000,
+      outputTokens: 1_000_000,
+    });
+
+    await expect(
+      recordRun(db, { ...META, model: 'gpt-4o-mini' }, async () => {
+        throw error;
+      }),
+    ).rejects.toThrow(error);
+
+    // 2M in at 0.15 plus 1M out at 0.60 per million.
+    expect(rows[0]).toMatchObject({
+      status: 'failed_validation',
+      costAmount: 0.9,
+      costCurrency: 'USD',
+    });
+  });
+
+  it('records a transcription priced by the minute through the cost override', async () => {
+    const { db, rows } = fakeDb();
+    await recordRun(db, { ...META, model: 'whisper-1' }, async () => ({
+      output: {},
+      cost: calculateAudioCost('whisper-1', 90),
+    }));
+    expect(rows[0]).toMatchObject({ costAmount: 0.009, costCurrency: 'USD' });
   });
 
   it('writes a failed_infra row and rethrows on any other error', async () => {

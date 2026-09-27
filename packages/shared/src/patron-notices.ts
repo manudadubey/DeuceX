@@ -54,6 +54,21 @@ export function membershipEndedNotice(input: PatronNoticeInput): PatronNotice {
   };
 }
 
+/**
+ * The goodbye when the player's account is erased (step 5.4, owner decision
+ * 26 Sep 2026): the membership is cancelled at once, whatever its status.
+ */
+export function accountClosedNotice(input: PatronNoticeInput): PatronNotice {
+  const f = first(input.playerName);
+  return {
+    subject: `Your membership with ${f} has ended`,
+    paragraphs: [
+      `${input.playerName} has closed their DeuceX account, so your membership has ended today. Nothing more will be charged, and there's nothing you need to do.`,
+      `Payments you've already made aren't affected. Thank you for backing ${f}.`,
+    ],
+  };
+}
+
 export function billingResumeNotice(input: PatronNoticeInput): PatronNotice {
   const f = first(input.playerName);
   return {

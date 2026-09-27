@@ -9,6 +9,7 @@ import { createMemoryStorageAdapter } from '../storage/memory-adapter';
 import { createMockTranscriptionAdapter } from '../transcription/mock-adapter';
 import { createFixtureWeatherAdapter } from '../conditions/fixture-adapter';
 import { registerNotesRoutes, type NotesRoutesDeps } from './routes';
+import { allowAllOnDemand } from '../on-demand';
 
 function fakeAgentRunsDb(): AgentRunsDb {
   return { insertAgentRun: async () => undefined };
@@ -53,6 +54,7 @@ function buildMultipart(
 async function buildApp(fake: FakeDb, overrides: Partial<NotesRoutesDeps> = {}) {
   const app = Fastify();
   const deps: NotesRoutesDeps = {
+    onDemand: allowAllOnDemand,
     db: fake as unknown as SupabaseClient<Database>,
     anonClient: fakeAnonClient('good-token', 'player-1'),
     storage: createMemoryStorageAdapter(),

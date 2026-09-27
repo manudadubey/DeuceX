@@ -107,6 +107,61 @@ describe('runConditionsForCandidates', () => {
     expect(fake.tables.conditions_briefs ?? []).toHaveLength(7);
   });
 
+  it("reuses a brief's sentences and skips the model when its prose input is unchanged (step 5.4)", async () => {
+    const fake = new FakeDb({ players: [{ id: 'player-1' }] });
+    let calls = 0;
+    const countingClient: ProseModelClient = {
+      async complete(prompt) {
+        calls += 1;
+        return createMockProseClient().complete(prompt);
+      },
+    };
+    const deps = {
+      db: asDb(fake),
+      agentRuns: fakeAgentRunsDb(),
+      weatherAdapter: createFixtureWeatherAdapter(),
+      proseClient: countingClient,
+    };
+    const now = new Date('2026-09-01T20:00:00Z');
+
+    await runConditionsForCandidates(deps, 'player-1', [tournament('poznan')], now);
+    const first = { ...fake.tables.conditions_briefs![0]! };
+    await runConditionsForCandidates(deps, 'player-1', [tournament('poznan')], now);
+
+    expect(calls).toBe(1);
+    const [brief] = fake.tables.conditions_briefs!;
+    expect(brief!.diff).toBe(first.diff);
+    expect(brief!.prose_inputs_hash).toBe(first.prose_inputs_hash);
+  });
+
+  it("regenerates the sentences when the brief's rules change", async () => {
+    const fake = new FakeDb({ players: [{ id: 'player-1' }] });
+    let calls = 0;
+    const countingClient: ProseModelClient = {
+      async complete(prompt) {
+        calls += 1;
+        return createMockProseClient().complete(prompt);
+      },
+    };
+    const deps = {
+      db: asDb(fake),
+      agentRuns: fakeAgentRunsDb(),
+      weatherAdapter: createFixtureWeatherAdapter(),
+      proseClient: countingClient,
+    };
+    const now = new Date('2026-09-01T20:00:00Z');
+
+    await runConditionsForCandidates(deps, 'player-1', [tournament('poznan')], now);
+    await runConditionsForCandidates(
+      deps,
+      'player-1',
+      [tournament('poznan', { altitude_m: 1800 })],
+      now,
+    );
+
+    expect(calls).toBe(2);
+  });
+
   it('does nothing for an empty candidate list', async () => {
     const fake = new FakeDb({ players: [{ id: 'player-1' }] });
     await runConditionsForCandidates(

@@ -50,5 +50,6 @@ export async function extractReceipt(
 
   throw new AgentValidationError(
     `financial/extract-receipt: model output failed schema validation twice: ${secondParsed.error.message}`,
+    usage,
   );
 }

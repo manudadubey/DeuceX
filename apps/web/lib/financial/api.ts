@@ -12,6 +12,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8787';
 
 export class FinancialApiError extends Error {}
 export class ReceiptExtractionFailedError extends Error {}
+export class ReceiptScanLimitError extends Error {}
+
+/** The 24-hour on-demand limit (step 5.4); the message names the count and when it frees up. */
+async function limitMessage(res: Response): Promise<string> {
+  const body = (await res.json().catch(() => ({}))) as { error?: string };
+  return body.error ?? 'Limit reached. Try again later.';
+}
 
 async function authHeaders(supabase: SupabaseClient<Database>): Promise<HeadersInit> {
   const { data } = await supabase.auth.getSession();
@@ -48,6 +55,7 @@ export async function scanReceipt(
       signal: controller.signal,
     });
     if (res.status === 422) throw new ReceiptExtractionFailedError("We couldn't read this one.");
+    if (res.status === 429) throw new ReceiptScanLimitError(await limitMessage(res));
     if (!res.ok) throw new FinancialApiError(`Receipt scan failed: ${res.status}`);
     return (await res.json()) as ScanReceiptResponse;
   } catch (err) {

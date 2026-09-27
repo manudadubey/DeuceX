@@ -20,6 +20,7 @@ import {
 import { countLine, type RewriteVariant, type SendTimeOption } from '@deucex/agents';
 import type { PatronUpdate } from '@/lib/content/api';
 import { confirmDetail, confirmTitle, patrons, SKIP_REASONS } from '@/lib/content/copy';
+import { modelLabel } from '@deucex/shared';
 
 // PRD-05 section 4.1's editor card (#caEditor): subject with two alternatives,
 // the rewrite tools, the autosaved body with its live count, "Built from",
@@ -124,7 +125,7 @@ export function EditorCard(props: EditorCardProps) {
           : update.status === 'published' && update.sentAt
             ? `Sent ${dateTimeOf(update.sentAt, timezone)}. Sent emails can't be changed.`
             : update.draftedAt
-              ? `Drafting model · drafted ${timeOf(update.draftedAt, timezone)}.${editable ? ' Edit anything.' : ''}`
+              ? `${modelLabel('contentDraft')} · drafted ${timeOf(update.draftedAt, timezone)}.${editable ? ' Edit anything.' : ''}`
               : editable
                 ? 'Edit anything.'
                 : '';

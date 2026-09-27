@@ -6,12 +6,14 @@ import type { FansStripeClient } from '@deucex/actions/fans';
 import { createMockPatronNoteClient } from '@deucex/agents';
 import { MemoryFansStore } from './memory-store';
 import { registerFansRoutes, type FansRoutesDeps } from './routes';
+import { allowAllOnDemand } from '../on-demand';
 
 const unusedClient = {} as SupabaseClient<Database>;
 
 function deps(overrides: Partial<FansRoutesDeps> = {}): FansRoutesDeps {
   return {
     db: unusedClient,
+    onDemand: allowAllOnDemand,
     anonClient: unusedClient,
     store: new MemoryFansStore(),
     stripe: null,

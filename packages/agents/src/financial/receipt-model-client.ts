@@ -1,5 +1,6 @@
 import type { TokenUsage } from '@deucex/actions';
 import type { ReceiptExtractionPrompt } from './receipt-prompt';
+import { modelFor } from '../models';
 
 // Same shape as match-scribe/model-client.ts, extended with an image: a
 // plain fetch against the vendor's REST API, not an SDK.
@@ -14,7 +15,7 @@ export class ReceiptExtractionModelCallError extends Error {}
 // pricing.ts already prices it), matching PRD-03 line 37's own words:
 // "GPT-4o mini · structured extraction · usually 2-3 seconds," under
 // A$0.02/receipt.
-export const RECEIPT_EXTRACTION_MODEL = 'gpt-4o-mini';
+export const RECEIPT_EXTRACTION_MODEL = modelFor('receiptExtract');
 
 const RESPONSE_SCHEMA_NAME = 'receipt_extraction';
 const MAX_OUTPUT_TOKENS = 400;

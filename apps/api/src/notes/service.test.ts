@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@deucex/db';
-import type { AgentRunsDb } from '@deucex/actions';
+import type { AgentRunInsert, AgentRunsDb } from '@deucex/actions';
 import { createInvalidExtractionClient, createMockExtractionClient } from '@deucex/agents';
 import { FakeDb, makeNote } from '../test-support/fake-db';
 import { createMemoryStorageAdapter } from '../storage/memory-adapter';
@@ -218,6 +218,42 @@ describe('transcribeNote', () => {
     expect(note!.transcript).toBeTruthy();
     expect(note!.result).toBeNull();
     expect(note!.extraction).toMatchObject({ valid: false });
+  });
+
+  it('writes one priced agent_runs row per transcription, so it counts toward spend (step 5.4)', async () => {
+    const storage = createMemoryStorageAdapter();
+    await storage.upload({
+      key: 'notes/player-1/note-1',
+      body: Buffer.from('audio'),
+      contentType: 'audio/webm',
+    });
+    const fake = new FakeDb({
+      notes: [makeNote({ status: 'transcribing', transcript: null })],
+    });
+    const rows: AgentRunInsert[] = [];
+    const transcription = createMockTranscriptionAdapter();
+    const deps = baseDeps(fake, {
+      storage,
+      agentRuns: { insertAgentRun: async (row) => void rows.push(row) },
+      transcription: {
+        transcribe: async (input) => ({
+          ...(await transcription.transcribe(input)),
+          costUsd: 0.009,
+          durationSeconds: 90,
+        }),
+      },
+    });
+
+    await transcribeNote(deps, 'note-1');
+
+    const run = rows.find((r) => r.agentName === 'match-scribe-transcribe');
+    expect(run).toMatchObject({
+      status: 'succeeded',
+      model: 'whisper-1',
+      costAmount: 0.009,
+      costCurrency: 'USD',
+      playerId: 'player-1',
+    });
   });
 
   it('passes the fixed language preference through as an override', async () => {

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { AgentValidationError, type TokenUsage } from '@deucex/actions';
 import type { PatronNoteKind } from './types';
+import { modelFor } from '../models';
 
 // P-10: one drafted note per flagged patron, in the player's voice, that the
 // player edits and sends. Owner decision (step 4.1): a small Fans-owned
@@ -14,7 +15,7 @@ import type { PatronNoteKind } from './types';
 // never other patrons' names, never payment amounts) are checked in code
 // after the call, not just asked for in the prompt.
 
-export const PATRON_NOTE_MODEL = 'gpt-4o-mini';
+export const PATRON_NOTE_MODEL = modelFor('patronNote');
 export const PATRON_NOTE_PROMPT_VERSION = 'v1';
 export const PATRON_NOTE_SCHEMA_VERSION = 'v1';
 
@@ -177,6 +178,7 @@ export async function generatePatronNote(
 
   throw new AgentValidationError(
     `fans/patron-note: draft failed validation twice: ${secondResult.problem}`,
+    usage,
   );
 }
 

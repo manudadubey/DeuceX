@@ -20,7 +20,7 @@ import {
 } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 import { requestFinancialRecompute } from '@/lib/financial/api';
-import { MenuUnreadableError, scanMenu, type ScanResult } from '@/lib/fuel/api';
+import { MenuUnreadableError, ScanLimitError, scanMenu, type ScanResult } from '@/lib/fuel/api';
 import { loadFuelSnapshot, localDate, type FuelSnapshot } from '@/lib/fuel/load';
 import { formatHome } from '@/lib/fuel/format';
 import { ContextStrip } from '@/components/fuel/context-strip';
@@ -175,7 +175,7 @@ export function FuelClient(props: FuelClientProps) {
     } catch (err) {
       setState('scan');
       setError(
-        err instanceof MenuUnreadableError
+        err instanceof MenuUnreadableError || err instanceof ScanLimitError
           ? err.message
           : "That didn't go through. Check your connection and try again.",
       );

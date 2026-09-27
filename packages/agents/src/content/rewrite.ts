@@ -9,6 +9,7 @@ import {
 } from './draft';
 import { averageSentenceWords } from './checks';
 import { paragraphs, wordCount } from './text';
+import { modelFor } from '../models';
 
 // PRD-05 C-5: Shorter, Warmer and More tactical rewrite the body on request;
 // Restore original returns the generated text (no model call, the server
@@ -17,7 +18,7 @@ import { paragraphs, wordCount } from './text';
 // rewrite is a transformation of text the player already has, not a fresh
 // piece of writing, and PRD-05 section 3 targets under A$0.03 per rewrite.
 
-export const CONTENT_REWRITE_MODEL = 'gpt-4o-mini';
+export const CONTENT_REWRITE_MODEL = modelFor('contentRewrite');
 export const CONTENT_REWRITE_PROMPT_VERSION = 'v1';
 
 export type RewriteVariant = 'shorter' | 'warmer' | 'tactical';
@@ -96,7 +97,10 @@ export async function rewriteContent(
   };
   const r2 = problemWith(second.raw, input);
   if ('body' in r2) return { body: r2.body, usage };
-  throw new AgentValidationError(`content/rewrite: output failed validation twice: ${r2.problem}`);
+  throw new AgentValidationError(
+    `content/rewrite: output failed validation twice: ${r2.problem}`,
+    usage,
+  );
 }
 
 const REWRITE_JSON_SCHEMA = {

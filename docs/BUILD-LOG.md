@@ -3121,3 +3121,132 @@ showed Active for a couple of seconds; after a reload it showed Revoked. It is m
 refresh still loading (console reads take 1 to 2 seconds against the Tokyo database), since the
 same refresh updated the list correctly after the create.
 
+
+## Step 5.4 · Hardening and the cost pass — 26 to 27 September 2026
+
+Acceptance checks (build plan step 5.4, "done when"), as run:
+1. **Model spend per Pro player with realistic fixtures is under A$7.35.** Met, by a wide margin:
+   A$0.30 for a worst-case month (US$0.21 at the ECB's 25 September rate, A$1.4224 per US$),
+   about 4 percent of the ceiling. The 160 runs are in staging's `agent_runs` under a fixture
+   Pro player.
+2. **A restore from snapshot succeeds.** Met in the owner-decided form: a production dump restored
+   into a throwaway local Postgres 17 (`scripts/restore-drill.sh`, report in
+   `ops/restore-drill-2026-09-26.md`). 60 public tables and 11,904 rows matched production, as did
+   every RLS switch and policy count, and the `console` role is still refused `notes.transcript`.
+3. **The erasure job produces a completion record.** Met: `scripts/erasure-drill.ts` ran the real
+   sweep against staging and wrote a `completed` `erasure_records` row with seven processor steps,
+   leaving nothing of the player behind.
+
+### Owner decisions (26 September 2026)
+- **Restore drill:** production dump into a local Postgres, deleted after, never into staging
+  (CLAUDE.md said both "restore production into staging" and "staging holds fixture data only").
+- **Erasure and Stripe:** cancel every patron membership, email each patron once, keep the
+  connected account (the player's own; Stripe must keep its records).
+- **Rate limits (per player, rolling 24 hours):** menu scans 10, receipt scans 20, content
+  rewrites 20, patron-note drafts 20, note retries 5. Elite matches Pro.
+- **Ops tooling:** GitHub Actions uptime check plus Grafana dashboard JSON, no new vendor account.
+
+### Built
+- **Staging.** `deucex-staging` (`asbrrmrhxmlvmvlwitmr`, free, ap-northeast-1, US$0 confirmed by
+  Supabase's cost check). Every repo migration was applied through the Supabase MCP, grouped per
+  step, with comment-only lines left out. A schema fingerprint (`scripts/schema-fingerprint.sql`:
+  columns, constraints, indexes, policies, RLS, table and column grants, functions, triggers) was
+  identical on staging and production for all 55 DeuceX tables before this step's migration.
+  Step 5.4's migration then went to staging first, then production (owner-confirmed).
+- **Model tiering.** `@deucex/shared`'s `MODEL_CALL_TIERS` puts each model call in a tier
+  (drafting, structured, extraction, transcription). `packages/agents/src/models.ts` maps each
+  tier to a model, and every agent's model constant resolves through `modelFor()`. A test fails if
+  a tier's model has no price. The web's model labels now come from the same table, which fixed
+  the Mindset page calling its model "Drafting model" while Settings said "Structured-output".
+  No model changed.
+- **Cost recording gaps closed.** Whisper transcription now writes a priced `agent_runs` row
+  (`match-scribe-transcribe`, per-minute `AUDIO_PRICING`). Before this, the console's spend figure
+  and its 80 percent alert never saw transcription. A validation failure now carries the usage of
+  both attempts (`AgentValidationError.usage`) and `recordRun` prices it; before, a failed run was
+  recorded as free although it had paid for two calls.
+- **Caching.** The weekly Conditions run was the one generated-prose path without an input-hash
+  cache: it blanked and regenerated every brief's sentences each run.
+  `conditions_briefs.prose_inputs_hash` now keeps a brief's sentences when its rules and
+  comparison event are unchanged. Financial, Mindset, Fans and the Conditions refresh were already
+  cached.
+- **Rate limits.** `apps/api/src/on-demand.ts` counts `on_demand_requests` over 24 hours and
+  answers 429 with a sentence naming the count and when the next one frees up, in the player's
+  time zone. It's wired into the five on-demand routes, before any upload or model call. The web
+  shows the sentence on Fuel, receipts and note retry. Match Scribe's Retry also no longer leaves
+  the recorder stuck on "transcribing" when the call fails.
+- **Erasure job.** The fourteen-day deletion sweep writes `erasure_records` with one step per
+  processor:
+  - Stripe: memberships cancelled and patrons told (new `endMembershipsForErasure`, the stated
+    consequence of the approved deletion, same shape as the 90-day ending).
+  - R2 audio deleted.
+  - pg-boss jobs purged.
+  - The database cascade run.
+  - Resend and OpenAI recorded as retention-limited, and backups as none held.
+
+  If any Stripe cancellation fails, or Stripe isn't configured, the sweep stops before deleting
+  anything and retries the next day, so a patron is never left paying for a player who no longer
+  exists.
+- **Two cascade blockers found and fixed.** Both would have made `auth.admin.deleteUser` fail:
+  - `admin_actions.player_id` had no `ON DELETE` action, so any player a staff member had acted
+    on couldn't be deleted. It now sets null, so the audit row survives de-identified.
+  - `payouts_paid_immutable` refused the cascade's delete of a paid payout. It now allows a delete
+    only when the player row is already gone; a direct delete is still refused.
+
+  Both are proven live on staging and production.
+- **Uptime and Grafana.**
+  - `/api/health` on the web app checks Supabase Auth and is kept out of the middleware.
+  - `.github/workflows/uptime.yml` checks it every ten minutes from GitHub, with `API_HEALTH_URL`
+    for apps/api once it's deployed.
+  - `ops/grafana/agent-health.json` charts `agent_health_daily`, read through a new no-login
+    `grafana_reader` role that can read that table and nothing else.
+- **Runbook:** `ops/README.md`.
+- **Already done in step 5.1**, so not rebuilt: the 80 percent spend alert and the approval-rate
+  alert.
+
+### Cost pass detail (one worst-case Pro month, no cache hits)
+| Call | Calls | US$ |
+|---|---|---|
+| Menu scans (vision, about 35k input tokens each) | 15 | 0.083 |
+| Receipt scans (vision, about 26k) | 15 | 0.059 |
+| Content drafts (drafting tier) and rewrites | 8 + 5 | 0.030 |
+| Transcription (20 notes, 282 s of audio) | 20 | 0.028 |
+| Mindset, Financial, extraction, Conditions, patron notes | 97 | 0.012 |
+| **Total** | 160 | **0.212 (A$0.30)** |
+
+The generated notes averaged only 14 seconds of audio. At a realistic 60 seconds a note,
+transcription is about US$0.12 and the month about A$0.43, still around 6 percent of the ceiling.
+TECH-ARCHITECTURE section 5's A$10.83 estimate assumed each contract's per-run ceiling rather than
+measured cost, and real calls come in one to two orders of magnitude below those ceilings.
+Vision is two thirds of the spend.
+
+### Findings worth acting on
+- **OpenAI's tokens-per-minute limit is the real scaling risk, not cost.** The account's
+  `gpt-4o-mini` limit is 200,000 tokens a minute. The first cost-pass run hit it within a minute
+  with four scans in parallel. At 26,000 to 35,000 tokens a scan, about six scans a minute across
+  every player exhausts it, and then all mini-tier agents are refused together. Before launch:
+  raise the OpenAI usage tier, or downscale photos before upload (none are downscaled today, and
+  no `detail` level is set), or both.
+- **Content drafts failed validation on 3 of 8 fixture notes** (under the 150-word minimum, or a
+  missing alternative subject). The player then sees "Write it yourself". This may be specific to
+  the short fixture notes; worth watching `failed_validation` on `content` once real players
+  arrive.
+- **The deletion confirm page overstates:** it says "your plan, patron billing and agents pause
+  immediately", but nothing pauses during the 14-day cooling-off. Billing is only ended at
+  erasure. Needs either the behaviour or the copy fixed (flagged, not changed here).
+
+### Skipped or deferred
+- The queue step of the erasure drill read "none": the drill runs without a pg-boss instance, so
+  the purge query itself was not exercised live (the production wiring passes `moneyBoss`).
+- The erasure record isn't shown on the console's Trust and safety page yet (the console role can
+  read it).
+- No `STAGING_DB_URL`: the owner chose not to set a staging database password, so migrations go
+  to staging through the MCP. That was about 180 KB of SQL this time; the fingerprint check
+  guards against transcription slips.
+- The web's new 429 messages and the label changes were typechecked, not viewed in a browser.
+
+### Secret exposure
+A failed erasure-drill run printed part of the staging secret key into this session (the pasted
+key contained a line break). Staging holds fixture data only, but the key should be rolled:
+Supabase dashboard > deucex-staging > Project Settings > API Keys > roll the secret key, then
+update `STAGING_SUPABASE_SECRET_KEY` in `.env`. The drill script now strips whitespace from the
+key.

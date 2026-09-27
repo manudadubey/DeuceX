@@ -25,6 +25,7 @@ import { MoodChart } from '@/components/mindset/mood-chart';
 import { PatternsCard } from '@/components/mindset/patterns-card';
 import { RecentMorningsCard } from '@/components/mindset/recent-mornings-card';
 import { PausedNotice } from '@/components/agents/paused-notice';
+import { modelLabel } from '@deucex/shared';
 
 const OPENAI = ['openai'] as const;
 
@@ -98,7 +99,7 @@ export function MindsetClient({ playerId, timezone, isFree, started }: MindsetCl
             variant="secondary"
             title="Reads your last 30 days of notes and check-ins, your ranking line and the next two weeks of schedule. Writes two or three sentences. Nothing else."
           >
-            Drafting model · 07:00 your time
+            {modelLabel('mindsetInsight')} · 07:00 your time
           </Badge>
         </div>
       </header>

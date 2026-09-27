@@ -16,7 +16,7 @@ import {
   loadPreviousStampedEvent,
 } from './compute';
 import { persistConditionsBrief } from './persist';
-import { CONDITIONS_AGENT_NAME, CONDITIONS_SCHEMA_VERSION } from './run';
+import { CONDITIONS_AGENT_NAME, CONDITIONS_SCHEMA_VERSION, proseInputsHash } from './run';
 import type { WeatherAdapter } from './adapter';
 
 const TRAVEL_WINDOW_DAYS_BEFORE = 7;
@@ -172,6 +172,7 @@ export async function registerConditionsRefreshScheduler(
         // silently blank out the brief's own sentences).
         let diff = existing?.diff ?? '';
         let practice = existing?.practice ?? '';
+        let proseHash: string | undefined;
         if (changed) {
           const { output } = await recordRun(
             deps.agentRuns,
@@ -201,6 +202,13 @@ export async function registerConditionsRefreshScheduler(
             .briefs[0];
           diff = prose?.diff ?? '';
           practice = prose?.practice ?? '';
+          proseHash = proseInputsHash({
+            tournamentId: tournament.id,
+            name: tournament.name,
+            city: tournament.city,
+            rules: computed.rules,
+            previousEvent,
+          });
           await sendBriefRefreshedNotification(deps.db, playerId, tournament.name, tournament.id);
         }
 
@@ -213,6 +221,7 @@ export async function registerConditionsRefreshScheduler(
           practice,
           equipmentVersion: equipment.version,
           forecastAt: now.toISOString(),
+          ...(proseHash ? { proseInputsHash: proseHash } : {}),
         });
       } catch (err) {
         logger.error(

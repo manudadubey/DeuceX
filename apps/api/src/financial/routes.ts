@@ -16,11 +16,13 @@ import {
   ReceivableNotFoundOrAlreadyReceivedError,
   receiveReceivable,
 } from './receivables';
+import { refuseIfLimited, type OnDemandLimiter } from '../on-demand';
 
 export interface FinancialRoutesDeps extends ScanReceiptDeps {
   anonClient: SupabaseClient<Database>;
   /** Enqueues an 'event'-triggered financial-agent run (worker.ts's enqueueFinancialRecompute), called after apps/web's own direct expense/balance/receivable write completes. */
   enqueueRecompute: (playerId: string) => Promise<void>;
+  onDemand: OnDemandLimiter;
 }
 
 // Generous headroom over a phone camera photo at reasonable compression;
@@ -58,6 +60,7 @@ export async function registerFinancialRoutes(
   app.post('/financial/receipts', async (request, reply) => {
     const playerId = await requirePlayerId(deps, request, reply);
     if (!playerId) return;
+    if (refuseIfLimited(reply, await deps.onDemand.claim(playerId, 'receipt_scan'))) return;
 
     let imageBuffer: Buffer | undefined;
     let contentType = 'image/jpeg';

@@ -9,6 +9,7 @@ import {
 import Fastify from 'fastify';
 import { MemoryFuelStore } from './memory-store';
 import { registerFuelRoutes, type FuelRoutesDeps } from './routes';
+import { allowAllOnDemand, type OnDemandLimiter } from '../on-demand';
 
 function fakeAnonClient(): SupabaseClient<Database> {
   return {
@@ -37,7 +38,11 @@ function multipart(pages: number): { body: Buffer; contentType: string } {
   return { body: Buffer.concat(parts), contentType: `multipart/form-data; boundary=${boundary}` };
 }
 
-async function buildApp(tier: string | null, client?: MenuExtractionModelClient) {
+async function buildApp(
+  tier: string | null,
+  client?: MenuExtractionModelClient,
+  onDemand: OnDemandLimiter = allowAllOnDemand,
+) {
   const store = new MemoryFuelStore();
   store.players.set('player-1', {
     id: 'player-1',
@@ -50,6 +55,7 @@ async function buildApp(tier: string | null, client?: MenuExtractionModelClient)
   let modelCalls = 0;
   const base = client ?? createMockMenuExtractionClient();
   const deps: FuelRoutesDeps = {
+    onDemand,
     anonClient: fakeAnonClient(),
     store,
     extractionClient: {
@@ -91,6 +97,28 @@ describe('POST /fuel/scans', () => {
     const { app, store, modelCalls } = await buildApp('free');
     const res = await post(app, 'good-token');
     expect(res.statusCode).toBe(403);
+    expect(modelCalls()).toBe(0);
+    expect(store.scans).toHaveLength(0);
+  });
+
+  it('refuses a scan over the 24-hour limit with 429, before any photo reaches the model (step 5.4)', async () => {
+    const limited: OnDemandLimiter = {
+      async claim() {
+        return {
+          allowed: false,
+          limit: 10,
+          availableAt: '2026-09-27T08:01:00.000Z',
+          message: "You've used all 10 menu scans for the last 24 hours.",
+        };
+      },
+    };
+    const { app, store, modelCalls } = await buildApp('pro', undefined, limited);
+    const res = await post(app, 'good-token');
+    expect(res.statusCode).toBe(429);
+    expect(res.json()).toMatchObject({
+      code: 'rate_limited',
+      availableAt: '2026-09-27T08:01:00.000Z',
+    });
     expect(modelCalls()).toBe(0);
     expect(store.scans).toHaveLength(0);
   });

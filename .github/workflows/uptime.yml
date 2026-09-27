@@ -1,0 +1,67 @@
+# The external uptime check (step 5.4, TECH-ARCHITECTURE.md section 8: "a
+# genuinely external uptime check rather than the hosting provider's own
+# status page"). Runs from GitHub's servers, outside Vercel and Render, every
+# ten minutes. A failed run emails the repository owner through GitHub's own
+# Actions notifications, and the run history is the availability log to
+# read against the 99.5 percent monthly target (about 3.6 hours of budget).
+#
+# GitHub may start a scheduled run several minutes late under load, so this
+# measures outages longer than about fifteen minutes reliably, not short
+# blips. Swap in a dedicated monitor before launch if that matters more.
+#
+# Targets: the player app always; apps/api once it's deployed, by setting the
+# repository variable API_HEALTH_URL (Settings > Secrets and variables >
+# Actions > Variables), e.g. https://deucex-api.onrender.com/health.
+
+name: Uptime
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Player app
+        run: |
+          set -u
+          url="${WEB_HEALTH_URL:-https://deucex.vercel.app/api/health}"
+          # Three tries, 20 seconds apart, so one slow cold start isn't an outage.
+          for attempt in 1 2 3; do
+            code=$(curl -s -o body.json -w '%{http_code}' --max-time 20 "$url" || echo 000)
+            if [ "$code" = "200" ]; then
+              echo "OK $url ($(cat body.json))"
+              exit 0
+            fi
+            echo "Attempt $attempt: $url answered $code $(cat body.json 2>/dev/null)"
+            sleep 20
+          done
+          echo "::error title=Player app down::$url failed three checks"
+          exit 1
+        env:
+          WEB_HEALTH_URL: ${{ vars.WEB_HEALTH_URL }}
+
+      - name: API
+        if: ${{ vars.API_HEALTH_URL != '' }}
+        run: |
+          set -u
+          url="$API_HEALTH_URL"
+          for attempt in 1 2 3; do
+            code=$(curl -s -o body.json -w '%{http_code}' --max-time 20 "$url" || echo 000)
+            if [ "$code" = "200" ]; then
+              echo "OK $url ($(cat body.json))"
+              exit 0
+            fi
+            echo "Attempt $attempt: $url answered $code"
+            sleep 20
+          done
+          echo "::error title=API down::$url failed three checks"
+          exit 1
+        env:
+          API_HEALTH_URL: ${{ vars.API_HEALTH_URL }}

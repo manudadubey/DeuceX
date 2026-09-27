@@ -1923,3 +1923,142 @@ describeIfConfigured('approvals.agent_run_id', () => {
     });
   });
 });
+
+describeIfConfigured('hardening (step 5.4)', () => {
+  let client: Client;
+  const player = randomUUID();
+  const staff = randomUUID();
+
+  async function asRole(role: string, fn: () => Promise<void>): Promise<void> {
+    await client.query('begin');
+    try {
+      await client.query(`set local role ${role}`);
+      await fn();
+    } finally {
+      await client.query('rollback');
+    }
+  }
+
+  beforeAll(async () => {
+    client = new Client({ connectionString: DATABASE_URL });
+    await client.connect();
+    await client.query(`insert into auth.users (id, email) values ($1, $2), ($3, $4)`, [
+      player,
+      `rls-test-54-${player}@deucex.test`,
+      staff,
+      `rls-test-54-staff-${staff}@deucex.test`,
+    ]);
+    await client.query(
+      `insert into public.players
+         (id, tour, name, email, country, dob, home_currency, app_language, units, timezone)
+       values ($1, 'wta', 'Hardening Test Player', $2, 'AU', '2000-01-01', 'AUD', 'en', 'metric', 'Australia/Sydney')`,
+      [player, `rls-test-54-${player}@deucex.test`],
+    );
+    await client.query(
+      `insert into public.on_demand_requests (player_id, kind) values ($1, 'menu_scan')`,
+      [player],
+    );
+    await client.query(
+      `insert into public.erasure_records (player_id, deletion_effective_at) values ($1, now())`,
+      [player],
+    );
+  });
+
+  afterAll(async () => {
+    await client.query(`delete from public.erasure_records where player_id = $1`, [player]);
+    await client.query(`delete from public.admin_actions where admin_id = $1`, [staff]);
+    await client.query(`delete from public.admin_users where id = $1`, [staff]);
+    await client.query(`delete from public.players where id = $1`, [player]);
+    await client.query(`delete from auth.users where id in ($1, $2)`, [player, staff]);
+    await client.end();
+  });
+
+  it('gives a player no access to their rate-limit counts', async () => {
+    await asPlayer(client, player, async () => {
+      await expect(client.query('select * from public.on_demand_requests')).rejects.toThrow(
+        /permission denied/,
+      );
+    });
+    await asPlayer(client, player, async () => {
+      await expect(
+        client.query(`insert into public.on_demand_requests (player_id, kind) values ($1, 'x')`, [
+          player,
+        ]),
+      ).rejects.toThrow(/permission denied/);
+    });
+  });
+
+  it('lets the console read erasure records, and players nothing', async () => {
+    await asPlayer(client, player, async () => {
+      await expect(client.query('select * from public.erasure_records')).rejects.toThrow(
+        /permission denied/,
+      );
+    });
+    await asRole('console', async () => {
+      const { rows } = await client.query(
+        'select status from public.erasure_records where player_id = $1',
+        [player],
+      );
+      expect(rows).toEqual([{ status: 'running' }]);
+    });
+  });
+
+  it('lets grafana_reader read agent_health_daily and nothing else', async () => {
+    // postgres isn't a member of grafana_reader (nothing needs it to be), so
+    // check the role's privileges rather than switching to it.
+    const { rows } = await client.query(
+      `select has_table_privilege('grafana_reader', 'public.agent_health_daily', 'select') health,
+              has_table_privilege('grafana_reader', 'public.agent_health_daily', 'insert') health_write,
+              has_table_privilege('grafana_reader', 'public.players', 'select') players,
+              has_table_privilege('grafana_reader', 'public.notes', 'select') notes,
+              has_table_privilege('grafana_reader', 'public.agent_runs', 'select') runs`,
+    );
+    expect(rows[0]).toEqual({
+      health: true,
+      health_write: false,
+      players: false,
+      notes: false,
+      runs: false,
+    });
+  });
+
+  it('erases a player a staff member acted on and who was paid out, keeping the audit row de-identified', async () => {
+    await client.query(
+      `insert into public.admin_users (id, name, email, role) values ($1, 'RLS Staff', $2, 'owner')`,
+      [staff, `rls-test-54-staff-${staff}@deucex.test`],
+    );
+    await client.query(
+      `insert into public.admin_actions (admin_id, role_at_time, player_id, action_type, consequence)
+       values ($1, 'owner', $2, 'send_magic_link', 'Sent a sign-in link')`,
+      [staff, player],
+    );
+    await client.query(
+      `insert into public.payouts
+         (player_id, stripe_payout_id, friday, gross, platform_fee, platform_fee_rate, stripe_fee, net, currency, status, paid_at)
+       values ($1, $2, '2026-09-25', 100, 8, 0.08, 2, 90, 'AUD', 'paid', now())`,
+      [player, `po_rls_${player}`],
+    );
+
+    // A paid payout still can't be deleted directly.
+    await client.query('begin');
+    await expect(
+      client.query(`delete from public.payouts where player_id = $1`, [player]),
+    ).rejects.toThrow(/paid payout/);
+    await client.query('rollback');
+
+    // Erasing the player (auth.admin.deleteUser) cascades through both.
+    await client.query(`delete from auth.users where id = $1`, [player]);
+    const left = await client.query(
+      `select (select count(*) from public.players where id = $1)::int players,
+              (select count(*) from public.payouts where player_id = $1)::int payouts,
+              (select count(*) from public.on_demand_requests where player_id = $1)::int requests`,
+      [player],
+    );
+    expect(left.rows[0]).toEqual({ players: 0, payouts: 0, requests: 0 });
+    const audit = await client.query(
+      `select player_id from public.admin_actions where admin_id = $1`,
+      [staff],
+    );
+    expect(audit.rows).toEqual([{ player_id: null }]);
+  });
+});

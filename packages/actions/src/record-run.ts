@@ -1,7 +1,7 @@
 import type { Database, Json } from '@deucex/db';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AgentValidationError } from './errors';
-import { calculateCost, type TokenUsage } from './pricing';
+import { calculateCost, type CostEstimate, type TokenUsage } from './pricing';
 
 export type AgentRunTriggerType = 'schedule' | 'manual' | 'event' | 'threshold';
 export type AgentRunStatus = 'succeeded' | 'failed_validation' | 'failed_infra' | 'degraded';
@@ -68,6 +68,8 @@ export interface AgentRunMeta {
 export interface AgentCallResult {
   output: Json;
   usage?: TokenUsage;
+  /** A cost the call priced itself (audio by the minute); wins over `usage`. */
+  cost?: CostEstimate | null;
 }
 
 export interface RecordedRun extends AgentCallResult {
@@ -92,7 +94,7 @@ export async function recordRun(
 
   try {
     const result = await fn();
-    const cost = result.usage ? calculateCost(meta.model, result.usage) : null;
+    const cost = result.cost ?? (result.usage ? calculateCost(meta.model, result.usage) : null);
 
     await db.insertAgentRun({
       ...meta,
@@ -109,6 +111,11 @@ export async function recordRun(
   } catch (error) {
     const status: AgentRunStatus =
       error instanceof AgentValidationError ? 'failed_validation' : 'failed_infra';
+    // A validation failure still paid for its attempts (step 5.4).
+    const cost =
+      error instanceof AgentValidationError && error.usage
+        ? calculateCost(meta.model, error.usage)
+        : null;
 
     await db.insertAgentRun({
       ...meta,
@@ -117,8 +124,8 @@ export async function recordRun(
       completedAt: new Date(),
       status,
       output: null,
-      costAmount: null,
-      costCurrency: null,
+      costAmount: cost?.amount ?? null,
+      costCurrency: cost?.currency ?? null,
     });
 
     throw error;

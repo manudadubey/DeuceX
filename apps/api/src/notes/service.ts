@@ -7,8 +7,8 @@ import {
   type Note,
   type NoteCtx,
 } from '@deucex/db';
-import type { AgentRunsDb } from '@deucex/actions';
-import type { ExtractionModelClient } from '@deucex/agents';
+import { recordRun, type AgentRunsDb } from '@deucex/actions';
+import { modelFor, type ExtractionModelClient } from '@deucex/agents';
 import type { StorageAdapter } from '../storage/adapter';
 import type { TranscriptionAdapter } from '../transcription/adapter';
 import { computeNoteStamp } from '../conditions/stamp';
@@ -159,6 +159,9 @@ export async function createNote(deps: NotesServiceDeps, input: CreateNoteInput)
 // queue hop would mean re-downloading nothing new while adding a window
 // where the note briefly reads "review" with no proposals filled in yet
 // (see runExtraction's own comment on why it never re-throws here).
+/** agent_runs.agent_name for a note's transcription (not a queued agent; the console lists it under Match Scribe). */
+export const TRANSCRIBE_AGENT_NAME = 'match-scribe-transcribe';
+
 export async function transcribeNote(deps: NotesServiceDeps, noteId: string): Promise<void> {
   const { data: note, error } = await deps.db.from('notes').select('*').eq('id', noteId).single();
   if (error) throw error;
@@ -168,11 +171,33 @@ export async function transcribeNote(deps: NotesServiceDeps, noteId: string): Pr
     const audio = await deps.storage.download(note.audio_ref);
     const languageOverride = note.lang_source === 'preference' && note.lang ? note.lang : undefined;
 
-    const result = await deps.transcription.transcribe({
-      audio,
-      contentType: 'audio/webm',
-      ...(languageOverride ? { languageOverride } : {}),
-    });
+    // One agent_runs row per transcription (step 5.4), priced by the minute,
+    // so transcription counts toward the console's spend figure like every
+    // other model call. A failed call still writes its row (recordRun).
+    let result!: Awaited<ReturnType<TranscriptionAdapter['transcribe']>>;
+    await recordRun(
+      deps.agentRuns,
+      {
+        agentName: TRANSCRIBE_AGENT_NAME,
+        playerId: note.player_id,
+        triggerType: 'event',
+        inputsHash: note.audio_ref,
+        model: modelFor('matchScribeTranscribe'),
+        promptVersion: 'none',
+        schemaVersion: 'none',
+      },
+      async () => {
+        result = await deps.transcription.transcribe({
+          audio,
+          contentType: 'audio/webm',
+          ...(languageOverride ? { languageOverride } : {}),
+        });
+        return {
+          output: { durationSeconds: result.durationSeconds, language: result.language },
+          cost: { amount: result.costUsd, currency: 'USD' },
+        };
+      },
+    );
 
     const { error: updateError } = await deps.db
       .from('notes')

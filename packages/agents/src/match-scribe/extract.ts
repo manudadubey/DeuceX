@@ -7,6 +7,7 @@ import {
   type MatchScribeProposal,
 } from './schema';
 import type { ExtractionModelClient } from './model-client';
+import { modelFor } from '../models';
 
 // The same vendor as transcription (apps/api/src/transcription/
 // whisper-adapter.ts): one OpenAI account and one OPENAI_API_KEY cover both
@@ -16,7 +17,7 @@ import type { ExtractionModelClient } from './model-client';
 // mini · structured extraction") rather than the heavier model those PRDs
 // use for a whole agent's scheduled run. recordRun() looks the run's cost
 // up in packages/actions/src/pricing.ts by this string.
-export const EXTRACTION_MODEL = 'gpt-4o-mini';
+export const EXTRACTION_MODEL = modelFor('matchScribeExtract');
 
 export interface ExtractMatchNoteInput {
   ctx: NoteCtx;
@@ -66,5 +67,6 @@ export async function extractMatchNote(
 
   throw new AgentValidationError(
     `match-scribe/extract: model output failed schema validation twice: ${secondParsed.error.message}`,
+    usage,
   );
 }

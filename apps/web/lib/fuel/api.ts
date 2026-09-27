@@ -15,6 +15,13 @@ const SCAN_TIMEOUT_MS = 45_000;
 
 export class FuelApiError extends Error {}
 export class MenuUnreadableError extends Error {}
+export class ScanLimitError extends Error {}
+
+/** The 24-hour on-demand limit (step 5.4); the message names the count and when it frees up. */
+async function limitMessage(res: Response): Promise<string> {
+  const body = (await res.json().catch(() => ({}))) as { error?: string };
+  return body.error ?? 'Limit reached. Try again later.';
+}
 
 export interface ScanResult {
   id: string;
@@ -56,6 +63,7 @@ export async function scanMenu(
       signal: controller.signal,
     });
     if (res.status === 422) throw new MenuUnreadableError(UNREADABLE_MESSAGE);
+    if (res.status === 429) throw new ScanLimitError(await limitMessage(res));
     if (!res.ok) throw new FuelApiError(`Menu scan failed: ${res.status}`);
     return (await res.json()) as ScanResult;
   } catch (err) {
