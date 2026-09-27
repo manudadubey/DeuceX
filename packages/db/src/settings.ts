@@ -226,20 +226,5 @@ export async function updateEmergencyContact(
   if (error) throw error;
 }
 
-// Plan & billing's "Downgrade to Free" (PRD-12 4.4, ST-8): no real Stripe
-// Billing subscription exists yet (that lands with a later billing step), so
-// there is no true period-end to defer to. This applies the tier change
-// immediately, same as a Free signup at onboarding (finishOnboarding sets
-// tier_status: 'free' the same way) — the confirmation copy's "takes effect
-// <date>" is therefore a display approximation, flagged in BUILD-LOG, not a
-// deferred write. Revisit once real Stripe Billing subscriptions exist.
-export async function downgradeToFree(
-  client: SupabaseClient<Database>,
-  playerId: string,
-): Promise<void> {
-  const { error } = await client
-    .from('players')
-    .update({ tier: 'free', tier_status: 'free' })
-    .eq('id', playerId);
-  if (error) throw error;
-}
+// Plan & billing's "Downgrade to Free" moved to billing.ts (docs/BILLING-DECISIONS.md):
+// players can no longer write their own tier.

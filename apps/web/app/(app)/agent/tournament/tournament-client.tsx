@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Badge,
-  Button,
   Card,
   Tabs,
   TabsList,
@@ -20,6 +19,7 @@ import { daysUntil, loadTournamentSnapshot, type TournamentSnapshot } from '@/li
 import { CalendarTab } from '@/components/tournament/calendar-tab';
 import { DetailPanel } from '@/components/tournament/detail-panel';
 import { PausedNotice } from '@/components/agents/paused-notice';
+import { StartTrialButton } from '@/components/billing/start-trial-button';
 
 function mondayIso(date: Date): string {
   const d = new Date(date);
@@ -116,8 +116,6 @@ export function TournamentClient({
   const skippedCount = candidates.filter(
     (c) => c.status === 'skipped' || c.status === 'withdrawn',
   ).length;
-
-  const handleStartTrial = () => showToast('Pro trial is coming soon');
 
   return (
     <ToastProvider>
@@ -270,7 +268,6 @@ export function TournamentClient({
                 equipmentMainsKg={snapshot?.equipmentMainsKg ?? 24}
                 equipmentCrossesKg={snapshot?.equipmentCrossesKg ?? 23}
                 onDone={load}
-                onStartTrial={handleStartTrial}
                 onToast={showToast}
               />
             )}
@@ -291,9 +288,7 @@ export function TournamentClient({
           <span className="text-muted-foreground">
             Pro adds cost, outcomes and runway effect to every candidate.
           </span>
-          <Button size="sm" onClick={handleStartTrial}>
-            Start Pro trial
-          </Button>
+          <StartTrialButton size="sm" onToast={showToast} />
         </div>
       )}
 

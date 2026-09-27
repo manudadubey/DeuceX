@@ -31,6 +31,7 @@ import { patrons, SAMPLE_UPDATE, whenPhrase } from '@/lib/content/copy';
 import { EditorCard } from '@/components/content/editor-card';
 import { ChecksCard, RecipientsCard } from '@/components/content/side-cards';
 import { HistoryCard } from '@/components/content/history-card';
+import { StartTrialButton } from '@/components/billing/start-trial-button';
 
 const DESCRIPTION =
   'Drafts a patron update within thirty minutes of every Match Scribe note, in your voice. Nothing goes out until you approve it.';
@@ -277,7 +278,7 @@ export function ContentClient({
               Patron updates drafted from your match notes are on Pro. Nothing is drafted from your
               notes on Free.
             </p>
-            <Button onClick={() => showToast('Pro trial · coming soon')}>Start Pro trial</Button>
+            <StartTrialButton onToast={showToast} />
           </div>
         </div>
         <ToastProvider>

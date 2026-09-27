@@ -26,6 +26,7 @@ import {
 } from '@/components/fans/fans-cards';
 import { PeopleCard } from '@/components/fans/people-card';
 import { TiersCard } from '@/components/fans/tiers-card';
+import { StartTrialButton } from '@/components/billing/start-trial-button';
 
 const NUMBER_WORDS = [
   'No one',
@@ -161,7 +162,7 @@ export function FansClient({
               Patron tiers, payouts and drafted notes are on Pro. Your public profile stays live on
               Free.
             </p>
-            <Button onClick={() => showToast('Pro trial · coming soon')}>Start Pro trial</Button>
+            <StartTrialButton onToast={showToast} />
           </div>
         </div>
       ) : !view ? null : !ready ? (

@@ -789,6 +789,27 @@ export async function pausePatronBilling(
   );
 }
 
+/**
+ * The automatic pause when a plan lapses to Free with no confirmation to
+ * approve: a trial that ran out, or (session 2) a card that failed for good.
+ * Owner decision, 27 September 2026 (docs/BILLING-DECISIONS.md, section 4
+ * option i, extended to lapsed trials the same day): M-TIER-2 says a Free
+ * account never keeps charging patrons, so this is a named exception to
+ * player-authored approvals, like the 90-day end below. Same Stripe calls
+ * and the same patron notice as pausePatronBilling. The caller records it
+ * in billing_events and only moves the plan once nothing failed.
+ */
+export async function pausePatronBillingForLapse(
+  db: FansActionsDb,
+  stripe: FansStripeClient,
+  email: EmailClient,
+  input: Omit<PatronBillingInput, 'approvalId'>,
+): Promise<PatronBillingResult> {
+  const programme = await db.getProgramme(input.playerId);
+  if (!programme?.stripeAccountId) return { changed: 0, failed: [], unnotified: [] };
+  return changeBilling(db, stripe, email, { ...input, approvalId: '' }, 'pause');
+}
+
 /** Back on Pro or Elite: resumes those same subscriptions, no re-signup (P-18). */
 export async function resumePatronBilling(
   gateDb: ApprovalGateDb,

@@ -401,7 +401,13 @@ players"). In order:
    `docs/BILLING-DECISIONS.md`: trial held in DeuceX, "Save 20%", proration rules, 14-day
    dunning with an automatic patron-billing pause at lapse, and plans priced and billed in USD:
    Pro US$35 or US$28 a month yearly, Elite US$99 or US$79); only GST waits on the accountant.
-   About two sessions of build.
+   About two sessions of build. **Session 1 (trials and Checkout) is built** on branch
+   `billing-trials`: trials held in DeuceX via `start_trial`, Stripe Checkout with the first
+   charge on day 14, the hourly billing sweep (day-12 reminder, day-14 lapse with automatic
+   patron pause), a real Plan & billing pane, and players can no longer write their own plan.
+   Its migrations are applied to staging and production. It also fixed a step 5.1 bug that
+   broke every new sign-up. See `docs/BUILD-LOG.md`'s "Billing, session 1" entry, including the
+   GST-on-top finding. Session 2: plan changes, webhooks, dunning, invoices, portal.
 3. **Deploy `apps/api` to Render**, per the follow-up below. Then set `NEXT_PUBLIC_API_URL`,
    `STRIPE_WEBHOOK_SECRET` and the uptime check's `API_HEALTH_URL`.
 4. **Go live:**

@@ -106,8 +106,13 @@ import {
   SupabaseFansActionsDb,
   createStripeFansClient,
   endMembershipsForErasure,
+  pausePatronBillingForLapse,
 } from '@deucex/actions/fans';
 import { registerFansRoutes, type FansRoutesDeps } from './fans/routes';
+import { SupabaseBillingActionsDb, createStripeBillingClient } from '@deucex/actions/billing';
+import { registerBillingRoutes, type BillingRoutesDeps } from './billing/routes';
+import { registerBillingSweepScheduler } from './billing/scheduler';
+import { SupabaseBillingSweepStore } from './billing/store';
 import { registerFansAttentionScheduler } from './fans/scheduler';
 import { SupabaseFansStore } from './fans/store';
 import { SupabaseContentActionsDb } from '@deucex/actions/content';
@@ -148,6 +153,7 @@ export function buildServer(
   fuelDeps?: FuelRoutesDeps,
   adminDeps?: AdminRoutesDeps,
   adminMcpDeps?: AdminMcpDeps,
+  billingDeps?: BillingRoutesDeps,
 ) {
   const app = Fastify({ logger: true });
 
@@ -165,7 +171,8 @@ export function buildServer(
     fansDeps ||
     contentDeps ||
     fuelDeps ||
-    adminDeps
+    adminDeps ||
+    billingDeps
   ) {
     // The admin console (step 5.1, localhost:3001 in dev) calls this API from
     // the browser too, with its own staff session and the role preview header.
@@ -261,6 +268,14 @@ export function buildServer(
   if (adminDeps) {
     void app.register(async (instance) => {
       await registerAdminRoutes(instance, adminDeps);
+    });
+  }
+
+  // A player's own plan (docs/BILLING-DECISIONS.md): Checkout, the return
+  // read-back and cancelling a paid plan.
+  if (billingDeps) {
+    void app.register(async (instance) => {
+      await registerBillingRoutes(instance, billingDeps);
     });
   }
 
@@ -565,6 +580,37 @@ async function main() {
       : null,
   });
 
+  // Billing (docs/BILLING-DECISIONS.md): the player's own plan, on DeuceX's
+  // platform account with the same key. The hourly sweep still reminds and
+  // lapses card-less trials without a key; only patron pauses and anything
+  // with a card on file need Stripe.
+  const billingStripe = stripeSecretKey
+    ? createStripeBillingClient({ secretKey: stripeSecretKey })
+    : null;
+  const billingDb = new SupabaseBillingActionsDb(db);
+  const billingDeps: BillingRoutesDeps = {
+    anonClient,
+    gateDb: new SupabaseApprovalGateDb(db),
+    billing: billingDb,
+    stripe: billingStripe,
+    appBaseUrl,
+  };
+  await registerBillingSweepScheduler(moneyBoss, {
+    store: new SupabaseBillingSweepStore(db),
+    billing: billingDb,
+    stripe: billingStripe,
+    pausePatrons: fansDeps.stripe
+      ? (
+          (stripe) => (playerId: string) =>
+            pausePatronBillingForLapse(fansActionsDb, stripe, email, {
+              playerId,
+              appBaseUrl,
+              linkSecret: fansDeps.linkSecret,
+            })
+        )(fansDeps.stripe)
+      : null,
+  });
+
   // The 06:00 attention pass, plus (step 4.1b) the 90-day paused-membership
   // sweep, which needs Stripe to cancel and so only runs when a key is set.
   await registerFansAttentionScheduler(moneyBoss, {
@@ -766,6 +812,7 @@ async function main() {
     fuelDeps,
     adminDeps,
     adminMcpDeps,
+    billingDeps,
   );
   const port = Number(process.env.PORT ?? 8787);
   await app.listen({ port, host: '0.0.0.0' });

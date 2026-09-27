@@ -28,6 +28,7 @@ import { ScanCard, type ScanState } from '@/components/fuel/scan-card';
 import { HistoryCard } from '@/components/fuel/history-card';
 import { WontDoCard } from '@/components/fuel/wont-do-card';
 import { PreferencesSheet } from '@/components/fuel/preferences-sheet';
+import { StartTrialButton } from '@/components/billing/start-trial-button';
 
 export interface FuelClientProps {
   playerId: string;
@@ -303,9 +304,7 @@ export function FuelClient(props: FuelClientProps) {
               Pro reads any menu and picks two or three dishes for tomorrow&apos;s match, your rules
               and your food money.
             </p>
-            <Button onClick={() => showToast('The Pro trial is coming soon.')}>
-              Start Pro trial
-            </Button>
+            <StartTrialButton onToast={showToast} />
           </div>
         </div>
       ) : (

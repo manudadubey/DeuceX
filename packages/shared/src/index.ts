@@ -67,3 +67,22 @@ export {
   type LimitTier,
   type OnDemandKind,
 } from './rate-limits';
+
+// Billing (docs/BILLING-DECISIONS.md): USD plan prices and trial constants.
+export {
+  ANNUAL_SAVING_LABEL,
+  PAID_PLANS,
+  PLAN_PRICES_USD,
+  TRIAL_DAYS,
+  TRIAL_REMINDER_DAYS_BEFORE_END,
+  formatUsd,
+  isBillingCycle,
+  isPaidPlan,
+  planAnnualSavingPercent,
+  planChargeAmount,
+  planPriceLine,
+  planPriceLookupKey,
+  planYearlyTotal,
+  type BillingCycle,
+  type PaidPlan,
+} from './plans';

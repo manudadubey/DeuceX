@@ -1,0 +1,14 @@
+-- Fix: a new player couldn't create their own row, so onboarding failed for
+-- every new sign-up (found live while testing billing, 27 September 2026).
+--
+-- Step 5.1's players_not_staff trigger (PRD-13 AD-1: a staff identity can't
+-- hold a player account) runs BEFORE INSERT on players, which includes
+-- onboarding's upsert. It reads admin_users, but it ran as the calling
+-- player, and players have no access to admin_users, so the insert failed
+-- with "permission denied for table admin_users". Running the function as
+-- its owner lets the check read admin_users without giving players any
+-- access to that table. It still only answers yes or no for the row being
+-- inserted.
+-- The function already pins search_path = '' and names public.admin_users in
+-- full (step 5.1), so security definer is the only change.
+alter function public.players_not_staff() security definer;

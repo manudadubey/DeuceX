@@ -7,7 +7,11 @@ import { SettingsShell } from './settings-shell';
 // share_links once, here, the same "one server read, client owns the rest"
 // split every other route in this app already uses (financial/page.tsx,
 // mindset/page.tsx).
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
   const supabase = createClient();
   const { data } = await supabase.auth.getClaims();
   const playerId = typeof data?.claims.sub === 'string' ? data.claims.sub : undefined;
@@ -29,6 +33,8 @@ export default async function SettingsPage() {
       player={player}
       agentSchedules={agentSchedules ?? []}
       shareLinks={shareLinks ?? []}
+      initialPane={typeof searchParams.pane === 'string' ? searchParams.pane : undefined}
+      checkoutSessionId={typeof searchParams.checkout === 'string' ? searchParams.checkout : null}
     />
   );
 }

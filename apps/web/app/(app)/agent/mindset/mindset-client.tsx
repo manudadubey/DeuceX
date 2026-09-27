@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Badge, Button, Toast, ToastProvider, ToastTitle, ToastViewport } from '@deucex/ui';
+import { Badge, Toast, ToastProvider, ToastTitle, ToastViewport } from '@deucex/ui';
 import {
   getInsightByDate,
   getMindsetBoundaries,
@@ -26,6 +26,7 @@ import { PatternsCard } from '@/components/mindset/patterns-card';
 import { RecentMorningsCard } from '@/components/mindset/recent-mornings-card';
 import { PausedNotice } from '@/components/agents/paused-notice';
 import { modelLabel } from '@deucex/shared';
+import { StartTrialButton } from '@/components/billing/start-trial-button';
 
 const OPENAI = ['openai'] as const;
 
@@ -132,9 +133,7 @@ export function MindsetClient({ playerId, timezone, isFree, started }: MindsetCl
                   <p className="mb-2 text-muted-foreground">
                     Patterns, the mood chart, boundaries and recent mornings are part of Pro.
                   </p>
-                  <Button size="sm" onClick={() => showToast('Pro trial is coming soon')}>
-                    Start Pro trial
-                  </Button>
+                  <StartTrialButton size="sm" onToast={showToast} />
                 </div>
               )}
             </div>

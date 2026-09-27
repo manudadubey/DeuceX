@@ -41,6 +41,7 @@ import {
 import { enqueueOfflineNote } from '@/lib/match-scribe/offline-queue';
 import { RECORDING_CAP_SECONDS, useAudioRecorder } from './use-audio-recorder';
 import { WaveformCanvas } from './waveform-canvas';
+import { StartTrialButton } from '@/components/billing/start-trial-button';
 
 const CONTEXTS: { value: NoteCtx; label: string }[] = [
   { value: 'match', label: 'Match' },
@@ -322,13 +323,7 @@ export function RecorderCard({
               You&apos;ve used {FREE_TIER_MONTHLY_NOTE_LIMIT} of {FREE_TIER_MONTHLY_NOTE_LIMIT}{' '}
               notes this month
             </p>
-            <Button
-              size="sm"
-              className="self-start"
-              onClick={() => onToast('Start Pro trial · coming soon')}
-            >
-              Start Pro trial
-            </Button>
+            <StartTrialButton size="sm" className="self-start" onToast={onToast} />
           </div>
         ) : (
           <>

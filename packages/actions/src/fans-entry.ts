@@ -23,6 +23,7 @@ export {
   sendPatronNote,
   inviteFromWaitlist,
   createPatronCheckout,
+  pausePatronBillingForLapse,
   tierChangePayload,
   patronNotePayload,
   slugFromName,

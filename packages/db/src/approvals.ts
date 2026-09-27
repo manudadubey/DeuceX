@@ -22,7 +22,9 @@ export type ApprovalActionType =
   | 'connect_onboard'
   | 'waitlist_invite'
   | 'patron_billing_pause'
-  | 'patron_billing_resume';
+  | 'patron_billing_resume'
+  | 'subscription_checkout'
+  | 'subscription_cancel';
 
 export interface CreateApprovalInput {
   playerId: string;

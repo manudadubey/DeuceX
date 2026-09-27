@@ -45,7 +45,7 @@ export function ConditionsBrief({
   isFree,
   unit,
   onUnitChange,
-  onStartTrial,
+  onToast,
 }: {
   conditions: ConditionsBriefView;
   /** The Equipment profile's own baseline (never the test value) — Frame A always reads this. */
@@ -54,7 +54,7 @@ export function ConditionsBrief({
   isFree: boolean;
   unit: Unit;
   onUnitChange: (unit: Unit) => void;
-  onStartTrial: () => void;
+  onToast: (title: string) => void;
 }) {
   const c = conditions;
   const testMains = c.testMains ?? mainsKg;
@@ -168,10 +168,7 @@ export function ConditionsBrief({
       )}
 
       {isFree ? (
-        <LockedSection
-          onStartTrial={onStartTrial}
-          label="Pro shows the racquet visual and tension test"
-        >
+        <LockedSection onToast={onToast} label="Pro shows the racquet visual and tension test">
           {racquetAndTest}
         </LockedSection>
       ) : (

@@ -173,10 +173,12 @@ const baseInput: FinishOnboardingInput = {
   onboardingStartedAt: '2026-09-21T00:00:00Z',
 };
 
+const trialRpc = () => vi.fn().mockResolvedValue({ data: '2026-10-11T10:00:00Z', error: null });
+
 describe('finishOnboarding', () => {
   it('throws before writing anything for an under-18 player with no guardian email', async () => {
     const from = vi.fn();
-    const client = { from } as unknown as SupabaseClient<Database>;
+    const client = { from, rpc: trialRpc() } as unknown as SupabaseClient<Database>;
 
     await expect(
       finishOnboarding(client, { ...baseInput, dob: '2012-01-01', guardianEmail: null }),
@@ -187,7 +189,7 @@ describe('finishOnboarding', () => {
   it('upserts the players row with defaults derived from country and plan', async () => {
     const playersQuery = fakeUpsertQuery({ data: { id: 'player-1' }, error: null });
     const from = vi.fn().mockReturnValue(playersQuery);
-    const client = { from } as unknown as SupabaseClient<Database>;
+    const client = { from, rpc: trialRpc() } as unknown as SupabaseClient<Database>;
 
     await finishOnboarding(client, baseInput);
 
@@ -201,28 +203,55 @@ describe('finishOnboarding', () => {
       timezone: 'Australia/Sydney',
       units: 'metric',
       dashboard_state: 'first',
-      tier: 'pro',
-      tier_status: 'trialing',
     });
+    // Players can't write their own plan (the billing_trials migration).
+    expect(upsertArg).not.toHaveProperty('tier');
+    expect(upsertArg).not.toHaveProperty('tier_status');
+    expect(upsertArg).not.toHaveProperty('billing_cycle');
     expect(upsertOptions).toEqual({ onConflict: 'id' });
   });
 
-  it('sets tier_status to free for the Free plan, not trialing', async () => {
+  it('starts the trial through start_trial for a paid plan, and not at all for Free', async () => {
     const playersQuery = fakeUpsertQuery({ data: { id: 'player-1' }, error: null });
-    const from = vi.fn().mockReturnValue(playersQuery);
-    const client = { from } as unknown as SupabaseClient<Database>;
+    const rpc = vi.fn().mockResolvedValue({ data: '2026-10-11T10:00:00Z', error: null });
+    const client = {
+      from: vi.fn().mockReturnValue(playersQuery),
+      rpc,
+    } as unknown as SupabaseClient<Database>;
 
+    const player = await finishOnboarding(client, {
+      ...baseInput,
+      plan: 'pro',
+      billingCycle: 'annual',
+    });
+    expect(rpc).toHaveBeenCalledWith('start_trial', { p_plan: 'pro', p_cycle: 'annual' });
+    expect(player).toMatchObject({
+      tier: 'pro',
+      tier_status: 'trialing',
+      trial_ends_at: '2026-10-11T10:00:00Z',
+    });
+
+    rpc.mockClear();
     await finishOnboarding(client, { ...baseInput, plan: 'free' });
+    expect(rpc).not.toHaveBeenCalled();
+  });
 
-    const upsertArg = (playersQuery.upsert as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
-    expect(upsertArg).toMatchObject({ tier: 'free', tier_status: 'free' });
+  it('keeps the current plan when a replay finds the trial already used (OB-17)', async () => {
+    const playersQuery = fakeUpsertQuery({ data: { id: 'player-1', tier: 'free' }, error: null });
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: { message: 'trial_unavailable' } });
+    const client = {
+      from: vi.fn().mockReturnValue(playersQuery),
+      rpc,
+    } as unknown as SupabaseClient<Database>;
+
+    await expect(finishOnboarding(client, baseInput)).resolves.toMatchObject({ tier: 'free' });
   });
 
   it("writes every agent's state, paused for the ones turned off (the Mindset Coach by default), under the names the runner reads", async () => {
     const playersQuery = fakeUpsertQuery({ data: { id: 'player-1' }, error: null });
     const schedulesQuery = { upsert: vi.fn().mockResolvedValue({ error: null }) };
     const from = vi.fn((table: string) => (table === 'players' ? playersQuery : schedulesQuery));
-    const client = { from } as unknown as SupabaseClient<Database>;
+    const client = { from, rpc: trialRpc() } as unknown as SupabaseClient<Database>;
 
     await finishOnboarding(client, baseInput);
 
@@ -243,7 +272,7 @@ describe('finishOnboarding', () => {
     const playersQuery = fakeUpsertQuery({ data: { id: 'player-1' }, error: null });
     const schedulesQuery = { upsert: vi.fn().mockResolvedValue({ error: null }) };
     const from = vi.fn((table: string) => (table === 'players' ? playersQuery : schedulesQuery));
-    const client = { from } as unknown as SupabaseClient<Database>;
+    const client = { from, rpc: trialRpc() } as unknown as SupabaseClient<Database>;
 
     await finishOnboarding(client, {
       ...baseInput,

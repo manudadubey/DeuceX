@@ -23,6 +23,7 @@ import { ReservesCard } from '@/components/financial/reserves-card';
 import { PnlCard } from '@/components/financial/pnl-card';
 import { LedgerCard } from '@/components/financial/ledger-card';
 import { PausedNotice } from '@/components/agents/paused-notice';
+import { StartTrialButton } from '@/components/billing/start-trial-button';
 
 const OPENAI = ['openai'] as const;
 
@@ -110,7 +111,7 @@ export function FinancialClient({
         </div>
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
           <Badge variant="secondary">Pro feature</Badge>
-          <Button onClick={() => showToast('Pro trial is coming soon')}>Start Pro trial</Button>
+          <StartTrialButton onToast={showToast} />
         </div>
       </div>
     );

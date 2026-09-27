@@ -3320,3 +3320,91 @@ every API call after the preflight. Outside production the API now also accepts 
 allows only `CORS_ORIGIN`. Verified: a lookup from port 52396 with a real session returned
 `verified`; an unknown origin is still refused. The deployed app's lookup still fails until
 apps/api is on Render and `NEXT_PUBLIC_API_URL` is set.
+
+## Billing, session 1 · Trials and Checkout — 27 September 2026
+
+Built against `docs/BILLING-DECISIONS.md` (owner decisions, 27 September 2026). One further owner
+decision this session: when a trial lapses to Free, paying patrons are paused automatically, the
+same exception already approved for a failed payment.
+
+**Migration `20260930090000_billing_trials`**, applied to staging, then production (owner-confirmed):
+
+- **Closed a real hole:** players could write their own `tier`, `tier_status` and `billing_cycle`
+  (step 2.3's update grant), and the table-wide insert grant from step 1.4 let a first insert set
+  the plan, comps and deletion columns too. Both grants are narrowed now. `tier`/`tier_status`
+  default to `free`.
+- `start_trial(plan, cycle)`: the one way a trial starts. It works once per player, only from
+  Free, and lasts 14 days (`trial_started_at`, `trial_plan`, `trial_reminded_at` are new). Pro or
+  Elite, as onboarding already offered.
+- `downgrade_to_free()`: for a trial with no card; refused while a Stripe plan is live.
+- `billing_subscriptions` (one row per player, written only by apps/api) and `billing_events`
+  (append-only, readable by the player), plus the `subscription_checkout` and
+  `subscription_cancel` approval types.
+- The one existing open-ended trial (the fixture player) restarted for 14 days, ending 11 October.
+
+**Code:**
+
+- `@deucex/shared` `plans.ts`: the USD prices, "Save 20%" (tested to stay true), lookup keys and
+  price lines.
+- `@deucex/actions/billing`:
+  - `startSubscriptionCheckout` (gated): creates the Stripe customer on first use, prices by
+    lookup key, and dates the first charge to the trial end;
+  - `completeSubscriptionCheckout`: the return read-back, idempotent;
+  - `cancelPlan` (gated): now while Stripe is still trialing, at period end once paid;
+  - a separate `BillingStripeClient` on the platform account;
+  - `ensurePlanPrices`.
+- `pausePatronBillingForLapse` in fans.ts: the automatic pause, the same notice as the approved
+  one.
+- apps/api `billing/`:
+  - routes: `/billing/checkout`, `/billing/checkout/complete`, `/billing/cancel`;
+  - an hourly sweep on the money boss: the day-12 reminder, the day-14 lapse (patrons paused
+    first; the lapse is held if any pause fails), conversion to active, and period-end
+    downgrades.
+- `apps/api/scripts/billing-prices.ts`: created the four sandbox prices. It refuses a live key
+  without `BILLING_PRICES_ALLOW_LIVE=1`.
+- apps/web:
+  - onboarding in USD with "Save 20%" and the yearly total;
+  - a shared `StartTrialButton` with the consequence sentence, replacing all seven "coming soon"
+    toasts;
+  - a rebuilt Plan & billing pane: plan line, add a card, Checkout return, a downgrade that picks
+    now or period end, and an approximate home-currency figure from the FX archive;
+  - `?pane=billing` deep links.
+
+**Found live and fixed:**
+
+1. **Since step 5.1, every new sign-up failed at the end of onboarding.** The `players_not_staff`
+   trigger read `admin_users` as the calling player, who has no access to it. Migration
+   `20260930091000_fix_players_not_staff_definer` makes it `security definer` (owner-confirmed,
+   staging then production); players still can't read `admin_users`. Found by this session's new
+   RLS test that a first insert defaults to Free.
+2. Stripe Checkout refuses a trial end less than 48 hours away (confirmed in the sandbox), so a
+   player paying on day 13 gets the minimum lead: up to a day extra.
+3. This sandbox account refuses Checkout until plan products carry a tax code. They now carry
+   `txcd_10103001` (software as a service). The script finds products through their prices,
+   because Stripe's product search lags.
+
+**Verified:**
+
+- Ten new live RLS tests; the full suite passes against production, 85 of 85, cleaned up.
+- Unit tests for every gated path, including refusal without an approval, and the sweep.
+- A live browser round trip: add a card, the real sandbox Checkout with a test card, the return,
+  and a `trialing` subscription whose trial ends 11 October, the same as the DeuceX trial.
+
+**Open, for the owner:**
+
+- **GST shows on top of the price in Checkout.** The sandbox's Stripe Tax settings add 10% GST
+  for an Australian address, so Checkout showed US$38.50, not US$35. For Australian consumers
+  the advertised price must include GST. It needs the accountant's answer (decision 5), then
+  either tax-inclusive prices or no collection.
+- The live downgrade wasn't run: the fixture's sandbox patron would have been emailed.
+- The fixture's sandbox subscription is left in place. It converts to active on 11 October if
+  apps/api is running, which is useful for session 2.
+- Three throwaway sandbox customers named "Lead test" are left from the 48-hour check.
+
+**Session 2 must also:**
+
+- cancel the player's own Stripe plan in the erasure job (it only ends patron memberships today);
+- move a staff trial extension onto Stripe's trial end when a card is on file;
+- add webhooks for renewals and failures (they need apps/api deployed);
+- add plan changes with proration, dunning, invoices and the customer portal;
+- send the annual renewal reminder.
