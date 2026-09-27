@@ -24,12 +24,17 @@ type AgentSchedule = Database['public']['Tables']['agent_schedules']['Row'];
 
 // PRD-12 §4.6, ST-11/ST-12. Cadence copy deliberately never names a model
 // (M-... "No model provider names in the interface," TECH-ARCHITECTURE.md
-// section 5's own generic "structured-output" labelling). Tournament and
-// Content aren't built yet (steps 3.2/4.2) — shown, not hidden, with a
-// plain "arrives later" note rather than a working switch, the same
-// honesty this pane already owes Equipment and Connections. Sponsor/Fan are
-// Elite-only previews (M-TIER-4), always shown dimmed.
+// section 5's own generic "structured-output" labelling); the tier label
+// comes from @deucex/shared's MODEL_CALL_TIERS so it can't drift from what
+// runs. The Tournament Agent makes no model call at all (step 3.2), so its
+// row names its schedule only. Sponsor/Fan are Elite-only previews
+// (M-TIER-4), always shown dimmed.
 const BUILT_AGENTS = [
+  {
+    key: AGENT_NAMES.tournament,
+    label: 'Tournament Agent',
+    cadence: 'Weekly shortlist · Sundays 20:00 UTC',
+  },
   {
     key: AGENT_NAMES.mindsetCoach,
     label: 'Mindset Coach',
@@ -40,10 +45,6 @@ const BUILT_AGENTS = [
     label: 'Financial Agent',
     cadence: `${modelLabel('financialAction')} · daily`,
   },
-] as const;
-
-const UNBUILT_AGENTS = [
-  { key: 'tournament', label: 'Tournament Agent', arrives: 'step 3.2' },
 ] as const;
 
 // PRD-05 section 3 / 4.3: the Content Agent's row carries its draft window
@@ -168,7 +169,7 @@ export function AgentsPane({
           <div className="min-w-48 flex-1">
             <div className="font-medium">Content Agent</div>
             <div className="text-[0.8125rem] text-muted-foreground">
-              Structured-output model · drafts after each match note
+              {modelLabel('contentDraft')} · drafts after each match note
             </div>
           </div>
           <Select
@@ -203,19 +204,6 @@ export function AgentsPane({
           />
         </div>
 
-        {UNBUILT_AGENTS.map((a) => (
-          <div
-            key={a.key}
-            className="flex items-center gap-3.5 rounded-lg bg-secondary/30 px-4 py-3.5 opacity-70"
-          >
-            <div className="flex-1">
-              <div className="font-medium">{a.label}</div>
-              <div className="text-[0.8125rem] text-muted-foreground">Arrives with {a.arrives}</div>
-            </div>
-            <Switch checked={false} disabled aria-label={`${a.label} (not yet available)`} />
-          </div>
-        ))}
-
         {ELITE_AGENTS.map((a) => (
           <div
             key={a.key}
@@ -228,7 +216,7 @@ export function AgentsPane({
             <button
               type="button"
               className="text-xs text-muted-foreground underline"
-              onClick={() => onToast(`${a.label} preview — coming with Elite`)}
+              onClick={() => onToast(`${a.label} preview: coming with Elite`)}
             >
               Preview
             </button>

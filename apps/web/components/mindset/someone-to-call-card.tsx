@@ -27,7 +27,7 @@ export function SomeoneToCallCard() {
         <div className="rounded-lg bg-secondary/50 p-3.5 text-sm">
           <div className="font-medium">ATP / WTA Player Assistance Program</div>
           <div className="text-[0.8125rem] text-muted-foreground">
-            Number pending verification — not shown here until confirmed. Ask your national
+            Number pending verification, so it isn't shown here until confirmed. Ask your national
             federation or tour player relations contact in the meantime.
           </div>
         </div>

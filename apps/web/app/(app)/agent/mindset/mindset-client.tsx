@@ -132,7 +132,7 @@ export function MindsetClient({ playerId, timezone, isFree, started }: MindsetCl
                   <p className="mb-2 text-muted-foreground">
                     Patterns, the mood chart, boundaries and recent mornings are part of Pro.
                   </p>
-                  <Button size="sm" onClick={() => showToast('Pro trial — coming soon')}>
+                  <Button size="sm" onClick={() => showToast('Pro trial is coming soon')}>
                     Start Pro trial
                   </Button>
                 </div>

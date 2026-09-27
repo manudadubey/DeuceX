@@ -3250,3 +3250,29 @@ key contained a line break). Staging holds fixture data only, but the key should
 Supabase dashboard > deucex-staging > Project Settings > API Keys > roll the secret key, then
 update `STAGING_SUPABASE_SECRET_KEY` in `.env`. The drill script now strips whitespace from the
 key.
+
+## Launch-prep fixes — 27 September 2026
+
+Small fixes from step 5.4's follow-ups, stacked on the step 5.4 branch.
+
+- **Deletion copy now matches behaviour.** The emailed-link confirm page said "your plan, patron
+  billing and agents pause immediately", and the Settings dialog promised a 30-day "moved on" note
+  on the public page. Neither happens. Everything keeps working through the 14-day cooling-off,
+  and on day 14 the erasure job deletes everything: it ends each patron membership, emails each
+  patron once, and takes the public page offline. Both texts now say exactly that, including that
+  the player's own Stripe account and past payouts stay with them. The behaviour was not changed
+  (pausing patron billing at confirm would need its own approval design).
+- **Settings > Agents.** The Tournament Agent is a real row with a pause switch (it said "arrives
+  with step 3.2"). The Content Agent's label reads "Drafting model", from the tier table; it had
+  said "Structured-output model". Verified in the browser against production: pausing wrote
+  `tournament` / `paused: true`, and resuming wrote `paused: false`.
+- **Onboarding replay (OB-17).** Finishing onboarding now upserts all four agents' states, the
+  same shape Settings uses. So switching an agent back on in a replay resumes it; before, only
+  switched-off agents got a row.
+- **Em dashes.** All 23 user-facing em dashes in apps/web, and 2 in the account emails, were
+  replaced. Lone "—" empty-value glyphs became en dashes. Prompts and the validators that reject
+  em dashes were left alone.
+- **Photos shrink before upload** (menus and receipts, 1600 px long edge, JPEG), with the
+  original sent when the browser can't decode it. A correction to step 5.4's finding: this does
+  not reduce model tokens, because the vision model already scales images to 768 px on the short
+  side. It only saves upload size. The TPM risk is fixed by raising the OpenAI tier.

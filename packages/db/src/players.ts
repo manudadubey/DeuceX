@@ -230,25 +230,21 @@ export async function finishOnboarding(
     .single();
   if (error) throw error;
 
-  // Only agents left off get a row at all, matching agent_schedules' own
-  // "no row = not paused" default (step 0.6) rather than writing all four
-  // every time. Known gap on replay (OB-17): switching a previously-off
-  // agent back on does not un-pause an existing row here — nothing in this
-  // step builds the pause/resume surface that would do that (Agent Studio,
-  // Elite-only, later phase); upsert at least makes finishing onboarding
-  // twice with the same agent off idempotent rather than a conflict error.
-  const pausedAgents = ONBOARDING_AGENTS.filter((agent) => !input.agents[agent]);
-  if (pausedAgents.length > 0) {
-    const { error: scheduleError } = await client.from('agent_schedules').upsert(
-      pausedAgents.map((agent) => ({
-        player_id: input.playerId,
-        agent_name: ONBOARDING_AGENT_NAMES[agent],
-        paused: true,
-      })),
-      { onConflict: 'player_id,agent_name' },
-    );
-    if (scheduleError) throw scheduleError;
-  }
+  // Every step 4 toggle is written, on or off, the same way Settings'
+  // setAgentPaused does since the pause fix: a paused: false row means the
+  // same as no row, and players have no delete policy on agent_schedules. So
+  // replaying onboarding with an agent switched back on resumes it (OB-17),
+  // where writing only the agents left off used to leave it paused.
+  const { error: scheduleError } = await client.from('agent_schedules').upsert(
+    ONBOARDING_AGENTS.map((agent) => ({
+      player_id: input.playerId,
+      agent_name: ONBOARDING_AGENT_NAMES[agent],
+      paused: !input.agents[agent],
+      updated_at: finishedAt,
+    })),
+    { onConflict: 'player_id,agent_name' },
+  );
+  if (scheduleError) throw scheduleError;
 
   return player;
 }

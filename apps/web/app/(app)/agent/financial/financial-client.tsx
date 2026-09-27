@@ -110,7 +110,7 @@ export function FinancialClient({
         </div>
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
           <Badge variant="secondary">Pro feature</Badge>
-          <Button onClick={() => showToast('Pro trial — coming soon')}>Start Pro trial</Button>
+          <Button onClick={() => showToast('Pro trial is coming soon')}>Start Pro trial</Button>
         </div>
       </div>
     );
@@ -146,7 +146,7 @@ export function FinancialClient({
             <Card className="p-4">
               <div className="text-xs text-muted-foreground">Runway</div>
               <div className="mt-1 font-mono text-2xl font-medium">
-                {Number.isFinite(snapshot.runwayWeeks) ? snapshot.runwayWeeks.toFixed(1) : '—'}{' '}
+                {Number.isFinite(snapshot.runwayWeeks) ? snapshot.runwayWeeks.toFixed(1) : '–'}{' '}
                 <small className="text-sm font-normal text-muted-foreground">wks</small>
               </div>
               <Badge variant={RUNWAY_BADGE[snapshot.runwayColour].variant} className="mt-1">
@@ -208,7 +208,7 @@ export function FinancialClient({
                         day: 'numeric',
                         month: 'short',
                       })
-                    : '—'}
+                    : '–'}
                 </div>
               </div>
               <div>

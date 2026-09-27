@@ -117,7 +117,7 @@ export function TournamentClient({
     (c) => c.status === 'skipped' || c.status === 'withdrawn',
   ).length;
 
-  const handleStartTrial = () => showToast('Pro trial — coming soon');
+  const handleStartTrial = () => showToast('Pro trial is coming soon');
 
   return (
     <ToastProvider>

@@ -85,7 +85,7 @@ export async function requestAccountDeletion(
         to: playerEmail,
         subject: 'Confirm your DeuceX account deletion',
         html: `<p>Someone (hopefully you) asked to delete your DeuceX account.</p>
-<p>Nothing happens until you click this link. Once you do, your account enters a 14-day cooling-off period — plenty of time to change your mind.</p>
+<p>Nothing happens until you click this link. Once you do, your account enters a 14-day cooling-off period, which is plenty of time to change your mind.</p>
 <p><a href="${confirmUrl}">Confirm account deletion</a></p>
 <p>Didn't ask for this? Ignore this email and nothing will happen.</p>`,
       });
@@ -285,7 +285,7 @@ async function deliverDataExport(
   await email.sendEmail({
     to: playerEmail,
     subject: 'Your DeuceX export is ready',
-    html: `<p>Attached: everything DeuceX has on file for you — notes, transcripts, expenses and check-ins — as JSON and CSV.</p>`,
+    html: `<p>Attached: everything DeuceX has on file for you (notes, transcripts, expenses and check-ins) as JSON and CSV.</p>`,
     attachments: [
       { filename: 'data.json', content: toBase64(buildExportJson(bundle)) },
       { filename: 'expenses.csv', content: toBase64(buildExpensesCsv(bundle)) },

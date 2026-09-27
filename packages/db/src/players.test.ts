@@ -218,7 +218,7 @@ describe('finishOnboarding', () => {
     expect(upsertArg).toMatchObject({ tier: 'free', tier_status: 'free' });
   });
 
-  it('writes a paused agent_schedules row only for agents turned off (the Mindset Coach by default), under the name the runner reads', async () => {
+  it("writes every agent's state, paused for the ones turned off (the Mindset Coach by default), under the names the runner reads", async () => {
     const playersQuery = fakeUpsertQuery({ data: { id: 'player-1' }, error: null });
     const schedulesQuery = { upsert: vi.fn().mockResolvedValue({ error: null }) };
     const from = vi.fn((table: string) => (table === 'players' ? playersQuery : schedulesQuery));
@@ -226,13 +226,20 @@ describe('finishOnboarding', () => {
 
     await finishOnboarding(client, baseInput);
 
-    expect(schedulesQuery.upsert).toHaveBeenCalledWith(
-      [{ player_id: 'player-1', agent_name: 'mindset-coach', paused: true }],
-      { onConflict: 'player_id,agent_name' },
-    );
+    const [rows, options] = schedulesQuery.upsert.mock.calls[0] as [
+      Array<{ agent_name: string; paused: boolean }>,
+      unknown,
+    ];
+    expect(rows.map((r) => [r.agent_name, r.paused])).toEqual([
+      ['tournament', false],
+      ['content', false],
+      ['financial', false],
+      ['mindset-coach', true],
+    ]);
+    expect(options).toEqual({ onConflict: 'player_id,agent_name' });
   });
 
-  it('writes no agent_schedules rows when every agent is left on', async () => {
+  it('resumes an agent switched back on when onboarding is replayed (OB-17)', async () => {
     const playersQuery = fakeUpsertQuery({ data: { id: 'player-1' }, error: null });
     const schedulesQuery = { upsert: vi.fn().mockResolvedValue({ error: null }) };
     const from = vi.fn((table: string) => (table === 'players' ? playersQuery : schedulesQuery));
@@ -243,6 +250,7 @@ describe('finishOnboarding', () => {
       agents: { tournament: true, content: true, financial: true, mindset: true },
     });
 
-    expect(schedulesQuery.upsert).not.toHaveBeenCalled();
+    const [rows] = schedulesQuery.upsert.mock.calls[0] as [Array<{ paused: boolean }>];
+    expect(rows.every((r) => r.paused === false)).toBe(true);
   });
 });

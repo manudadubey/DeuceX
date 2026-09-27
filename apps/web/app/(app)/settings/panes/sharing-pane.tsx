@@ -104,7 +104,7 @@ export function SharingPane({
       await navigator.clipboard.writeText(coachLink(link.token));
       onToast('Copied link');
     } catch {
-      onToast('Could not copy — copy it from the address bar on Preview instead');
+      onToast("Couldn't copy it. Copy it from the address bar on Preview instead");
     }
   }
 

@@ -114,8 +114,8 @@ export function BillingPane({
       </div>
 
       <div className="rounded-lg bg-secondary/50 p-4 text-sm text-muted-foreground">
-        No card on file yet. Real Stripe billing lands in a later build step — nothing here charges
-        a card today.
+        No card on file yet. Real Stripe billing lands in a later build step, so nothing here
+        charges a card today.
       </div>
 
       <PatronPayoutsItem playerId={player.id} plan={plan} />
@@ -123,7 +123,7 @@ export function BillingPane({
       <Empty title="No invoices yet">Invoices appear here once billing is wired up.</Empty>
 
       <div className="flex flex-wrap items-center gap-2 border-t border-border pt-6">
-        <Button variant="outline" size="sm" onClick={() => onToast('Elite — coming soon')}>
+        <Button variant="outline" size="sm" onClick={() => onToast('Elite is coming soon')}>
           See what Elite adds
         </Button>
         {plan !== 'free' &&

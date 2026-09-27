@@ -368,11 +368,10 @@ ap-northeast-1). Owner decision, 26 September 2026: no Supabase upgrade until go
 - **Roll the staging secret key**: part of it was printed into a session log on 27 September 2026
   (Project Settings > API Keys in deucex-staging; then update `.env`).
 - **Before launch, OpenAI's rate limit:** the `gpt-4o-mini` tokens-per-minute limit is 200,000,
-  and a menu or receipt scan uses 26,000 to 35,000 tokens (photos aren't downscaled), so about
-  six scans a minute across all players would refuse every mini-tier agent. Raise the OpenAI usage
-  tier and/or downscale photos before upload.
-- The deletion confirm page says patron billing and agents "pause immediately", but nothing pauses
-  during the 14-day cooling-off (billing ends at erasure). Fix the behaviour or the copy.
+  and a menu or receipt scan uses 26,000 to 35,000 tokens, so about six scans a minute across all
+  players would refuse every mini-tier agent. Raise the OpenAI usage tier. (Photos are now shrunk
+  to 1600 px before upload, which saves upload time but not tokens: the model already scales them
+  to 768 px on the short side.)
 - Content drafts failed validation on 3 of 8 cost-pass fixtures (too short); watch it with real
   players.
 - Show `erasure_records` on the console's Trust and safety page.
@@ -386,16 +385,11 @@ ap-northeast-1). Owner decision, 26 September 2026: no Supabase upgrade until go
   financial chase; [PR #23](https://github.com/manudadubey/DeuceX/pull/23), merged 26 September 2026), but production has no linked rows until `apps/api` is deployed, so the
   console's approval rates still read "Not measured yet". See `docs/BUILD-LOG.md`'s approvals
   follow-up for the rate caveats (content rewrites, first-week dilution).
-- Replaying onboarding with an agent switched back on leaves it paused: onboarding only writes rows
-  for agents left off (step 1.4's OB-17 gap). Upserting every toggle's state, like Settings now
-  does, would close it.
-- Settings > Agents still says the Tournament Agent "arrives with step 3.2"; it shipped.
 - Roll the Stripe sandbox secret key (pasted in chat).
 - Set `STRIPE_WEBHOOK_SECRET` once `apps/api` has a public URL; no live webhook has run yet.
 - De-duplicate the "Stripe needs something from you" notification (fired twice in one KYC pass).
 - The payout footer's "1.75% + 30c" is only true for domestic charges (the Italian sandbox account
   paid about 6.5% with currency conversion): a PRD-04 copy fix.
-- Em dashes left in step 2.3's Settings copy (billing pane), against the copy rule.
 - Add `https://deucex.vercel.app/**` to Supabase Auth's redirect URLs (dashboard only), or
   magic-link sign-in on the deployed app bounces.
 - Deploy `apps/api` to **Render** close to launch, not before (owner decision 26 September 2026:
