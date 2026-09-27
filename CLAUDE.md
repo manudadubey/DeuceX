@@ -397,8 +397,11 @@ players"). In order:
    - add `https://deucex.vercel.app/**` to Supabase's redirect URLs.
 2. **Real Stripe Billing for player subscriptions.** Deferred since step 2.3 and never built: no
    player is charged for Pro or Elite yet, there are no trials, and there's no upgrade back to Pro.
-   This is the biggest piece left. It needs its own session and probably owner decisions first
-   (trial mechanics, the annual price, proration).
+   This is the biggest piece left. The owner decisions are made (27 September 2026, all in
+   `docs/BILLING-DECISIONS.md`: trial held in DeuceX, "Save 20%", proration rules, 14-day
+   dunning with an automatic patron-billing pause at lapse, and plans priced and billed in USD:
+   Pro US$35 or US$28 a month yearly, Elite US$99 or US$79); only GST waits on the accountant.
+   About two sessions of build.
 3. **Deploy `apps/api` to Render**, per the follow-up below. Then set `NEXT_PUBLIC_API_URL`,
    `STRIPE_WEBHOOK_SECRET` and the uptime check's `API_HEALTH_URL`.
 4. **Go live:**

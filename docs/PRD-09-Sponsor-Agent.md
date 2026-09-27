@@ -44,7 +44,7 @@ Cost. Target under A$0.05 per weekly pass across up to ten brands; a draft is ge
 
 Header: title, description "Finds brands that fit, writes the first email in your voice, keeps the kit compliant and tells you what a deal like yours is worth. Elite, from v2.", and badge "Elite · preview with sample data" for a Pro viewer (Elite replaces this with "Early access" per M-TIER-4, plus the feedback link).
 
-Studio bar (Pro preview): "This is a preview. The pipeline, drafts and benchmarks below are examples." with the market context "Elite is A$149 a month, A$119 billed annually. Players at your ranking who run structured outreach close one or two regional deals a season, typically A$3,000 to A$12,000 plus product." Two actions: "Upgrade to Elite" (toast "Upgrade · Stripe Checkout") and "Finish your media kit first" (links to `#/profile`).
+Studio bar (Pro preview): "This is a preview. The pipeline, drafts and benchmarks below are examples." with the market context "Elite is US$99 a month, US$79 billed annually. Players at your ranking who run structured outreach close one or two regional deals a season, typically A$3,000 to A$12,000 plus product." Two actions: "Upgrade to Elite" (toast "Upgrade · Stripe Checkout") and "Finish your media kit first" (links to `#/profile`).
 
 Pipeline card: "Pipeline", "Weekly review every Monday. The agent moves nothing without you; it drafts, you send.", badge "6 brands · 1 in talks". Four columns as built (a fifth, Declined, is specified in section 5 but not yet in the file):
 

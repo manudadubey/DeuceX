@@ -54,9 +54,9 @@ M-STG-2 (Must). The player can pin a stage manually in Profile; a pinned stage i
 
 ## 4. Tiers and entitlements
 
-Prices in Australian dollars, shown to the player in their home currency through Stripe. Fourteen-day trial of Pro with no card required. Annual billing at the discounted rate.
+Prices in US dollars, billed in USD, with an approximate home-currency figure shown from the FX archive (changed from AUD on 27 September 2026; see `docs/BILLING-DECISIONS.md`). Fourteen-day trial of Pro or Elite, once per player, with no card required. Annual billing at the discounted rate, labelled "Save 20%" with the yearly total stated. See `docs/BILLING-DECISIONS.md` (27 September 2026) for trial mechanics, proration and failed payments.
 
-| Capability | Free | Pro (A$49 / A$39 annual) | Elite (A$149 / A$119 annual) |
+| Capability | Free | Pro (US$35 / US$28 annual) | Elite (US$99 / US$79 annual) |
 |---|---|---|---|
 | Verified ranking, dashboard, 52-week chart | Yes | Yes | Yes |
 | Match Scribe | 10 notes a month, no coach share | Unlimited | Unlimited |

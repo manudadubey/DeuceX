@@ -52,7 +52,7 @@ App language as a toggle group (English, 中文, Español) with "Menus, labels a
 
 ### 4.4 Plan & billing
 
-Header states the plan plainly: "Pro · A$49 a month · renews 3 October · 12 of 50 patrons." A card shows the card on file ("Visa ending 2210 · Held by Stripe · expires 08/28") with "Manage in Stripe," and a separate card for patron payouts via Stripe Connect. An invoice table lists the last three charges (3 Sep, 3 Aug, 3 Jul 2026, each A$49.00, one marked "Free → Pro") with a PDF action per row. The footer offers "See what Elite adds" and "Downgrade to Free," the latter confirming first: "Pause for a month instead? Downgrade takes effect 3 Oct · Financial and Mindset pause, nothing is deleted."
+Header states the plan plainly: "Pro · US$35 a month · renews 3 October · 12 of 50 patrons." A card shows the card on file ("Visa ending 2210 · Held by Stripe · expires 08/28") with "Manage in Stripe," and a separate card for patron payouts via Stripe Connect. An invoice table lists the last three charges (3 Sep, 3 Aug, 3 Jul 2026, each US$35.00, one marked "Free → Pro") with a PDF action per row. The footer offers "See what Elite adds" and "Downgrade to Free," the latter confirming first: "Pause for a month instead? Downgrade takes effect 3 Oct · Financial and Mindset pause, nothing is deleted."
 
 ### 4.5 Notifications
 
@@ -190,7 +190,7 @@ ST-AC-3. Given Units is set to Metric, when the player switches to Imperial, the
 
 ST-AC-4. Given Patron-update languages includes English and Deutsch, when the Content Agent drafts an update, then two versions are produced, and the Mindset Coach addresses the player in English, the first language in the list.
 
-ST-AC-5. Given the player is on Pro, when they open Plan & billing, then the header reads "Pro · A$49 a month · renews 3 October · 12 of 50 patrons," and the invoice table lists the three most recent charges with a PDF action each.
+ST-AC-5. Given the player is on Pro, when they open Plan & billing, then the header reads "Pro · US$35 a month · renews 3 October · 12 of 50 patrons," and the invoice table lists the three most recent charges with a PDF action each.
 
 ST-AC-6. Given the player taps "Downgrade to Free," when the confirmation appears, then it states the change takes effect 3 October and that Financial and Mindset pause while nothing is deleted.
 
