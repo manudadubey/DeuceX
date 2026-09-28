@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
+import { fullName } from './players';
 
 // Hand-maintained unions for the fields PRD-12 fixes to exactly three or
 // four choices, the same idiom players.ts already uses for tour/handed/etc.
@@ -13,7 +14,8 @@ export type DateFormat = 'DMY' | 'MDY' | 'ISO';
 
 export interface UpdateAccountInput {
   playerId: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   timezone: string;
 }
 
@@ -27,7 +29,12 @@ export async function updateAccount(
 ): Promise<void> {
   const { error } = await client
     .from('players')
-    .update({ name: input.name, timezone: input.timezone })
+    .update({
+      first_name: input.firstName.trim(),
+      last_name: input.lastName.trim(),
+      name: fullName(input.firstName, input.lastName),
+      timezone: input.timezone,
+    })
     .eq('id', input.playerId);
   if (error) throw error;
 }

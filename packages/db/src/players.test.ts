@@ -145,7 +145,8 @@ function fakeUpsertQuery(result: { data: unknown; error: Error | null }) {
 
 const baseInput: FinishOnboardingInput = {
   playerId: 'player-1',
-  name: 'Arya Dubey',
+  firstName: 'Arya',
+  lastName: 'Dubey',
   email: 'arya@example.com',
   country: 'Australia',
   dob: '1998-02-14',
@@ -197,6 +198,9 @@ describe('finishOnboarding', () => {
     const [upsertArg, upsertOptions] = (playersQuery.upsert as ReturnType<typeof vi.fn>).mock
       .calls[0] as [Record<string, unknown>, { onConflict: string }];
     expect(upsertArg).toMatchObject({
+      first_name: 'Arya',
+      last_name: 'Dubey',
+      name: 'Arya Dubey',
       id: 'player-1',
       home_currency: 'AUD',
       app_language: 'en',

@@ -24,19 +24,25 @@ function fakeQuery(result: { data: unknown; error: Error | null }) {
 }
 
 describe('updateAccount', () => {
-  it('writes only name and timezone, not email', async () => {
+  it('writes first, last and joined name and timezone, not email', async () => {
     const query = fakeQuery({ data: null, error: null });
     const from = vi.fn().mockReturnValue(query);
     const client = { from } as unknown as SupabaseClient<Database>;
 
     await updateAccount(client, {
       playerId: 'player-1',
-      name: 'Arya Dubey',
+      firstName: ' Arya ',
+      lastName: 'Dubey',
       timezone: 'Europe/Vienna',
     });
 
     expect(from).toHaveBeenCalledWith('players');
-    expect(query.update).toHaveBeenCalledWith({ name: 'Arya Dubey', timezone: 'Europe/Vienna' });
+    expect(query.update).toHaveBeenCalledWith({
+      first_name: 'Arya',
+      last_name: 'Dubey',
+      name: 'Arya Dubey',
+      timezone: 'Europe/Vienna',
+    });
     expect(query.eq).toHaveBeenCalledWith('id', 'player-1');
   });
 });
