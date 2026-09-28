@@ -59,6 +59,7 @@ const POINTS: Record<string, Table> = {
 
 const SURFACES: Record<string, string> = { hard: 'hard', clay: 'clay', grass: 'grass' };
 const SKIPPED_STATUSES = new Set(['cancelled', 'postponed']);
+const CANCELLED_NAME = /\b(cancell?ed|postponed)\b/i;
 
 function table(t: Table): string {
   return Object.entries(t)
@@ -90,6 +91,13 @@ function convert(path: string, from: string): { rows: string[]; skipped: string[
     const name = at('Tournament');
     const start = at('Start Date');
     if (start < from || SKIPPED_STATUSES.has(at('Status').toLowerCase())) continue;
+    // ITF sometimes marks a cancellation only in the name ("M25 Stillwater
+    // CANCELLED") and leaves Status as Scheduled; two such events reached
+    // production on 28 September 2026 before this check existed.
+    if (CANCELLED_NAME.test(name)) {
+      skipped.push(`${name}: cancelled (in the name)`);
+      continue;
+    }
     // The name's own prefix ("M25+H Bagnères", "W35 Sharm ElSheikh") wins over
     // the Category column, which has at least one stale value (a W35 listed as W25).
     const prefix = /^([MW]\d+)/.exec(name.toUpperCase())?.[1];
