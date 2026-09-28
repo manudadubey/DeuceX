@@ -3,7 +3,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@deucex/db';
 import { FakeDb } from '../test-support/fake-db';
 import { CALENDAR_HEADER, InvalidCalendarCsvError, parseCalendarCsv } from './calendar-csv';
-import { applyCalendarImport, previewCalendarImport } from './calendar-import';
+import {
+  applyCalendarImport,
+  CalendarImportConflictError,
+  previewCalendarImport,
+} from './calendar-import';
 
 const HEADER = CALENDAR_HEADER.join(',');
 const POZNAN =
@@ -70,5 +74,56 @@ describe('calendar import', () => {
     await applyCalendarImport(asDb(fake), moved);
     expect(fake.tables.tournaments).toHaveLength(1);
     expect(fake.tables.tournaments![0]!.entry_deadline).toBe('2026-09-19');
+  });
+
+  it('saves a whole calendar in one insert and a set of changes in one upsert', async () => {
+    const fake = new FakeDb();
+    fake.tables.tournaments = [];
+    const writes: string[] = [];
+    const from = fake.from.bind(fake);
+    fake.from = ((table: string) => {
+      const builder = from(table);
+      const insert = builder.insert.bind(builder);
+      const upsert = builder.upsert.bind(builder);
+      builder.insert = (row) => (writes.push('insert'), insert(row));
+      builder.upsert = (row, opts) => (writes.push('upsert'), upsert(row, opts));
+      return builder;
+    }) as typeof fake.from;
+    const second = POZNAN.replace('Challenger Poznań', 'Challenger Brest');
+    const third = POZNAN.replace('Challenger Poznań', 'Challenger Mouilleron');
+    await applyCalendarImport(
+      asDb(fake),
+      parseCalendarCsv(`${HEADER}\n${POZNAN}\n${second}\n${third}`),
+    );
+    expect(writes).toEqual(['insert']);
+    expect(fake.tables.tournaments).toHaveLength(3);
+
+    writes.length = 0;
+    const moved = [POZNAN, second, third].map((l) => l.replace('2026-09-18', '2026-09-19'));
+    const result = await applyCalendarImport(
+      asDb(fake),
+      parseCalendarCsv([HEADER, ...moved].join('\n')),
+    );
+    expect(writes).toEqual(['upsert']);
+    expect(result).toMatchObject({ newCount: 0, updateCount: 3 });
+    expect(fake.tables.tournaments).toHaveLength(3);
+    expect(fake.tables.tournaments!.every((t) => t.entry_deadline === '2026-09-19')).toBe(true);
+  });
+
+  it('reports a conflict when another import saved the same event first', async () => {
+    const fake = new FakeDb();
+    fake.tables.tournaments = [];
+    const from = fake.from.bind(fake);
+    fake.from = ((table: string) => {
+      const builder = from(table);
+      builder.insert = () =>
+        ({
+          select: async () => ({ data: null, error: { code: '23505', message: 'duplicate key' } }),
+        }) as never;
+      return builder;
+    }) as typeof fake.from;
+    await expect(
+      applyCalendarImport(asDb(fake), parseCalendarCsv(`${HEADER}\n${POZNAN}`)),
+    ).rejects.toBeInstanceOf(CalendarImportConflictError);
   });
 });

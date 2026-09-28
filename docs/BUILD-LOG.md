@@ -3675,3 +3675,13 @@ tables need updating for the 2027 regulations.
 
 Run on ITF's 2026 exports from 28 September: 302 events (153 men's, 149 women's), all parsed by
 `parseCalendarCsv`. Not imported in this session; that's a staff action in the console.
+
+**Follow-up, same day: one save, one row per event.** Applying the 302-event calendar took about
+55 seconds (one insert per row, to Tokyo), and a reload mid-save showed a half-applied preview.
+Nothing was duplicated, but the importer's check-then-write left a window where two overlapping
+Applies could both insert an event. Now `applyCalendarImport` writes every new event in one
+insert and every changed one in one upsert by id, and migration
+`20260930110000_tournaments_unique_event` adds a unique index on `(tour, lower(btrim(name)),
+start_date)`, the importer's own event key. A refused insert saves nothing and returns a 409 asking
+staff to preview again; the Apply button reads "Saving…" while it runs. Verified on staging (a
+second copy, differing only in case and spaces, was refused and rolled back).

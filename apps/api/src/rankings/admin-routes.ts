@@ -4,7 +4,11 @@ import type { Database } from '@deucex/db';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { InvalidRankingCsvError, parseRankingCsv } from './csv';
 import { InvalidCalendarCsvError, parseCalendarCsv } from './calendar-csv';
-import { applyCalendarImport, previewCalendarImport } from './calendar-import';
+import {
+  applyCalendarImport,
+  CalendarImportConflictError,
+  previewCalendarImport,
+} from './calendar-import';
 import {
   DeadlineError,
   deadlineConsequence,
@@ -190,6 +194,8 @@ export async function registerAdminRankingsRoutes(
     } catch (err) {
       if (err instanceof InvalidCalendarCsvError)
         return reply.code(400).send({ error: err.message });
+      if (err instanceof CalendarImportConflictError)
+        return reply.code(409).send({ error: err.message });
       throw err;
     }
   });

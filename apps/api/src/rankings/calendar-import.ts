@@ -142,29 +142,44 @@ export interface CalendarImportResult extends CalendarPlan {
   touchedIds: string[];
 }
 
+/** Another import saved one of these events between this one's preview and its write. */
+export class CalendarImportConflictError extends Error {
+  constructor() {
+    super('Another import saved some of these events first. Preview again, then apply.');
+    this.name = 'CalendarImportConflictError';
+  }
+}
+
+// One insert for every new event and one upsert (by id) for every changed one,
+// so a full calendar saves in two requests, not one per row. The insert is a
+// single statement: if tournaments_event_key refuses any row, none are saved.
 export async function applyCalendarImport(
   db: SupabaseClient<Database>,
   rows: readonly CalendarRow[],
 ): Promise<CalendarImportResult> {
   const plan = await previewCalendarImport(db, rows);
   const byKey = new Map(rows.map((r) => [keyOf(r.tour, r.name, r.startDate), r]));
+  const writeFor = (entry: CalendarPlanEntry) =>
+    toWrite(byKey.get(keyOf(entry.tour, entry.name, entry.startDate))!);
+  const inserts = plan.entries.filter((e) => e.action === 'new').map(writeFor);
+  const now = new Date().toISOString();
+  const updates = plan.entries
+    .filter((e) => e.action === 'update')
+    .map((e) => ({ ...writeFor(e), id: e.existingId!, updated_at: now }));
+
   const touchedIds: string[] = [];
-  for (const entry of plan.entries) {
-    if (entry.action === 'unchanged') continue;
-    const row = byKey.get(keyOf(entry.tour, entry.name, entry.startDate))!;
-    const write = toWrite(row);
-    if (entry.action === 'new') {
-      const { data, error } = await db.from('tournaments').insert(write).select('id').single();
-      if (error) throw error;
-      touchedIds.push(data.id);
-    } else {
-      const { error } = await db
-        .from('tournaments')
-        .update({ ...write, updated_at: new Date().toISOString() })
-        .eq('id', entry.existingId!);
-      if (error) throw error;
-      touchedIds.push(entry.existingId!);
+  if (inserts.length) {
+    const { data, error } = await db.from('tournaments').insert(inserts).select('id');
+    if (error) {
+      if (error.code === '23505') throw new CalendarImportConflictError();
+      throw error;
     }
+    touchedIds.push(...(data ?? []).map((r) => r.id));
+  }
+  if (updates.length) {
+    const { error } = await db.from('tournaments').upsert(updates, { onConflict: 'id' });
+    if (error) throw error;
+    touchedIds.push(...updates.map((u) => u.id));
   }
   return { ...plan, touchedIds };
 }

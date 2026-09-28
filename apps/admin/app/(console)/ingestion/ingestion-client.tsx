@@ -243,7 +243,7 @@ function CalendarImport() {
                       Cancel
                     </Button>
                     <Button size="sm" onClick={handleApply} disabled={busy || !reason.trim()}>
-                      Apply calendar
+                      {busy ? 'Saving…' : 'Apply calendar'}
                     </Button>
                   </>
                 }
