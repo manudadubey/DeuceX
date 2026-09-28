@@ -472,8 +472,45 @@ ITF calendar, [PR #40](https://github.com/manudadubey/DeuceX/pull/40), merged 28
   already pinned at 3; to test ITF shortlists, pin it to stage 1 on /profile and put it back to 3
   (pinned) afterwards. Re-run now is one an hour, and the page now says so next to the button.
 
-**As of 28 September 2026, no PRs are open other than this docs update, and `main` has everything
-above.** The owner merges
+Sign-up, account and the API deploy, 28 September 2026 (PRs
+[#41](https://github.com/manudadubey/DeuceX/pull/41) to
+[#46](https://github.com/manudadubey/DeuceX/pull/46), all merged except #44):
+- **`apps/api` runs on Render**: service `deucex-api` (`srv-dat494o473hc73em85sg`, Starter,
+  Singapore, owner's card, about US$7 a month) at **`https://deucex-api.onrender.com`**, deployed
+  from the `render.yaml` Blueprint (`deucex`, auto-syncs `main`). The build command installs a
+  current corepack first (Node 22.13's rejects pnpm's signature). Secrets live only in Render;
+  `STRIPE_WEBHOOK_SECRET` had to be added as a new variable, since Render drops blank ones.
+  `CORS_ORIGIN` is `https://deucex.vercel.app`. The uptime workflow checks `/health` (repository
+  variable `API_HEALTH_URL`). Supabase's session pooler pool size is 40 (was 15).
+- **Don't run a local `apps/api` for long:** its scheduled jobs (morning run, sweeps, notification
+  sending) would run alongside Render's against the same production database. Point a local web
+  app at Render with `NEXT_PUBLIC_API_URL=https://deucex-api.onrender.com` instead.
+- **Vercel `deucex`** now also has `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY`;
+  `NEXT_PUBLIC_*` values are baked in at build, so change them with a redeploy. Match Scribe on the
+  live site uploaded and transcribed its first two notes through Render.
+- **Stripe sandbox webhook** `we_1UKc6yHFJcPzP6oW…` → `/webhooks/stripe`, connected-account events
+  (the 11 the Fans applier handles). Verified to reject a bad signature; no real signed event yet.
+- **Sign-up works on the live site.** "Create an account" opens `/signin?new=1` (it used to link
+  to `/onboarding`, which bounced a signed-out visitor straight back). Confirming an email link
+  with no `players` row goes to onboarding. The sign-in action passes the request origin as
+  `emailRedirectTo`, and Supabase Auth is set up for it (dashboard, owner-signed-in session):
+  Redirect URLs `http://localhost:3000/**`, `https://deucex.vercel.app/**` and the bare
+  `https://deucex.vercel.app` (a `/**` pattern doesn't match a URL with no path, which sent the
+  first live link to localhost); the Magic link and Confirm sign up templates link to
+  `{{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink|email`. Confirm sign
+  up had Supabase's default `{{ .ConfirmationURL }}`, which never signs anyone in with this app.
+  Site URL stays `http://localhost:3000` as the fallback.
+- **First and last name**: `players.first_name` and `last_name` (migration
+  `20260930120000_players_first_last_name`, staging and production); `name` is still written as
+  the two joined, so its readers are unchanged. Settings > Account got the prototype's two-column
+  layout and a real time zone select.
+- Open: [#44](https://github.com/manudadubey/DeuceX/pull/44) (the ITF converter skips events
+  cancelled only in their name). Two such events, `M25 Stillwater CANCELLED` and `W50 Plovdiv
+  CANCELLED`, are still in production; deleting them needs the owner (auto mode declined the
+  write). The SQL, which also removes the stage-1 test's shortlist row, untouched entry decision
+  and brief for Stillwater, is in the build log.
+
+**As of 28 September 2026, the only open PRs are #44 and this docs update.** The owner merges
 PRs: Claude's auto mode usually refuses to merge, or retarget a PR's base, without a human
 review; when the owner asks, it has sometimes allowed it, otherwise the owner runs `gh pr merge`. When
 PRs are stacked, move each one's base to `main` before merging it (`gh pr edit N --base main`);
@@ -490,15 +527,15 @@ players"). In order:
    - re-import the ITF calendar weekly (the console flags "Import due" after seven days);
    - roll the staging secret key and the Stripe sandbox key;
    - raise the OpenAI usage tier;
-   - register staff passkeys and add `https://admin.deucex.ai` to Supabase's passkey origins;
-   - add `https://deucex.vercel.app/**` to Supabase's redirect URLs.
+   - register staff passkeys and add `https://admin.deucex.ai` to Supabase's passkey origins.
 2. **Billing session 2.** Session 1 (trials and Checkout) is merged; every decision it needs is
    already in `docs/BILLING-DECISIONS.md`, except GST (below). Session 2 builds:
    - plan changes with the decided proration (Pro to Elite now and prorated; downgrades and
      annual to monthly at period end; monthly to annual now with credit; the over-50-patrons
      Elite-to-Pro rule);
    - Stripe webhooks for renewals and failed payments (testable locally with the Stripe CLI;
-     production needs `apps/api` deployed and `STRIPE_WEBHOOK_SECRET` set);
+     plan subscriptions are on the platform account, so they need a second endpoint on "your
+     account" events, not the connected-account one Fans uses);
    - dunning: 14 days of Smart Retries, emails on the first failure, day 7 and day 12, then Free
      with the automatic patron pause, and a 30-day restore;
    - invoices in Plan & billing and Stripe's customer portal for card changes;
@@ -506,8 +543,8 @@ players"). In order:
    - **the erasure job must also cancel the player's own plan subscription** (today it only ends
      patron memberships; a deleted player would keep being charged);
    - a staff trial extension must also move Stripe's trial end when a card is on file.
-3. **Deploy `apps/api` to Render**, per the follow-up below. Then set `NEXT_PUBLIC_API_URL`,
-   `STRIPE_WEBHOOK_SECRET` and the uptime check's `API_HEALTH_URL`.
+3. ~~Deploy `apps/api` to Render~~ Done 28 September 2026 (see above). At go-live, add the live
+   domain to `CORS_ORIGIN` and `APP_BASE_URL`, and a live-mode Stripe webhook.
 4. **Go live:**
    - attach `deucex.ai` to the Vercel projects;
    - upgrade Supabase to Pro (real backups; the restore drill then restores into a branch, and
@@ -552,23 +589,15 @@ ap-northeast-1). Owner decision, 26 September 2026: no Supabase upgrade until go
   passkeys, register one per staff member, add `https://admin.deucex.ai` to Supabase Auth >
   Passkeys origins (`http://localhost:3001` was added 25 September 2026).
 - Approvals now record `approvals.agent_run_id` (tournament, content, fans patron notes,
-  financial chase; [PR #23](https://github.com/manudadubey/DeuceX/pull/23), merged 26 September 2026), but production has no linked rows until `apps/api` is deployed, so the
-  console's approval rates still read "Not measured yet". See `docs/BUILD-LOG.md`'s approvals
+  financial chase; [PR #23](https://github.com/manudadubey/DeuceX/pull/23), merged 26 September 2026). `apps/api` is deployed now, so linked rows start
+  accruing; until enough exist the console's approval rates read "Not measured yet". See `docs/BUILD-LOG.md`'s approvals
   follow-up for the rate caveats (content rewrites, first-week dilution).
 - Roll the Stripe sandbox secret key (pasted in chat).
-- Set `STRIPE_WEBHOOK_SECRET` once `apps/api` has a public URL; no live webhook has run yet.
 - De-duplicate the "Stripe needs something from you" notification (fired twice in one KYC pass).
 - The payout footer's "1.75% + 30c" is only true for domestic charges (the Italian sandbox account
   paid about 6.5% with currency conversion): a PRD-04 copy fix.
-- Add `https://deucex.vercel.app/**` to Supabase Auth's redirect URLs (dashboard only), or
-  magic-link sign-in on the deployed app bounces.
-- Deploy `apps/api` to **Render** close to launch, not before (owner decision 26 September 2026:
-  run it locally until then; no Render service exists, and nothing is billed). The `render.yaml`
-  Blueprint on `main` is ready (Singapore, since Render has no Tokyo region; `starter` plan,
-  since free sleeps and stops the scheduled jobs). Render's GitHub connection to the repo already
-  exists. At deploy time: raise the Supabase session pooler pool size from 15 to about 40, apply
-  the Blueprint (the owner adds the card and pastes the secrets), then set `NEXT_PUBLIC_API_URL`
-  on both Vercel projects. Until then the deployed Vercel apps can't use API features.
+- Watch the Render Starter instance's memory (512 MB): the API transpiles with `tsx` at start and
+  runs its pg-boss workers in the same process. Out-of-memory restarts mean moving to Standard.
 - Rename the Supabase project and the Stripe sandbox account to DeuceX in their dashboards
   (optional; nothing depends on those display names).
 
@@ -618,10 +647,10 @@ ap-northeast-1). Owner decision, 26 September 2026: no Supabase upgrade until go
   still say `@procircuit/*` and are overridden). `deucex` serves the real app at
   **`deucex.vercel.app`**, the one address that skips Vercel's SSO wall (the per-deployment and
   `-md-labs` addresses keep it); `procircuit.vercel.app` 308-redirects there via `vercel.json`.
-  `deucex` has exactly two env vars, `NEXT_PUBLIC_SUPABASE_URL` and
+  `deucex` has four env vars: `NEXT_PUBLIC_SUPABASE_URL` and
   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (set 25 September 2026; before that it had none and every
-  page returned 500). `NEXT_PUBLIC_API_URL` is unset because `apps/api` isn't deployed, so
-  anything that calls the API fails in production. `deucex-admin` has no env vars and requires Vercel sign-in on **every** address (protection set to
+  page returned 500), and `NEXT_PUBLIC_API_URL` (`https://deucex-api.onrender.com`) and
+  `NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY` (28 September 2026). `deucex-admin` has no env vars and requires Vercel sign-in on **every** address (protection set to
   "all" on 25 September 2026: its old `procircuit-admin.vercel.app` address had been open without
   one). Both apps are kept out of search engines: `vercel.json` sends `X-Robots-Tag: noindex,
   nofollow, noarchive` on every response and each root layout sets `robots: { index: false }`;

@@ -3697,3 +3697,66 @@ so every reader of `name` (sidebar, public page, the ranking directory match, em
 the console) is unchanged. Both are required in the UI. The console role gets no grant on the new
 columns; it reads `name`. The backfill is only an approximation for multi-word names, which the
 player can correct in Settings.
+
+## Sign-up on the live site and the first API deploy (28 September 2026)
+
+**Create an account** ([PR #41](https://github.com/manudadubey/DeuceX/pull/41)) linked a signed-out
+visitor to `/onboarding`, whose layout redirects to `/signin`, so it looped. It now opens
+`/signin?new=1` (same magic link, sign-up wording, no passkey option), and `confirmSignIn` sends a
+session with no `players` row to `/onboarding`. `requestMagicLink` passes the request's origin as
+`emailRedirectTo`. Supabase Auth (dashboard, done in the owner's signed-in browser session):
+- Redirect URLs are `http://localhost:3000/**`, `https://deucex.vercel.app/**` and the bare
+  `https://deucex.vercel.app`. The first live link went to localhost: the auth log showed
+  `redirect_to=https://deucex.vercel.app` and a localhost referer, because `/**` doesn't match a
+  URL with no path, so Supabase fell back to the Site URL (still `http://localhost:3000`).
+- The Magic link template's link is `{{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink`.
+- The Confirm sign up template still had Supabase's default `{{ .ConfirmationURL }}`, which goes
+  through Supabase's verify endpoint and returns a PKCE code this app never exchanges, so a new
+  address confirmed that way would never have been signed in. It now links to
+  `{{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`.
+
+**Settings > Account** ([PR #42](https://github.com/manudadubey/DeuceX/pull/42)): fields were 6px
+apart (`FieldGroup`'s `gap-1.5`), the time zone was a raw `<select>` and "Follow my phone" a loose
+ghost button. Now the prototype's `.fgrid` (two columns, 20px by 16px, one on phones), the card
+description, the design system `Select` with "Follow my phone (zone)" as its first option, and Save
+in `CardFooter`. Preferences, Equipment and the onboarding wizard still use `FieldGroup`'s 6px gap.
+
+**First and last name** ([PR #43](https://github.com/manudadubey/DeuceX/pull/43)): see the entry
+above; applied to staging and production, and a real Settings save verified against production.
+
+**Match Scribe on the live site** showed "Waiting for signal · 2 notes": with `NEXT_PUBLIC_API_URL`
+unset the site posted to `http://localhost:8787`, the upload failed, and the offline queue kept the
+notes in IndexedDB. Owner decision the same day: deploy `apps/api` now, not at launch.
+
+**The deploy** ([#45](https://github.com/manudadubey/DeuceX/pull/45),
+[#46](https://github.com/manudadubey/DeuceX/pull/46)):
+- `render.yaml` gained the three Web Push variables (the API has read them since step 5.2) and
+  fixed values for `CORS_ORIGIN` (`https://deucex.vercel.app`) and `ADMIN_BASE_URL`.
+- The first build failed in a second: Node 22.13's bundled corepack has rotated-out npm signing
+  keys ("Cannot find matching keyid") and refused to fetch `pnpm@11.21.0`. The build command now
+  runs `npm install -g corepack@latest` first.
+- Render needed the owner's card before it would read the Blueprint; the owner pasted every secret.
+  A blank `STRIPE_WEBHOOK_SECRET` was dropped, so it was added afterwards as a new variable.
+- Live at `https://deucex-api.onrender.com`: `/health` 200, CORS allows the live site and refuses
+  others, an unauthenticated write gets 401. Supabase's pooler pool size went from 15 to 40.
+- Vercel `deucex` got `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY` and a
+  production redeploy. The two queued notes then uploaded, transcribed and extracted through Render.
+- Stripe sandbox webhook endpoint for connected-account events (the 11 the Fans applier handles),
+  created through the Stripe connection; the API now rejects a bad signature with 400. No real
+  signed event has arrived yet.
+- The uptime workflow's repository variable `API_HEALTH_URL` is set to the `/health` URL.
+
+**Still open:** two events cancelled only in their name reached production before
+[PR #44](https://github.com/manudadubey/DeuceX/pull/44)'s converter fix. Auto mode declined the
+delete, so it's the owner's to run (Supabase SQL editor). It also removes the Stillwater shortlist
+row, the untouched (`none`, no approvals) entry decision and the conditions brief left by the
+stage 1 test run:
+
+```sql
+begin;
+delete from conditions_briefs where tournament_id in (select id from tournaments where name in ('M25 Stillwater CANCELLED','W50 Plovdiv CANCELLED'));
+delete from entry_decisions where status = 'none' and tournament_id in (select id from tournaments where name in ('M25 Stillwater CANCELLED','W50 Plovdiv CANCELLED'));
+delete from shortlist_candidates where tournament_id in (select id from tournaments where name in ('M25 Stillwater CANCELLED','W50 Plovdiv CANCELLED'));
+delete from tournaments where name in ('M25 Stillwater CANCELLED','W50 Plovdiv CANCELLED');
+commit;
+```
