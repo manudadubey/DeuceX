@@ -66,10 +66,15 @@ export function MoodChart({
     function draw() {
       if (!host) return;
       host.innerHTML = '';
-      const width = Math.max(320, host.clientWidth);
+      // Content width, not clientWidth: the host's own padding made the SVG
+      // 48px too wide, and the 44px gutter cut "Frustrated" off on the left.
+      const styles = getComputedStyle(host);
+      const inner =
+        host.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
+      const width = Math.max(320, inner);
       const narrow = width < 560;
       const height = narrow ? 200 : 240;
-      const padLeft = 44;
+      const padLeft = narrow ? 28 : 72;
       const padRight = 12;
       const padTop = 18;
       const padBottom = 40;
@@ -81,7 +86,14 @@ export function MoodChart({
       for (const n of notes) {
         if (!n.mood) continue;
         const day = localDay(n.recordedAt, timezone);
-        byDay.set(day, { value: MOOD_VALUE[n.mood], solid: true, result: n.result?.[0] ?? null });
+        // Only a real W or L goes under the dot; extraction sometimes writes a
+        // bare score ("6-1 6-1") with no winner, which isn't a result to show.
+        const outcome = n.result?.[0];
+        byDay.set(day, {
+          value: MOOD_VALUE[n.mood],
+          solid: true,
+          result: outcome === 'W' || outcome === 'L' ? outcome : null,
+        });
       }
 
       const days: string[] = [];
@@ -97,7 +109,12 @@ export function MoodChart({
         role: 'img',
         'aria-label': 'Mood over time against match results',
       });
-      svg.setAttribute('style', `height:${height}px`);
+      svg.setAttribute('style', `width:100%;height:${height}px;display:block;overflow:visible`);
+      // The prototype's `.chart text`: 11px, muted. Without it the labels drew near-black.
+      const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+      style.textContent =
+        'text{font-family:var(--font-sans);font-size:11px}text:not([fill]){fill:var(--muted-foreground)}';
+      svg.appendChild(style);
 
       const x = (i: number) =>
         padLeft + (i / Math.max(1, days.length - 1)) * (width - padLeft - padRight);
@@ -120,8 +137,15 @@ export function MoodChart({
             stroke: 'var(--chart-grid)',
           }),
         );
-        if (label && !narrow) {
-          svg.appendChild(el('text', { x: padLeft - 8, y: y(v) + 4, 'text-anchor': 'end' }, label));
+        if (label) {
+          // The prototype's narrow fallback: the first two letters.
+          svg.appendChild(
+            el(
+              'text',
+              { x: padLeft - 8, y: y(v) + 4, 'text-anchor': 'end' },
+              narrow ? label.slice(0, 2) : label,
+            ),
+          );
         }
       }
 
@@ -186,7 +210,7 @@ export function MoodChart({
               'text',
               {
                 x: x(p.i),
-                y: height - padBottom + 16,
+                y: height - padBottom + 24,
                 'text-anchor': 'middle',
                 class: 'font-mono',
                 'font-weight': 600,
@@ -199,7 +223,7 @@ export function MoodChart({
       }
 
       svg.appendChild(
-        el('text', { x: padLeft - 8, y: height - padBottom + 16, 'text-anchor': 'end' }, 'Result'),
+        el('text', { x: padLeft - 8, y: height - padBottom + 24, 'text-anchor': 'end' }, 'Result'),
       );
       host.appendChild(svg);
       tagChartEnter(svg, host, `${range}-${width}`);
@@ -212,7 +236,10 @@ export function MoodChart({
   }, [notes, checkins, timezone, range]);
 
   return (
-    <Card className={locked ? 'opacity-50' : undefined}>
+    <Card
+      className={locked ? 'pointer-events-none opacity-50 select-none' : undefined}
+      aria-disabled={locked || undefined}
+    >
       <CardHeader>
         <CardTitle>How you&apos;ve felt, against what happened</CardTitle>
         <CardDescription>

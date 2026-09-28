@@ -15,28 +15,37 @@ export function BoundariesCard({
   boundaries,
   locked,
   onToast,
+  onChange,
 }: {
   playerId: string;
   localDate: string;
   boundaries: MindsetBoundaries;
   locked: boolean;
   onToast: (title: string) => void;
+  onChange?: (next: MindsetBoundaries) => void;
 }) {
   const supabase = createClient();
   const [current, setCurrent] = useState(boundaries);
 
   const paused = Boolean(current.paused_until && current.paused_until >= localDate);
   const resumeDate = current.paused_until
-    ? new Date(`${current.paused_until}T00:00:00`).toLocaleDateString(undefined, {
+    ? new Date(`${current.paused_until}T00:00:00`).toLocaleDateString('en-AU', {
         day: 'numeric',
         month: 'long',
       })
     : null;
 
-  const toggle = async (patch: Parameters<typeof updateMindsetBoundaries>[2]) => {
-    const updated = await updateMindsetBoundaries(supabase, playerId, patch);
-    setCurrent(updated);
-    onToast('On');
+  // Each toast says what actually changed (it used to say "On" for every
+  // switch, including when switching one off).
+  const toggle = async (patch: Parameters<typeof updateMindsetBoundaries>[2], message: string) => {
+    try {
+      const updated = await updateMindsetBoundaries(supabase, playerId, patch);
+      setCurrent(updated);
+      onChange?.(updated);
+      onToast(message);
+    } catch {
+      onToast("Couldn't save that. Try again.");
+    }
   };
 
   return (
@@ -57,7 +66,12 @@ export function BoundariesCard({
           <Switch
             disabled={locked}
             checked={current.quiet_match_mornings}
-            onCheckedChange={(checked) => void toggle({ quietMatchMornings: checked })}
+            onCheckedChange={(checked) =>
+              void toggle(
+                { quietMatchMornings: checked },
+                checked ? 'Quiet on match mornings' : 'The coach will speak on match mornings too',
+              )
+            }
           />
         </div>
 
@@ -72,7 +86,12 @@ export function BoundariesCard({
           <Switch
             disabled={locked}
             checked={current.coach_sees_patterns}
-            onCheckedChange={(checked) => void toggle({ coachSeesPatterns: checked })}
+            onCheckedChange={(checked) =>
+              void toggle(
+                { coachSeesPatterns: checked },
+                checked ? 'Your coach link shows patterns' : 'Patterns hidden from your coach link',
+              )
+            }
           />
         </div>
 
@@ -90,7 +109,9 @@ export function BoundariesCard({
               size="sm"
               variant="outline"
               disabled={locked}
-              onClick={() => void toggle({ pausedUntil: null })}
+              onClick={() =>
+                void toggle({ pausedUntil: null }, 'Resumed. Your next insight is at 07:00')
+              }
             >
               Resume now
             </Button>
@@ -99,7 +120,10 @@ export function BoundariesCard({
               disabled={locked}
               checked={false}
               onCheckedChange={(checked) =>
-                void toggle({ pausedUntil: checked ? pauseOneWeekFrom(localDate) : null })
+                void toggle(
+                  { pausedUntil: checked ? pauseOneWeekFrom(localDate) : null },
+                  checked ? 'Paused for a week. Nothing is deleted' : 'Resumed',
+                )
               }
             />
           )}
@@ -108,9 +132,12 @@ export function BoundariesCard({
 
       <div className="mx-6 mb-2 flex gap-3 rounded-lg bg-secondary/50 p-3.5 text-[0.8125rem]">
         <div>
+          {/* Promises only what the escalation card shows: the person named in
+              Settings > Data & safety, and the tour's player-assistance programme.
+              No phone numbers here until they're verified per tour and country. */}
           <b>If a run of notes reads like more than a bad week</b>, the coach stops coaching and
-          points you to real people: the ATP Player Assistance line, Lifeline (13 11 14), or whoever
-          you&apos;ve named in Settings. It won&apos;t pretend to be them.
+          points you to real people: the person you&apos;ve named under Settings, Data &amp; safety,
+          and your tour&apos;s player assistance programme. It won&apos;t pretend to be them.
         </div>
       </div>
     </Card>

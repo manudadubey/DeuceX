@@ -164,4 +164,83 @@ describe('runMindsetCoach', () => {
     expect(fake.tables.insights ?? []).toHaveLength(0);
     expect(rows).toHaveLength(0);
   });
+
+  describe('MC-14: quiet on match mornings, from Entered events', () => {
+    function seedEvent(fake: FakeDb) {
+      fake.tables.entry_decisions = [
+        { id: 'ed-1', player_id: 'player-1', tournament_id: 't-1', status: 'entered' },
+      ];
+      fake.tables.tournaments = [
+        { id: 't-1', name: 'M25 Test', start_date: '2026-09-20', end_date: '2026-09-27' },
+      ];
+    }
+
+    it('is quiet on a morning inside an Entered event', async () => {
+      const fake = new FakeDb();
+      seedPlayer(fake);
+      seedNotes(fake);
+      seedEvent(fake);
+      const { db: agentRuns } = fakeAgentRunsDb();
+      await runMindsetCoach(
+        { db: asDb(fake), client: createMockInsightClient(), agentRuns },
+        'player-1',
+        NOW,
+      );
+      expect(fake.tables.insights![0]!.delivery).toBe('quiet');
+    });
+
+    it('speaks again once a saved loss shows the player is out of the event', async () => {
+      const fake = new FakeDb();
+      seedPlayer(fake);
+      seedNotes(fake);
+      seedEvent(fake);
+      fake.tables.notes!.push({
+        id: 'note-loss',
+        player_id: 'player-1',
+        status: 'saved',
+        recorded_at: '2026-09-21T08:00:00Z',
+        ctx: 'match',
+        result: 'L 4-6 3-6',
+        mood: 'flat',
+        tags: [],
+        transcript: null,
+        summary: 'Lost in R1.',
+        cond: null,
+      });
+      const { db: agentRuns } = fakeAgentRunsDb();
+      await runMindsetCoach(
+        { db: asDb(fake), client: createMockInsightClient(), agentRuns },
+        'player-1',
+        NOW,
+      );
+      expect(fake.tables.insights![0]!.delivery).toBe('delivered');
+    });
+
+    it('ignores notes that were never saved', async () => {
+      const fake = new FakeDb();
+      seedPlayer(fake);
+      seedNotes(fake);
+      seedEvent(fake);
+      fake.tables.notes!.push({
+        id: 'note-unsaved-loss',
+        player_id: 'player-1',
+        status: 'review',
+        recorded_at: '2026-09-21T08:00:00Z',
+        ctx: 'match',
+        result: 'L 4-6 3-6',
+        mood: 'flat',
+        tags: [],
+        transcript: null,
+        summary: null,
+        cond: null,
+      });
+      const { db: agentRuns } = fakeAgentRunsDb();
+      await runMindsetCoach(
+        { db: asDb(fake), client: createMockInsightClient(), agentRuns },
+        'player-1',
+        NOW,
+      );
+      expect(fake.tables.insights![0]!.delivery).toBe('quiet');
+    });
+  });
 });

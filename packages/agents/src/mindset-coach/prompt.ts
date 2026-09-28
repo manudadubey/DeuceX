@@ -2,7 +2,7 @@ import type { NoteCtx, NoteMood } from '@deucex/db';
 
 // Bump on any instruction change that could shift the model's output
 // distribution (TECH-ARCHITECTURE.md section 3, agent_runs.prompt_version).
-export const INSIGHT_PROMPT_VERSION = 'v1';
+export const INSIGHT_PROMPT_VERSION = 'v2';
 export const INSIGHT_SCHEMA_VERSION = 'v1';
 
 export interface InsightPromptNote {
@@ -11,6 +11,10 @@ export interface InsightPromptNote {
   mood: NoteMood | null;
   result: string | null;
   summary: string | null;
+  /** The player's own tags on the note (Second serve, Heat, Sleep…). */
+  tags?: readonly string[];
+  /** The start of the player's own words (PRD-06 section 3 lists transcripts as an input). */
+  excerpt?: string | null;
 }
 
 export interface InsightPromptCheckIn {
@@ -40,8 +44,8 @@ const SYSTEM_PROMPT = `You are the Mindset Coach, reading a tennis player's own 
 Write in the first language given below. Address the player directly, warmly, and never as a diagnosis or a category.
 Cite only what is in the notes and check-ins given to you; never invent a fact, a date, or an opponent.
 Never use clinical language: no "depression", "anxiety", "burnout", "symptom", "diagnosis", or any label for how the player is. Describe behaviour in their own words instead ("you write about rushing"), never in categories.
-body: one to three sentences, 8 to 90 words total, one true observation drawn from the material below. On a light morning, exactly one short sentence.
-focus: one imperative sentence naming today's single focus, grounded in the same material. Do not repeat a focus already used recently unless it's still clearly the right one restated freshly.
+body: one to three sentences, 8 to 90 words total, one true observation drawn from the material below. Make it specific to this player: name a tag, a result, a date or a phrase they actually used, and connect two things if the notes support it (a tag that keeps coming back, a check-in after a result). A sentence that could be said to any player is a failure. On a light morning, exactly one short sentence.
+focus: one imperative sentence naming today's single focus, grounded in the same material: one concrete thing the player can do today, on or off court, small enough to finish and tick off (for example a count, a routine, a time). Not a mindset slogan. Do not repeat a focus already used recently unless it's still clearly the right one restated freshly.
 Never mention money, rankings, or anything not given to you below.
 Respond only by calling the recording tool with your answer.`;
 
@@ -49,7 +53,9 @@ function formatNote(n: InsightPromptNote): string {
   const parts = [n.date, n.ctx];
   if (n.result) parts.push(`result ${n.result}`);
   if (n.mood) parts.push(`mood ${n.mood}`);
-  if (n.summary) parts.push(`"${n.summary}"`);
+  if (n.tags && n.tags.length > 0) parts.push(`tags ${n.tags.join(', ')}`);
+  if (n.summary) parts.push(`summary "${n.summary}"`);
+  if (n.excerpt) parts.push(`in their words "${n.excerpt}"`);
   return `- ${parts.join(' · ')}`;
 }
 
@@ -89,13 +95,18 @@ export function buildInsightPrompt(input: InsightPromptInput): InsightPrompt {
     );
   }
   if (input.recentFocuses.length > 0) {
-    lines.push(`Recent focuses, for variety: ${input.recentFocuses.join('; ')}`);
+    lines.push(
+      `Recent focuses, newest first, and whether the player marked them done (build on a done one; if they keep going undone, make the next one smaller): ${input.recentFocuses.join('; ')}`,
+    );
   }
 
   lines.push('Notes from the last 30 days:');
-  lines.push(input.notes.length > 0 ? input.notes.map(formatNote).join('\n') : '(none)');
+  // Oldest first, so the model reads a sequence rather than a shuffle.
+  const notes = [...input.notes].sort((a, b) => a.date.localeCompare(b.date));
+  const checkins = [...input.checkins].sort((a, b) => a.date.localeCompare(b.date));
+  lines.push(notes.length > 0 ? notes.map(formatNote).join('\n') : '(none)');
   lines.push('Check-ins from the last 30 days:');
-  lines.push(input.checkins.length > 0 ? input.checkins.map(formatCheckIn).join('\n') : '(none)');
+  lines.push(checkins.length > 0 ? checkins.map(formatCheckIn).join('\n') : '(none)');
 
   return { system: SYSTEM_PROMPT, user: lines.join('\n') };
 }

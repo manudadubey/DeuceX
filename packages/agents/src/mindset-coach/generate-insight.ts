@@ -67,6 +67,18 @@ export interface GenerateInsightResult {
   notificationBody: string | null;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const EXCERPT_CHARS = 280;
+
+// Enough of the player's own words to be specific, cut at a word boundary.
+function excerpt(transcript: string | null): string | null {
+  const text = transcript?.replace(/\s+/g, ' ').trim();
+  if (!text) return null;
+  if (text.length <= EXCERPT_CHARS) return text;
+  const cut = text.slice(0, EXCERPT_CHARS);
+  return `${cut.slice(0, cut.lastIndexOf(' '))}…`;
+}
+
 function recentNotes(notes: readonly MindsetNote[], now: Date, windowDays: number): MindsetNote[] {
   const ms = windowDays * 24 * 60 * 60 * 1000;
   return notes.filter((n) => now.getTime() - new Date(n.recordedAt).getTime() <= ms);
@@ -82,21 +94,37 @@ function localHour(iso: string, timezone: string): number {
 
 // MC-17 / section 7 "Light mornings": yesterday's notes include Travel, or
 // today's first check-in is <=2, or a note was logged after 23:00 local.
+function localDate(at: Date, timezone: string): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(at);
+}
+
+// Every trigger here is about last night and this morning, in the player's own
+// time zone. Before, each one looked across the whole 30-day window: a single
+// check-in of 2, or one note after 23:00, weeks ago kept every morning "light"
+// (one sentence, no pattern) until something newer displaced it, and the
+// Travel test compared dates in the server's zone.
 function isLightMorning(
   recent: readonly MindsetNote[],
   checkins: readonly MindsetCheckIn[],
   timezone: string,
   now: Date,
 ): boolean {
-  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const today = localDate(now, timezone);
+  const yesterday = localDate(new Date(now.getTime() - DAY_MS), timezone);
+
   const hadYesterdayTravelNote = recent.some(
-    (n) => n.ctx === 'travel' && new Date(n.recordedAt).toDateString() === yesterday.toDateString(),
+    (n) => n.ctx === 'travel' && localDate(new Date(n.recordedAt), timezone) === yesterday,
   );
-  const sortedCheckins = [...checkins].sort((a, b) => b.date.localeCompare(a.date));
-  const todaysFirstCheckIn = sortedCheckins[0];
-  const lowCheckIn = todaysFirstCheckIn !== undefined && todaysFirstCheckIn.value <= 2;
+  // The latest check-in counts only if it is today's or last night's.
+  const latest = [...checkins].sort((a, b) => b.date.localeCompare(a.date))[0];
+  const lowCheckIn =
+    latest !== undefined &&
+    (latest.date === today || latest.date === yesterday) &&
+    latest.value <= 2;
   const loggedAfterHours = recent.some(
-    (n) => localHour(n.recordedAt, timezone) >= AFTER_HOURS_LOCAL_HOUR,
+    (n) =>
+      now.getTime() - new Date(n.recordedAt).getTime() <= DAY_MS &&
+      localHour(n.recordedAt, timezone) >= AFTER_HOURS_LOCAL_HOUR,
   );
   return hadYesterdayTravelNote || lowCheckIn || loggedAfterHours;
 }
@@ -215,6 +243,8 @@ export async function generateInsight(
     mood: n.mood,
     result: n.result,
     summary: n.summary,
+    tags: n.tags,
+    excerpt: excerpt(n.transcript),
   }));
   const promptInput = {
     lang: input.lang,
