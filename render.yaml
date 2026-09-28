@@ -57,10 +57,22 @@ services:
       # Signs patrons' emailed manage links (step 4.1b); required in production.
       - key: PATRON_LINK_SECRET
         generateValue: true
+      # Web Push (step 5.2). The public key must match the web app's
+      # NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY on Vercel; without these the API
+      # starts but skips push.
+      - key: WEB_PUSH_VAPID_PUBLIC_KEY
+        sync: false
+      - key: WEB_PUSH_VAPID_PRIVATE_KEY
+        sync: false
+      - key: WEB_PUSH_SUBJECT
+        value: mailto:support@mail.deucex.ai
       # Where emailed links point, and which browser origins may call the API.
       - key: APP_BASE_URL
         value: https://deucex.vercel.app
+      # The deployed console has no Supabase settings on Vercel yet, so staff
+      # run it locally; this is only where staff-alert emails link to.
       - key: ADMIN_BASE_URL
-        sync: false
+        value: https://procircuit-admin.vercel.app
+      # Comma-separated. Only the player app calls this API from a browser.
       - key: CORS_ORIGIN
-        sync: false
+        value: https://deucex.vercel.app
