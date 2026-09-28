@@ -282,6 +282,16 @@
   }
 }
 
+/* No card outline at phone width (owner decision, 28 September 2026), in any
+   contrast mode: cards are set apart by their own background. 900px is where
+   the app shell switches to its mobile layout. Hand-built card tiles carry
+   data-bl-card too, so every card follows the same rule. */
+@media (max-width: 900px) {
+  [data-bl-card] {
+    box-shadow: none !important;
+  }
+}
+
 /* ── Baseline chart motion (shadcn chart enter: marks draw in on mount, never on resize) ── */
 @keyframes bl-draw {
   to {
