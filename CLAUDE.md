@@ -421,8 +421,8 @@ prototypes and PRDs and verified live; see the build log's five entries from 28 
 later work needs to know:
 - **The Tournament Agent had never shortlisted anything:** no code created `tournaments` rows.
   Staff now load events through the admin console's **Tournament calendar import** (Ingestion
-  page; CSV, preview then apply with a reason, `calendar_import` in the audit log). Until a real
-  calendar is imported, every shortlist is empty. `tournaments.prize_currency` (migration
+  page; CSV, preview then apply with a reason, `calendar_import` in the audit log). The ITF
+  calendar is now loaded (see the next paragraph). `tournaments.prize_currency` (migration
   `20260930100000`, applied to staging and production) keeps prizes in the published currency.
 - **Scheduled runs catch up.** The morning run makes up a missed 07:00 until 21:00 local; the
   weekly Tournament run makes up a missed Sunday 20:00 UTC any time that week. Both skip players
@@ -444,7 +444,36 @@ later work needs to know:
   use the viewer's local date, not UTC's. Tournament display formats live in
   `apps/web/lib/tournament/format.ts`.
 
-**As of 28 September 2026, no PRs are open and `main` has everything above.** The owner merges
+ITF calendar, [PR #40](https://github.com/manudadubey/DeuceX/pull/40), merged 28 September 2026:
+- **302 ITF events are in production** (153 men's M15/M25, 149 women's W15 to W100, 28 September
+  to 28 December 2026), imported through the console with one `calendar_import` audit row. No ATP
+  Challenger, ATP 250, WTA 125 or WTA 250 events exist yet, so stage 3 men, stage 3 women outside
+  ITF W100, and stage 2 men outside ITF M25 still get an empty shortlist.
+- **`apps/api/scripts/itf-calendar.ts`** converts ITF's own calendar CSV exports into the import
+  format. ITF's export has no per-round prize, points or entry deadline, so the script fills them
+  from the 2026 WTT Regulations (Appendices H to K; deadline is the Thursday 18 days before the
+  tournament's Monday). Approximations: 32-draw tables for every event, USD even where the
+  regulations have a euro table, no coordinates, carpet has no surface value. Update the tables
+  for the 2027 regulations.
+- **No automated pull from itftennis.com or atptour.com.** Both calendar APIs sit behind bot
+  protection (ITF challenges after a few requests, ATP's Cloudflare on the first), and ITF's
+  regulations (Appendix F) claim the data rights and act against unauthorised collection. A
+  script that gets around this with a headless browser was reviewed and not adopted. Calendars
+  come in by manual export plus the converter until ATP or ITF grants access.
+- **Import is one save and can't duplicate.** `applyCalendarImport` writes new events in one
+  insert and changes in one upsert by id (302 events went from about 55 seconds to two requests).
+  Migration `20260930110000_tournaments_unique_event` (applied to staging and production) is a
+  unique index on `(tour, lower(btrim(name)), start_date)`, the importer's own event key; a
+  clashing Apply saves nothing and gets a 409.
+- **The import card shows the calendar's state** (`GET /admin/tournaments/calendar-summary`):
+  upcoming events by tour, dates covered, next entry deadline, and the last import, flagged
+  "Import due" after a week.
+- **The fixture player (Jannik Sinner) is ATP stage 3**, so it scans no ITF events. Its stage was
+  already pinned at 3; to test ITF shortlists, pin it to stage 1 on /profile and put it back to 3
+  (pinned) afterwards. Re-run now is one an hour, and the page now says so next to the button.
+
+**As of 28 September 2026, no PRs are open other than this docs update, and `main` has everything
+above.** The owner merges
 PRs: Claude's auto mode usually refuses to merge, or retarget a PR's base, without a human
 review; when the owner asks, it has sometimes allowed it, otherwise the owner runs `gh pr merge`. When
 PRs are stacked, move each one's base to `main` before merging it (`gh pr edit N --base main`);
@@ -453,8 +482,12 @@ merging into the old base branch would leave `main` without it.
 **What's next: launch prep.** There's no build-plan step after 5.4 (Release 2 comes "after real
 players"). In order:
 1. **Owner account steps:**
-   - import a real tournament calendar in the admin console (the Tournament Agent is empty
-     without one);
+   - load the ATP Challenger, ATP 250, WTA 125 and WTA 250 calendars (only ITF is loaded, so
+     stage 2 and 3 players mostly see an empty shortlist). Needs a manual export plus a converter
+     extension with the ATP and WTA prize, points and deadline rules;
+   - ask ATP and ITF (or Tennis Australia) for calendar data access, so a scheduled pull can
+     replace the manual export;
+   - re-import the ITF calendar weekly (the console flags "Import due" after seven days);
    - roll the staging secret key and the Stripe sandbox key;
    - raise the OpenAI usage tier;
    - register staff passkeys and add `https://admin.deucex.ai` to Supabase's passkey origins;
