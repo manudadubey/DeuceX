@@ -100,7 +100,6 @@ export function PreferencesSheet({
               type="multiple"
               value={exclusions}
               onValueChange={setExclusions}
-              className="flex flex-wrap gap-1.5"
               aria-label="Exclusions"
             >
               {FUEL_EXCLUSIONS.map((e) => (
@@ -116,7 +115,6 @@ export function PreferencesSheet({
               type="multiple"
               value={allergies}
               onValueChange={setAllergies}
-              className="flex flex-wrap gap-1.5"
               aria-label="Allergies"
             >
               {FUEL_ALLERGENS.map((a) => (

@@ -328,6 +328,7 @@ export function BillingPane({
               value={checkoutCycle}
               onValueChange={(v) => isBillingCycle(v) && setCheckoutCycle(v)}
               aria-label="Billing cycle"
+              variant="segmented"
             >
               <ToggleGroupItem value="monthly">Monthly</ToggleGroupItem>
               <ToggleGroupItem value="annual">Yearly · {ANNUAL_SAVING_LABEL}</ToggleGroupItem>

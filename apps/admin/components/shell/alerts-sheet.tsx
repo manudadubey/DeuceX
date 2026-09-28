@@ -96,6 +96,7 @@ export function AlertsSheet({ initialUnread }: { initialUnread: number }) {
             value={filter}
             onValueChange={(v) => v && setFilter(v as Filter)}
             aria-label="Filter alerts"
+            variant="segmented"
           >
             <ToggleGroupItem value="all">All</ToggleGroupItem>
             <ToggleGroupItem value="act">Needs action</ToggleGroupItem>

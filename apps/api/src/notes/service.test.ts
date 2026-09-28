@@ -273,6 +273,33 @@ describe('transcribeNote', () => {
     expect(fake.tables.notes![0]!.lang).toBe('de');
   });
 
+  it('marks an empty transcript failed_transcription without throwing, so the job is not retried (S-19)', async () => {
+    const storage = createMemoryStorageAdapter();
+    await storage.upload({
+      key: 'notes/player-1/note-1',
+      body: Buffer.from('audio'),
+      contentType: 'audio/webm',
+    });
+    const fake = new FakeDb({ notes: [makeNote({ status: 'transcribing', transcript: null })] });
+    const transcription = createMockTranscriptionAdapter();
+    const deps = baseDeps(fake, {
+      storage,
+      transcription: {
+        transcribe: async (input) => ({
+          ...(await transcription.transcribe(input)),
+          transcript: '  ',
+        }),
+      },
+    });
+
+    await transcribeNote(deps, 'note-1');
+
+    const [note] = fake.tables.notes!;
+    expect(note!.status).toBe('failed_transcription');
+    expect(note!.audio_ref).toBe('notes/player-1/note-1');
+    expect(note!.extraction).toBeNull();
+  });
+
   it('marks the note failed_transcription and rethrows on failure, leaving audio untouched (S-19)', async () => {
     const storage = createMemoryStorageAdapter();
     await storage.upload({
@@ -320,6 +347,25 @@ describe('retryNote', () => {
     expect(fake.tables.notes![0]!.status).toBe('transcribing');
     expect(extractionEnqueued).toEqual(['note-1']);
     expect(transcriptionEnqueued).toEqual([]);
+  });
+
+  it('re-enqueues a transcription that has stalled for a minute, but not a fresh one', async () => {
+    const stalled = new FakeDb({
+      notes: [makeNote({ status: 'transcribing', updated_at: '2026-09-11T18:42:00Z' })],
+    });
+    const enqueued: string[] = [];
+    await retryNote(
+      baseDeps(stalled, { enqueueTranscription: async (id) => void enqueued.push(id) }),
+      { noteId: 'note-1', playerId: 'player-1' },
+    );
+    expect(enqueued).toEqual(['note-1']);
+
+    const fresh = new FakeDb({
+      notes: [makeNote({ status: 'transcribing', updated_at: '2026-09-11T18:43:30Z' })],
+    });
+    await expect(
+      retryNote(baseDeps(fresh), { noteId: 'note-1', playerId: 'player-1' }),
+    ).rejects.toThrow(InvalidNoteStateError);
   });
 
   it('refuses to retry a note that has not failed', async () => {

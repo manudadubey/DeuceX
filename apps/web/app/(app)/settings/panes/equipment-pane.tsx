@@ -136,6 +136,7 @@ export function EquipmentPane({
           value={unit}
           onValueChange={(v) => v && handleUnitChange(v as Unit)}
           aria-label="Tension unit"
+          variant="segmented"
         >
           <ToggleGroupItem value="kg">kg</ToggleGroupItem>
           <ToggleGroupItem value="lb">lb</ToggleGroupItem>

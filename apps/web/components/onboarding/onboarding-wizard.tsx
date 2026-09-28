@@ -715,6 +715,7 @@ export function OnboardingWizard({
               value={billingCycle}
               onValueChange={(v) => v && setBillingCycle(v as PlayerBillingCycle)}
               aria-label="Billing cycle"
+              variant="segmented"
             >
               <ToggleGroupItem value="monthly">Monthly</ToggleGroupItem>
               <ToggleGroupItem value="annual">Yearly · {ANNUAL_SAVING_LABEL}</ToggleGroupItem>

@@ -16,6 +16,7 @@ import { drainOfflineQueue, queuedNoteCount } from '@/lib/match-scribe/offline-q
 import { RecorderCard } from '@/components/match-scribe/recorder-card';
 import { DailyCheckInCard } from '@/components/match-scribe/daily-checkin-card';
 import { HistorySection } from '@/components/match-scribe/history-section';
+import { PipelineCard } from '@/components/match-scribe/pipeline-card';
 import { PausedNotice } from '@/components/agents/paused-notice';
 
 const TRANSCRIPTION = ['transcription'] as const;
@@ -23,14 +24,22 @@ const TRANSCRIPTION = ['transcription'] as const;
 export interface MatchScribeClientProps {
   playerId: string;
   timezone: string;
+  isFree: boolean;
   autoStart: boolean;
 }
 
-export function MatchScribeClient({ playerId, timezone, autoStart }: MatchScribeClientProps) {
+export function MatchScribeClient({
+  playerId,
+  timezone,
+  isFree,
+  autoStart,
+}: MatchScribeClientProps) {
   const supabase = useMemo(() => createClient(), []);
   const [quotaUsed, setQuotaUsed] = useState(0);
   const [queuedCount, setQueuedCount] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [pipelineKey, setPipelineKey] = useState(0);
+  const [totals, setTotals] = useState<{ count: number; since: string | null } | null>(null);
   const [toast, setToast] = useState<{ title: string; description?: string } | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
 
@@ -43,6 +52,21 @@ export function MatchScribeClient({ playerId, timezone, autoStart }: MatchScribe
     setQuotaUsed(await getSavedNotesThisMonth(supabase));
   }, [supabase]);
 
+  // Header badge: every saved note, and the month of the first one.
+  const refreshTotals = useCallback(async () => {
+    const [{ count }, { data: first }] = await Promise.all([
+      supabase.from('notes').select('id', { count: 'exact', head: true }).eq('status', 'saved'),
+      supabase
+        .from('notes')
+        .select('recorded_at')
+        .eq('status', 'saved')
+        .order('recorded_at', { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    setTotals({ count: count ?? 0, since: first?.recorded_at ?? null });
+  }, [supabase]);
+
   const refreshQueue = useCallback(async () => {
     setQueuedCount(await queuedNoteCount());
   }, []);
@@ -50,7 +74,8 @@ export function MatchScribeClient({ playerId, timezone, autoStart }: MatchScribe
   useEffect(() => {
     void refreshQuota();
     void refreshQueue();
-  }, [refreshQuota, refreshQueue]);
+    void refreshTotals();
+  }, [refreshQuota, refreshQueue, refreshTotals]);
 
   // S-18, S-AC-12: "when signal returns the note uploads and transcribes
   // without a further tap" — drained on mount (covers a page reload after
@@ -76,14 +101,21 @@ export function MatchScribeClient({ playerId, timezone, autoStart }: MatchScribe
 
   useEffect(() => {
     void drain();
-    window.addEventListener('online', () => void drain());
-    return () => window.removeEventListener('online', () => void drain());
+    // One named handler, so cleanup removes the same listener it added (an
+    // inline arrow here leaked a listener, and a duplicate upload, per render).
+    const onOnline = () => void drain();
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
   }, [drain]);
 
   const handleSaved = useCallback(() => {
     setRefreshKey((k) => k + 1);
+    setPipelineKey((k) => k + 1);
     void refreshQuota();
-  }, [refreshQuota]);
+    void refreshTotals();
+  }, [refreshQuota, refreshTotals]);
+
+  const handleChanged = useCallback(() => setPipelineKey((k) => k + 1), []);
 
   return (
     <ToastProvider>
@@ -96,13 +128,17 @@ export function MatchScribeClient({ playerId, timezone, autoStart }: MatchScribe
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge
-            variant="secondary"
-            title="Sixty seconds of voice, transcribed by Whisper, usually within twenty seconds. Every agent reads the transcript; the audio is deleted once you confirm it, or after 7 days at the latest."
-          >
-            Usually within twenty seconds
+          {totals && totals.count > 0 && (
+            <Badge variant="secondary" className="font-mono">
+              {totals.count} {totals.count === 1 ? 'note' : 'notes'}
+              {totals.since
+                ? ` since ${new Date(totals.since).toLocaleDateString('en-AU', { month: 'long' })}`
+                : ''}
+            </Badge>
+          )}
+          <Badge title="Sixty seconds of voice, transcribed usually within twenty seconds. Every agent reads the transcript; the audio is deleted once you save the note, or after 7 days at the latest.">
+            Audio deleted after 7 days · transcripts kept
           </Badge>
-          <Badge>Audio deleted after 7 days · transcripts kept</Badge>
         </div>
       </header>
       <PausedNotice providers={TRANSCRIPTION} label="Transcription" />
@@ -113,16 +149,21 @@ export function MatchScribeClient({ playerId, timezone, autoStart }: MatchScribe
         </div>
       )}
 
-      <section className="grid grid-cols-[1fr_320px] items-start gap-4 max-[900px]:grid-cols-1">
+      <section className="grid grid-cols-[7fr_5fr] items-start gap-4 max-[1100px]:grid-cols-1">
         <RecorderCard
           playerId={playerId}
+          isFree={isFree}
           quotaUsed={quotaUsed}
           autoStart={autoStart}
           onQueuedOffline={() => void refreshQueue()}
           onSaved={handleSaved}
+          onChanged={handleChanged}
           onToast={showToast}
         />
-        <DailyCheckInCard playerId={playerId} timezone={timezone} onToast={showToast} />
+        <div className="flex flex-col gap-4">
+          <PipelineCard refreshKey={pipelineKey} />
+          <DailyCheckInCard playerId={playerId} timezone={timezone} onToast={showToast} />
+        </div>
       </section>
 
       <div className="mt-4">
