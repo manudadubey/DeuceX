@@ -81,6 +81,7 @@ export function RunwayPulseTile({
   return (
     <Link
       href="/agent/financial"
+      data-bl-card=""
       className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 rounded-xl bg-card p-5 text-left text-card-foreground no-underline shadow-[0_0_0_1px_var(--border),0_1px_2px_rgba(0,0,0,.05)] transition-shadow hover:shadow-[0_0_0_1px_var(--ring),0_1px_2px_rgba(0,0,0,.05)] max-sm:p-4"
     >
       <PulseTileLabel>

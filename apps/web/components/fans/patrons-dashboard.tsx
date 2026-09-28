@@ -72,7 +72,7 @@ export function PatronsPulseTile({
 
   if (!snapshot || !live) {
     return (
-      <Link href="/fans" className={TILE_CLASS}>
+      <Link href="/fans" data-bl-card="" className={TILE_CLASS}>
         <PulseTileLabel>
           <Users aria-hidden="true" className="size-4" />
           Patrons
@@ -101,7 +101,7 @@ export function PatronsPulseTile({
   const spark =
     peak > 0 ? snapshot.mrr.history.map((m) => Math.max(8, (m.gross / peak) * 100)) : [];
   return (
-    <Link href="/fans" className={TILE_CLASS}>
+    <Link href="/fans" data-bl-card="" className={TILE_CLASS}>
       <PulseTileLabel>
         <Users aria-hidden="true" className="size-4" />
         Patrons · last 7 days

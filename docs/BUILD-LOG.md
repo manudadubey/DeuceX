@@ -3760,3 +3760,15 @@ delete from shortlist_candidates where tournament_id in (select id from tourname
 delete from tournaments where name in ('M25 Stillwater CANCELLED','W50 Plovdiv CANCELLED');
 commit;
 ```
+
+## No card outline on mobile (28 September 2026)
+
+The owner saw a white outline on some dashboard cards on their phone and not on others. Cause: with
+iOS Increase Contrast on, `prefers-contrast: more` turns the card hairline into a solid foreground
+ring, but only on elements with `data-bl-card` (Card, Stat). Four hand-built tiles (Runway, Decision
+required, the dashboard's and Fans' patron tiles) drew their own hairline and stayed faint.
+Owner decision: no card outline on mobile. The four tiles now carry `data-bl-card`, and a rule in
+`packages/ui` removes the ring at 900px and below (where the shell switches to its mobile layout),
+in every contrast mode, so on phones this overrides the Baseline's "more contrast replaces hairline
+rings" for cards; cards are set apart by their background. Desktop is unchanged. The onboarding
+plan and candidate buttons keep their ring, since it marks the selected option.
