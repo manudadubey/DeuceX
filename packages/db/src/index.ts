@@ -37,6 +37,7 @@ export {
   ONBOARDING_AGENT_NAMES,
   DEFAULT_AGENT_TOGGLES,
   finishOnboarding,
+  fullName,
   type Player,
   type PlayerTour,
   type PlayerVerification,

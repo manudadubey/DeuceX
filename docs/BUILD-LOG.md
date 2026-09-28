@@ -3685,3 +3685,15 @@ insert and every changed one in one upsert by id, and migration
 start_date)`, the importer's own event key. A refused insert saves nothing and returns a 409 asking
 staff to preview again; the Apply button reads "Saving…" while it runs. Verified on staging (a
 second copy, differing only in case and spaces, was refused and rolled back).
+
+## First and last name (28 September 2026)
+
+Owner decision: onboarding step 1 and Settings > Account ask for first and last name separately,
+stored in new `players.first_name` and `players.last_name` columns (migration
+`20260930120000_players_first_last_name`, additive, nullable, backfilled by splitting `name` at the
+first space, with insert and update column grants for `authenticated`). `name` is kept and still
+written as the two joined (`fullName()` in `@deucex/db`) by `finishOnboarding` and `updateAccount`,
+so every reader of `name` (sidebar, public page, the ranking directory match, email sender names,
+the console) is unchanged. Both are required in the UI. The console role gets no grant on the new
+columns; it reads `name`. The backfill is only an approximation for multi-word names, which the
+player can correct in Settings.

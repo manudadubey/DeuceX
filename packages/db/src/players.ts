@@ -131,9 +131,18 @@ export const DEFAULT_AGENT_TOGGLES: AgentToggles = {
   mindset: false,
 };
 
+// First and last name are asked for separately (owner decision, 28 September
+// 2026) and stored in their own columns; `name` is still written as the two
+// joined, since the sidebar, public page, ranking match, email sender names
+// and console all read it.
+export function fullName(firstName: string, lastName: string): string {
+  return [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
+}
+
 export interface FinishOnboardingInput {
   playerId: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   country: string;
   dob: string;
@@ -191,7 +200,9 @@ export async function finishOnboarding(
     .upsert(
       {
         id: input.playerId,
-        name: input.name,
+        first_name: input.firstName.trim(),
+        last_name: input.lastName.trim(),
+        name: fullName(input.firstName, input.lastName),
         email: input.email,
         country: input.country,
         dob: input.dob,

@@ -2766,6 +2766,7 @@ export type Database = {
           emergency_contact: string | null;
           export_delivered_at: string | null;
           export_requested_at: string | null;
+          first_name: string | null;
           guardian_confirmed_at: string | null;
           guardian_email: string | null;
           handed: string | null;
@@ -2775,6 +2776,7 @@ export type Database = {
           itf_id: string | null;
           itf_rank: number | null;
           key_tournaments: string[];
+          last_name: string | null;
           name: string;
           next_match_at: string | null;
           next_match_label: string | null;
@@ -2835,6 +2837,7 @@ export type Database = {
           emergency_contact?: string | null;
           export_delivered_at?: string | null;
           export_requested_at?: string | null;
+          first_name?: string | null;
           guardian_confirmed_at?: string | null;
           guardian_email?: string | null;
           handed?: string | null;
@@ -2844,6 +2847,7 @@ export type Database = {
           itf_id?: string | null;
           itf_rank?: number | null;
           key_tournaments?: string[];
+          last_name?: string | null;
           name: string;
           next_match_at?: string | null;
           next_match_label?: string | null;
@@ -2904,6 +2908,7 @@ export type Database = {
           emergency_contact?: string | null;
           export_delivered_at?: string | null;
           export_requested_at?: string | null;
+          first_name?: string | null;
           guardian_confirmed_at?: string | null;
           guardian_email?: string | null;
           handed?: string | null;
@@ -2913,6 +2918,7 @@ export type Database = {
           itf_id?: string | null;
           itf_rank?: number | null;
           key_tournaments?: string[];
+          last_name?: string | null;
           name?: string;
           next_match_at?: string | null;
           next_match_label?: string | null;

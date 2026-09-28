@@ -7,7 +7,8 @@ vi.mock('@/lib/supabase/client', () => ({
 }));
 
 function fillStep1Basics() {
-  fireEvent.change(screen.getByLabelText('Full name'), { target: { value: 'Arya Dubey' } });
+  fireEvent.change(screen.getByLabelText('First name'), { target: { value: 'Arya' } });
+  fireEvent.change(screen.getByLabelText('Last name'), { target: { value: 'Dubey' } });
   fireEvent.change(screen.getByLabelText('Date of birth'), { target: { value: '2010-01-01' } });
   fireEvent.change(screen.getByLabelText(/ATP player ID/i), { target: { value: 'B0AH' } });
 }
@@ -29,6 +30,8 @@ describe('OnboardingWizard — guardian gate (M-ID-3, OB-6)', () => {
     fireEvent.click(screen.getByRole('button', { name: /look up and continue/i }));
 
     await waitFor(() => expect(lookupRankingFn).toHaveBeenCalledTimes(1));
+    // The ranking directory matches on the full name, joined from the two fields.
+    expect(lookupRankingFn).toHaveBeenCalledWith(expect.objectContaining({ name: 'Arya Dubey' }));
     await screen.findByText('Unverified');
 
     // Still on step 1: the guardian-required message is shown, not step 2's heading.
@@ -74,7 +77,9 @@ describe('OnboardingWizard — guardian gate (M-ID-3, OB-6)', () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText('Full name'), { target: { value: 'Arya Dubey' } });
+    fireEvent.change(screen.getByLabelText('First name'), { target: { value: 'Arya' } });
+
+    fireEvent.change(screen.getByLabelText('Last name'), { target: { value: 'Dubey' } });
     fireEvent.change(screen.getByLabelText('Date of birth'), { target: { value: '1998-02-14' } });
     fireEvent.change(screen.getByLabelText(/ATP player ID/i), { target: { value: 'B0AH' } });
     expect(screen.queryByLabelText(/Guardian email/i)).not.toBeInTheDocument();
@@ -106,7 +111,9 @@ describe('OnboardingWizard — ambiguous match (M-ID-2, decisions worksheet 2)',
       />,
     );
 
-    fireEvent.change(screen.getByLabelText('Full name'), { target: { value: 'Arya Dubey' } });
+    fireEvent.change(screen.getByLabelText('First name'), { target: { value: 'Arya' } });
+
+    fireEvent.change(screen.getByLabelText('Last name'), { target: { value: 'Dubey' } });
     fireEvent.change(screen.getByLabelText('Date of birth'), { target: { value: '1998-02-14' } });
     fireEvent.change(screen.getByLabelText(/ATP player ID/i), { target: { value: 'B0AH' } });
     fireEvent.click(screen.getByRole('button', { name: /look up and continue/i }));
