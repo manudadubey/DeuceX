@@ -19,5 +19,19 @@ export async function confirmSignIn(formData: FormData): Promise<void> {
     redirect(`/signin?error=${encodeURIComponent('That sign-in link is invalid or has expired.')}`);
   }
 
+  // A new player has no players row until onboarding's last step writes it
+  // (PRD-11: "a new sign-up lands on #/onboarding"); send them straight there
+  // rather than to a dashboard that only asks them to finish setup.
+  const { data: claims } = await supabase.auth.getClaims();
+  const playerId = typeof claims?.claims.sub === 'string' ? claims.claims.sub : undefined;
+  if (playerId) {
+    const { data: player } = await supabase
+      .from('players')
+      .select('id')
+      .eq('id', playerId)
+      .maybeSingle();
+    if (!player) redirect('/onboarding');
+  }
+
   redirect('/');
 }
