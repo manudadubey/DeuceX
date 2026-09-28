@@ -30,6 +30,7 @@ import {
   type PlayerSurface,
   type PlayerTour,
   detectStage,
+  fullName,
   isMinor,
 } from '@deucex/db';
 import {
@@ -140,7 +141,15 @@ export function OnboardingWizard({
   const [maxStepReached, setMaxStepReached] = useState(1);
 
   // Step 1
-  const [name, setName] = useState(existingPlayer?.name ?? '');
+  // A player from before first and last name were separate columns has only
+  // `name` (the migration backfilled a first-space split); fall back to it.
+  const [firstName, setFirstName] = useState(
+    existingPlayer?.first_name ?? existingPlayer?.name.split(' ')[0] ?? '',
+  );
+  const [lastName, setLastName] = useState(
+    existingPlayer?.last_name ?? existingPlayer?.name.split(' ').slice(1).join(' ') ?? '',
+  );
+  const name = fullName(firstName, lastName);
   const [country, setCountry] = useState(existingPlayer?.country ?? 'Australia');
   const [dob, setDob] = useState(existingPlayer?.dob ?? '');
   const [handed, setHanded] = useState<PlayerHanded>(
@@ -260,7 +269,9 @@ export function OnboardingWizard({
     setLookupPhase('resolved');
   };
 
-  const step1Ready = Boolean(name && country && dob && (tourPlayerId || itfId));
+  const step1Ready = Boolean(
+    firstName.trim() && lastName.trim() && country && dob && (tourPlayerId || itfId),
+  );
   const guardianOk = !minor || Boolean(guardianEmail);
 
   const continueStep1 = async () => {
@@ -279,7 +290,8 @@ export function OnboardingWizard({
     setError(null);
     try {
       await onFinish({
-        name,
+        firstName,
+        lastName,
         country,
         dob,
         handed,
@@ -373,8 +385,22 @@ export function OnboardingWizard({
           <FieldGroup>
             <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
               <Field>
-                <FieldLabel htmlFor="ob-name">Full name</FieldLabel>
-                <Input id="ob-name" value={name} onChange={(e) => setName(e.target.value)} />
+                <FieldLabel htmlFor="ob-first-name">First name</FieldLabel>
+                <Input
+                  id="ob-first-name"
+                  autoComplete="given-name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="ob-last-name">Last name</FieldLabel>
+                <Input
+                  id="ob-last-name"
+                  autoComplete="family-name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
               </Field>
               <Field>
                 <FieldLabel htmlFor="ob-country">Country</FieldLabel>

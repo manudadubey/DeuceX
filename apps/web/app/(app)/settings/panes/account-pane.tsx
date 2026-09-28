@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@deucex/ui';
-import { updateAccount, type Player } from '@deucex/db';
+import { fullName, updateAccount, type Player } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 import { PasskeyRegister } from '../passkey-register';
 
@@ -55,7 +55,10 @@ export function AccountPane({
   onPlayerChange: (patch: Partial<Player>) => void;
   onToast: (title: string) => void;
 }) {
-  const [name, setName] = useState(player.name);
+  const [firstName, setFirstName] = useState(player.first_name ?? player.name.split(' ')[0] ?? '');
+  const [lastName, setLastName] = useState(
+    player.last_name ?? player.name.split(' ').slice(1).join(' '),
+  );
   const [timezone, setTimezone] = useState(player.timezone);
   const [saving, setSaving] = useState(false);
   // Read after mount: the server render can't know the device's zone.
@@ -70,8 +73,13 @@ export function AccountPane({
     setSaving(true);
     try {
       const supabase = createClient();
-      await updateAccount(supabase, { playerId: player.id, name, timezone });
-      onPlayerChange({ name, timezone });
+      await updateAccount(supabase, { playerId: player.id, firstName, lastName, timezone });
+      onPlayerChange({
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        name: fullName(firstName, lastName),
+        timezone,
+      });
       onToast('Saved');
     } finally {
       setSaving(false);
@@ -88,11 +96,26 @@ export function AccountPane({
       </CardHeader>
       <CardContent className="grid grid-cols-2 gap-x-4 gap-y-5 max-sm:grid-cols-1">
         <Field>
-          <FieldLabel htmlFor="acc-name">Name</FieldLabel>
-          <Input id="acc-name" value={name} onChange={(e) => setName(e.target.value)} />
+          <FieldLabel htmlFor="acc-first-name">First name</FieldLabel>
+          <Input
+            id="acc-first-name"
+            autoComplete="given-name"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+          />
         </Field>
 
         <Field>
+          <FieldLabel htmlFor="acc-last-name">Last name</FieldLabel>
+          <Input
+            id="acc-last-name"
+            autoComplete="family-name"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+          />
+        </Field>
+
+        <Field className="col-span-full">
           <FieldLabel htmlFor="acc-email">Email</FieldLabel>
           <Input id="acc-email" value={player.email} disabled readOnly />
           <FieldDescription>Verified · used for sign-in and agent emails</FieldDescription>
@@ -132,7 +155,7 @@ export function AccountPane({
         </Field>
       </CardContent>
       <CardFooter>
-        <Button onClick={handleSave} disabled={saving || !name.trim()}>
+        <Button onClick={handleSave} disabled={saving || !firstName.trim() || !lastName.trim()}>
           {saving ? 'Saving…' : 'Save'}
         </Button>
       </CardFooter>
