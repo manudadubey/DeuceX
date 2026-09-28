@@ -75,15 +75,23 @@ export interface TournamentSnapshot {
   /** Equipment profile baseline (PRD-08 section 4.5's own defaults when the player hasn't saved one yet). */
   equipmentMainsKg: number;
   equipmentCrossesKg: number;
+  /** When the shortlist on screen was computed (the latest succeeded run). */
+  ranAt: string | null;
+  /** The last manual re-run, for "One re-run an hour" (T-AC-9). */
+  lastManualRunAt: string | null;
+  /** T-15: this run's recommendation memo, when one was generated and validated. */
+  memo: { paragraphs: string[]; createdAt: string } | null;
 }
 
 const DEFAULT_EQUIPMENT_MAINS_KG = 24;
 const DEFAULT_EQUIPMENT_CROSSES_KG = 23;
 
+// Days from the viewer's own local today (not UTC's: on a Monday morning in
+// Australia UTC is still on Sunday, which added a day to every countdown).
 function daysUntil(dateIso: string | null, now: Date): number | null {
   if (!dateIso) return null;
-  const ms =
-    new Date(`${dateIso}T00:00:00Z`).getTime() - new Date(now.toISOString().slice(0, 10)).getTime();
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const ms = new Date(`${dateIso}T00:00:00Z`).getTime() - today;
   return Math.round(ms / (24 * 60 * 60 * 1000));
 }
 
@@ -114,7 +122,7 @@ export async function loadTournamentSnapshot(
     supabase.from('entry_decisions').select('*').eq('player_id', playerId),
     supabase
       .from('agent_runs')
-      .select('output')
+      .select('id, output, started_at')
       .eq('player_id', playerId)
       .eq('agent_name', 'tournament')
       .eq('status', 'succeeded')
@@ -221,6 +229,32 @@ export async function loadTournamentSnapshot(
   });
 
   const cached = runRes.data?.output as unknown as CachedRunOutput | undefined;
+  const [memoRes, manualRes] = await Promise.all([
+    runRes.data
+      ? supabase
+          .from('agent_runs')
+          .select('output, started_at')
+          .eq('player_id', playerId)
+          .eq('agent_name', 'tournament-memo')
+          .eq('status', 'succeeded')
+          .order('started_at', { ascending: false })
+          .limit(5)
+      : Promise.resolve({ data: [] as { output: unknown; started_at: string }[], error: null }),
+    supabase
+      .from('agent_runs')
+      .select('started_at')
+      .eq('player_id', playerId)
+      .eq('agent_name', 'tournament')
+      .eq('trigger_type', 'manual')
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  // Only the memo written for the run on screen: an older memo would cite old numbers.
+  const memoRow = (memoRes.data ?? []).find(
+    (m) => (m.output as { forRunId?: string } | null)?.forRunId === runRes.data?.id,
+  );
+  const memoParagraphs = (memoRow?.output as { paragraphs?: string[] } | undefined)?.paragraphs;
   const financial = await loadFinancialSnapshot(
     supabase,
     playerId,
@@ -239,5 +273,11 @@ export async function loadTournamentSnapshot(
     netBurn: financial.netBurn,
     equipmentMainsKg: equipmentRes.data?.tension_mains_kg ?? DEFAULT_EQUIPMENT_MAINS_KG,
     equipmentCrossesKg: equipmentRes.data?.tension_crosses_kg ?? DEFAULT_EQUIPMENT_CROSSES_KG,
+    ranAt: runRes.data?.started_at ?? null,
+    lastManualRunAt: manualRes.data?.started_at ?? null,
+    memo:
+      memoRow && Array.isArray(memoParagraphs)
+        ? { paragraphs: memoParagraphs, createdAt: memoRow.started_at }
+        : null,
   };
 }

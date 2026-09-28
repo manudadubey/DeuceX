@@ -125,4 +125,5 @@ export type PlatformActionType =
   | 'snapshot_apply'
   | 'correction_apply'
   | 'correction_reject'
-  | 'deadline_set';
+  | 'deadline_set'
+  | 'calendar_import';

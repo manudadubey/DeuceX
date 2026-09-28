@@ -46,7 +46,7 @@ export class InvalidRankingCsvError extends Error {
 // no external dependency, the same "hand-roll it, it's small" choice
 // packages/agents/src/financial/export-csv.ts already made for the writing
 // direction.
-function parseCsvLine(line: string): string[] {
+export function parseCsvLine(line: string): string[] {
   const fields: string[] = [];
   let field = '';
   let inQuotes = false;

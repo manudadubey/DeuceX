@@ -18,6 +18,8 @@ import {
   createOpenAIFinancialActionClient,
   createOpenAIInsightClient,
   createOpenAIProseClient,
+  createOpenAIMemoClient,
+  MEMO_MODEL,
   createOpenAIReceiptExtractionClient,
   PATRON_NOTE_MODEL,
   createMockPatronNoteClient,
@@ -405,7 +407,15 @@ async function main() {
   const agentHandlers = [
     await registerMindsetCoach(actionsBoss, { db, client: insightClient, agentRuns }),
     await registerFinancialAgent(actionsBoss, { db, client: financialActionClient, agentRuns }),
-    await registerTournamentAgent(actionsBoss, { db, agentRuns, weatherAdapter, proseClient }),
+    await registerTournamentAgent(actionsBoss, {
+      db,
+      agentRuns,
+      weatherAdapter,
+      proseClient,
+      ...(openaiApiKey
+        ? { memoClient: createOpenAIMemoClient({ apiKey: openaiApiKey, model: MEMO_MODEL }) }
+        : {}),
+    }),
   ];
   await registerAgentDispatcher(actionsBoss, db, agentHandlers);
   // Step 5.2: the morning run, every daily agent at 07:00 in the player's own
@@ -769,6 +779,28 @@ async function main() {
   adminRankingsDeps.audit = async (context, input) => {
     const staff = context.staff as Staff;
     await consoleDb.tx((q) => recordAdminAction(q, staff, { device: null, ip: null }, input));
+  };
+  tournamentDeps.enqueueRerun = async (playerId) => {
+    await retryAgentRunNow(actionsBoss, {
+      agentName: TOURNAMENT_AGENT_NAME,
+      playerId,
+      scheduledWindow: `manual:${new Date().toISOString()}`,
+      triggerType: 'manual',
+    });
+  };
+  adminRankingsDeps.rerunAllShortlists = async () => {
+    const { data, error } = await db.from('players').select('id');
+    if (error) throw error;
+    const window = `calendar:${new Date().toISOString()}`;
+    for (const { id } of data ?? []) {
+      await retryAgentRunNow(actionsBoss, {
+        agentName: TOURNAMENT_AGENT_NAME,
+        playerId: id,
+        scheduledWindow: window,
+        triggerType: 'event',
+      });
+    }
+    return (data ?? []).length;
   };
   adminRankingsDeps.rerunShortlists = async (tournamentId) => {
     const { data, error } = await db

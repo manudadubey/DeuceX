@@ -11,6 +11,7 @@ import { CONTENT_REWRITE_MODEL } from './content/rewrite';
 import { PROSE_MODEL } from './conditions/generate-prose';
 import { PATRON_NOTE_MODEL } from './fans/note-draft';
 import { MENU_EXTRACTION_MODEL } from './fuel/menu-model-client';
+import { MEMO_MODEL } from './tournament/memo';
 
 describe('model tiers', () => {
   it('prices every tier model, so no run drops out of the spend figure', () => {
@@ -30,6 +31,7 @@ describe('model tiers', () => {
       conditionsProse: PROSE_MODEL,
       patronNote: PATRON_NOTE_MODEL,
       fuelMenuScan: MENU_EXTRACTION_MODEL,
+      tournamentMemo: MEMO_MODEL,
     };
     for (const [call, model] of Object.entries(constants)) {
       expect(model).toBe(modelFor(call as ModelCall));

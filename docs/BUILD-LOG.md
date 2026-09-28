@@ -3408,3 +3408,244 @@ same exception already approved for a failed payment.
 - add webhooks for renewals and failures (they need apps/api deployed);
 - add plan changes with proration, dunning, invoices and the customer portal;
 - send the annual renewal reminder.
+
+## Match Scribe parity with the prototype — 28 September 2026
+
+Checked `/match-scribe` against `docs/deucex-dashboard.html`'s `#/match-scribe` and PRD-02, then
+drove the real pipeline in the browser (real upload, transcription and extraction on the fixture
+player, synthetic audio in place of the microphone, which the browser pane blocks). No migration.
+
+**Bugs found and fixed:**
+
+- **A note with nothing intelligible hung forever.** An empty transcript (wind, a pocket tap)
+  made extraction throw, so the note stayed `transcribing` while pg-boss re-paid for the same
+  transcription on each retry. It now goes straight to `failed_transcription` (type it, or Retry).
+- **No way out of a stalled transcription.** After 45 seconds the recorder offers Retry and
+  Discard; `retryNote` accepts a `transcribing` note quiet for over a minute.
+- **Record again orphaned the previous upload** in `review` with its audio. It now deletes it.
+- **A reload stranded a note mid-flow.** The recorder resumes the latest unsaved note on arrival.
+- **The `online` listener leaked** (an inline arrow never removed), one per render.
+- **Context couldn't be changed in review** (S-3) and wasn't saved; it is both now, and read at
+  stop time rather than when recording started.
+- **Free tier:** the coach switch showed and defaulted on (PRD-02 section 2 says absent), and the
+  recorder didn't show notes used this month (S-16). Both fixed.
+- The mood line always said "Tag the mood…"; it now says "The agent guessed…" when proposed (S-8).
+- "Whisper" appeared in five places; no provider names in the interface (CLAUDE.md).
+- The Capture sheet stayed open after "Record a note".
+
+**Missing UI, now built:**
+
+- The pipeline card, "What happens to your note" (S-19), from real rows: upload, transcription,
+  extraction, the Mindset insight and the Content draft (`lib/match-scribe/pipeline.ts`, tested).
+  It departs from the prototype where this build works differently: no 02:00 UTC overnight
+  analysis (extraction runs at upload) and the Mindset Coach at 07:00 local.
+- Past notes: the 30-day mood strip and legend, the prototype's entry layout (date and mood dot,
+  result line, mood, tags, "· Mon 07:40 · 0:04"), a Processing badge for 30 minutes after save,
+  "Used by", the inline delete confirmation with Keep. "Used by" is derived (a `patron_updates`
+  row for the note, a Mindset insight delivered on or after its save date) because nothing ever
+  writes `notes.used`.
+- The header's "N notes since <month>", the stage (72 px button, stop square, ring), the
+  two-column review, mood swatches, amber stamp chips in review, "Daily check-in".
+- Shell: the FAB hides on `/match-scribe`; the mobile Scribe tab is the raised record disc that
+  opens Capture elsewhere and starts, stops and pulses on the page (S-1, S-2).
+
+**Toggle spacing, app-wide:** `ToggleGroup` (packages/ui) was the bare Radix root, so its
+buttons touched unless a caller added a gap (two of 21 did). It now defaults to the
+prototype's `.tg` (flex, wrap, 6px gap) and has `variant="segmented"` for `.seg` (muted track,
+2px gap, the chosen item lifted onto the field background). Segmented now: the Match Scribe,
+Content and admin alert filters, the kg/lb unit, and both Monthly/Yearly switches, as in the
+prototype. The component needs `'use client'` now (it uses context); typecheck doesn't catch a
+missing one, the Next build does.
+
+**Verified live:** stall, Retry and the failed state on a real stuck note; a typed save, search
+(transcript and tag), filter, empty state, delete with Keep then Delete (5 to 4 notes); a spoken
+Match note transcribed in about 6 seconds and pre-filled L 6-4 3-6 6-7(5), Kovalenko, Confident,
+Second serve and Tiebreak; Discard and Record again leave no rows (checked in SQL); the mobile
+tab path. All test notes removed; no Content draft was queued for the deleted one.
+
+**Open:**
+
+- **The extractor invents detail.** The spoken note never gave a tiebreak score, yet the result
+  came back "6-7(5)", likely copied from the Kovalenko example in the prompt. Worth a prompt
+  change and a fixture test with no tiebreak score.
+- Not built: Play on past notes (saved notes have no audio by design; only the failed-review
+  state plays the local recording), the result-line flag (no opponent country), the match
+  duration field (PRD-02 section 12 leaves it open), S-20 "Good day to write", S-21 past dates.
+- `notes.used` is never written; derive or drop it.
+
+## Daily check-in review — 28 September 2026
+
+Reviewed the check-in on all three surfaces (Match Scribe, Mindset page, dashboard) and what
+the Mindset Coach does with it. Verified live on the fixture player; today's row restored to 4
+with no sentence afterwards (its `source` now reads `mindset` instead of `dashboard`).
+
+**Fixed:**
+
+- **The coach's light mornings read stale data (MC-17).** "Today's check-in ≤ 2" took the latest
+  check-in in the 30-day window whatever its date, and "a note after 23:00" took any such note
+  in 30 days, so one low check-in or one late note made every morning light (one sentence, no
+  pattern) for weeks. "Yesterday's Travel note" compared dates in the server's zone. All three
+  now mean last night or this morning in the player's zone. Six new tests; the old code fails
+  two of them.
+- **The Match Scribe and Mindset card didn't load today's check-in.** It showed blank after a
+  dashboard check-in, and saving from it wiped a sentence written elsewhere (one row per day,
+  MC-5). It loads today's row now, shows "Today · 4/5", and Save reads Save check-in, Update or
+  Saved for today.
+- Save failures were unhandled on the card and silent on the dashboard; both say so now, and
+  the dashboard shows "Mood logged · 4/5" (the prototype's toast) as a live line.
+- The Mindset page's chart didn't refresh after a check-in (`onSaved` was never passed).
+- "This morning" became "Today": the check-in is per day and taken at any hour.
+- Match Scribe's copy said check-ins feed pattern detection; the rules read notes only. It
+  now says what happens: the coach reads it at 07:00 and goes easier after a low day.
+- Pipeline card: "Tomorrow" for the Mindset insight only for a note saved today.
+
+**Open, product questions for the owner:**
+
+- The scale mixes two things. "1 flat, 5 energised" is energy, but note moods map Frustrated to
+  1 on the same axis, so a frustrated, wired player and a drained one plot the same.
+- 2, 3 and 4 have no words, and nothing shows the player what their check-ins add up to until
+  the chart on the Mindset page (Pro only).
+
+## Mindset Coach review — 28 September 2026
+
+Reviewed `/agent/mindset`, the dashboard card and the agent itself against the prototype and
+PRD-06, with a live insight generated from the fixture player's real notes (printed only: no
+insight row, no notification). Boundaries toggled live and restored; checked in SQL.
+
+**The agent:**
+
+- **"Quiet on match mornings" did nothing.** The run hard-coded `hasMatchToday: false`
+  ("until Entered events exist"; they have since step 3.2). It is now true on a local date
+  inside an Entered event, and false again once a saved losing Match note shows the player is
+  out, so the coach doesn't stay silent for the rest of the week. We have no order of play, so
+  this is the closest honest reading of MC-14. Three tests.
+- **The coach read unsaved notes.** The query was `neq('deleted')`, so notes in review, failed
+  or abandoned reached the model, against PRD-02's "saving is the approval". Saved only now.
+- **MC-12 wasn't wired:** focus completion never reached the next insight. Each recent focus
+  now carries "(done)" or "(not marked done)", and the prompt says to build on a done one and
+  shrink one that keeps going undone.
+- **Insights were generic.** Live output before: "You've expressed feeling flat and frustrated
+  after recent matches", focus "breathe deeply and focus on your rhythm". The prompt never saw
+  the player's tags or words (only a summary, often empty). It now gets tags and the first 280
+  characters of each transcript (PRD-06 lists transcripts as an input), notes in date order,
+  and two rules: name something specific (a sentence for any player is a failure) and a focus
+  small enough to tick off. Live after: "You mentioned feeling rushed and making errors because
+  of the wind during your match on September 20", focus "Take ten minutes today to visualise
+  your best serve routine". Prompt version v2.
+
+**The page and the prototype:**
+
+- **The escalation card ignored the player's named person.** Settings > Data & safety promised
+  "Someone to call" would show on it; it never read `emergency_contact`. It now shows them
+  with a Call button (the number is parsed from "name and number"), names the right tour's
+  programme, and tells the player to call their local emergency number if at risk. Still no
+  unverified phone numbers.
+- The boundaries care block and the Settings note named Lifeline (13 11 14, Australia only)
+  and the ATP line to every player; both now describe what the card really shows.
+- The dashboard card showed a distress morning as "Nothing from the coach this morning"; it
+  now says the coach has stepped back, linked "See who to call".
+- Every boundary switch toasted "On", including switching off. Each now says what changed;
+  failures are reported.
+- The Today card said "This morning's run didn't complete" whenever no insight existed, even
+  before 07:00 or while paused. It says "Your insight arrives at 07:00" or "Paused" now, and
+  only claims a failure after 08:00.
+- Prototype styling: the 7fr/5fr grid, 17px insight text, the focus as a checkbox row (struck
+  through when done, "Done · N of the last 5"), "Read the notes it used" in the footer, the
+  chosen feedback button shown, square warn evidence dots.
+- Mood chart: labels were clipped (the SVG took the host's padding into its width, and the
+  44px gutter was too narrow for "Frustrated") and drawn near-black; now 72px, 11px, muted, as
+  in the prototype. A bare score with no W or L no longer draws its first digit as a result.
+  Unsaved notes no longer plot.
+- Recent mornings: today's focus read "Skipped" before the day ended; now "Today". Distress
+  and paused mornings are handled.
+- Free: the dimmed cards were still clickable ("Not a pattern" worked through the lock).
+
+**Open, for the owner (decision needed):** patterns will rarely fire for real players. Of three
+rules, one can't run (no first-serve figure is extracted) and two follow the prototype's
+storyline exactly ("Second serve" tagged after a tiebreak loss; flat the day after a Travel
+note). A player whose issue is anything else never sees one. A general rule over their own
+tags and results would fix it, but it decides what the coach tells a player about themselves.
+
+Also open: extraction writes results with no W or L ("6-1 6-1", "2/6 2/6"), so the coach and
+the chart can't tell a win from a loss; the memory quote (MC-18) and "Good day to write"
+remain unbuilt.
+
+## Morning run catch-up — 28 September 2026
+
+**Found:** the Mindset Coach had never run for any player in production: no `insights` rows and
+no `mindset-coach` rows in `agent_runs`. The fixture player became eligible on 21 September
+(third saved note). The morning tick fired only in each player's 07:00 hour, and pg-boss's
+history shows it ran just five times (the step 1.3 scheduler it replaced, eight), none of them
+in Rome's 07:00 hour (05:00 UTC), because apps/api only runs when started locally. A missed
+07:00 was never made up, which would also lose a day in production after any restart or outage
+near 07:00.
+
+**Fixed:** every hourly tick from 07:00 to 20:59 local now enqueues each daily agent (Financial,
+and the Mindset Coach after three notes) that hasn't run for that player today, and a tick fires
+as soon as the worker starts. "Already ran" is an `agent_runs` row since the player's local
+midnight, or today's `insights` row, so a later check-in can't regenerate and overwrite the
+morning's insight; the queue's singleton key still guards duplicate sends. After 21:00 a missed
+morning isn't made up. 07:00 stays the normal time (owner decision of 26 September).
+Seven scheduler tests; the startup tick verified live.
+
+## Tournament Agent review and build-out — 28 September 2026
+
+**Found:** the production `tournaments` table was empty and nothing in the codebase created a
+row (step 3.1 built the ranking import only), so the agent had never produced a shortlist for
+anyone. The weekly run also acted only inside the Sunday 20:00 UTC hour, the same lost-slot flaw
+as the morning run.
+
+**Built (owner decisions this session):**
+
+- **Calendar import** in the admin console's Ingestion page, preview then apply with a written
+  reason (`calendar_import` in the audit log), like the ranking snapshot. CSV columns are listed
+  on the card; prize and points as `R1:1620;R2:2400;QF:3900`; country as the IOC code. Tour, name
+  and start date identify an event, so re-importing updates it; `jsonb` key order and numeric
+  strings are compared by value. Applying re-runs every player's shortlist (no notification).
+- **Migration `20260930100000_tournament_prize_currency`** (owner-confirmed; staging then
+  production, fingerprints equal): events keep their prize table in the published currency
+  (USD for ITF and Challenger) and the run converts at the run-date rate. Before, every table was
+  assumed EUR, which would have misstated prizes or forced a stored converted amount.
+- **Re-run now** (T-13, T-AC-9): `POST /tournament/rerun`, one manual run an hour with the time it
+  frees up; the page replaces the list in place and keeps decisions. Manual runs don't notify.
+- **Recommendation memo** (T-15, T-AC-14): its own `tournament-memo` agent_runs row per run
+  (`forRunId`), mini tier. The model gets every figure pre-formatted, today's date and "closes in
+  N days"; validation rejects any amount, points figure, ratio or date (short or spelled out)
+  that isn't in the run *for the event being discussed*, any event not on the shortlist, a memo
+  that skips an event closing this week, says a deadline has passed, or claims to have acted.
+  One corrective retry, then no memo. The first live memo invented "Challenger Braga", gave it
+  another event's R1 net, and told the player Poznań's open deadline had passed; each is now a
+  regression test. About US$0.0004 a memo.
+- **Weekly catch-up:** any tick after a missed Sunday 20:00 UTC runs players with no run since
+  it, keyed on the same week. A run that shortlists nothing sends no notification (the catch-up
+  had queued "Weekly shortlist ready · 0 events scanned" to the owner; deleted before sending).
+
+**UI parity with the prototype:** the header's run line, Budget and Blocked dates chips and
+Re-run button; the design system's stats strip; the 5fr/7fr list and sticky detail; list rows
+with rank, flag, badge, "closes in", and the cost-to-prize bar; readable exclusion reasons; the
+detail header with flag, "16–22 Nov", "Entry closes Sat 7 Nov", Week and acceptance chips (T-8);
+the calendar rebuilt as the prototype's grid (current week first, bars by status, deadline dots,
+striped blocked weeks, a Blocked row); the memo card; the dashboard decision card's chips.
+
+**Fixed along the way:** the calendar and every countdown used UTC's date, a day behind on an
+Australian Monday morning; runway showed "2822.3 wks" (now "over two years"); on narrow screens
+selecting a row now scrolls the detail into view below the sticky bar (T-AC-13); entering an
+event now shows "Enter on your tour's player zone by <date>. DeuceX doesn't submit entries for
+you" (PRD-01 section 3), which was missing, so a player could think they were entered.
+
+**Verified live** against production with six LIVE TEST events loaded through the real import
+code: the shortlist, Re-run now and its hourly lock, Accept with the confirm step and a planned
+ledger line (T-AC-4, T-AC-5), Withdraw removing it (T-AC-6), Skip and Undo, the calendar, the
+memo, and 390px. Cleanup confirmed by SQL: no events, shortlist rows, decisions, planned lines,
+briefs or memos remain, and no notification was sent. Kept deliberately: three approvals (the
+append-only audit of the Accept, Withdraw and Accept) and the three tournament runs they
+reference; a fresh run makes the page show zero events.
+
+**Open:**
+
+- Staff must load the real calendar before the agent can help anyone; a licensed feed later.
+- Conditions prose recommended a Wilson ball for a Head Tour event and printed "wind None"
+  (PRD-08, not changed here).
+- Not built: flight route lines (T-5, no route data), "not refreshed" feed labels (T-AC-8), the
+  Free lock on list ratios shows "Pro" (T-AC-12 otherwise unchanged), Add an event (T-20/T-21),
+  a player-zone link (no verified URL), the 7-day, 3-day and 24-hour countdown notices.

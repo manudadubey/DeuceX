@@ -3693,6 +3693,7 @@ export type Database = {
           lon: number | null;
           name: string;
           points_table: Json;
+          prize_currency: string;
           prize_table: Json;
           start_date: string;
           surface: string | null;
@@ -3716,6 +3717,7 @@ export type Database = {
           lon?: number | null;
           name: string;
           points_table?: Json;
+          prize_currency?: string;
           prize_table?: Json;
           start_date: string;
           surface?: string | null;
@@ -3739,6 +3741,7 @@ export type Database = {
           lon?: number | null;
           name?: string;
           points_table?: Json;
+          prize_currency?: string;
           prize_table?: Json;
           start_date?: string;
           surface?: string | null;

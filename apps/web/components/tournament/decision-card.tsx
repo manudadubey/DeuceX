@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import {
   Badge,
+  Flag,
   Button,
   Card,
   CardDescription,
@@ -17,6 +18,7 @@ import { computeRunwayWeeks, formatTension } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import { daysUntil, type TournamentCandidateView } from '@/lib/tournament/load';
 import { useEntryActions } from './use-entry-actions';
+import { dateRange, dayLabel, flagFor, runwayLabel, surfaceLabel } from '@/lib/tournament/format';
 
 function formatMoney(amount: number, currency: string): string {
   return new Intl.NumberFormat('en-US', {
@@ -89,17 +91,25 @@ export function DecisionCard({
       <CardHeader className="p-0">
         <CardTitle>This week&apos;s decision · {candidate.name}</CardTitle>
         <CardDescription>
-          Tournament Agent&apos;s top pick, ranked by cost-to-prize. Entry closes{' '}
-          {candidate.entryDeadline ?? 'soon'}.
+          Tournament Agent&apos;s top pick of the shortlist, ranked by cost-to-prize.{' '}
+          {candidate.entryDeadline
+            ? `Entry closes ${dayLabel(candidate.entryDeadline)}.`
+            : 'No entry deadline published yet.'}
         </CardDescription>
       </CardHeader>
 
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-        <Badge variant="secondary">{candidate.tier ?? 'Tier n/a'}</Badge>
-        <Badge variant="secondary">{candidate.surface ?? 'Surface n/a'}</Badge>
-        <Badge variant="secondary">
-          {candidate.city ? `${candidate.city}, ${candidate.country ?? ''}` : 'Location n/a'}
-        </Badge>
+        {candidate.city && (
+          <Badge variant="secondary" className="gap-1.5">
+            {flagFor(candidate.country, candidate.city) && (
+              <Flag code={flagFor(candidate.country, candidate.city)!} size="badge" />
+            )}
+            {candidate.city}
+          </Badge>
+        )}
+        {candidate.tier && <Badge variant="secondary">{candidate.tier}</Badge>}
+        {candidate.surface && <Badge variant="secondary">{surfaceLabel(candidate.surface)}</Badge>}
+        <Badge variant="secondary">{dateRange(candidate.startDate, candidate.endDate)}</Badge>
         {days != null && (
           <Badge variant={days <= 10 ? 'warn' : 'secondary'}>{days} days to decide</Badge>
         )}
@@ -173,7 +183,7 @@ export function DecisionCard({
               </div>
               <div className="font-mono font-medium">
                 {runwayLoseFirst != null && Number.isFinite(runwayLoseFirst)
-                  ? `${runwayLoseFirst.toFixed(1)} wks`
+                  ? `${runwayLabel(runwayLoseFirst)}`
                   : '–'}
               </div>
             </div>
@@ -183,7 +193,7 @@ export function DecisionCard({
               </div>
               <div className="font-mono font-medium">
                 {runwayReachBest != null && Number.isFinite(runwayReachBest)
-                  ? `${runwayReachBest.toFixed(1)} wks`
+                  ? `${runwayLabel(runwayReachBest)}`
                   : '–'}
               </div>
             </div>
@@ -209,7 +219,7 @@ export function DecisionCard({
             title={`${formatMoney(candidate.cost.total, homeCurrency)} logged as a planned expense`}
             description={
               runwayLoseFirst != null && Number.isFinite(runwayLoseFirst)
-                ? `Runway after an R1 loss: ${runwayLoseFirst.toFixed(1)} wks.`
+                ? `Runway after an R1 loss: ${runwayLabel(runwayLoseFirst)}.`
                 : 'Confirms this entry and adds it to your ledger.'
             }
             actions={
