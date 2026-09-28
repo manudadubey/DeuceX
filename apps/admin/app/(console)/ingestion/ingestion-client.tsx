@@ -25,6 +25,8 @@ import {
 import { dateTime, shortDate } from '@/components/format';
 import { Grid } from '@/components/page';
 import type {
+  CalendarImportResult,
+  CalendarPreview,
   FactCorrection,
   FeedStatusView,
   ImportPreview,
@@ -68,8 +70,195 @@ export function IngestionClient() {
         <SnapshotImport />
         <Corrections />
       </Grid>
+      <CalendarImport />
       <MissingDeadlines />
     </>
+  );
+}
+
+const CALENDAR_COLUMNS =
+  'tour, name, tier, surface, indoor_outdoor, city, country, lat, lon, altitude_m, start_date, end_date, entry_deadline, last_year_cut, ball, prize_currency, prize, points';
+
+// The tournament calendar (28 September 2026): the Tournament Agent's only
+// source of events until a licensed feed exists.
+function CalendarImport() {
+  const [csv, setCsv] = useState('');
+  const [preview, setPreview] = useState<CalendarPreview | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [reason, setReason] = useState('');
+  const [applied, setApplied] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function handlePreview() {
+    setBusy(true);
+    setError(null);
+    setApplied(null);
+    try {
+      setPreview(await post<CalendarPreview>('/admin/tournaments/import/preview', { csv }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setPreview(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleApply() {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await post<CalendarImportResult>('/admin/tournaments/import/apply', {
+        csv,
+        reason,
+      });
+      setApplied(
+        `Imported: ${r.newCount} new, ${r.updateCount} updated, ${r.unchangedCount} unchanged. Re-ran ${r.rerun} players' shortlists. Logged to the audit trail.`,
+      );
+      setPreview(null);
+      setConfirming(false);
+      setReason('');
+      setCsv('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const changes = preview ? preview.newCount + preview.updateCount : 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Tournament calendar import</CardTitle>
+        <CardDescription>
+          The Tournament Agent shortlists only events in this calendar. Columns: {CALENDAR_COLUMNS}.
+          Dates as YYYY-MM-DD; prize and points as &quot;R1:1620;R2:2400;QF:3900&quot; (Q1 to SF),
+          prize in the currency the event publishes (prize_currency, e.g. USD). Tour, name and start
+          date identify an event, so re-importing updates it.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <label className="flex flex-col items-center gap-1 rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">Choose a CSV file</span>
+          <span>or paste it below</span>
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            className="sr-only"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                setCsv(await file.text());
+                setPreview(null);
+              }
+            }}
+          />
+        </label>
+        <Textarea
+          value={csv}
+          onChange={(e) => setCsv(e.target.value)}
+          placeholder="Paste CSV here"
+          rows={4}
+        />
+        <div>
+          <Button size="sm" variant="outline" onClick={handlePreview} disabled={busy || !csv}>
+            Preview changes
+          </Button>
+        </div>
+        <ErrorLine error={error} />
+        {applied ? <p className="text-sm">{applied}</p> : null}
+        {preview ? (
+          <>
+            <p className="text-[0.8125rem] text-muted-foreground">
+              {preview.rows} rows: {preview.newCount} new, {preview.updateCount} updated,{' '}
+              {preview.unchangedCount} unchanged.
+            </p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Event</TableHead>
+                  <TableHead>Starts</TableHead>
+                  <TableHead>Change</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {preview.entries.map((e) => (
+                  <TableRow key={`${e.tour}-${e.name}-${e.startDate}`}>
+                    <TableCell>
+                      {e.name}
+                      <TableCellSub>
+                        {e.tier} · {e.tour}
+                        {e.entryDeadline
+                          ? ` · entry closes ${shortDate(e.entryDeadline)}`
+                          : ' · no deadline'}
+                      </TableCellSub>
+                    </TableCell>
+                    <TableCell>{shortDate(e.startDate)}</TableCell>
+                    <TableCell>
+                      {e.action === 'new' ? (
+                        <Badge variant="ok">New</Badge>
+                      ) : e.action === 'update' ? (
+                        <>
+                          <Badge variant="warn">Update</Badge>
+                          <TableCellSub>{e.changedFields.join(', ')}</TableCellSub>
+                        </>
+                      ) : (
+                        <Badge variant="secondary">Unchanged</Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {confirming ? (
+              <Confirm
+                title={`Apply ${changes} calendar ${changes === 1 ? 'change' : 'changes'}`}
+                description={
+                  <span className="flex flex-col gap-2">
+                    <span>
+                      Every player&apos;s shortlist is re-run now, so new events show without
+                      waiting for Sunday. A re-run sends no notification. Events stay until
+                      corrected or re-imported.
+                    </span>
+                    <Textarea
+                      aria-label="Reason"
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      rows={2}
+                      className="min-h-16"
+                      placeholder="Reason (required, stored verbatim)"
+                    />
+                  </span>
+                }
+                actions={
+                  <>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setConfirming(false)}
+                      disabled={busy}
+                    >
+                      Cancel
+                    </Button>
+                    <Button size="sm" onClick={handleApply} disabled={busy || !reason.trim()}>
+                      Apply calendar
+                    </Button>
+                  </>
+                }
+              />
+            ) : (
+              <div>
+                <Button size="sm" onClick={() => setConfirming(true)} disabled={changes === 0}>
+                  Apply…
+                </Button>
+              </div>
+            )}
+          </>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
 

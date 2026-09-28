@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import {
   Badge,
+  Flag,
   Button,
   Confirm,
   Table,
@@ -18,6 +19,15 @@ import { createClient } from '@/lib/supabase/client';
 import { daysUntil, type TournamentCandidateView } from '@/lib/tournament/load';
 import { useEntryActions } from './use-entry-actions';
 import { LockedSection } from './locked-section';
+import {
+  acceptanceChip,
+  dateRange,
+  dayLabel,
+  flagFor,
+  isoWeek,
+  runwayLabel,
+  surfaceLabel,
+} from '@/lib/tournament/format';
 import { ConditionsBrief } from './conditions-brief';
 
 function formatMoney(amount: number, currency: string): string {
@@ -65,6 +75,7 @@ export function DetailPanel({
   const [confirming, setConfirming] = useState(false);
 
   const days = daysUntil(candidate.entryDeadline, new Date());
+  const flag = flagFor(candidate.country, candidate.city);
   const worstRound = candidate.rounds[0];
   const runwayLoseFirst = worstRound
     ? computeRunwayWeeks(reserves + worstRound.net, netBurn)
@@ -194,12 +205,29 @@ export function DetailPanel({
   const footer = (
     <div className="flex items-center gap-2">
       {candidate.status === 'entered' ? (
-        <>
-          <Badge variant="ok">Entered</Badge>
-          <Button size="sm" variant="outline" disabled={busy} onClick={handleWithdraw}>
-            Withdraw
-          </Button>
-        </>
+        <div className="flex w-full flex-col gap-3">
+          {/* PRD-01 section 3: DeuceX logs the plan; the entry itself is the
+              player's to submit (automatic submission is Won't, T-23). */}
+          <div className="flex items-start gap-2.5 rounded-lg bg-warn-bg p-3 text-[0.8125rem]">
+            <span
+              aria-hidden="true"
+              className="mt-0.5 size-4 shrink-0 rounded border border-warn"
+            />
+            <span>
+              <b className="font-medium">
+                Enter on your tour&apos;s player zone
+                {candidate.entryDeadline ? ` by ${dayLabel(candidate.entryDeadline)}` : ''}.
+              </b>{' '}
+              DeuceX has logged the planned cost; it doesn&apos;t submit entries for you.
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="ok">Entered</Badge>
+            <Button size="sm" variant="outline" disabled={busy} onClick={handleWithdraw}>
+              Withdraw
+            </Button>
+          </div>
+        </div>
       ) : candidate.status === 'skipped' ? (
         <>
           <Badge variant="secondary">Skipped</Badge>
@@ -217,7 +245,7 @@ export function DetailPanel({
           title={`${formatMoney(candidate.cost.total, homeCurrency)} logged as a planned expense`}
           description={
             runwayLoseFirst != null && Number.isFinite(runwayLoseFirst)
-              ? `Runway after an R1 loss: ${runwayLoseFirst.toFixed(1)} wks.`
+              ? `Runway after an R1 loss: ${runwayLabel(runwayLoseFirst)}.`
               : 'Confirms this entry and adds it to your ledger.'
           }
           actions={
@@ -246,29 +274,47 @@ export function DetailPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-lg font-semibold">{candidate.name}</h2>
-        <p className="text-sm text-muted-foreground">
-          {candidate.tier ?? 'Tier n/a'} · {candidate.surface ?? 'Surface n/a'} ·{' '}
-          {candidate.city ? `${candidate.city}, ${candidate.country ?? ''}` : 'Location n/a'} ·{' '}
-          {candidate.startDate} – {candidate.endDate}
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-2 text-xs">
-        {candidate.entryDeadline && (
-          <Badge variant={days != null && days <= 10 ? 'warn' : 'secondary'}>
-            {candidate.status === 'none'
-              ? `Entry closes ${candidate.entryDeadline}`
-              : candidate.status}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-lg font-medium tracking-[-0.01em]">{candidate.name}</h2>
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[0.8125rem] text-muted-foreground">
+            {[candidate.tier, surfaceLabel(candidate.surface)].filter(Boolean).join(' · ')}
+            {candidate.city && (
+              <>
+                <span>·</span>
+                {flag && <Flag code={flag} />}
+                <span>{[candidate.city, candidate.country].filter(Boolean).join(', ')}</span>
+              </>
+            )}
+            <span>· {dateRange(candidate.startDate, candidate.endDate)}</span>
+          </p>
+        </div>
+        {candidate.status === 'none' ? (
+          candidate.entryDeadline && (
+            <Badge variant={days != null && days <= 10 ? 'warn' : 'secondary'} className="shrink-0">
+              Entry closes {dayLabel(candidate.entryDeadline)}
+            </Badge>
+          )
+        ) : (
+          <Badge variant={candidate.status === 'entered' ? 'ok' : 'secondary'} className="shrink-0">
+            {candidate.status === 'entered' ? 'Entered' : 'Skipped'}
           </Badge>
         )}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <span className="rounded-md bg-background px-2 py-0.5 text-xs shadow-[0_0_0_1px_var(--border)]">
+          Week {isoWeek(candidate.startDate)}
+        </span>
+        <span className="rounded-md bg-background px-2 py-0.5 text-xs shadow-[0_0_0_1px_var(--border)]">
+          {acceptanceChip(candidate.acceptanceStatus)}
+        </span>
         {candidate.defendPoints ? (
           <Badge variant="warn">Defending {candidate.defendPoints} pts</Badge>
         ) : null}
       </div>
 
-      <p className="text-sm">{candidate.why}</p>
+      <p className="text-sm leading-relaxed">{candidate.why}</p>
 
       {candidate.conditions && (
         <ConditionsBrief

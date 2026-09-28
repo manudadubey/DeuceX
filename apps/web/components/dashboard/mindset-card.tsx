@@ -35,6 +35,8 @@ export function MindsetCard({
   const [value, setValue] = useState<number | null>(null);
   const [sentence, setSentence] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // The prototype's "Mood logged: 4/5" toast, as a quiet live line in the card.
+  const [status, setStatus] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,8 +69,10 @@ export function MindsetCard({
         sentence,
         source: 'dashboard',
       });
+      setStatus(`Mood logged · ${next}/5`);
     } catch {
       setValue(previous);
+      setStatus("Couldn't save. Try again.");
     } finally {
       setSaving(false);
     }
@@ -124,13 +128,16 @@ export function MindsetCard({
         </div>
       ) : (
         <p className="px-6 text-sm text-muted-foreground max-sm:px-5">
-          {insight?.delivery === 'quiet'
-            ? 'Match day. The coach is quiet until your evening note.'
-            : insight
-              ? 'Nothing from the coach this morning. Your notes are still being read.'
-              : "This morning's insight arrives after the 07:00 run."}{' '}
+          {insight?.delivery === 'distress'
+            ? // M-PRIV-3: never disguise the escalation as an ordinary empty morning.
+              'The coach has stepped back this morning and put some people in your corner.'
+            : insight?.delivery === 'quiet'
+              ? 'Match day. The coach is quiet until your evening note.'
+              : insight
+                ? 'Nothing from the coach this morning. Your notes are still being read.'
+                : "This morning's insight arrives after the 07:00 run."}{' '}
           <Link href="/agent/mindset" className="font-medium text-foreground underline">
-            Open Mindset Coach
+            {insight?.delivery === 'distress' ? 'See who to call' : 'Open Mindset Coach'}
           </Link>
         </p>
       )}
@@ -138,9 +145,15 @@ export function MindsetCard({
       <div className="mt-auto flex flex-col gap-2 px-6 max-sm:px-5">
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>{started ? 'Mood check-in' : 'Check in'}</span>
-          <span>1 flat · 5 energised</span>
+          <span
+            role="status"
+            aria-live="polite"
+            className={cn(status?.startsWith('Couldn') && 'text-danger')}
+          >
+            {status ?? (value ? `Today · ${value}/5` : '1 flat · 5 energised')}
+          </span>
         </div>
-        <div className="grid grid-cols-5 gap-1.5" role="group" aria-label="This morning's mood">
+        <div className="grid grid-cols-5 gap-1.5" role="group" aria-label="Today's mood">
           {VALUES.map((n) => (
             <button
               key={n}

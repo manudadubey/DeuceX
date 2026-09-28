@@ -13,6 +13,7 @@ import {
 } from '@deucex/agents';
 import {
   getExistingInsightHash,
+  hasMatchToday,
   loadMindsetInputs,
   loadMindsetPlayer,
   openDistressCase,
@@ -78,8 +79,8 @@ export async function runMindsetCoach(
     checkins: inputs.checkins,
     existingPatterns: inputs.existingPatterns,
     quietMatchMornings: inputs.quietMatchMornings,
-    // Tournament Agent input (step 3.2); always false until Entered events exist.
-    hasMatchToday: false,
+    // MC-14: this was hard-coded false, so "Quiet on match mornings" did nothing.
+    hasMatchToday: await hasMatchToday(deps.db, playerId, date),
     notTodayCountLast7Days: inputs.notTodayCountLast7Days,
     recentFocuses: inputs.recentFocuses,
     now,

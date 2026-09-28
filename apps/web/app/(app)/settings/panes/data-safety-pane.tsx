@@ -178,8 +178,8 @@ export function DataSafetyPane({
           placeholder="Name and number"
         />
         <FieldDescription>
-          Shown alongside the ATP Player Assistance line and Lifeline on the Mindset Coach&apos;s
-          escalation card.
+          If your notes ever read like more than a bad week, the Mindset Coach stops coaching and
+          shows this person, tap to call, alongside your tour&apos;s player assistance programme.
         </FieldDescription>
         <div>
           <Button variant="outline" size="sm" disabled={savingContact} onClick={handleSaveContact}>

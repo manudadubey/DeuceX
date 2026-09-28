@@ -75,7 +75,10 @@ export async function loadMindsetInputs(
       .from('notes')
       .select('id, recorded_at, ctx, result, mood, tags, transcript, summary, cond')
       .eq('player_id', playerId)
-      .neq('status', 'deleted')
+      // Saved notes only: saving is the approval that lets agents read a note
+      // (PRD-02 section 3). This used to be neq('deleted'), so the coach also
+      // read notes still in review, failed, or abandoned before saving.
+      .eq('status', 'saved')
       .gte('recorded_at', daysAgoIso(now, PATTERN_LOOKBACK_DAYS)),
     db
       .from('check_ins')
@@ -86,7 +89,7 @@ export async function loadMindsetInputs(
     db.from('mindset_boundaries').select('*').eq('player_id', playerId).maybeSingle(),
     db
       .from('insights')
-      .select('feedback, focus, date')
+      .select('feedback, focus, focus_done, date')
       .eq('player_id', playerId)
       .lt('date', today)
       .order('date', { ascending: false })
@@ -141,9 +144,11 @@ export async function loadMindsetInputs(
 
   const recentInsights = recentInsightsRes.data ?? [];
   const notTodayCountLast7Days = recentInsights.filter((i) => i.feedback === 'not_today').length;
+  // MC-12: completion feeds the next insight, so each focus carries whether
+  // the player marked it done.
   const recentFocuses = recentInsights
-    .map((i) => i.focus)
-    .filter((f): f is string => Boolean(f))
+    .filter((i): i is typeof i & { focus: string } => Boolean(i.focus))
+    .map((i) => `${i.focus} (${i.focus_done ? 'done' : 'not marked done'})`)
     .slice(0, RECENT_FOCUSES_COUNT);
 
   return {
@@ -281,4 +286,44 @@ export async function openDistressCase(
     excerpt: `Signals: ${signals.join(', ')}`,
   });
   if (error) throw error;
+}
+
+// MC-14's "a match today", from what the Tournament Agent knows: the player
+// is Entered in an event whose dates include today (their local date). We
+// have no order of play, so once they have saved a losing Match note during
+// that event they are out, and the coach speaks again rather than staying
+// quiet for the rest of the week.
+export async function hasMatchToday(
+  db: SupabaseClient<Database>,
+  playerId: string,
+  today: string,
+): Promise<boolean> {
+  const { data: entered, error } = await db
+    .from('entry_decisions')
+    .select('tournament_id')
+    .eq('player_id', playerId)
+    .eq('status', 'entered');
+  if (error) throw error;
+  const ids = (entered ?? []).map((e) => e.tournament_id);
+  if (ids.length === 0) return false;
+
+  const { data: events, error: eventsError } = await db
+    .from('tournaments')
+    .select('id, start_date, end_date')
+    .in('id', ids)
+    .lte('start_date', today)
+    .gte('end_date', today);
+  if (eventsError) throw eventsError;
+  const event = (events ?? [])[0];
+  if (!event) return false;
+
+  const { data: losses, error: lossesError } = await db
+    .from('notes')
+    .select('id, result')
+    .eq('player_id', playerId)
+    .eq('status', 'saved')
+    .eq('ctx', 'match')
+    .gte('recorded_at', `${event.start_date}T00:00:00Z`);
+  if (lossesError) throw lossesError;
+  return !(losses ?? []).some((n) => n.result?.startsWith('L'));
 }

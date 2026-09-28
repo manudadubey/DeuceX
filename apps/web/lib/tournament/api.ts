@@ -68,3 +68,22 @@ export async function withdrawTournamentEntry(
   if (!res.ok) throw new TournamentApiError(`Withdraw failed: ${res.status}`);
   return (await res.json()) as WithdrawEntryResult;
 }
+
+export class RerunLimitError extends TournamentApiError {
+  constructor(readonly availableAt: string) {
+    super('One re-run an hour.');
+  }
+}
+
+// PRD-01 T-13: queue a manual run; apps/api allows one an hour (T-AC-9) and
+// answers 429 with when the next one frees up.
+export async function rerunTournamentAgent(
+  supabase: SupabaseClient<Database>,
+): Promise<{ availableAt: string }> {
+  const headers = await authHeaders(supabase);
+  const res = await fetch(`${API_URL}/tournament/rerun`, { method: 'POST', headers });
+  const body = (await res.json().catch(() => ({}))) as { availableAt?: string; error?: string };
+  if (res.status === 429 && body.availableAt) throw new RerunLimitError(body.availableAt);
+  if (!res.ok) throw new TournamentApiError(body.error ?? `Re-run failed: ${res.status}`);
+  return { availableAt: body.availableAt ?? new Date(Date.now() + 60 * 60 * 1000).toISOString() };
+}

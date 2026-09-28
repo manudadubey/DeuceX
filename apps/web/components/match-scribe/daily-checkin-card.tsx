@@ -17,7 +17,11 @@ export function DailyCheckInCard({
       playerId={playerId}
       timezone={timezone}
       source="scribe"
-      description="Thirty seconds when there's nothing to record. Feeds the Mindset Coach's pattern detection."
+      title="Daily check-in"
+      // The prototype's line said this "feeds pattern detection"; the pattern
+      // rules read notes only. What a check-in really does: the 07:00 insight
+      // reads it, and 2 or lower makes the next morning a light one (MC-17).
+      description="Thirty seconds when there's nothing to record. The coach reads it at 07:00, and goes easier after a low day."
       onToast={onToast}
     />
   );

@@ -3,6 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@deucex/db';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { InvalidRankingCsvError, parseRankingCsv } from './csv';
+import { InvalidCalendarCsvError, parseCalendarCsv } from './calendar-csv';
+import { applyCalendarImport, previewCalendarImport } from './calendar-import';
 import {
   DeadlineError,
   deadlineConsequence,
@@ -35,6 +37,8 @@ export interface AdminRankingsRoutesDeps {
   audit?: (context: AdminRouteContext, input: AdminAuditInput) => Promise<void>;
   /** AD-20, AD-21: re-run the Tournament Agent for every player who shortlisted this event. */
   rerunShortlists?: (tournamentId: string) => Promise<number>;
+  /** After a calendar import: re-run every player's shortlist so new events show without waiting for Sunday. */
+  rerunAllShortlists?: () => Promise<number>;
 }
 
 export interface AdminRouteContext {
@@ -142,6 +146,50 @@ export async function registerAdminRankingsRoutes(
       if (err instanceof DuplicateRankingImportError) {
         return reply.code(409).send({ error: err.message });
       }
+      throw err;
+    }
+  });
+
+  // Calendar import (28 September 2026, owner decision): the manual path for
+  // the tournament calendar until a licensed feed exists, preview then apply
+  // with a written reason, like the ranking snapshot.
+  app.post('/admin/tournaments/import/preview', async (request, reply) => {
+    const body = request.body as { csv?: string } | undefined;
+    if (!body?.csv) return reply.code(400).send({ error: 'Missing csv' });
+    try {
+      const rows = parseCalendarCsv(body.csv);
+      return reply.send({ rows: rows.length, ...(await previewCalendarImport(deps.db, rows)) });
+    } catch (err) {
+      if (err instanceof InvalidCalendarCsvError)
+        return reply.code(400).send({ error: err.message });
+      throw err;
+    }
+  });
+
+  app.post('/admin/tournaments/import/apply', async (request, reply) => {
+    const body = request.body as { csv?: string; reason?: string } | undefined;
+    if (!body?.csv) return reply.code(400).send({ error: 'Missing csv' });
+    if (deps.guard && !body.reason?.trim()) {
+      return reply
+        .code(400)
+        .send({ error: 'Write a reason before applying. It is stored verbatim in the audit log.' });
+    }
+    try {
+      const rows = parseCalendarCsv(body.csv);
+      const result = await applyCalendarImport(deps.db, rows);
+      const rerun =
+        result.touchedIds.length && deps.rerunAllShortlists ? await deps.rerunAllShortlists() : 0;
+      await audit(request, {
+        playerId: null,
+        actionType: 'calendar_import',
+        target: { newCount: result.newCount, updateCount: result.updateCount },
+        consequence: `Imported the tournament calendar: ${result.newCount} new events, ${result.updateCount} updated, ${result.unchangedCount} unchanged. Re-ran ${rerun} players' shortlists; no notification is sent for a re-run.`,
+        reason: body.reason ?? null,
+      });
+      return reply.send({ ...result, rerun });
+    } catch (err) {
+      if (err instanceof InvalidCalendarCsvError)
+        return reply.code(400).send({ error: err.message });
       throw err;
     }
   });

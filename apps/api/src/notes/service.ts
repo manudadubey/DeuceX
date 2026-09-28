@@ -167,6 +167,7 @@ export async function transcribeNote(deps: NotesServiceDeps, noteId: string): Pr
   if (error) throw error;
   if (!note.audio_ref) throw new Error(`Note ${noteId} has no audio to transcribe`);
 
+  let transcript = '';
   try {
     const audio = await deps.storage.download(note.audio_ref);
     const languageOverride = note.lang_source === 'preference' && note.lang ? note.lang : undefined;
@@ -211,9 +212,21 @@ export async function transcribeNote(deps: NotesServiceDeps, noteId: string): Pr
       })
       .eq('id', noteId);
     if (updateError) throw updateError;
+    transcript = result.transcript;
   } catch (err) {
     await deps.db.from('notes').update({ status: 'failed_transcription' }).eq('id', noteId);
     throw err;
+  }
+
+  // Nothing intelligible (wind, a pocket tap, silence): the transcription
+  // call itself succeeded, so there is nothing to retry automatically, and
+  // extraction has nothing to read. It used to throw here, which left the
+  // note in 'transcribing' forever while pg-boss re-paid for the same empty
+  // transcription on every retry. The player gets S-19's failed state
+  // instead: type the note, or Retry.
+  if (!transcript.trim()) {
+    await deps.db.from('notes').update({ status: 'failed_transcription' }).eq('id', noteId);
+    return;
   }
 
   await runExtraction(
@@ -255,8 +268,24 @@ export async function retryNote(
     return;
   }
 
+  // A note stuck in 'transcribing' (a worker restart, a job that ran out of
+  // retries) has no failed state to retry from. PRD-02's rule is that
+  // transcription taking over 20 seconds is a failure the player can act on,
+  // so once it has been quiet for a minute the recorder's Retry re-enqueues it.
+  if (note.status === 'transcribing') {
+    const since = new Date(note.updated_at ?? note.created_at).getTime();
+    if (clockNow(deps).getTime() - since >= STALLED_TRANSCRIPTION_MS) {
+      await deps.db.from('notes').update({ status: 'transcribing' }).eq('id', input.noteId);
+      await deps.enqueueTranscription(input.noteId);
+      return;
+    }
+  }
+
   throw new InvalidNoteStateError(`Cannot retry a note in status ${note.status}`);
 }
+
+/** How long a note may sit in 'transcribing' before Retry is allowed (retryNote). */
+export const STALLED_TRANSCRIPTION_MS = 60_000;
 
 export interface SaveNoteInput {
   noteId: string;

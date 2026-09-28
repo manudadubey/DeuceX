@@ -6,8 +6,9 @@ import { isInStageScope, type PlayerStage, type PlayerTour } from './stage-scope
 
 const SCAN_WEEKS_AHEAD = 8;
 
-// tournaments.prize_table (step 3.1) carries no currency column of its own;
-// this is the one place that convention is decided. EUR mirrors
+// tournaments.prize_currency (28 September 2026) says what each prize table
+// is published in (USD for most ITF and Challenger events); rows from before
+// that column default to EUR, the convention step 3.2 decided here. EUR mirrors
 // fx_rates_daily's own ECB-archive currency (TECH-ARCHITECTURE.md section
 // 2.1), so every prize/points table this module reads is assumed EUR-
 // denominated at the source and converted to the player's home currency at
@@ -134,15 +135,21 @@ export async function loadTournamentCandidates(
   );
   const notPastDeadline = inScope.filter((t) => !t.entry_deadline || t.entry_deadline >= today);
 
-  const rates =
-    player.homeCurrency === PRIZE_TABLE_SOURCE_CURRENCY
-      ? {}
-      : Object.fromEntries(
-          Object.entries(await getFxRates(db, today, [player.homeCurrency])).map(([c, r]) => [
-            c,
-            r.rateToEur,
-          ]),
-        );
+  // Every currency needed for the conversion: the player's own and each
+  // event's prize currency (convertAtRate goes through EUR).
+  const currencies = [
+    ...new Set(
+      [
+        player.homeCurrency,
+        ...notPastDeadline.map((t) => t.prize_currency ?? PRIZE_TABLE_SOURCE_CURRENCY),
+      ].filter((c) => c !== 'EUR'),
+    ),
+  ];
+  const rates = currencies.length
+    ? Object.fromEntries(
+        Object.entries(await getFxRates(db, today, currencies)).map(([c, r]) => [c, r.rateToEur]),
+      )
+    : {};
 
   const candidates = await Promise.all(
     notPastDeadline.map(async (t): Promise<TournamentCandidateInput> => {
@@ -151,7 +158,12 @@ export async function loadTournamentCandidates(
       const prizeTable = Object.fromEntries(
         Object.entries(rawPrizeTable).map(([round, amount]) => [
           round,
-          convertAtRate(amount, PRIZE_TABLE_SOURCE_CURRENCY, player.homeCurrency, rates),
+          convertAtRate(
+            amount,
+            t.prize_currency ?? PRIZE_TABLE_SOURCE_CURRENCY,
+            player.homeCurrency,
+            rates,
+          ),
         ]),
       );
       const weekStart = mondayOf(t.start_date);

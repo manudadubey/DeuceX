@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { Badge, Toast, ToastProvider, ToastTitle, ToastViewport } from '@deucex/ui';
 import {
   getInsightByDate,
@@ -36,13 +35,22 @@ export interface MindsetClientProps {
   lang: string;
   isFree: boolean;
   started: boolean;
+  contact: string | null;
+  tour: string | null;
 }
 
 function localDate(timezone: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date());
 }
 
-export function MindsetClient({ playerId, timezone, isFree, started }: MindsetClientProps) {
+export function MindsetClient({
+  playerId,
+  timezone,
+  isFree,
+  started,
+  contact,
+  tour,
+}: MindsetClientProps) {
   const supabase = useMemo(() => createClient(), []);
   const today = useMemo(() => localDate(timezone), [timezone]);
 
@@ -67,7 +75,9 @@ export function MindsetClient({ playerId, timezone, isFree, started }: MindsetCl
       listRecentInsights(supabase),
       listPatterns(supabase),
       getMindsetBoundaries(supabase, playerId),
-      listNotes(supabase, { sinceDays: 90 }),
+      listNotes(supabase, { sinceDays: 90 }).then((rows) =>
+        rows.filter((n) => n.status === 'saved'),
+      ),
       listCheckIns(supabase, 90),
     ]);
     setTodayInsight(insight);
@@ -107,17 +117,30 @@ export function MindsetClient({ playerId, timezone, isFree, started }: MindsetCl
       <PausedNotice agent="mindset-coach" providers={OPENAI} label="The Mindset Coach" />
 
       {!loaded ? null : distress ? (
-        <SomeoneToCallCard />
+        <SomeoneToCallCard contact={contact} tour={tour} />
       ) : (
         <>
-          <section className="grid grid-cols-[1fr_320px] items-start gap-4 max-[900px]:grid-cols-1">
-            <TodayCard insight={todayInsight} started={started} onToast={showToast} />
+          <section className="grid grid-cols-[7fr_5fr] items-start gap-4 max-[1100px]:grid-cols-1">
+            <TodayCard
+              insight={todayInsight}
+              started={started}
+              recent={recentInsights}
+              pausedUntil={
+                boundaries?.paused_until && boundaries.paused_until >= today
+                  ? boundaries.paused_until
+                  : null
+              }
+              deliveryHour={7}
+              timezone={timezone}
+              onToast={showToast}
+            />
             <div className="flex flex-col gap-4">
               <CheckInCard
                 playerId={playerId}
                 timezone={timezone}
                 source="mindset"
                 onToast={showToast}
+                onSaved={() => void load()}
               />
               {boundaries && (
                 <BoundariesCard
@@ -126,6 +149,7 @@ export function MindsetClient({ playerId, timezone, isFree, started }: MindsetCl
                   boundaries={boundaries}
                   locked={isFree}
                   onToast={showToast}
+                  onChange={setBoundaries}
                 />
               )}
               {isFree && (
@@ -152,19 +176,11 @@ export function MindsetClient({ playerId, timezone, isFree, started }: MindsetCl
             />
           </div>
 
-          <section className="mt-4 grid grid-cols-2 items-start gap-4 max-[900px]:grid-cols-1">
+          <section className="mt-4 grid grid-cols-[7fr_5fr] items-start gap-4 max-[1100px]:grid-cols-1">
             <PatternsCard patterns={patterns} locked={isFree} onToast={showToast} />
-            <RecentMorningsCard insights={recentInsights} locked={isFree} />
+            <RecentMorningsCard insights={recentInsights} today={today} locked={isFree} />
           </section>
         </>
-      )}
-
-      {!distress && (
-        <p className="mt-4 text-center text-xs text-muted-foreground">
-          <Link href="/match-scribe" className="underline">
-            Read the notes it used
-          </Link>
-        </p>
       )}
 
       {toast && (

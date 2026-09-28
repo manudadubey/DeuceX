@@ -16,6 +16,19 @@ import { acceptTournamentEntry, withdrawTournamentEntry } from './entries';
 export interface TournamentRoutesDeps {
   db: SupabaseClient<Database>;
   anonClient: SupabaseClient<Database>;
+  /** T-13: queue a manual run for this player now (index.ts wires the agent queue). */
+  enqueueRerun?: (playerId: string) => Promise<void>;
+  now?: () => Date;
+}
+
+/** T-13, T-AC-9: one manual re-run an hour. */
+export const RERUN_INTERVAL_MS = 60 * 60 * 1000;
+
+/** Pure: when the next manual re-run is allowed, or null when it is allowed now. */
+export function rerunAvailableAt(lastManualRunAt: string | null, now: Date): Date | null {
+  if (!lastManualRunAt) return null;
+  const next = new Date(new Date(lastManualRunAt).getTime() + RERUN_INTERVAL_MS);
+  return next.getTime() > now.getTime() ? next : null;
 }
 
 async function requirePlayerId(
@@ -64,6 +77,38 @@ export async function registerTournamentRoutes(
   app: FastifyInstance,
   deps: TournamentRoutesDeps,
 ): Promise<void> {
+  // T-13: "Re-run now queues a run... and replaces the list in place when
+  // done, preserving the player's decisions." A manual run sends no
+  // notification (only the Sunday schedule does).
+  app.post('/tournament/rerun', async (request, reply) => {
+    const playerId = await requirePlayerId(deps, request, reply);
+    if (!playerId) return reply;
+    if (!deps.enqueueRerun) return reply.code(503).send({ error: 'Re-run is not available.' });
+    const now = (deps.now ?? (() => new Date()))();
+    const { data: last, error } = await deps.db
+      .from('agent_runs')
+      .select('started_at')
+      .eq('player_id', playerId)
+      .eq('agent_name', 'tournament')
+      .eq('trigger_type', 'manual')
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) return reply.code(500).send({ error: error.message });
+    const availableAt = rerunAvailableAt(last?.started_at ?? null, now);
+    if (availableAt) {
+      return reply.code(429).send({
+        error: 'One re-run an hour.',
+        availableAt: availableAt.toISOString(),
+      });
+    }
+    await deps.enqueueRerun(playerId);
+    return reply.code(202).send({
+      queued: true,
+      availableAt: new Date(now.getTime() + RERUN_INTERVAL_MS).toISOString(),
+    });
+  });
+
   app.post('/tournament/entries/:id/accept', async (request, reply) => {
     const playerId = await requirePlayerId(deps, request, reply);
     if (!playerId) return;

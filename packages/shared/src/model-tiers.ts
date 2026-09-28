@@ -30,6 +30,7 @@ export const MODEL_CALL_TIERS = {
   patronNote: 'structured',
   contentRewrite: 'structured',
   contentDraft: 'drafting',
+  tournamentMemo: 'structured',
 } as const satisfies Record<string, ModelTier>;
 
 export type ModelCall = keyof typeof MODEL_CALL_TIERS;

@@ -25,8 +25,8 @@ function EvidenceDots({ evidence }: { evidence: { noteId: string; hit: boolean }
             key={i}
             className={
               e.hit
-                ? 'grid size-4 place-items-center rounded-full bg-primary text-[10px] text-primary-foreground'
-                : 'size-4 rounded-full bg-muted'
+                ? 'grid size-3.5 place-items-center rounded bg-warn text-[0.5625rem] font-semibold text-[oklch(0.2_0.05_60)]'
+                : 'size-3.5 rounded bg-muted'
             }
           >
             {e.hit ? '✓' : ''}
@@ -107,7 +107,12 @@ export function PatternsCard({
   onToast: (title: string) => void;
 }) {
   return (
-    <Card className={locked ? 'opacity-50' : undefined}>
+    // Locked on Free (MC-20): dimmed and not interactive, so "Not a pattern"
+    // can't be pressed through the dimming.
+    <Card
+      className={locked ? 'pointer-events-none opacity-50 select-none' : undefined}
+      aria-disabled={locked || undefined}
+    >
       <CardHeader>
         <CardTitle>Patterns it&apos;s noticed</CardTitle>
         <CardDescription>

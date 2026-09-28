@@ -37,3 +37,15 @@ export { parseBlockedDateRanges, type DateRange } from './blocked-dates';
 export { buildRounds } from './rounds';
 export { buildWhyText, type WhyTextInput } from './why-text';
 export { buildShortlist } from './shortlist';
+export {
+  MEMO_MODEL,
+  MEMO_PROMPT_VERSION,
+  MEMO_SCHEMA_VERSION,
+  buildMemoPrompt,
+  checkMemo,
+  createOpenAIMemoClient,
+  generateMemo,
+  type MemoInput,
+  type MemoModelClient,
+  type MemoOutput,
+} from './memo';

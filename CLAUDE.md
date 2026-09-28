@@ -415,6 +415,14 @@ merged 27 September 2026, built against `docs/BILLING-DECISIONS.md` (merged in
   subscription left in place for session 2). See `docs/BUILD-LOG.md`'s "Billing, session 1"
   entry.
 
+**Tournament calendar (28 September 2026):** nothing created `tournaments` rows until now, so
+the Tournament Agent had never shortlisted anything. Staff load events through the admin
+console's **Tournament calendar import** (Ingestion page; CSV, preview then apply with a
+reason); `tournaments.prize_currency` (migration `20260930100000`, applied to staging and
+production) keeps prizes in the published currency. Re-run now and the recommendation memo are
+built. Until staff import a real calendar, every shortlist is empty. See the build log's
+"Tournament Agent review and build-out" entry.
+
 **As of 27 September 2026, no PRs are open and `main` has everything above.** The owner merges
 PRs: Claude's auto mode usually refuses to merge, or retarget a PR's base, without a human
 review; when the owner asks, it has sometimes allowed it, otherwise the owner runs `gh pr merge`. When

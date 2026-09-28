@@ -38,7 +38,7 @@ export function AppShell({ email, isFree = true, player = null, children }: AppS
         </main>
       </div>
       <Fab isFree={isFree} />
-      <TabBar />
+      <TabBar isFree={isFree} />
     </div>
   );
 }

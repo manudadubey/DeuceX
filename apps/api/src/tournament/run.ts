@@ -8,6 +8,11 @@ import {
   type ShortlistFilters,
   type ShortlistResult,
   type ProseModelClient,
+  MEMO_MODEL,
+  MEMO_PROMPT_VERSION,
+  MEMO_SCHEMA_VERSION,
+  generateMemo,
+  type MemoModelClient,
 } from '@deucex/agents';
 import { loadTournamentCandidates, loadTournamentPlayer } from './service';
 import { runConditionsForCandidates } from '../conditions/run';
@@ -34,7 +39,31 @@ export interface TournamentRunDeps {
   // run needs, rather than conditions/run.ts reaching for its own globals.
   weatherAdapter: WeatherAdapter;
   proseClient: ProseModelClient;
+  /** T-15: the recommendation memo's model client; no memo when absent. */
+  memoClient?: MemoModelClient;
   logger?: TournamentRunLogger;
+}
+
+/** agent_runs.agent_name for the memo, its own row so a memo failure never fails the shortlist run. */
+export const TOURNAMENT_MEMO_AGENT_NAME = 'tournament-memo';
+
+// The same formats the Tournament page uses, so the memo's figures read
+// exactly as the list and detail do (T-AC-14).
+function memoMoney(currency: string) {
+  return (amount: number) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount);
+}
+function memoDay(iso: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  }).format(new Date(`${iso}T00:00:00Z`));
 }
 
 function inputsHashFor(candidates: unknown, filters: unknown, player: unknown): string {
@@ -112,6 +141,11 @@ async function sendShortlistNotification(
   result: ShortlistResult,
   now: Date,
 ): Promise<void> {
+  // Nothing shortlisted, nothing to say: "Weekly shortlist ready · 0 events
+  // scanned" is noise, and was about to email every player while the
+  // calendar table is empty.
+  if (result.candidates.length === 0) return;
+
   const sevenDaysOut = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const nearest = result.candidates
     .filter((c) => c.entryDeadline && c.entryDeadline >= now.toISOString().slice(0, 10))
@@ -198,6 +232,40 @@ export async function runTournamentAgent(
 
     if (triggerType === 'schedule') {
       await sendShortlistNotification(deps.db, playerId, result, now);
+    }
+
+    // T-15: one memo per run, recorded as its own agent_runs row pointing at
+    // this run. Like Conditions below, a memo failure never fails the run.
+    if (deps.memoClient && result.candidates.length > 0) {
+      try {
+        const input = {
+          result,
+          money: memoMoney(player.homeCurrency),
+          day: memoDay,
+          today: now.toISOString().slice(0, 10),
+        };
+        await recordRun(
+          deps.agentRuns,
+          {
+            agentName: TOURNAMENT_MEMO_AGENT_NAME,
+            playerId,
+            triggerType,
+            inputsHash,
+            model: MEMO_MODEL,
+            promptVersion: MEMO_PROMPT_VERSION,
+            schemaVersion: MEMO_SCHEMA_VERSION,
+          },
+          async () => {
+            const memo = await generateMemo(deps.memoClient!, input);
+            return {
+              output: { forRunId: runId, paragraphs: memo.output.paragraphs } as unknown as Json,
+              usage: memo.usage,
+            };
+          },
+        );
+      } catch (err) {
+        logger.error(`[tournament-memo] failed for player ${playerId}:`, err);
+      }
     }
 
     // PRD-08 section 3: "runs inside every Tournament Agent run"; section

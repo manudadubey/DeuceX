@@ -33,6 +33,30 @@ export function scheduledWindowFor(now: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+/**
+ * The most recent Sunday 20:00 UTC at or before `now`. Catch-up (28 September
+ * 2026): the tick used to act only inside that one hour, so if apps/api was
+ * down then every player missed the week's shortlist. Any later tick in the
+ * week now runs it for players who haven't had a run since this instant.
+ */
+export function lastScheduledInstant(now: Date): Date {
+  const d = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), SCHEDULED_HOUR_UTC),
+  );
+  const back = (d.getUTCDay() - SCHEDULED_WEEKDAY_UTC + 7) % 7;
+  d.setUTCDate(d.getUTCDate() - back);
+  if (d.getTime() > now.getTime()) d.setUTCDate(d.getUTCDate() - 7);
+  return d;
+}
+
+/** Pure: which players still need this week's run. */
+export function playersNeedingRun(
+  players: readonly TournamentSchedulablePlayer[],
+  ranSince: ReadonlySet<string>,
+): TournamentSchedulablePlayer[] {
+  return players.filter((p) => !ranSince.has(p.id));
+}
+
 export interface TournamentSchedulablePlayer {
   id: string;
 }
@@ -60,14 +84,24 @@ export async function registerTournamentScheduler(
   await boss.work(TOURNAMENT_SCHEDULER_QUEUE, async () => {
     try {
       const now = (deps.now ?? (() => new Date()))();
-      if (!isScheduledMoment(now)) return;
+      const since = lastScheduledInstant(now);
 
       const players = await listSchedulablePlayers(deps.db);
-      for (const player of players) {
+      const { data: runs, error } = await deps.db
+        .from('agent_runs')
+        .select('player_id')
+        .eq('agent_name', TOURNAMENT_AGENT_NAME)
+        .gte('started_at', since.toISOString());
+      if (error) throw error;
+      const ranSince = new Set((runs ?? []).map((r) => r.player_id).filter(Boolean) as string[]);
+
+      for (const player of playersNeedingRun(players, ranSince)) {
         await enqueueAgentRun(boss, {
           agentName: TOURNAMENT_AGENT_NAME,
           playerId: player.id,
-          scheduledWindow: scheduledWindowFor(now),
+          // Keyed on the scheduled instant's week, so a catch-up tick and the
+          // on-time one share the idempotency key.
+          scheduledWindow: scheduledWindowFor(since),
           triggerType: 'schedule',
         });
       }
@@ -76,4 +110,7 @@ export async function registerTournamentScheduler(
       throw err;
     }
   });
+
+  // Catch up now rather than at the top of the next hour.
+  await boss.send(TOURNAMENT_SCHEDULER_QUEUE, {});
 }

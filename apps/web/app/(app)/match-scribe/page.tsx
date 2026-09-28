@@ -17,7 +17,7 @@ export default async function MatchScribePage({
 
   const { data: player } = await supabase
     .from('players')
-    .select('id, timezone')
+    .select('id, timezone, tier')
     .eq('id', playerId)
     .single();
   if (!player) redirect('/onboarding');
@@ -25,6 +25,11 @@ export default async function MatchScribePage({
   const autoStart = searchParams.record === '1';
 
   return (
-    <MatchScribeClient playerId={player.id} timezone={player.timezone} autoStart={autoStart} />
+    <MatchScribeClient
+      playerId={player.id}
+      timezone={player.timezone}
+      isFree={player.tier !== 'pro' && player.tier !== 'elite'}
+      autoStart={autoStart}
+    />
   );
 }

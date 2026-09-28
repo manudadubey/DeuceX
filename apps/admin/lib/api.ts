@@ -392,6 +392,29 @@ export interface ImportResult {
   stageChangeCount: number;
 }
 
+export interface CalendarPlanEntry {
+  action: 'new' | 'update' | 'unchanged';
+  existingId: string | null;
+  name: string;
+  tour: string;
+  tier: string;
+  startDate: string;
+  entryDeadline: string | null;
+  changedFields: string[];
+}
+
+export interface CalendarPreview {
+  rows: number;
+  entries: CalendarPlanEntry[];
+  newCount: number;
+  updateCount: number;
+  unchangedCount: number;
+}
+
+export interface CalendarImportResult extends CalendarPreview {
+  rerun: number;
+}
+
 export interface MissingDeadlineTournament {
   id: string;
   tour: string;

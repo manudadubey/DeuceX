@@ -37,18 +37,20 @@ export function QuickActionsSheet({
           Quick ways to capture a note, a menu or a receipt.
         </SheetDescription>
         <div className="flex flex-col gap-1 px-3 pb-4">
-          <Link
-            href="/match-scribe?record=1"
-            className="flex items-center gap-3 rounded-md p-3 text-sm hover:bg-accent"
-          >
-            <Mic aria-hidden="true" className="size-5 text-muted-foreground" />
-            <span className="flex flex-col">
-              <span className="font-medium">Record a note</span>
-              <span className="text-[0.8125rem] text-muted-foreground">
-                Sixty seconds after a match or practice
+          <SheetClose asChild>
+            <Link
+              href="/match-scribe?record=1"
+              className="flex items-center gap-3 rounded-md p-3 text-sm hover:bg-accent"
+            >
+              <Mic aria-hidden="true" className="size-5 text-muted-foreground" />
+              <span className="flex flex-col">
+                <span className="font-medium">Record a note</span>
+                <span className="text-[0.8125rem] text-muted-foreground">
+                  Sixty seconds after a match or practice
+                </span>
               </span>
-            </span>
-          </Link>
+            </Link>
+          </SheetClose>
           <SheetClose asChild>
             <Link
               href={isFree ? '/fuel' : '/fuel?take=1'}

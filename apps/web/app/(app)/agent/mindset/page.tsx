@@ -15,7 +15,7 @@ export default async function MindsetCoachPage() {
 
   const { data: player } = await supabase
     .from('players')
-    .select('id, timezone, patron_language, app_language, tier')
+    .select('id, timezone, patron_language, app_language, tier, tour, emergency_contact')
     .eq('id', playerId)
     .single();
   if (!player) redirect('/onboarding');
@@ -37,6 +37,8 @@ export default async function MindsetCoachPage() {
       // default rather than the most permissive one.
       isFree={player.tier !== 'pro' && player.tier !== 'elite'}
       started={started}
+      contact={player.emergency_contact}
+      tour={player.tour}
     />
   );
 }

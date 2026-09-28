@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@deucex/db';
 import type { PgBoss } from 'pg-boss';
 import type { AgentRunsDb } from '@deucex/actions';
-import type { ProseModelClient } from '@deucex/agents';
+import type { MemoModelClient, ProseModelClient } from '@deucex/agents';
 import type { AgentHandler } from '../agent-dispatcher';
 import { TOURNAMENT_AGENT_NAME, runTournamentAgent, type TournamentRunLogger } from './run';
 import { registerTournamentScheduler, type TournamentSchedulerLogger } from './scheduler';
@@ -19,11 +19,12 @@ export interface TournamentAgentDeps {
   agentRuns: AgentRunsDb;
   weatherAdapter: WeatherAdapter;
   proseClient: ProseModelClient;
+  memoClient?: MemoModelClient;
   logger?: TournamentRunLogger & TournamentSchedulerLogger;
 }
 
-// Registers the Tournament Agent's hourly scheduler tick (Sunday 20:00 UTC
-// only) and returns its handler for the shared AGENT_RUN_QUEUE dispatcher
+// Registers the Tournament Agent's hourly scheduler tick (Sunday 20:00 UTC,
+// with catch-up) and returns its handler for the shared AGENT_RUN_QUEUE dispatcher
 // (../agent-dispatcher.ts, step 5.1), same shape as mindset-coach/worker.ts.
 export async function registerTournamentAgent(
   boss: PgBoss,
@@ -43,6 +44,7 @@ export async function registerTournamentAgent(
           agentRuns: deps.agentRuns,
           weatherAdapter: deps.weatherAdapter,
           proseClient: deps.proseClient,
+          ...(deps.memoClient ? { memoClient: deps.memoClient } : {}),
           logger,
         },
         job.playerId,

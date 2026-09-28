@@ -1,12 +1,16 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { Mic } from 'lucide-react';
 import { cn } from '@deucex/ui';
 import { QuickActionsSheet } from './quick-actions-sheet';
 
 // `.fab` (Baseline §Shells and routes "floating capture button"): desktop only. Under
-// 900px the mobile tab bar's own record tab (tab-bar.tsx) replaces it.
+// 900px the mobile tab bar's own record tab (tab-bar.tsx) replaces it. Hidden on
+// /match-scribe itself, where the recorder card's own button is the control.
 export function Fab({ isFree }: { isFree: boolean }) {
+  const pathname = usePathname();
+  if (pathname === '/match-scribe') return null;
   return (
     <QuickActionsSheet isFree={isFree}>
       <button

@@ -9,7 +9,7 @@ import {
 import type { InsightModelClient } from './model-client';
 import type { MindsetNote } from './types';
 
-const NOW = new Date('2026-09-21T20:00:00Z');
+const NOW = new Date('2026-09-21T20:00:00Z'); // 22 September 06:00 in Sydney
 
 function note(overrides: Partial<MindsetNote> & { id: string }): MindsetNote {
   return {
@@ -162,5 +162,52 @@ describe('generateInsight', () => {
       }),
     );
     expect(result.patternFlagRuleKey).toBeNull();
+  });
+});
+
+describe('light mornings (MC-17): only last night and this morning count', () => {
+  // NOW is 2026-09-22 06:00 in Sydney; "yesterday" there is 2026-09-21.
+  async function isLight(overrides: Partial<GenerateInsightInput>): Promise<boolean> {
+    let prompt = '';
+    const client: InsightModelClient = {
+      async complete(p) {
+        prompt = JSON.stringify(p);
+        return createMockInsightClient().complete(p);
+      },
+    };
+    await generateInsight(client, baseInput(overrides));
+    return prompt.includes('This is a light morning');
+  }
+
+  it('is not light on an ordinary morning', async () => {
+    expect(await isLight({})).toBe(false);
+  });
+
+  it("is light after last night's check-in of 2 (MC-AC-9)", async () => {
+    expect(await isLight({ checkins: [{ date: '2026-09-21', value: 2, sentence: null }] })).toBe(
+      true,
+    );
+  });
+
+  it('ignores a low check-in from days ago', async () => {
+    expect(await isLight({ checkins: [{ date: '2026-09-10', value: 1, sentence: null }] })).toBe(
+      false,
+    );
+  });
+
+  it('ignores a note logged after 23:00 more than a day ago', async () => {
+    const lateLastWeek = note({ id: '5', recordedAt: '2026-09-15T13:30:00Z' }); // 23:30 Sydney
+    expect(await isLight({ notes: [...baseInput().notes, lateLastWeek] })).toBe(false);
+  });
+
+  it('is light after a note logged after 23:00 last night', async () => {
+    const lastNight = note({ id: '5', recordedAt: '2026-09-21T13:30:00Z' }); // 23:30 Sydney
+    expect(await isLight({ notes: [...baseInput().notes, lastNight] })).toBe(true);
+  });
+
+  it("is light after yesterday's Travel note, in the player's own date", async () => {
+    // 2026-09-20T15:00Z is 21 September 01:00 in Sydney: yesterday there, not in UTC.
+    const travel = note({ id: '5', ctx: 'travel', recordedAt: '2026-09-20T15:00:00Z' });
+    expect(await isLight({ notes: [...baseInput().notes, travel] })).toBe(true);
   });
 });

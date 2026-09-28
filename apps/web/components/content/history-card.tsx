@@ -49,6 +49,7 @@ export function HistoryCard({ rows, timezone }: { rows: HistoryRow[]; timezone: 
             value={filter}
             onValueChange={(v) => v && setFilter(v as Filter)}
             aria-label="Filter updates"
+            variant="segmented"
           >
             <ToggleGroupItem value="all" size="sm">
               All
