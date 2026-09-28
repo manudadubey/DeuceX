@@ -1,16 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
   Field,
   FieldDescription,
-  FieldGroup,
   FieldLabel,
   Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@deucex/ui';
 import { updateAccount, type Player } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
@@ -30,9 +37,15 @@ const COMMON_TIMEZONES = [
   'UTC',
 ];
 
+// Picking this item sets the zone to whatever this device reports.
+const FOLLOW_DEVICE = '__device__';
+
 // PRD-12 §4.2: name, read-only email, passkey, time zone — the note tying
-// time zone to the Mindset Coach's daily run time is load-bearing (it's the
-// only place a player learns why this field matters). One Save button.
+// time zone to the morning run is load-bearing (it's the only place a player
+// learns why this field matters). One Save button. Laid out as the
+// prototype's #/settings Account card: a two-column field grid (20px rows,
+// 16px columns, one column on phones), "Follow my phone" as an option in the
+// time zone list, Save in the card footer.
 export function AccountPane({
   player,
   onPlayerChange,
@@ -45,10 +58,13 @@ export function AccountPane({
   const [name, setName] = useState(player.name);
   const [timezone, setTimezone] = useState(player.timezone);
   const [saving, setSaving] = useState(false);
+  // Read after mount: the server render can't know the device's zone.
+  const [deviceZone, setDeviceZone] = useState<string | null>(null);
+  useEffect(() => setDeviceZone(Intl.DateTimeFormat().resolvedOptions().timeZone), []);
 
-  const timezoneOptions = COMMON_TIMEZONES.includes(timezone)
-    ? COMMON_TIMEZONES
-    : [timezone, ...COMMON_TIMEZONES];
+  // The device's zone is offered once, as "Follow my phone"; choosing it
+  // makes it the current zone, which is always listed.
+  const timezoneOptions = [...new Set([timezone, ...COMMON_TIMEZONES])];
 
   async function handleSave() {
     setSaving(true);
@@ -63,61 +79,63 @@ export function AccountPane({
   }
 
   return (
-    <Card className="gap-6 p-6">
-      <CardHeader className="p-0">
+    <Card>
+      <CardHeader>
         <CardTitle>Account</CardTitle>
+        <CardDescription>
+          Sign-in and who you are. Playing details live on your public profile.
+        </CardDescription>
       </CardHeader>
-      <FieldGroup>
+      <CardContent className="grid grid-cols-2 gap-x-4 gap-y-5 max-sm:grid-cols-1">
         <Field>
           <FieldLabel htmlFor="acc-name">Name</FieldLabel>
           <Input id="acc-name" value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
 
         <Field>
-          <FieldLabel>Email</FieldLabel>
-          <Input value={player.email} disabled readOnly />
+          <FieldLabel htmlFor="acc-email">Email</FieldLabel>
+          <Input id="acc-email" value={player.email} disabled readOnly />
           <FieldDescription>Verified · used for sign-in and agent emails</FieldDescription>
         </Field>
 
         <Field>
-          <FieldLabel htmlFor="acc-passkey">Sign-in</FieldLabel>
+          <FieldLabel>Sign-in</FieldLabel>
           <PasskeyRegister />
+          <FieldDescription>
+            Sign in with Face ID, Touch ID or a security key instead of an email link.
+          </FieldDescription>
         </Field>
 
         <Field>
           <FieldLabel htmlFor="acc-tz">Time zone</FieldLabel>
-          <select
-            id="acc-tz"
+          <Select
             value={timezone}
-            onChange={(e) => setTimezone(e.target.value)}
-            className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+            onValueChange={(v) => setTimezone(v === FOLLOW_DEVICE && deviceZone ? deviceZone : v)}
           >
-            {timezoneOptions.map((tz) => (
-              <option key={tz} value={tz}>
-                {tz}
-              </option>
-            ))}
-          </select>
-          <div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone)}
-            >
-              Follow my phone
-            </Button>
-          </div>
+            <SelectTrigger id="acc-tz">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {deviceZone ? (
+                <SelectItem value={FOLLOW_DEVICE}>Follow my phone ({deviceZone})</SelectItem>
+              ) : null}
+              {timezoneOptions.map((tz) => (
+                <SelectItem key={tz} value={tz}>
+                  {tz}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <FieldDescription>
             Your morning run (Mindset Coach and Financial Agent) is at 07:00 in this zone.
           </FieldDescription>
         </Field>
-      </FieldGroup>
-      <div className="border-t border-border pt-6">
+      </CardContent>
+      <CardFooter>
         <Button onClick={handleSave} disabled={saving || !name.trim()}>
-          Save
+          {saving ? 'Saving…' : 'Save'}
         </Button>
-      </div>
+      </CardFooter>
     </Card>
   );
 }
