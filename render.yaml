@@ -76,6 +76,9 @@ services:
       # run it locally; this is only where staff-alert emails link to.
       - key: ADMIN_BASE_URL
         value: https://procircuit-admin.vercel.app
-      # Comma-separated. Only the player app calls this API from a browser.
+      # Comma-separated. The player app calls this API from a browser, and so
+      # does the local web dev server, since a local apps/api would run its
+      # scheduled jobs alongside this one against the same database. Every
+      # request still needs the player's bearer token; CORS isn't the auth.
       - key: CORS_ORIGIN
-        value: https://deucex.vercel.app
+        value: https://deucex.vercel.app,http://localhost:3000
