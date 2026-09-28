@@ -40,8 +40,8 @@ function formatMoney(amount: number, currency: string): string {
 }
 
 // PRD-01 section 4.1's detail panel: header, chips, why paragraph, cost
-// breakdown, outcome table, Net outcome range rail, and the footer that
-// switches by status (T-9 to T-11). The cost/outcome/rail/footer region is
+// breakdown and outcome table, the Conditions brief, the Net outcome range
+// rail, and the footer that switches by status (T-9 to T-11). The cost/outcome/rail/footer region is
 // what Free locks (decisions worksheet 14); the header, chips and why
 // paragraph stay live.
 export function DetailPanel({
@@ -183,14 +183,11 @@ export function DetailPanel({
           </Table>
         </TableWrap>
       </div>
-
-      <OutcomeRail
-        lo={candidate.lo}
-        hi={candidate.hi}
-        exp={candidate.exp}
-        currency={homeCurrency}
-      />
     </div>
+  );
+
+  const outcomeRail = (
+    <OutcomeRail lo={candidate.lo} hi={candidate.hi} exp={candidate.exp} currency={homeCurrency} />
   );
 
   const footer = (
@@ -307,6 +304,13 @@ export function DetailPanel({
 
       <p className="text-sm leading-relaxed">{candidate.why}</p>
 
+      {/* PRD-01 section 4.1's order: the money that decides the entry (cost
+          and what each round pays) straight after the why paragraph, then the
+          Conditions brief, then the net outcome rail directly above the entry
+          controls. On Free both money regions are locked, with one trial
+          action (the second region is dimmed quietly). */}
+      {isFree ? <LockedSection onToast={onToast}>{costAndOutcome}</LockedSection> : costAndOutcome}
+
       {candidate.conditions && (
         <ConditionsBrief
           conditions={candidate.conditions}
@@ -320,13 +324,13 @@ export function DetailPanel({
       )}
 
       {isFree ? (
-        <LockedSection onToast={onToast}>
-          {costAndOutcome}
+        <LockedSection onToast={onToast} quiet>
+          {outcomeRail}
           <div className="mt-4">{footer}</div>
         </LockedSection>
       ) : (
         <>
-          {costAndOutcome}
+          {outcomeRail}
           {footer}
         </>
       )}
