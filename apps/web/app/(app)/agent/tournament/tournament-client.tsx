@@ -271,6 +271,13 @@ export function TournamentClient({
               </TooltipContent>
             )}
           </Tooltip>
+          {/* The tooltip needs a hover, which touch screens and a quick glance
+              don't give; say why the button is off where it can be seen. */}
+          {rerunBlocked && rerunFreeAt && !rerunning ? (
+            <p className="basis-full text-xs text-muted-foreground sm:text-right">
+              One re-run an hour. Available again at {clock(rerunFreeAt)}.
+            </p>
+          ) : null}
         </div>
       </header>
       <PausedNotice agent="tournament" label="The Tournament Agent" />

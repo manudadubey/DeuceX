@@ -17,7 +17,7 @@ class TableQuery implements PromiseLike<{ data: any; error: any }> {
   private pendingInsert?: Row | Row[];
   private pendingUpdate?: Row;
   private pendingDelete = false;
-  private pendingUpsert?: { row: Row; onConflict: string | undefined };
+  private pendingUpsert?: { row: Row | Row[]; onConflict: string | undefined };
   private orderSpec?: { col: string; ascending: boolean };
   private limitCount?: number;
 
@@ -168,8 +168,8 @@ class TableQuery implements PromiseLike<{ data: any; error: any }> {
 
   // A minimal upsert: matches an existing row on the onConflict columns
   // (comma-separated, matching supabase-js's own string form) and merges
-  // over it, or inserts a new row when none matches.
-  upsert(row: Row, opts?: { onConflict?: string }): this {
+  // over it, or inserts a new row when none matches. Takes one row or many.
+  upsert(row: Row | Row[], opts?: { onConflict?: string }): this {
     this.pendingUpsert = { row, onConflict: opts?.onConflict };
     return this;
   }
@@ -205,17 +205,17 @@ class TableQuery implements PromiseLike<{ data: any; error: any }> {
       return { data: rows, error: null };
     }
     if (this.pendingUpsert) {
-      const { row: patch, onConflict } = this.pendingUpsert;
+      const { row: input, onConflict } = this.pendingUpsert;
       const conflictCols = (onConflict ?? 'id').split(',');
       const table = (this.db.tables[this.tableName] ??= []);
-      const existing = table.find((row) => conflictCols.every((col) => row[col] === patch[col]));
-      if (existing) {
-        Object.assign(existing, patch);
-        return { data: [existing], error: null };
-      }
-      const row = { id: `row-${Math.random().toString(36).slice(2)}`, ...patch };
-      table.push(row);
-      return { data: [row], error: null };
+      const written = (Array.isArray(input) ? input : [input]).map((patch) => {
+        const existing = table.find((row) => conflictCols.every((col) => row[col] === patch[col]));
+        if (existing) return Object.assign(existing, patch);
+        const row = { id: `row-${Math.random().toString(36).slice(2)}`, ...patch };
+        table.push(row);
+        return row;
+      });
+      return { data: written, error: null };
     }
     if (this.pendingUpdate) {
       const matched = this.matched();
