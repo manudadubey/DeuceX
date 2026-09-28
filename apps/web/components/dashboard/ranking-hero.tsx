@@ -89,7 +89,9 @@ export function RankingHero({
 
   return (
     <Card id="ranking" className="gap-0 py-6">
-      <div className="grid grid-cols-[18.75rem_1fr] max-[1100px]:grid-cols-1">
+      {/* The prototype's .hero is 300px of content; this column also carries
+          px-6 on both sides, so it is 300px + 2 x 24px. */}
+      <div className="grid grid-cols-[21.75rem_1fr] max-[1100px]:grid-cols-1">
         <div className="flex flex-col gap-4 border-r border-border px-6 max-[1100px]:border-r-0 max-[1100px]:border-b max-[1100px]:pb-5">
           <div className="flex items-center gap-3">
             <div
