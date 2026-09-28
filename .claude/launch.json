@@ -4,28 +4,43 @@
     {
       "name": "web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@deucex/web", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "@deucex/web",
+        "dev"
+      ],
       "port": 3000,
       "autoPort": true
     },
     {
       "name": "api",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@deucex/api", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "@deucex/api",
+        "dev"
+      ],
       "port": 8787,
       "autoPort": true
     },
     {
       "name": "admin",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@deucex/admin", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "@deucex/admin",
+        "dev"
+      ],
       "port": 3001,
       "autoPort": true
     },
     {
       "name": "prototype",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "4455", "--directory", "docs"],
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "const http=require('http'),fs=require('fs'),path=require('path');const root=path.resolve('docs');const types={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.json':'application/json','.md':'text/plain; charset=utf-8'};http.createServer((req,res)=>{let p=decodeURIComponent(req.url.split('?')[0]);let f=path.join(root,p);if(!f.startsWith(root)){res.writeHead(403);return res.end();}if(fs.existsSync(f)&&fs.statSync(f).isDirectory())f=path.join(f,'index.html');fs.readFile(f,(e,d)=>{if(e){if(p==='/'){res.writeHead(200,{'content-type':'text/html'});return res.end(fs.readdirSync(root).filter(n=>n.endsWith('.html')).map(n=>`<a href=\"/${n}\">${n}</a>`).join('<br>'));}res.writeHead(404);return res.end('Not found');}res.writeHead(200,{'content-type':types[path.extname(f)]||'application/octet-stream'});res.end(d);});}).listen(4455,()=>console.log('Serving docs on http://localhost:4455'));"
+      ],
       "port": 4455
     }
   ]
