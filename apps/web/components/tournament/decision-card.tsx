@@ -18,6 +18,7 @@ import { computeRunwayWeeks, formatTension } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import { daysUntil, type TournamentCandidateView } from '@/lib/tournament/load';
 import { useEntryActions } from './use-entry-actions';
+import { OutcomeRail } from './outcome-rail';
 import { dateRange, dayLabel, flagFor, runwayLabel, surfaceLabel } from '@/lib/tournament/format';
 
 function formatMoney(amount: number, currency: string): string {
@@ -165,18 +166,16 @@ export function DecisionCard({
             </>
           )}
         </dl>
-        <div className="flex flex-col gap-2 rounded-lg bg-sidebar-accent p-3 text-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Net outcome range</span>
-            <span>
-              Expected{' '}
-              <b className="font-mono">
-                {candidate.exp >= 0 ? '+' : ''}
-                {formatMoney(candidate.exp, homeCurrency)}
-              </b>
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 border-t border-border pt-2">
+        <div className="flex flex-col gap-3">
+          <OutcomeRail
+            lo={candidate.lo}
+            hi={candidate.hi}
+            exp={candidate.exp}
+            currency={homeCurrency}
+            loLabel={worstRound ? `${worstRound.label.replace('Lose ', '')} loss` : 'Early loss'}
+            hiLabel={bestRound ? `${bestRound.label.replace('Reach ', '')} run` : 'Deep run'}
+          />
+          <div className="grid grid-cols-2 gap-2 rounded-lg bg-sidebar-accent p-3 text-xs">
             <div>
               <div className="text-muted-foreground">
                 Runway if you lose {worstRound?.label.replace('Lose ', '')}

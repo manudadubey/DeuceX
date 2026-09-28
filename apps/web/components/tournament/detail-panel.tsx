@@ -29,6 +29,7 @@ import {
   surfaceLabel,
 } from '@/lib/tournament/format';
 import { ConditionsBrief } from './conditions-brief';
+import { OutcomeRail } from './outcome-rail';
 
 function formatMoney(amount: number, currency: string): string {
   return new Intl.NumberFormat('en-US', {
@@ -183,22 +184,12 @@ export function DetailPanel({
         </TableWrap>
       </div>
 
-      <div className="rounded-lg bg-sidebar-accent p-3 text-xs">
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Net outcome range</span>
-          <span>
-            Expected{' '}
-            <b className="font-mono">
-              {candidate.exp >= 0 ? '+' : ''}
-              {formatMoney(candidate.exp, homeCurrency)}
-            </b>
-          </span>
-        </div>
-        <div className="mt-2 flex justify-between font-mono text-[0.7rem] text-muted-foreground">
-          <span>{formatMoney(candidate.lo, homeCurrency)}</span>
-          <span>{formatMoney(candidate.hi, homeCurrency)}</span>
-        </div>
-      </div>
+      <OutcomeRail
+        lo={candidate.lo}
+        hi={candidate.hi}
+        exp={candidate.exp}
+        currency={homeCurrency}
+      />
     </div>
   );
 
