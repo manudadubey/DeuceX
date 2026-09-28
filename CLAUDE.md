@@ -415,15 +415,36 @@ merged 27 September 2026, built against `docs/BILLING-DECISIONS.md` (merged in
   subscription left in place for session 2). See `docs/BUILD-LOG.md`'s "Billing, session 1"
   entry.
 
-**Tournament calendar (28 September 2026):** nothing created `tournaments` rows until now, so
-the Tournament Agent had never shortlisted anything. Staff load events through the admin
-console's **Tournament calendar import** (Ingestion page; CSV, preview then apply with a
-reason); `tournaments.prize_currency` (migration `20260930100000`, applied to staging and
-production) keeps prizes in the published currency. Re-run now and the recommendation memo are
-built. Until staff import a real calendar, every shortlist is empty. See the build log's
-"Tournament Agent review and build-out" entry.
+Prototype parity reviews, [PR #38](https://github.com/manudadubey/DeuceX/pull/38), merged 28
+September 2026. Match Scribe, the Mindset Coach and the Tournament Agent were checked against the
+prototypes and PRDs and verified live; see the build log's five entries from 28 September. What
+later work needs to know:
+- **The Tournament Agent had never shortlisted anything:** no code created `tournaments` rows.
+  Staff now load events through the admin console's **Tournament calendar import** (Ingestion
+  page; CSV, preview then apply with a reason, `calendar_import` in the audit log). Until a real
+  calendar is imported, every shortlist is empty. `tournaments.prize_currency` (migration
+  `20260930100000`, applied to staging and production) keeps prizes in the published currency.
+- **Scheduled runs catch up.** The morning run makes up a missed 07:00 until 21:00 local; the
+  weekly Tournament run makes up a missed Sunday 20:00 UTC any time that week. Both skip players
+  who already ran, and both tick once at startup. A shortlist with no candidates sends no
+  notification.
+- **Tournament Agent:** Re-run now (`POST /tournament/rerun`, one manual run an hour) and the
+  recommendation memo (`tournament-memo` agent_runs rows keyed by `forRunId`, mini tier). The memo
+  is rejected unless every amount, points figure, ratio and date belongs to the event it
+  describes, every named event is on the shortlist, and any event closing within 7 days is named.
+- **Agents read saved notes only** (`status = 'saved'`); saving is the approval. Unsaved notes
+  in the recorder are resumed on arrival, and a stalled transcription can be retried after a
+  minute.
+- **Mindset Coach:** the escalation card shows the player's `emergency_contact` with a call
+  action; Quiet on match mornings reads Entered events; light mornings look at last night and
+  this morning only; the prompt carries tags, a transcript excerpt and focus completion (prompt
+  v2).
+- **UI:** `ToggleGroup` has the prototype's 6px gap by default and `variant="segmented"` for
+  filters and unit or billing switches (it's a client component now). Countdowns and calendars
+  use the viewer's local date, not UTC's. Tournament display formats live in
+  `apps/web/lib/tournament/format.ts`.
 
-**As of 27 September 2026, no PRs are open and `main` has everything above.** The owner merges
+**As of 28 September 2026, no PRs are open and `main` has everything above.** The owner merges
 PRs: Claude's auto mode usually refuses to merge, or retarget a PR's base, without a human
 review; when the owner asks, it has sometimes allowed it, otherwise the owner runs `gh pr merge`. When
 PRs are stacked, move each one's base to `main` before merging it (`gh pr edit N --base main`);
@@ -432,6 +453,8 @@ merging into the old base branch would leave `main` without it.
 **What's next: launch prep.** There's no build-plan step after 5.4 (Release 2 comes "after real
 players"). In order:
 1. **Owner account steps:**
+   - import a real tournament calendar in the admin console (the Tournament Agent is empty
+     without one);
    - roll the staging secret key and the Stripe sandbox key;
    - raise the OpenAI usage tier;
    - register staff passkeys and add `https://admin.deucex.ai` to Supabase's passkey origins;
@@ -486,6 +509,11 @@ ap-northeast-1). Owner decision, 26 September 2026: no Supabase upgrade until go
 - Show `erasure_records` on the console's Trust and safety page.
 - The 3-day and 1-day entry-deadline countdown notices don't exist yet (only "entry closes soon"
   carries `deadline_at`).
+- From PR #38, still open: the extractor invents detail (a tiebreak score never spoken) and writes
+  results with no W or L ("6-1 6-1"), so the coach and mood chart can't tell a win from a loss;
+  Conditions prose named the wrong ball and printed "wind None"; Mindset patterns rarely fire for
+  real players (two of three rules follow the prototype's storyline, one can't run), a general
+  rule over the player's own tags is an owner decision; `notes.used` is never written.
 - **Launch blocker:** the staff passkey is off locally (`ADMIN_PASSKEY_REQUIRED=false` in the
   owner's `.env`; the API refuses it in production). Before launch: clear stray localhost
   passkeys, register one per staff member, add `https://admin.deucex.ai` to Supabase Auth >
