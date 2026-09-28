@@ -12,6 +12,11 @@ import {
   Confirm,
   Empty,
   Input,
+  Stat,
+  StatLabel,
+  StatSub,
+  StatValue,
+  StatsRow,
   Table,
   TableBody,
   TableCell,
@@ -22,11 +27,12 @@ import {
   Textarea,
   cn,
 } from '@deucex/ui';
-import { dateTime, shortDate } from '@/components/format';
+import { dateTime, longDate, relative, shortDate } from '@/components/format';
 import { Grid } from '@/components/page';
 import type {
   CalendarImportResult,
   CalendarPreview,
+  CalendarSummary,
   FactCorrection,
   FeedStatusView,
   ImportPreview,
@@ -79,9 +85,100 @@ export function IngestionClient() {
 const CALENDAR_COLUMNS =
   'tour, name, tier, surface, indoor_outdoor, city, country, lat, lon, altitude_m, start_date, end_date, entry_deadline, last_year_cut, ball, prize_currency, prize, points';
 
+const TOUR_LABELS: Record<string, string> = {
+  atp: 'ATP',
+  wta: 'WTA',
+  itf_men: "ITF men's",
+  itf_women: "ITF women's",
+};
+
+// A calendar moves weekly (new events, late deadlines), so a week without an
+// import is worth flagging.
+const IMPORT_DUE_MS = 7 * 24 * 60 * 60 * 1000;
+
+function plural(n: number, one: string, many = `${one}s`): string {
+  return `${n.toLocaleString('en-AU')} ${n === 1 ? one : many}`;
+}
+
+// What's in the calendar now, before anything is pasted.
+function CalendarStatus({ summary }: { summary: CalendarSummary }) {
+  if (summary.upcomingCount === 0) {
+    return (
+      <p role="status" className="rounded-lg bg-warn-bg p-3 text-sm text-warn">
+        The calendar has no upcoming events, so every player&apos;s shortlist is empty. Import a
+        calendar below.
+      </p>
+    );
+  }
+  const last = summary.lastImport;
+  const due = last !== null && Date.now() - new Date(last.at).getTime() > IMPORT_DUE_MS;
+  return (
+    <StatsRow className="max-[1100px]:grid-cols-2">
+      <Stat>
+        <StatLabel>Upcoming events</StatLabel>
+        <StatValue>{summary.upcomingCount.toLocaleString('en-AU')}</StatValue>
+        <StatSub>
+          {summary.byTour.map((t) => `${TOUR_LABELS[t.tour] ?? t.tour} ${t.count}`).join(' · ')}
+        </StatSub>
+      </Stat>
+      <Stat>
+        <StatLabel>Covers</StatLabel>
+        <StatValue className="text-xl">
+          {shortDate(summary.firstStart)} – {shortDate(summary.lastStart)}
+        </StatValue>
+        <StatSub>Start dates of upcoming events</StatSub>
+      </Stat>
+      <Stat>
+        <StatLabel>Next entry deadline</StatLabel>
+        <StatValue className="text-xl">
+          {summary.nextDeadline ? longDate(summary.nextDeadline.date) : 'None ahead'}
+        </StatValue>
+        <StatSub>
+          {summary.nextDeadline
+            ? `${plural(summary.nextDeadline.count, 'event')} close that day`
+            : 'Every upcoming event has closed'}
+          {summary.missingDeadlineCount > 0 ? (
+            <span className="text-warn">
+              {' '}
+              · {plural(summary.missingDeadlineCount, 'event')} with no deadline
+            </span>
+          ) : null}
+        </StatSub>
+      </Stat>
+      <Stat>
+        <StatLabel className="flex items-center gap-2">
+          Last import
+          {due ? (
+            <Badge variant="warn" className="ml-auto">
+              Import due
+            </Badge>
+          ) : null}
+        </StatLabel>
+        <StatValue className={cn('text-xl', due && 'text-warn')}>
+          {last ? relative(last.at) : 'Never'}
+        </StatValue>
+        <StatSub>
+          {last
+            ? [
+                dateTime(last.at),
+                last.by,
+                last.newCount !== null
+                  ? `${last.newCount} new, ${last.updateCount ?? 0} updated`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')
+            : 'No import on record'}
+        </StatSub>
+      </Stat>
+    </StatsRow>
+  );
+}
+
 // The tournament calendar (28 September 2026): the Tournament Agent's only
 // source of events until a licensed feed exists.
 function CalendarImport() {
+  const summary = useLoad<CalendarSummary>('/admin/tournaments/calendar-summary');
   const [csv, setCsv] = useState('');
   const [preview, setPreview] = useState<CalendarPreview | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -119,6 +216,7 @@ function CalendarImport() {
       setConfirming(false);
       setReason('');
       setCsv('');
+      summary.reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -133,13 +231,22 @@ function CalendarImport() {
       <CardHeader>
         <CardTitle>Tournament calendar import</CardTitle>
         <CardDescription>
-          The Tournament Agent shortlists only events in this calendar. Columns: {CALENDAR_COLUMNS}.
-          Dates as YYYY-MM-DD; prize and points as &quot;R1:1620;R2:2400;QF:3900&quot; (Q1 to SF),
-          prize in the currency the event publishes (prize_currency, e.g. USD). Tour, name and start
-          date identify an event, so re-importing updates it.
+          The Tournament Agent shortlists only events in this calendar. Tour, name and start date
+          identify an event, so re-importing a file updates it and never adds a second copy.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
+        <ErrorLine error={summary.error} />
+        {summary.data ? <CalendarStatus summary={summary.data} /> : null}
+        <details className="text-[0.8125rem] text-muted-foreground">
+          <summary className="cursor-pointer text-foreground">File format</summary>
+          <p className="mt-1">
+            Columns: {CALENDAR_COLUMNS}. Dates as YYYY-MM-DD; prize and points as
+            &quot;R1:1620;R2:2400;QF:3900&quot; (Q1 to SF), prize in the currency the event
+            publishes (prize_currency, e.g. USD). For ITF&apos;s calendar exports, convert them
+            first with apps/api/scripts/itf-calendar.ts.
+          </p>
+        </details>
         <label className="flex flex-col items-center gap-1 rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
           <span className="font-medium text-foreground">Choose a CSV file</span>
           <span>or paste it below</span>

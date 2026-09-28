@@ -4,6 +4,7 @@ import type { Database } from '@deucex/db';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { InvalidRankingCsvError, parseRankingCsv } from './csv';
 import { InvalidCalendarCsvError, parseCalendarCsv } from './calendar-csv';
+import { calendarSummary } from './calendar-summary';
 import {
   applyCalendarImport,
   CalendarImportConflictError,
@@ -153,6 +154,12 @@ export async function registerAdminRankingsRoutes(
       throw err;
     }
   });
+
+  // What's in the calendar now and when it was last imported, shown on the
+  // import card before anything is pasted.
+  app.get('/admin/tournaments/calendar-summary', async (_request, reply) =>
+    reply.send(await calendarSummary(deps.db)),
+  );
 
   // Calendar import (28 September 2026, owner decision): the manual path for
   // the tournament calendar until a licensed feed exists, preview then apply

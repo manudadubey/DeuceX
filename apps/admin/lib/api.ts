@@ -415,6 +415,21 @@ export interface CalendarImportResult extends CalendarPreview {
   rerun: number;
 }
 
+export interface CalendarSummary {
+  upcomingCount: number;
+  byTour: { tour: string; count: number }[];
+  firstStart: string | null;
+  lastStart: string | null;
+  nextDeadline: { date: string; count: number } | null;
+  missingDeadlineCount: number;
+  lastImport: {
+    at: string;
+    by: string | null;
+    newCount: number | null;
+    updateCount: number | null;
+  } | null;
+}
+
 export interface MissingDeadlineTournament {
   id: string;
   tour: string;
