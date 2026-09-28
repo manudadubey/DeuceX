@@ -16,7 +16,10 @@ services:
     region: singapore
     plan: starter
     rootDir: .
-    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    # Node 22.13's bundled corepack has out-of-date npm signing keys and
+    # refuses to fetch pnpm ("Cannot find matching keyid"), so install a
+    # current corepack first. The first Render deploy failed on exactly this.
+    buildCommand: npm install -g corepack@latest && corepack enable && pnpm install --frozen-lockfile
     startCommand: pnpm --filter @deucex/api start
     healthCheckPath: /health
     autoDeploy: true
