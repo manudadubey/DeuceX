@@ -3649,3 +3649,29 @@ reference; a fresh run makes the page show zero events.
 - Not built: flight route lines (T-5, no route data), "not refreshed" feed labels (T-AC-8), the
   Free lock on list ratios shows "Pro" (T-AC-12 otherwise unchanged), Add an event (T-20/T-21),
   a player-zone link (no verified URL), the 7-day, 3-day and 24-hour countdown notices.
+
+## ITF calendar converter (28 September 2026)
+
+`apps/api/scripts/itf-calendar.ts` turns ITF's World Tennis Tour calendar exports (one CSV per
+tour, as itftennis.com lists them) into the admin console's Tournament calendar import format. It
+writes nothing; staff paste the output into Ingestion > Tournament calendar import, so the
+preview, reason and audit row still apply. An automated daily pull from itftennis.com was
+considered and not built: the calendar's JSON endpoint sits behind bot protection that challenged
+after a handful of requests, and the licence question in TECH-ARCHITECTURE.md section 4 is still
+open.
+
+ITF's export has no per-round prize money, points or entry deadline, and without prize and points
+tables the shortlist engine scores every event at zero. They come from the 2026 World Tennis Tour
+Regulations: Appendices H and J (prize money, US dollars, 32 main draw), I and K (ATP and WTA
+points), and the entry deadline rule (Thursday 18 days before the tournament's Monday). Qualifying
+is two rounds (Q1, then the final round as Q2); ITF World Tennis qualifying points aren't ATP or
+WTA points, so they count as 0. The category comes from the event name's prefix, since the export
+lists at least one W35 as W25.
+
+Approximations, from what the export leaves out: W35 to W100 events that are really 48 draws use
+the 32-draw table; European events that pay the regulations' euro table are stored in USD; no
+coordinates or altitude; carpet has no surface value. A renamed event imports as a new row. The
+tables need updating for the 2027 regulations.
+
+Run on ITF's 2026 exports from 28 September: 302 events (153 men's, 149 women's), all parsed by
+`parseCalendarCsv`. Not imported in this session; that's a staff action in the console.
