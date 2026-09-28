@@ -4,7 +4,12 @@ import type { Database } from '@deucex/db';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { InvalidRankingCsvError, parseRankingCsv } from './csv';
 import { InvalidCalendarCsvError, parseCalendarCsv } from './calendar-csv';
-import { applyCalendarImport, previewCalendarImport } from './calendar-import';
+import { calendarSummary } from './calendar-summary';
+import {
+  applyCalendarImport,
+  CalendarImportConflictError,
+  previewCalendarImport,
+} from './calendar-import';
 import {
   DeadlineError,
   deadlineConsequence,
@@ -150,6 +155,12 @@ export async function registerAdminRankingsRoutes(
     }
   });
 
+  // What's in the calendar now and when it was last imported, shown on the
+  // import card before anything is pasted.
+  app.get('/admin/tournaments/calendar-summary', async (_request, reply) =>
+    reply.send(await calendarSummary(deps.db)),
+  );
+
   // Calendar import (28 September 2026, owner decision): the manual path for
   // the tournament calendar until a licensed feed exists, preview then apply
   // with a written reason, like the ranking snapshot.
@@ -190,6 +201,8 @@ export async function registerAdminRankingsRoutes(
     } catch (err) {
       if (err instanceof InvalidCalendarCsvError)
         return reply.code(400).send({ error: err.message });
+      if (err instanceof CalendarImportConflictError)
+        return reply.code(409).send({ error: err.message });
       throw err;
     }
   });
