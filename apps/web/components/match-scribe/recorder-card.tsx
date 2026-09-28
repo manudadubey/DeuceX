@@ -372,10 +372,18 @@ export function RecorderCard({
     transcript,
   ]);
 
+  // A failed delete used to be swallowed: the toast said "Note discarded",
+  // the card reset, and the note came back from the server on the next load.
+  // Now the note stays on screen and the player is told it wasn't removed.
   const handleDiscard = useCallback(async () => {
     const id = note?.id ?? pendingId;
     if (id) {
-      await deleteNoteRemote(supabase, id).catch(() => undefined);
+      try {
+        await deleteNoteRemote(supabase, id);
+      } catch {
+        onToast("Couldn't discard the note. Check your connection and try again.");
+        return;
+      }
     }
     onToast('Note discarded');
     reset();
@@ -383,12 +391,20 @@ export function RecorderCard({
   }, [note, onChanged, onToast, pendingId, reset, supabase]);
 
   // Record again replaces the note under review: the old upload is discarded
-  // (audio and row) rather than left behind in review status.
+  // (audio and row) rather than left behind in review status. If that fails,
+  // don't start a new recording on top of a note that's still there.
   const handleRecordAgain = useCallback(async () => {
-    if (note) await deleteNoteRemote(supabase, note.id).catch(() => undefined);
+    if (note) {
+      try {
+        await deleteNoteRemote(supabase, note.id);
+      } catch {
+        onToast("Couldn't replace the note. Check your connection and try again.");
+        return;
+      }
+    }
     reset();
     void recorder.start();
-  }, [note, recorder, reset, supabase]);
+  }, [note, onToast, recorder, reset, supabase]);
 
   const handleRetry = useCallback(async () => {
     const id = note?.id ?? pendingId;
