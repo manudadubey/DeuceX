@@ -504,17 +504,58 @@ Sign-up, account and the API deploy, 28 September 2026 (PRs
   `20260930120000_players_first_last_name`, staging and production); `name` is still written as
   the two joined, so its readers are unchanged. Settings > Account got the prototype's two-column
   layout and a real time zone select.
-- Open: [#44](https://github.com/manudadubey/DeuceX/pull/44) (the ITF converter skips events
-  cancelled only in their name). Two such events, `M25 Stillwater CANCELLED` and `W50 Plovdiv
-  CANCELLED`, are still in production; deleting them needs the owner (auto mode declined the
-  write). The SQL, which also removes the stage-1 test's shortlist row, untouched entry decision
-  and brief for Stillwater, is in the build log.
+- [#44](https://github.com/manudadubey/DeuceX/pull/44), merged: the ITF converter skips events
+  cancelled only in their name. The two that reached production (`M25 Stillwater CANCELLED`,
+  `W50 Plovdiv CANCELLED`) were deleted at the owner's request, with the stage-1 test's rows
+  that pointed at Stillwater; the calendar has **300 events**.
 
-**As of 28 September 2026, the only open PRs are #44 and this docs update.** The owner merges
-PRs: Claude's auto mode usually refuses to merge, or retarget a PR's base, without a human
-review; when the owner asks, it has sometimes allowed it, otherwise the owner runs `gh pr merge`. When
-PRs are stacked, move each one's base to `main` before merging it (`gh pr edit N --base main`);
-merging into the old base branch would leave `main` without it.
+Later the same day, PRs [#48](https://github.com/manudadubey/DeuceX/pull/48) to
+[#56](https://github.com/manudadubey/DeuceX/pull/56), all merged:
+- **Supabase Auth sends from `DeuceX <signin@mail.deucex.ai>`** (Authentication > Emails > SMTP
+  Settings; host `smtp.resend.com`). It had been Resend's test sender `onboarding@resend.dev`,
+  which only delivers to the Resend owner's inbox, so every other sign-up failed with "Error
+  sending confirmation email" (a 550 in the auth log). Test with real addresses
+  (`manu.dadubey+…@gmail.com`) or Resend's `delivered@resend.dev`, never made-up domains: bounces
+  hurt `mail.deucex.ai`'s reputation. Unconfirmed test users `asdsd@asdasd.com`,
+  `sdfsdf@asdasd.com` and `delivered@resend.dev` are in production Auth, for the owner to delete.
+- **`/auth/confirm`** (the page the emails open) uses the sign-in card, in the `(bare)` route group
+  at the same URL: "Finish creating your account" / Continue to setup for `type=email`, "Sign
+  in" for `magiclink`, "Get a new link" for a bad link. The click stays: it stops link scanners
+  spending the one-use token.
+- **Local web runs against Render.** `apps/web/.env.local` (gitignored) sets
+  `NEXT_PUBLIC_API_URL=https://deucex-api.onrender.com`, and Render's `CORS_ORIGIN` also allows
+  `http://localhost:3000` (bearer tokens are still required). Without it the local app called
+  `localhost:8787`, and Match Scribe's Discard failed silently: it said "Note discarded" and the
+  note came back. Discard and Record again now keep the note and say the delete failed.
+- **No card outline on mobile** (owner decision): `[data-bl-card]` has no box-shadow at 900px and
+  below, in every contrast mode, so on phones this overrides "Contrast: more replaces hairline
+  rings" for cards. The four hand-built dashboard tiles (Runway, Decision required, the patron
+  tiles) now carry `data-bl-card` too. Desktop is unchanged.
+- **Ranking hero** left column is the prototype's 300px of content (`21.75rem` with `px-6`).
+  The rest of its difference from the prototype is data: one snapshot for the fixture player, no
+  ITF rank, no points to defend.
+- **Tournament Agent:** the prototype's Net outcome range rail (`components/tournament/
+  outcome-rail.tsx`, scaled per event, zero line, expected marker) in the detail panel and the
+  dashboard decision card; and the detail panel follows PRD-01 §4.1's order (why, then cost and
+  outcome side by side, then the Conditions brief, then the rail right above Accept/Skip). On
+  Free the second money region uses `LockedSection quiet`, so there's one trial button.
+- **The prototype dev server** (`.claude/launch.json`, `prototype`, port 4455) is a small Node
+  file server: the Command Line Tools `python3` can't read `~/Documents`.
+- **Fixture player state:** all four stage-1 test events (Tamworth, Sheffield, Harlingen, Vale do
+  Lobo) were accepted, so each has an `entered` decision and a planned ledger line; Withdraw on
+  the Tournament page undoes them. He is back at stage 3, pinned.
+- **Known importer limit, not fixed** (owner: not now): the ranking snapshot import updates a
+  player's current rank from every row in file order (the last row wins), and one week that
+  already exists fails the whole file on the unique index. Fine for one week at a time; a
+  multi-week history file needs both fixed first.
+
+**As of 28 September 2026 (evening), no PRs are open and `main` has everything above.** The owner
+merges PRs: Claude's auto mode usually refuses to merge, or retarget a PR's base, without a human
+review; when the owner asks, it has sometimes allowed it, otherwise the owner runs `gh pr merge`.
+Merge only after the `build` check passes (#48 was merged on a failing format check and needed a
+follow-up). When PRs are stacked, move each one's base to `main` **before** merging the lower one:
+`--delete-branch` on the lower PR deletes the upper PR's base and GitHub closes it (#55 had to be
+reopened as #56).
 
 **What's next: launch prep.** There's no build-plan step after 5.4 (Release 2 comes "after real
 players"). In order:
@@ -625,7 +666,8 @@ ap-northeast-1). Owner decision, 26 September 2026: no Supabase upgrade until go
   console's database role) has an explicit grant list and no access to notes, audio, moods or
   photos.
 - Reduced motion keeps opacity and colour fades; only movement stops. Reduced transparency makes
-  chrome opaque. Contrast: more replaces hairline rings.
+  chrome opaque. Contrast: more replaces hairline rings (except card outlines on phones, which
+  are off at 900px and below by owner decision).
 
 ## Infrastructure already in place
 
