@@ -19,7 +19,7 @@ import {
   cn,
 } from '@deucex/ui';
 import { listNotes, type Note, type NoteCtx } from '@deucex/db';
-import { isStampChipAt } from '@deucex/agents';
+import { isBandStamp, isStampChipAt } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import { deleteNoteRemote } from '@/lib/match-scribe/api';
 import { usedBy } from '@/lib/match-scribe/pipeline';
@@ -331,6 +331,11 @@ export function HistorySection({
                             {chip}
                           </span>
                         ))}
+                        {isBandStamp(cond) && (
+                          <span className="text-[0.6875rem] text-muted-foreground">
+                            Includes data from Google Maps
+                          </span>
+                        )}
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>

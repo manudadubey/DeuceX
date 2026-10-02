@@ -74,6 +74,36 @@ export async function listEnteredEventsInTravelWindow(
   return events;
 }
 
+/** Hours after which a google-sourced brief is fetched again: inside Google's 24 with room for a missed hourly tick. */
+export const GOOGLE_RETENTION_REFRESH_HOURS = 20;
+
+export async function listExpiringGoogleBriefs(
+  db: SupabaseClient<Database>,
+  now: Date,
+): Promise<EnteredEvent[]> {
+  const cutoff = new Date(now.getTime() - GOOGLE_RETENTION_REFRESH_HOURS * 60 * 60 * 1000);
+  const { data: briefs, error } = await db
+    .from('conditions_briefs')
+    .select('player_id, tournament_id')
+    .eq('forecast_source', 'google')
+    .lt('forecast_at', cutoff.toISOString());
+  if (error) throw error;
+  if (!briefs || briefs.length === 0) return [];
+
+  const ids = [...new Set(briefs.map((b) => b.tournament_id))];
+  const { data: tournaments, error: tournamentsError } = await db
+    .from('tournaments')
+    .select('*')
+    .in('id', ids);
+  if (tournamentsError) throw tournamentsError;
+  const byId = new Map((tournaments ?? []).map((t) => [t.id, t]));
+
+  return briefs.flatMap((b) => {
+    const tournament = byId.get(b.tournament_id);
+    return tournament ? [{ playerId: b.player_id, tournament }] : [];
+  });
+}
+
 // CE-7: "a refresh that flips tension, ballDiff, frames or the amber state
 // produces the FYI notification" — nothing else (a temperature range
 // shifting inside the same rule outcomes) counts as a change worth telling
@@ -134,98 +164,132 @@ export async function registerConditionsRefreshScheduler(
 ): Promise<void> {
   const logger = deps.logger ?? console;
 
+  // Recomputes one brief from a fresh forecast. A recommendation that flips
+  // regenerates the prose and, for an Entered event in its travel window
+  // (CE-7), tells the player; the 24-hour Google sweep below never notifies.
+  async function refreshBrief(
+    playerId: string,
+    tournament: EnteredEvent['tournament'],
+    now: Date,
+    notify: boolean,
+  ): Promise<void> {
+    const equipment = await loadEquipmentProfileInput(deps.db, playerId);
+    const previousEvent = await loadPreviousStampedEvent(deps.db, playerId);
+    const computed = await computeBriefForTournament(
+      deps.weatherAdapter,
+      tournament,
+      equipment,
+      previousEvent,
+      now,
+    );
+
+    const { data: existing, error: existingError } = await deps.db
+      .from('conditions_briefs')
+      .select('tension, ball_diff, frames, temp_max, rh_max, diff, practice')
+      .eq('player_id', playerId)
+      .eq('tournament_id', tournament.id)
+      .maybeSingle();
+    if (existingError) throw existingError;
+
+    const changed =
+      existing !== null &&
+      recommendationChanged(existing, {
+        tension: computed.rules.tension,
+        ballDiff: computed.rules.ballDiff,
+        frames: computed.rules.frames,
+        airAmber: computed.rules.airAmber,
+      });
+
+    // Not changed: keep the existing prose (a fresh forecast that lands
+    // on the same recommendation shouldn't spend another model call or
+    // silently blank out the brief's own sentences).
+    let diff = existing?.diff ?? '';
+    let practice = existing?.practice ?? '';
+    let proseHash: string | undefined;
+    if (changed) {
+      const { output } = await recordRun(
+        deps.agentRuns,
+        {
+          agentName: CONDITIONS_AGENT_NAME,
+          playerId,
+          triggerType: 'event',
+          inputsHash: `${tournament.id}:${now.toISOString().slice(0, 10)}`,
+          model: PROSE_MODEL,
+          promptVersion: '1',
+          schemaVersion: CONDITIONS_SCHEMA_VERSION,
+        },
+        async () => {
+          const result = await generateConditionsProse(deps.proseClient, [
+            {
+              tournamentId: tournament.id,
+              name: tournament.name,
+              city: tournament.city,
+              rules: computed.rules,
+              previousEvent,
+            },
+          ]);
+          return { output: result.output as unknown as Json, usage: result.usage };
+        },
+      );
+      const prose = (output as unknown as { briefs: { diff: string; practice: string }[] })
+        .briefs[0];
+      diff = prose?.diff ?? '';
+      practice = prose?.practice ?? '';
+      proseHash = proseInputsHash({
+        tournamentId: tournament.id,
+        name: tournament.name,
+        city: tournament.city,
+        rules: computed.rules,
+        previousEvent,
+      });
+      if (notify) {
+        await sendBriefRefreshedNotification(deps.db, playerId, tournament.name, tournament.id);
+      }
+    }
+
+    await persistConditionsBrief(deps.db, {
+      playerId,
+      tournamentId: tournament.id,
+      runId: null,
+      rules: computed.rules,
+      diff,
+      practice,
+      equipmentVersion: equipment.version,
+      forecastAt: now.toISOString(),
+      ...(proseHash ? { proseInputsHash: proseHash } : {}),
+    });
+  }
+
   await boss.work(CONDITIONS_REFRESH_QUEUE, async () => {
     const now = (deps.now ?? (() => new Date()))();
     const events = await listEnteredEventsInTravelWindow(deps.db, now);
+    const done = new Set<string>();
 
     for (const { playerId, tournament } of events) {
+      done.add(`${playerId}:${tournament.id}`);
       try {
-        const equipment = await loadEquipmentProfileInput(deps.db, playerId);
-        const previousEvent = await loadPreviousStampedEvent(deps.db, playerId);
-        const computed = await computeBriefForTournament(
-          deps.weatherAdapter,
-          tournament,
-          equipment,
-          previousEvent,
-          now,
-        );
-
-        const { data: existing, error: existingError } = await deps.db
-          .from('conditions_briefs')
-          .select('tension, ball_diff, frames, temp_max, rh_max, diff, practice')
-          .eq('player_id', playerId)
-          .eq('tournament_id', tournament.id)
-          .maybeSingle();
-        if (existingError) throw existingError;
-
-        const changed =
-          existing !== null &&
-          recommendationChanged(existing, {
-            tension: computed.rules.tension,
-            ballDiff: computed.rules.ballDiff,
-            frames: computed.rules.frames,
-            airAmber: computed.rules.airAmber,
-          });
-
-        // Not changed: keep the existing prose (a fresh forecast that lands
-        // on the same recommendation shouldn't spend another model call or
-        // silently blank out the brief's own sentences).
-        let diff = existing?.diff ?? '';
-        let practice = existing?.practice ?? '';
-        let proseHash: string | undefined;
-        if (changed) {
-          const { output } = await recordRun(
-            deps.agentRuns,
-            {
-              agentName: CONDITIONS_AGENT_NAME,
-              playerId,
-              triggerType: 'event',
-              inputsHash: `${tournament.id}:${now.toISOString().slice(0, 10)}`,
-              model: PROSE_MODEL,
-              promptVersion: '1',
-              schemaVersion: CONDITIONS_SCHEMA_VERSION,
-            },
-            async () => {
-              const result = await generateConditionsProse(deps.proseClient, [
-                {
-                  tournamentId: tournament.id,
-                  name: tournament.name,
-                  city: tournament.city,
-                  rules: computed.rules,
-                  previousEvent,
-                },
-              ]);
-              return { output: result.output as unknown as Json, usage: result.usage };
-            },
-          );
-          const prose = (output as unknown as { briefs: { diff: string; practice: string }[] })
-            .briefs[0];
-          diff = prose?.diff ?? '';
-          practice = prose?.practice ?? '';
-          proseHash = proseInputsHash({
-            tournamentId: tournament.id,
-            name: tournament.name,
-            city: tournament.city,
-            rules: computed.rules,
-            previousEvent,
-          });
-          await sendBriefRefreshedNotification(deps.db, playerId, tournament.name, tournament.id);
-        }
-
-        await persistConditionsBrief(deps.db, {
-          playerId,
-          tournamentId: tournament.id,
-          runId: null,
-          rules: computed.rules,
-          diff,
-          practice,
-          equipmentVersion: equipment.version,
-          forecastAt: now.toISOString(),
-          ...(proseHash ? { proseInputsHash: proseHash } : {}),
-        });
+        await refreshBrief(playerId, tournament, now, true);
       } catch (err) {
         logger.error(
           `[conditions-refresh] failed for player ${playerId}, tournament ${tournament.id}:`,
+          err,
+        );
+      }
+    }
+
+    // Google's terms (Maps Service Specific Terms 21.2.1) allow a daily
+    // forecast to be kept for 24 hours. Shortlist briefs otherwise refresh
+    // only with the weekly run, so every google-sourced brief older than
+    // GOOGLE_RETENTION_REFRESH_HOURS is fetched again here. A brief whose
+    // event has passed gets no forecast back and drops to climate normals,
+    // which ends its refreshes.
+    for (const { playerId, tournament } of await listExpiringGoogleBriefs(deps.db, now)) {
+      if (done.has(`${playerId}:${tournament.id}`)) continue;
+      try {
+        await refreshBrief(playerId, tournament, now, false);
+      } catch (err) {
+        logger.error(
+          `[conditions-refresh] 24-hour refresh failed for player ${playerId}, tournament ${tournament.id}:`,
           err,
         );
       }

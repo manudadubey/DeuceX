@@ -3785,3 +3785,44 @@ badge show the prototype's 6px dot in the badge's colour instead of dropping it.
 sidebar toggle is the prototype's 28px ghost button, not a 36px outline one (hidden on mobile, so
 the 44px target rule doesn't apply). Checked by measuring a rendered sidebar in the browser: items
 and logo sit centred in the 48px rail, with the prototype's 34px item pitch and 16px group gap.
+
+## Google's Weather API for Conditions (3 October 2026)
+
+Open-Meteo's free API excludes commercial use, so launch needed either its paid plan or another
+source. Owner decision: Google Maps Platform's Weather API (10,000 free calls a month, then US$0.15
+per 1,000), which at DeuceX's volume is free or about a dollar a month.
+
+**Built:**
+- `apps/api/src/conditions/google-adapter.ts`: Google's `forecast/days:lookup`, ten days in one
+  page, metric. Keeps the match days Google covers, so an event that starts within the ten-day
+  horizon but ends beyond it still gets a forecast (Open-Meteo's adapter needs every day covered).
+  Each venue's response is reused in memory for six hours.
+- `index.ts` uses it when `GOOGLE_WEATHER_API_KEY` is set (`.env.example`, `render.yaml`) and
+  falls back to Open-Meteo with a warning otherwise. `WeatherAdapter` now carries its `source`,
+  which `conditions_briefs.forecast_source` records.
+- Migration `20261003090000_conditions_google_forecast_source` widens that column's check to
+  `'google'` and adds a partial index for the sweep below. Owner-confirmed; applied to staging,
+  then production (4 existing rows unchanged).
+
+**Google's terms, and what they changed** (Maps Service Specific Terms 21):
+- Daily forecast values may be cached for 24 hours. Shortlist briefs otherwise refresh only with
+  the weekly run, so the hourly Conditions tick now also refetches every google-sourced brief
+  older than 20 hours, without notifying the player. A finished event gets no forecast back and
+  drops to climate normals, which ends its refreshes.
+- **Stamps store bands, not numbers** (owner decision). A note's stamp is kept for the note's life,
+  so its weather chips are now `Hot`/`Warm`/`Mild`/`Cool` and `Humid`/`Moderate humidity`/`Dry
+  air` (Hot and Humid sit on the 28°C and 70 percent amber thresholds, so amber is unchanged).
+  `stampBands` reads both shapes, so pre-October numeric stamps still feed the brief's comparison
+  sentence, which now compares bands. Windy was considered but left out: it would have moved the
+  ball and place chips, which readers find by position.
+- Attribution: "Includes data from Google Maps" under a google-sourced brief and under band stamps.
+- Using the data to build a weather app is barred (21.1); tennis advice isn't that.
+
+**Limits:** Google forecasts today plus nine days (Open-Meteo did 16), so events further out show
+climate normals until they come within range. Google has no past days, so the 24-hour stamp
+backfill can't stamp a note recorded the day before. Band stamps show Google's attribution even
+when Open-Meteo produced them, which only happens without the key (dev, or production before the
+key is set on Render).
+
+**Owner steps:** create a Google Cloud project with billing, enable the Weather API, make an API
+key restricted to it, and add `GOOGLE_WEATHER_API_KEY` on Render (and in the local `.env` to test).

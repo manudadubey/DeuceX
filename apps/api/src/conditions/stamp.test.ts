@@ -51,7 +51,8 @@ describe('computeNoteStamp · CE-11', () => {
       '2026-09-11T18:42:00Z',
     );
 
-    expect(cond).toEqual(['24°C', '58% RH', 'outdoor clay', 'Dunlop Fort', 'Genoa']);
+    // Bands, not the forecast numbers (Google's 24-hour caching limit).
+    expect(cond).toEqual(['Warm', 'Moderate humidity', 'outdoor clay', 'Dunlop Fort', 'Genoa']);
   });
 
   it('is null when the stamp switch is off', async () => {

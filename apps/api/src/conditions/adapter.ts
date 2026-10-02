@@ -28,5 +28,7 @@ export interface FetchVenueForecastInput {
 // programming error (a malformed input), so a caller can tell "no forecast"
 // from "adapter is broken".
 export interface WeatherAdapter {
+  /** Stored as conditions_briefs.forecast_source; 'google' brings the 24-hour retention rule. */
+  readonly source: 'google' | 'open-meteo';
   fetchForecast(input: FetchVenueForecastInput): Promise<VenueForecastResult | null>;
 }
