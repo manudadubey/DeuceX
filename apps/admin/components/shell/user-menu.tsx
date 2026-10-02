@@ -3,8 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { Check, ChevronsUpDown, KeyRound, LogOut, ScrollText, Waypoints } from 'lucide-react';
 import { ADMIN_ROLE_LABELS, ADMIN_ROLES, roleAtLeast, type AdminRole } from '@deucex/shared';
-import { cn } from '@deucex/ui';
 import {
+  cn,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -12,7 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@deucex/ui';
 import { setRolePreview } from '@/lib/browser-api';
 
 const ROLE_SCOPE: Record<AdminRole, string> = {
@@ -61,7 +61,6 @@ export function UserMenu({
       <DropdownMenuTrigger
         className={cn(
           'flex w-full items-center gap-2.5 rounded-md p-2 text-left outline-none hover:bg-sidebar-accent',
-          'focus-visible:ring-2 focus-visible:ring-ring',
           collapsed && 'justify-center px-0',
         )}
       >

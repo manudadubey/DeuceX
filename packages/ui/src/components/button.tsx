@@ -21,6 +21,9 @@ export const buttonVariants = cva(
         secondary: 'bg-secondary text-secondary-foreground hover:opacity-90',
         ghost: 'bg-transparent text-foreground hover:bg-accent',
         destructive: 'bg-destructive text-white hover:opacity-90',
+        // An underlined text action ("Use a passkey instead", "show in lb"). Sizes keep their
+        // height and 44px mobile target; the compound variant drops the padding.
+        link: 'bg-transparent font-medium text-foreground underline underline-offset-4 hover:opacity-80',
       },
       size: {
         default: 'h-9 px-4',
@@ -29,6 +32,7 @@ export const buttonVariants = cva(
         'icon-sm': 'h-8 w-8 rounded-sm px-0',
       },
     },
+    compoundVariants: [{ variant: 'link', className: 'h-auto px-0' }],
     defaultVariants: {
       variant: 'primary',
       size: 'default',

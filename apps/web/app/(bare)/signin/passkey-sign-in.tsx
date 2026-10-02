@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@deucex/ui';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -22,9 +23,9 @@ export function PasskeySignIn() {
 
   return (
     <>
-      <button type="button" onClick={handleClick} className="font-medium text-foreground underline">
+      <Button variant="link" size="sm" onClick={handleClick}>
         Use a passkey instead
-      </button>
+      </Button>
       {error ? (
         <span role="alert" className="text-danger">
           {' '}

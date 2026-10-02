@@ -12,6 +12,11 @@ import {
   FieldLabel,
   ToggleGroup,
   ToggleGroupItem,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@deucex/ui';
 import {
   updatePreferences,
@@ -174,18 +179,18 @@ export function PreferencesPane({
 
         <Field>
           <FieldLabel htmlFor="pref-date-format">Date and number format</FieldLabel>
-          <select
-            id="pref-date-format"
-            value={dateFormat}
-            onChange={(e) => setDateFormat(e.target.value as DateFormat)}
-            className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
-          >
-            {DATE_FORMATS.map((f) => (
-              <option key={f.value} value={f.value}>
-                {f.label}
-              </option>
-            ))}
-          </select>
+          <Select value={dateFormat} onValueChange={(v) => setDateFormat(v as DateFormat)}>
+            <SelectTrigger id="pref-date-format">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {DATE_FORMATS.map((f) => (
+                <SelectItem key={f.value} value={f.value}>
+                  {f.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
       </FieldGroup>
       <div className="flex flex-col gap-2 border-t border-border pt-6">

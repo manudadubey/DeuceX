@@ -213,13 +213,14 @@ export function AgentsPane({
               <span className="font-medium">{a.label}</span>
               <Badge variant="secondary">Elite</Badge>
             </div>
-            <button
-              type="button"
-              className="text-xs text-muted-foreground underline"
+            <Button
+              variant="link"
+              size="sm"
+              className="text-xs text-muted-foreground"
               onClick={() => onToast(`${a.label} preview: coming with Elite`)}
             >
               Preview
-            </button>
+            </Button>
           </div>
         ))}
       </div>

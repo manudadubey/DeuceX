@@ -13,6 +13,7 @@ import {
   Switch,
   ToggleGroup,
   ToggleGroupItem,
+  Input,
 } from '@deucex/ui';
 import {
   getEquipmentProfile,
@@ -89,12 +90,6 @@ export function EquipmentPane({
     })();
   }, [supabase, playerId]);
 
-  const toggleBall = (ball: string) => {
-    setPracticeBalls((prev) =>
-      prev.includes(ball) ? prev.filter((b) => b !== ball) : [...prev, ball],
-    );
-  };
-
   const handleUnitChange = async (next: Unit) => {
     setUnit(next);
     const nextUnits = next === 'lb' ? 'imperial' : 'metric';
@@ -146,22 +141,20 @@ export function EquipmentPane({
       <FieldGroup>
         <Field>
           <FieldLabel htmlFor="equip-frame">Frame</FieldLabel>
-          <input
+          <Input
             id="equip-frame"
             value={frame}
             onChange={(e) => setFrame(e.target.value)}
-            className="h-9 w-full rounded-md border border-input bg-field px-2.5 text-sm shadow-[0_1px_2px_rgba(0,0,0,.05)] outline-none focus:border-ring"
             placeholder="Wilson Blade 98 · 16×19 · 305 g"
           />
         </Field>
 
         <Field>
           <FieldLabel htmlFor="equip-string">String</FieldLabel>
-          <input
+          <Input
             id="equip-string"
             value={stringName}
             onChange={(e) => setStringName(e.target.value)}
-            className="h-9 w-full rounded-md border border-input bg-field px-2.5 text-sm shadow-[0_1px_2px_rgba(0,0,0,.05)] outline-none focus:border-ring"
             placeholder="Luxilon Alu Power 1.25 · full bed"
           />
         </Field>
@@ -169,22 +162,22 @@ export function EquipmentPane({
         <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
           <Field>
             <FieldLabel htmlFor="equip-mains">Tension · mains ({unit})</FieldLabel>
-            <input
+            <Input
               id="equip-mains"
               type="number"
               value={toDisplayKg(mainsKg, unit)}
               onChange={(e) => setMainsKg(toKg(Number(e.target.value), unit))}
-              className="h-9 w-full rounded-md border border-input bg-field px-2.5 font-mono text-sm shadow-[0_1px_2px_rgba(0,0,0,.05)] outline-none focus:border-ring"
+              className="font-mono"
             />
           </Field>
           <Field>
             <FieldLabel htmlFor="equip-crosses">Tension · crosses ({unit})</FieldLabel>
-            <input
+            <Input
               id="equip-crosses"
               type="number"
               value={toDisplayKg(crossesKg, unit)}
               onChange={(e) => setCrossesKg(toKg(Number(e.target.value), unit))}
-              className="h-9 w-full rounded-md border border-input bg-field px-2.5 font-mono text-sm shadow-[0_1px_2px_rgba(0,0,0,.05)] outline-none focus:border-ring"
+              className="font-mono"
             />
           </Field>
         </div>
@@ -227,11 +220,10 @@ export function EquipmentPane({
 
         <Field>
           <FieldLabel htmlFor="equip-overgrip">Overgrip</FieldLabel>
-          <input
+          <Input
             id="equip-overgrip"
             value={overgrip}
             onChange={(e) => setOvergrip(e.target.value)}
-            className="h-9 w-full rounded-md border border-input bg-field px-2.5 text-sm shadow-[0_1px_2px_rgba(0,0,0,.05)] outline-none focus:border-ring"
             placeholder="Tourna Grip · fresh every match in heat"
           />
         </Field>
@@ -240,19 +232,18 @@ export function EquipmentPane({
           <FieldLabel>
             Balls you practise with <small>· pick any</small>
           </FieldLabel>
-          <div className="flex flex-wrap gap-1.5">
+          <ToggleGroup
+            type="multiple"
+            value={practiceBalls}
+            onValueChange={setPracticeBalls}
+            className="flex flex-wrap gap-1.5"
+          >
             {PRACTICE_BALL_OPTIONS.map((ball) => (
-              <button
-                key={ball}
-                type="button"
-                aria-pressed={practiceBalls.includes(ball)}
-                onClick={() => toggleBall(ball)}
-                className="inline-flex h-[1.875rem] items-center rounded-md border border-input bg-secondary px-2.5 text-[0.8125rem] font-medium aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
-              >
+              <ToggleGroupItem key={ball} value={ball} size="sm">
                 {ball}
-              </button>
+              </ToggleGroupItem>
             ))}
-          </div>
+          </ToggleGroup>
           <FieldDescription>
             The brief flags it when it differs from what you&apos;ve been hitting.
           </FieldDescription>

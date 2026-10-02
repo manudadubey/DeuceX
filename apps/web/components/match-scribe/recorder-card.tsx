@@ -21,6 +21,7 @@ import {
   ToggleGroup,
   ToggleGroupItem,
   cn,
+  Input,
 } from '@deucex/ui';
 import {
   FREE_TIER_MONTHLY_NOTE_LIMIT,
@@ -422,10 +423,6 @@ export function RecorderCard({
     pollForTranscript(id);
   }, [note, onToast, pendingId, phase, pollForTranscript, supabase]);
 
-  const toggleTag = (tag: string) => {
-    setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
-  };
-
   const isFailedTranscription = note?.status === 'failed_transcription';
   const isFailedExtraction = note?.status === 'failed_extraction';
   const isFailed = isFailedTranscription || isFailedExtraction;
@@ -680,15 +677,14 @@ export function RecorderCard({
                         </small>
                       </FieldLabel>
                       <div className="flex flex-col gap-2">
-                        <input
-                          className="h-9 w-full rounded-md border border-input bg-field px-2.5 font-mono text-sm shadow-[0_1px_2px_rgba(0,0,0,.05)] outline-none focus:border-ring"
+                        <Input
+                          className="font-mono"
                           value={result}
                           onChange={(e) => setResult(e.target.value)}
                           placeholder="L 6-4 3-6 6-7(5)"
                           aria-label="Result"
                         />
-                        <input
-                          className="h-9 w-full rounded-md border border-input bg-field px-2.5 text-sm shadow-[0_1px_2px_rgba(0,0,0,.05)] outline-none focus:border-ring"
+                        <Input
                           value={opponent}
                           onChange={(e) => setOpponent(e.target.value)}
                           placeholder="vs D. Kovalenko"
@@ -703,19 +699,18 @@ export function RecorderCard({
                   <FieldLabel>
                     Tags <small>· pick any</small>
                   </FieldLabel>
-                  <div className="flex flex-wrap gap-1.5">
+                  <ToggleGroup
+                    type="multiple"
+                    value={tags}
+                    onValueChange={setTags}
+                    className="flex flex-wrap gap-1.5"
+                  >
                     {[...new Set([...INITIAL_TAG_VOCABULARY, ...tags])].map((tag) => (
-                      <button
-                        key={tag}
-                        type="button"
-                        aria-pressed={tags.includes(tag)}
-                        onClick={() => toggleTag(tag)}
-                        className="inline-flex h-[1.875rem] items-center rounded-md border border-input bg-secondary px-2.5 text-[0.8125rem] font-medium aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
-                      >
+                      <ToggleGroupItem key={tag} value={tag} size="sm">
                         {tag}
-                      </button>
+                      </ToggleGroupItem>
                     ))}
-                  </div>
+                  </ToggleGroup>
                 </Field>
 
                 {note?.cond && Array.isArray(note.cond) && note.cond.length > 0 && (

@@ -15,6 +15,7 @@ import {
   ToastProvider,
   ToastTitle,
   ToastViewport,
+  FieldLabel,
 } from '@deucex/ui';
 import {
   recipientCount,
@@ -317,9 +318,7 @@ export function ContentClient({
             </ul>
           ) : null}
           <div className="grid gap-2">
-            <label className="text-sm font-medium" htmlFor="privateNames">
-              Names kept out of updates
-            </label>
+            <FieldLabel htmlFor="privateNames">Names kept out of updates</FieldLabel>
             <p className="text-[0.8125rem] text-muted-foreground">
               Your coach or team, separated by commas. The agent warns when one appears and Fix
               changes it to &ldquo;my coach&rdquo;.

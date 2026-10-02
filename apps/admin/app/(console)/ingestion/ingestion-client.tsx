@@ -26,6 +26,11 @@ import {
   TableRow,
   Textarea,
   cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@deucex/ui';
 import { dateTime, longDate, relative, shortDate } from '@/components/format';
 import { Grid } from '@/components/page';
@@ -42,11 +47,6 @@ import type {
 import { browserApi, post } from '@/lib/browser-api';
 
 const CORRECTABLE_FIELDS = ['ball', 'entry_deadline', 'altitude_m', 'surface'] as const;
-
-const SELECT = cn(
-  'h-9 rounded-md border border-input bg-field px-2.5 text-sm text-foreground',
-  'shadow-[0_1px_2px_rgba(0,0,0,.05)] outline-none focus:border-ring max-[900px]:min-h-11',
-);
 
 function useLoad<T>(path: string) {
   const [data, setData] = useState<T | null>(null);
@@ -619,18 +619,18 @@ function Corrections() {
             value={tournamentId}
             onChange={(e) => setTournamentId(e.target.value)}
           />
-          <select
-            aria-label="Field"
-            className={SELECT}
-            value={field}
-            onChange={(e) => setField(e.target.value as typeof field)}
-          >
-            {CORRECTABLE_FIELDS.map((f) => (
-              <option key={f} value={f}>
-                {f.replace('_', ' ')}
-              </option>
-            ))}
-          </select>
+          <Select value={field} onValueChange={(v) => setField(v as typeof field)}>
+            <SelectTrigger aria-label="Field">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CORRECTABLE_FIELDS.map((f) => (
+                <SelectItem key={f} value={f}>
+                  {f.replace('_', ' ')}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Input placeholder="New value" value={after} onChange={(e) => setAfter(e.target.value)} />
           <Input placeholder="Source" value={source} onChange={(e) => setSource(e.target.value)} />
         </div>

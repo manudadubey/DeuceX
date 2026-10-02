@@ -12,7 +12,14 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  Checkbox,
   Confirm,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
   Empty,
   Field,
   FieldDescription,
@@ -36,6 +43,9 @@ import {
   PulseTileSpark,
   PulseTileSub,
   PulseTileValue,
+  RadioGroup,
+  RadioGroupCard,
+  RadioGroupItem,
   SampleRankChart,
   Select,
   SelectContent,
@@ -50,6 +60,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  Slider,
   Spinner,
   Stat,
   StatLabel,
@@ -112,6 +123,7 @@ export default function KitchenSinkPage() {
               <Button variant="secondary">Secondary</Button>
               <Button variant="ghost">Ghost</Button>
               <Button variant="destructive">Destructive</Button>
+              <Button variant="link">Link</Button>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm">Small</Button>
@@ -265,6 +277,54 @@ export default function KitchenSinkPage() {
               <Switch defaultChecked />
               Email me when a decision is due
             </label>
+          </Section>
+
+          <Section title="Checkbox, radio, slider, menu">
+            <label className="flex min-h-11 items-center gap-2.5 text-sm">
+              <Checkbox defaultChecked />
+              Show my name on the patron wall
+            </label>
+
+            <RadioGroup defaultValue="email" className="flex flex-wrap gap-4">
+              {['email', 'push'].map((v) => (
+                <label key={v} className="flex min-h-11 items-center gap-2 text-sm">
+                  <RadioGroupItem value={v} />
+                  {v === 'email' ? 'Email' : 'Push'}
+                </label>
+              ))}
+            </RadioGroup>
+
+            <RadioGroup defaultValue="pro" className="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
+              {[
+                ['free', 'Free', 'US$0'],
+                ['pro', 'Pro', 'US$35'],
+                ['elite', 'Elite', 'US$99'],
+              ].map(([v, name, price]) => (
+                <RadioGroupCard key={v} value={v!} className="flex flex-col gap-1 p-4">
+                  <span className="text-[0.9375rem] font-medium">{name}</span>
+                  <span className="text-sm text-muted-foreground">{price} a month</span>
+                </RadioGroupCard>
+              ))}
+            </RadioGroup>
+
+            <Field>
+              <FieldLabel>Weekly budget</FieldLabel>
+              <Slider defaultValue={[1200]} min={400} max={3000} step={50} />
+            </Field>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="self-start">
+                  Open menu
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Signed in as staff</DropdownMenuLabel>
+                <DropdownMenuItem>MCP access</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem variant="destructive">Sign out</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </Section>
 
           <Section title="Fields">

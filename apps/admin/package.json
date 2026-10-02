@@ -10,7 +10,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@base-ui/react": "^1.8.0",
     "@deucex/shared": "workspace:*",
     "@deucex/ui": "workspace:*",
     "@supabase/ssr": "^0.7.0",

@@ -1,3 +1,4 @@
+import { Button } from '@deucex/ui';
 import { redirect } from 'next/navigation';
 import { getMe } from '@/lib/server-api';
 import { createClient } from '@/lib/supabase/server';
@@ -19,9 +20,9 @@ export default async function PasskeyPage() {
           account can never hold one.
         </p>
         <form action="/auth/signout" method="post">
-          <button type="submit" className="text-sm font-medium underline">
+          <Button type="submit" variant="link" size="sm">
             Sign out
-          </button>
+          </Button>
         </form>
       </BareCard>
     );

@@ -10,6 +10,8 @@ import {
   FieldGroup,
   FieldLabel,
   Input,
+  ToggleGroup,
+  ToggleGroupItem,
   Select,
   SelectContent,
   SelectItem,
@@ -17,8 +19,9 @@ import {
   SelectValue,
   Spinner,
   Switch,
-  ToggleGroup,
-  ToggleGroupItem,
+  Slider,
+  RadioGroup,
+  RadioGroupCard,
 } from '@deucex/ui';
 import {
   DEFAULT_AGENT_TOGGLES,
@@ -516,11 +519,11 @@ export function OnboardingWizard({
               <div className="flex flex-col gap-2 rounded-lg bg-surface p-3 shadow-[0_0_0_1px_var(--border)]">
                 <p className="text-sm font-medium">More than one match. Which one is you?</p>
                 {candidates.map((c) => (
-                  <button
+                  <Button
                     key={c.id}
-                    type="button"
+                    variant="outline"
                     onClick={() => chooseCandidate(c)}
-                    className="flex items-center justify-between rounded-md bg-card px-3 py-2 text-left text-sm shadow-[0_0_0_1px_var(--border)] hover:bg-accent"
+                    className="h-auto justify-between bg-card py-2 text-left font-normal"
                   >
                     <span>
                       {c.name} <span className="text-muted-foreground">· {c.country}</span>
@@ -528,15 +531,15 @@ export function OnboardingWizard({
                     <span className="text-muted-foreground">
                       {c.tourRank ? `#${c.tourRank}` : c.itfRank ? `ITF #${c.itfRank}` : ''}
                     </span>
-                  </button>
+                  </Button>
                 ))}
-                <button
-                  type="button"
+                <Button
+                  variant="link"
                   onClick={() => chooseCandidate(null)}
-                  className="text-left text-sm text-muted-foreground underline"
+                  className="justify-start font-normal text-muted-foreground"
                 >
                   None of these, continue unverified
-                </button>
+                </Button>
               </div>
             )}
 
@@ -683,19 +686,17 @@ export function OnboardingWizard({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="ob-budget">
+              <FieldLabel id="ob-budget-label">
                 Weekly budget <small>· travel, stay, coaching, entries</small>
               </FieldLabel>
               <div className="flex items-center gap-4">
-                <input
-                  id="ob-budget"
-                  type="range"
+                <Slider
+                  aria-labelledby="ob-budget-label"
                   min={400}
                   max={3000}
                   step={50}
-                  value={weeklyBudget}
-                  onChange={(e) => setWeeklyBudget(Number(e.target.value))}
-                  className="w-full accent-foreground"
+                  value={[weeklyBudget]}
+                  onValueChange={([v]) => v !== undefined && setWeeklyBudget(v)}
                 />
                 <span className="font-mono text-lg font-medium whitespace-nowrap">
                   A${weeklyBudget.toLocaleString()}
@@ -748,18 +749,16 @@ export function OnboardingWizard({
             </ToggleGroup>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
+          <RadioGroup
+            aria-label="Plan"
+            value={plan}
+            onValueChange={(v) => setPlan(v as typeof plan)}
+            className="grid grid-cols-3 gap-3 max-sm:grid-cols-1"
+          >
             {(['free', 'pro', 'elite'] as const).map((p) => {
               const price = planCardPrice(p, billingCycle);
               return (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPlan(p)}
-                  className={`flex flex-col gap-2.5 rounded-lg bg-card p-4 text-left shadow-[0_0_0_1px_var(--border)] ${
-                    plan === p ? 'shadow-[0_0_0_2px_var(--foreground)]' : ''
-                  }`}
-                >
+                <RadioGroupCard key={p} value={p} className="flex flex-col gap-2.5 p-4">
                   <div className="flex items-center justify-between text-sm font-medium capitalize">
                     {p}
                     {p === 'pro' && <Badge variant="lime">Stage 1 and 2</Badge>}
@@ -778,10 +777,10 @@ export function OnboardingWizard({
                       {formatUsd(planYearlyTotal(p))} billed yearly
                     </div>
                   )}
-                </button>
+                </RadioGroupCard>
               );
             })}
-          </div>
+          </RadioGroup>
 
           <p className="text-[0.8125rem] text-muted-foreground">
             {plan === 'free'

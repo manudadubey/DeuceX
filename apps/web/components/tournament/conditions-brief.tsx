@@ -1,4 +1,4 @@
-import { Badge, Tooltip, TooltipContent, TooltipTrigger } from '@deucex/ui';
+import { Badge, Button, Tooltip, TooltipContent, TooltipTrigger } from '@deucex/ui';
 import {
   convertTensionText,
   formatTension,
@@ -181,13 +181,14 @@ export function ConditionsBrief({
           <div className="flex justify-end">
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="text-xs text-muted-foreground underline decoration-dotted"
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="text-xs font-normal text-muted-foreground decoration-dotted"
                   onClick={() => onUnitChange(unit === 'kg' ? 'lb' : 'kg')}
                 >
                   show in {unit === 'kg' ? 'lb' : 'kg'}
-                </button>
+                </Button>
               </TooltipTrigger>
               <TooltipContent>Synced with Preferences and the Equipment pane.</TooltipContent>
             </Tooltip>
