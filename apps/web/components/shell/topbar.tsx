@@ -66,12 +66,12 @@ export function Topbar({ onToggleSidebar }: TopbarProps) {
         )}
       >
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
           aria-label="Toggle sidebar"
           title="Toggle sidebar (⌘B)"
           onClick={onToggleSidebar}
-          className="max-[900px]:hidden"
+          className="-ml-1.5 h-7 w-7 max-[900px]:hidden"
         >
           <PanelLeft aria-hidden="true" className="size-4" />
         </Button>
