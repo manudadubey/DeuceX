@@ -31,7 +31,7 @@ import {
   type NoteCtx,
   type NoteMood,
 } from '@deucex/db';
-import { isStampChipAt } from '@deucex/agents';
+import { isBandStamp, isStampChipAt } from '@deucex/agents';
 import { createClient } from '@/lib/supabase/client';
 import {
   QuotaExceededError,
@@ -738,6 +738,11 @@ export function RecorderCard({
                         </span>
                       ))}
                     </div>
+                    {isBandStamp(note.cond as string[]) && (
+                      <p className="text-xs text-muted-foreground">
+                        Includes data from Google Maps
+                      </p>
+                    )}
                   </Field>
                 )}
 

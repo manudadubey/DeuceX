@@ -188,3 +188,106 @@ describe('registerConditionsRefreshScheduler · CE-AC-14', () => {
     expect(brief!.diff).toBe('kept diff');
   });
 });
+
+// Google's terms allow a daily forecast to be kept for 24 hours, so a
+// google-sourced brief the Entered-event refresh doesn't cover (a shortlist
+// candidate, or an event outside its travel window) is fetched again after
+// GOOGLE_RETENTION_REFRESH_HOURS, silently.
+describe('registerConditionsRefreshScheduler · 24-hour Google retention', () => {
+  const NOW = new Date('2026-09-21T12:00:00Z');
+  const SINTRA = { ...LISBOA, id: 'sintra', name: 'Sintra', start_date: '2026-09-24' };
+  const PAST = {
+    ...LISBOA,
+    id: 'past',
+    name: 'Past',
+    start_date: '2026-09-07',
+    end_date: '2026-09-13',
+  };
+
+  function brief(tournamentId: string, hoursOld: number, source = 'google') {
+    return {
+      id: `brief-${tournamentId}`,
+      player_id: 'player-1',
+      tournament_id: tournamentId,
+      tension: false,
+      ball_diff: true,
+      frames: 3,
+      temp_max: 22,
+      rh_max: 60,
+      diff: 'kept diff',
+      practice: 'kept practice',
+      forecast_source: source,
+      forecast_at: new Date(NOW.getTime() - hoursOld * 3_600_000).toISOString(),
+    };
+  }
+
+  async function runOnce(
+    fake: FakeDb,
+    forecast: Parameters<typeof createFixtureWeatherAdapter>[0],
+  ) {
+    let workFn: (() => Promise<void>) | null = null;
+    const fakeBoss = {
+      work: async (_queue: string, fn: () => Promise<void>) => {
+        workFn = fn;
+      },
+    } as unknown as PgBoss;
+    await registerConditionsRefreshScheduler(fakeBoss, {
+      db: asDb(fake),
+      agentRuns: fakeAgentRunsDb(),
+      weatherAdapter: { ...createFixtureWeatherAdapter(forecast), source: 'google' },
+      proseClient: createMockProseClient(),
+      now: () => NOW,
+    });
+    await workFn!();
+  }
+
+  it('refetches a 21-hour-old shortlist brief, leaves a 10-hour-old one, and never notifies', async () => {
+    const fake = new FakeDb();
+    fake.tables.tournaments = [LISBOA, SINTRA];
+    fake.tables.entry_decisions = [];
+    fake.tables.conditions_briefs = [brief('lisboa', 21), brief('sintra', 10)];
+
+    await runOnce(fake, {
+      tempMaxC: 31,
+      tempMinC: 24,
+      rhMinPct: 60,
+      rhMaxPct: 75,
+      windMinKmh: 15,
+      windMaxKmh: 25,
+    });
+
+    const rows = fake.tables.conditions_briefs ?? [];
+    const lisboa = rows.find((b) => b.tournament_id === 'lisboa')!;
+    const sintra = rows.find((b) => b.tournament_id === 'sintra')!;
+    expect(lisboa.forecast_at).toBe(NOW.toISOString());
+    expect(lisboa.temp_max).toBe(31);
+    expect(sintra.temp_max).toBe(22);
+    expect(fake.tables.notifications ?? []).toHaveLength(0);
+  });
+
+  it('drops a finished event to climate normals, which ends its refreshes', async () => {
+    const fake = new FakeDb();
+    fake.tables.tournaments = [PAST];
+    fake.tables.entry_decisions = [];
+    fake.tables.conditions_briefs = [brief('past', 23)];
+
+    await runOnce(fake, null);
+
+    const row = (fake.tables.conditions_briefs ?? []).find((b) => b.tournament_id === 'past')!;
+    expect(row.forecast_source).toBe('climate-normals');
+    expect(row.refreshed).toBe(false);
+  });
+
+  it('ignores briefs from other sources', async () => {
+    const fake = new FakeDb();
+    fake.tables.tournaments = [LISBOA];
+    fake.tables.entry_decisions = [];
+    fake.tables.conditions_briefs = [brief('lisboa', 30, 'open-meteo')];
+
+    await runOnce(fake, null);
+
+    const row = (fake.tables.conditions_briefs ?? []).find((b) => b.tournament_id === 'lisboa')!;
+    expect(row.forecast_source).toBe('open-meteo');
+    expect(row.temp_max).toBe(22);
+  });
+});

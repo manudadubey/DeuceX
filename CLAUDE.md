@@ -549,7 +549,11 @@ Later the same day, PRs [#48](https://github.com/manudadubey/DeuceX/pull/48) to
   already exists fails the whole file on the unique index. Fine for one week at a time; a
   multi-week history file needs both fixed first.
 
-**As of 28 September 2026 (evening), no PRs are open and `main` has everything above.** The owner
+On 3 October 2026, [PR #58](https://github.com/manudadubey/DeuceX/pull/58) fixed the collapsed
+sidebar to match the prototype, and [PR #59](https://github.com/manudadubey/DeuceX/pull/59) moved
+Conditions forecasts to Google's Weather API (see the open follow-ups). Both are merged.
+
+**As of 3 October 2026, no PRs are open and `main` has everything above.** The owner
 merges PRs: Claude's auto mode usually refuses to merge, or retarget a PR's base, without a human
 review; when the owner asks, it has sometimes allowed it, otherwise the owner runs `gh pr merge`.
 Merge only after the `build` check passes (#48 was merged on a failing format check and needed a
@@ -603,6 +607,12 @@ ap-northeast-1). Owner decision, 26 September 2026: no Supabase upgrade until go
 - `.env` has `STAGING_SUPABASE_URL` and `STAGING_SUPABASE_SECRET_KEY`.
 
 **Open follow-ups:**
+- **Set `GOOGLE_WEATHER_API_KEY` on Render** (Google Cloud project with billing, Weather API
+  enabled, key restricted to it). Conditions forecasts moved to Google's Weather API on 3 October
+  2026 (Open-Meteo's free API is non-commercial); without the key the API still uses Open-Meteo.
+  Google's terms: forecast values kept 24 hours (briefs refetched within 20), note stamps store
+  bands (`Hot`, `Humid`), not numbers, and "Includes data from Google Maps" is shown. See the build
+  log's entry.
 - **GST, before launch (accountant):** the sandbox's Stripe Tax settings add 10% GST on top for
   an Australian address, so Checkout showed US$38.50 instead of US$35. Australian consumers must
   see a GST-inclusive price. Once the accountant answers (registered or not, inclusive or on

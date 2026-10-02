@@ -167,6 +167,11 @@ export function ConditionsBrief({
         </p>
       )}
 
+      {/* Google's Weather API policy: derived content carries this line, kept visibly apart. */}
+      {c.forecastSource === 'google' && (
+        <p className="text-xs text-muted-foreground">Includes data from Google Maps</p>
+      )}
+
       {isFree ? (
         <LockedSection onToast={onToast} label="Pro shows the racquet visual and tension test">
           {racquetAndTest}
