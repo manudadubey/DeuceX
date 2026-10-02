@@ -101,6 +101,7 @@ import {
   type EmailClient,
 } from '@deucex/actions/account';
 import { registerConditionsRoutes, type ConditionsRoutesDeps } from './conditions/routes';
+import { createGoogleWeatherAdapter } from './conditions/google-adapter';
 import { createOpenMeteoAdapter } from './conditions/openmeteo-adapter';
 import { registerConditionsRefreshScheduler } from './conditions/refresh-scheduler';
 import { registerConditionsStampBackfillScheduler } from './conditions/stamp-backfill-scheduler';
@@ -383,9 +384,18 @@ async function main() {
         );
         return createMockReceiptExtractionClient();
       })();
-  // Open-Meteo needs no API key (like ECB, fx/ecb-adapter.ts's own comment),
-  // so it is always wired in — no fixture-vs-real fallback branch here.
-  const weatherAdapter = createOpenMeteoAdapter();
+  // Google's Weather API in production (owner decision, 3 October 2026);
+  // Open-Meteo's keyless API, which excludes commercial use, otherwise, for
+  // dev and staging.
+  const googleWeatherApiKey = process.env.GOOGLE_WEATHER_API_KEY;
+  const weatherAdapter = googleWeatherApiKey
+    ? createGoogleWeatherAdapter({ apiKey: googleWeatherApiKey })
+    : (() => {
+        console.warn(
+          'GOOGLE_WEATHER_API_KEY not set: Conditions forecasts use Open-Meteo, whose free API is non-commercial. Set it before launch.',
+        );
+        return createOpenMeteoAdapter();
+      })();
   // Same OpenAI account again for the Conditions brief's comparison-and-
   // practice prose (step 3.3), batched up to five briefs per call.
   const proseClient = openaiApiKey

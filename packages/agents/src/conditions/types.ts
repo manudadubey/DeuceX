@@ -4,6 +4,17 @@
 
 export type Unit = 'kg' | 'lb';
 
+/**
+ * Where a brief's numbers came from. 'google' is Google's Weather API, whose terms (Maps
+ * Service Specific Terms 21.2) allow a daily forecast to be kept for 24 hours only, so a
+ * google-sourced brief is refreshed or replaced within that window (refresh-scheduler.ts).
+ */
+export type ForecastSource = 'google' | 'open-meteo' | 'climate-normals';
+
+/** A stamp's weather, as DeuceX's own bands rather than the provider's numbers (see stamp.ts). */
+export type TempBand = 'Hot' | 'Warm' | 'Mild' | 'Cool';
+export type HumidityBand = 'Humid' | 'Moderate humidity' | 'Dry air';
+
 export interface VenueForecastInput {
   /** Forecast maximum across the match days, °C. Drives the Air amber rule (section 7). */
   tempMaxC: number;
@@ -15,7 +26,7 @@ export interface VenueForecastInput {
   /** Null indoors (PRD-08 4.1: "wind shows 'None'"). */
   windMinKmh: number | null;
   windMaxKmh: number | null;
-  source: 'open-meteo' | 'climate-normals';
+  source: ForecastSource;
   /** False when the Air tile reads "not refreshed" (CE-19). */
   refreshed: boolean;
   fetchedAt: string;
@@ -42,7 +53,8 @@ export interface EquipmentProfileInput {
 
 export interface PreviousStampedEventInput {
   place: string;
-  tempMaxC: number;
+  tempBand: TempBand;
+  humidityBand: HumidityBand;
   ball: string | null;
 }
 
@@ -72,7 +84,7 @@ export interface ConditionsBriefRules {
   framesSubLine: string;
   grip: string;
   refreshed: boolean;
-  forecastSource: 'open-meteo' | 'climate-normals';
+  forecastSource: ForecastSource;
 }
 
 export interface ConditionsBrief extends ConditionsBriefRules {

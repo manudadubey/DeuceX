@@ -41,6 +41,10 @@ services:
       # Vendors.
       - key: OPENAI_API_KEY
         sync: false
+      # Conditions forecasts. Without it the API falls back to Open-Meteo,
+      # whose free API is non-commercial.
+      - key: GOOGLE_WEATHER_API_KEY
+        sync: false
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM_ADDRESS

@@ -16,6 +16,7 @@ export function createFixtureWeatherAdapter(
   onFetch?: () => void,
 ): WeatherAdapter {
   return {
+    source: 'open-meteo',
     async fetchForecast() {
       onFetch?.();
       return result;

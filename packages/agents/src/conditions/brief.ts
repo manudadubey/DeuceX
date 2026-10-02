@@ -60,7 +60,7 @@ export function computeConditionsBriefRules(input: ConditionsBriefRuleInput): Co
     tournament.altitudeM,
     ballDiff,
     equipment,
-    forecast.source === 'open-meteo',
+    forecast.source !== 'climate-normals',
   );
   const framesResult = computeFramesToBring(
     tensionResult.tension,

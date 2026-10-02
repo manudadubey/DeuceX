@@ -52,6 +52,7 @@ export function parseOpenMeteoResponse(body: OpenMeteoDailyResponse): VenueForec
 // PRD-08 CE-19 describes, not an adapter failure.
 export function createOpenMeteoAdapter(): WeatherAdapter {
   return {
+    source: 'open-meteo',
     async fetchForecast(input: FetchVenueForecastInput): Promise<VenueForecastResult | null> {
       const url = new URL(OPEN_METEO_URL);
       url.searchParams.set('latitude', String(input.lat));

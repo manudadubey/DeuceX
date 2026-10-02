@@ -65,7 +65,7 @@ export function computeTension(
   altitudeM: number | null,
   ballDiff: boolean,
   equipment: Pick<EquipmentProfileInput, 'mainsKg' | 'crossesKg'>,
-  // CE-19: a climate-normals forecast (source !== 'open-meteo') never
+  // CE-19: a climate-normals forecast (not a live provider's) never
   // proposes a test, whatever the normal numbers would otherwise trigger —
   // false here short-circuits straight to the "no test" result below.
   allowTest = true,

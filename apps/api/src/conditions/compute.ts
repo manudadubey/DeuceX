@@ -3,6 +3,7 @@ import type { Database } from '@deucex/db';
 import {
   climateNormalFor,
   computeConditionsBriefRules,
+  stampBands,
   type ConditionsBriefRules,
   type EquipmentProfileInput,
   type PreviousStampedEventInput,
@@ -75,7 +76,12 @@ export async function fetchForecastOrNormals(
       endDate: tournament.end_date,
     });
     if (result) {
-      return { ...result, source: 'open-meteo', refreshed: true, fetchedAt: now.toISOString() };
+      return {
+        ...result,
+        source: weatherAdapter.source,
+        refreshed: true,
+        fetchedAt: now.toISOString(),
+      };
     }
   }
 
@@ -113,13 +119,14 @@ export async function loadPreviousStampedEvent(
   if (error) throw error;
   if (!data?.cond || !Array.isArray(data.cond)) return null;
 
+  // Bands from either stamp shape: numeric before 3 October 2026, bands since.
   const chips = data.cond as string[];
-  const tempMaxC = Number.parseFloat(chips[0] ?? '');
+  const bands = stampBands(chips);
   const ball = chips[3] ?? null;
   const place = chips[4] ?? null;
-  if (Number.isNaN(tempMaxC) || !place) return null;
+  if (!bands || !place) return null;
 
-  return { place, tempMaxC, ball: ball === 'Ball not published yet' ? null : ball };
+  return { place, ...bands, ball: ball === 'Ball not published yet' ? null : ball };
 }
 
 export interface ComputedBrief {
