@@ -3746,7 +3746,7 @@ notes in IndexedDB. Owner decision the same day: deploy `apps/api` now, not at l
   signed event has arrived yet.
 - The uptime workflow's repository variable `API_HEALTH_URL` is set to the `/health` URL.
 
-**Still open:** two events cancelled only in their name reached production before
+**Done later the same day** (the owner asked for it to be run): two events cancelled only in their name reached production before
 [PR #44](https://github.com/manudadubey/DeuceX/pull/44)'s converter fix. Auto mode declined the
 delete, so it's the owner's to run (Supabase SQL editor). It also removes the Stillwater shortlist
 row, the untouched (`none`, no approvals) entry decision and the conditions brief left by the
@@ -3772,6 +3772,21 @@ Owner decision: no card outline on mobile. The four tiles now carry `data-bl-car
 in every contrast mode, so on phones this overrides the Baseline's "more contrast replaces hairline
 rings" for cards; cards are set apart by their background. Desktop is unchanged. The onboarding
 plan and candidate buttons keep their ring, since it marks the selected option.
+
+## Evening fixes (28 September 2026)
+
+PRs [#48](https://github.com/manudadubey/DeuceX/pull/48) to
+[#56](https://github.com/manudadubey/DeuceX/pull/56), all merged; `CLAUDE.md` carries the details.
+- The two cancelled ITF events were deleted with the stage-1 test rows that referenced them; the
+  calendar has 300 events.
+- Sign-up emails failed for every address but the owner's: Supabase's SMTP sender was still
+  Resend's test sender `onboarding@resend.dev`. It's `DeuceX <signin@mail.deucex.ai>` now, verified
+  with a live sign-up to `delivered@resend.dev`.
+- `/auth/confirm` styled like sign-in (#50); no card outline on mobile, owner decision (#51);
+  ranking hero column width (#52); Match Scribe Discard reports failures and Render accepts the
+  local dev origin (#53); the Tournament Net outcome rail (#54) and PRD-01's detail order (#56).
+- Process: #48 was merged on a failing format check (fixed in #49), and merging #54 with
+  `--delete-branch` closed its stacked PR #55, reopened as #56.
 
 ## Collapsed sidebar matches the prototype (3 October 2026)
 
