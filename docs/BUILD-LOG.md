@@ -3772,3 +3772,16 @@ Owner decision: no card outline on mobile. The four tiles now carry `data-bl-car
 in every contrast mode, so on phones this overrides the Baseline's "more contrast replaces hairline
 rings" for cards; cards are set apart by their background. Desktop is unchanged. The onboarding
 plan and candidate buttons keep their ring, since it marks the selected option.
+
+## Collapsed sidebar matches the prototype (3 October 2026)
+
+The owner saw the collapsed sidebar looking squashed next to `docs/deucex-dashboard.html`. Cause:
+the 48px rail kept the expanded sidebar's 8px side padding on the logo row, each nav group and the
+footer, leaving 16px for 32px items, so the icons spilled right and the 30px logo shrank to about
+16px. The prototype's `.shell.collapsed` rules drop that padding; `sidebar.tsx` now does the same,
+the logo is `shrink-0`, and the `<aside>` and `<nav>` flex gaps are gone (the prototype has none,
+so group spacing was about double; this tightens the expanded sidebar too). Collapsed items with a
+badge show the prototype's 6px dot in the badge's colour instead of dropping it. The topbar's
+sidebar toggle is the prototype's 28px ghost button, not a 36px outline one (hidden on mobile, so
+the 44px target rule doesn't apply). Checked by measuring a rendered sidebar in the browser: items
+and logo sit centred in the 48px rail, with the prototype's 34px item pitch and 16px group gap.
