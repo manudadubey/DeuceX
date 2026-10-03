@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
-import { cn } from '@deucex/ui';
+import { cn, InputGroup, InputGroupInput } from '@deucex/ui';
 
 // The global player search (PRD-13 AD-7): ⌘K focuses it, Enter lands on
 // Players with the query applied, Escape leaves it.
@@ -24,17 +24,11 @@ export function PlayerSearch({ className }: { className?: string }) {
   }, []);
 
   return (
-    <label
-      className={cn(
-        'flex h-9 items-center gap-2 rounded-md border border-input bg-field px-2.5 text-sm',
-        'shadow-[0_1px_2px_rgba(0,0,0,.05)] focus-within:ring-2 focus-within:ring-ring',
-        className,
-      )}
-    >
-      <Search aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
-      <span className="sr-only">Find a player</span>
-      <input
+    <InputGroup className={cn('text-sm shadow-[0_1px_2px_rgba(0,0,0,.05)]', className)}>
+      <Search aria-hidden="true" className="size-4 shrink-0" />
+      <InputGroupInput
         ref={ref}
+        aria-label="Find a player"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
@@ -46,11 +40,10 @@ export function PlayerSearch({ className }: { className?: string }) {
         }}
         placeholder="Find a player by name, email or ranking number"
         autoComplete="off"
-        className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
       />
       <kbd className="rounded border border-border px-1 font-mono text-[0.6875rem] text-muted-foreground max-[900px]:hidden">
         ⌘K
       </kbd>
-    </label>
+    </InputGroup>
   );
 }

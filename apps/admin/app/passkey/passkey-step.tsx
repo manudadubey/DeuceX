@@ -65,9 +65,9 @@ export function PasskeyStep({ name, registered }: { name: string; registered: bo
         </p>
       ) : null}
       <form action="/auth/signout" method="post">
-        <button type="submit" className="text-sm text-muted-foreground underline">
+        <Button type="submit" variant="link" size="sm" className="text-muted-foreground">
           Sign out
-        </button>
+        </Button>
       </form>
     </div>
   );

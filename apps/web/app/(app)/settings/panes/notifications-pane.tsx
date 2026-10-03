@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
   TableWrap,
+  Input,
 } from '@deucex/ui';
 import {
   NOTIFICATION_AGENTS,
@@ -218,18 +219,18 @@ export function NotificationsPane({
       <div className="flex flex-col gap-3 border-t border-border pt-6">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm font-medium">Quiet hours</span>
-          <input
+          <Input
             type="time"
             value={quietStart}
             onChange={(e) => setQuietStart(e.target.value)}
-            className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+            className="w-auto"
           />
           <span className="text-sm text-muted-foreground">to</span>
-          <input
+          <Input
             type="time"
             value={quietEnd}
             onChange={(e) => setQuietEnd(e.target.value)}
-            className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+            className="w-auto"
           />
         </div>
         <FieldDescription>

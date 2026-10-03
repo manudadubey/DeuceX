@@ -19,7 +19,7 @@ async function authHeaders(supabase: SupabaseClient<Database>): Promise<HeadersI
   return { Authorization: `Bearer ${token}` };
 }
 
-// The confirm half runs unauthenticated (apps/web/app/account/delete/confirm),
+// The confirm half runs unauthenticated (apps/web/app/(bare)/account/delete/confirm),
 // so it calls fetch directly rather than through this file's authHeaders.
 
 export async function requestAccountDeletion(

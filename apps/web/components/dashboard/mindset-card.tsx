@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Brain, Target } from 'lucide-react';
-import { Badge, Card, Progress, cn } from '@deucex/ui';
+import { Badge, Card, Progress, cn, ToggleGroup, ToggleGroupItem } from '@deucex/ui';
 import { getInsightByDate, listCheckIns, saveCheckIn, type Insight } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
 import { AgentHeader } from './agent-header';
@@ -153,23 +153,24 @@ export function MindsetCard({
             {status ?? (value ? `Today · ${value}/5` : '1 flat · 5 energised')}
           </span>
         </div>
-        <div className="grid grid-cols-5 gap-1.5" role="group" aria-label="Today's mood">
+        <ToggleGroup
+          type="single"
+          aria-label="Today's mood"
+          value={value ? String(value) : ''}
+          onValueChange={(v) => v && void handlePick(Number(v) as (typeof VALUES)[number])}
+          disabled={saving}
+          className="grid grid-cols-5 gap-1.5"
+        >
           {VALUES.map((n) => (
-            <button
+            <ToggleGroupItem
               key={n}
-              type="button"
-              aria-pressed={value === n}
-              disabled={saving}
-              onClick={() => void handlePick(n)}
-              className={cn(
-                'h-9 rounded-md border border-input bg-background text-sm font-medium tabular-nums transition-colors hover:bg-accent max-[900px]:h-11',
-                value === n && 'border-primary bg-primary text-primary-foreground hover:bg-primary',
-              )}
+              value={String(n)}
+              className="justify-center bg-background tabular-nums shadow-none"
             >
               {n}
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
       </div>
     </Card>
   );

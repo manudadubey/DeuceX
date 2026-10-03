@@ -3841,3 +3841,46 @@ key is set on Render).
 
 **Owner steps:** create a Google Cloud project with billing, enable the Weather API, make an API
 key restricted to it, and add `GOOGLE_WEATHER_API_KEY` on Render (and in the local `.env` to test).
+
+## Interface review: shadcn components throughout (3 October 2026)
+
+The owner asked for a check that the interface uses shadcn components. `packages/ui` is the
+shadcn-style port of the Baseline (shadcn's Vega preset: Radix, `cva`, `cn()`, shadcn's names
+and parts), and most screens used it. The review found one page with no styling, controls that
+bypassed components the library already had, four shadcn components the library lacked, and a
+second primitive library in the admin console.
+
+**Fixed:**
+- The account-deletion confirm page (the email link) was bare HTML. It moved into the `(bare)`
+  route group (same URL) and uses the sign-in card with a destructive `Button`, like
+  `/auth/confirm`.
+- New in `packages/ui`, each with a `/kitchen-sink` example: `Button variant="link"`, `Checkbox`,
+  `Slider` (its accessible name goes on the thumb), `RadioGroup` with `RadioGroupItem` and a
+  `RadioGroupCard` choice card, and a Radix `DropdownMenu`.
+- Call sites moved onto the library:
+  - 10 underlined text buttons now use the link variant.
+  - 9 hand-styled inputs now use `Input`, and two search boxes use `InputGroup`.
+  - 4 native selects (Preferences, admin player filters, fact corrections) now use `Select`. The
+    admin filters map "All" to `all`, since Radix Select has no empty value.
+  - Practice-ball and note-tag chips and the 1–5 mood picker now use `ToggleGroup`.
+  - The patron-wall opt-in, content recipients and the Mindset focus row now use `Checkbox`; the
+    last two keep a whole-row `<label>`.
+  - The onboarding budget now uses `Slider` and the plan picker uses `RadioGroupCard`. The
+    ranking candidates commit on tap, so they're outline `Button`s, not radios.
+  - Three standalone labels now use `FieldLabel`.
+- The admin console's user menu moved from Base UI to the shared Radix `DropdownMenu`; the local
+  `components/ui/dropdown-menu.tsx` and `@base-ui/react` are gone, and `components.json` says
+  `radix-vega`.
+- `apps/web/vitest.setup.ts` stubs `ResizeObserver` (jsdom lacks it; Radix Slider measures thumbs).
+
+**Left as they are, deliberately:**
+- The shell (sidebar, tab bar, the floating Capture button), the record button, the Settings
+  section nav, the tournament shortlist rows (`role="option"`), Fans tier rows and the notification
+  rows: prototype-specific interactive pieces.
+- `<label>` wrapping a `Switch`, which is valid.
+- Two native `<details>` sections, and hidden or file `<input>`s.
+
+**Checked:** typecheck passes everywhere. Tests pass: web 38, ui 3. Format passes, and lint is
+clean except a stray local worktree folder outside the branch. In the browser, the deletion
+page and every new component render and work (the menu opens with its label, separator and
+destructive item).

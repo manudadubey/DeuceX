@@ -10,6 +10,7 @@ import {
   Field,
   FieldLabel,
   Input,
+  Checkbox,
 } from '@deucex/ui';
 import { formatPatronMoney } from '@deucex/agents';
 
@@ -57,13 +58,13 @@ function ManageMembership({ page, firstName }: { page: PublicPatronPage; firstNa
 
   if (!open) {
     return (
-      <button
-        type="button"
-        className="min-h-11 justify-self-start text-sm underline"
+      <Button
+        variant="link"
+        className="min-h-11 justify-self-start font-normal whitespace-normal"
         onClick={() => setOpen(true)}
       >
         Already backing {firstName}? Change tier, update your card or cancel
-      </button>
+      </Button>
     );
   }
   if (state === 'done') {
@@ -240,11 +241,10 @@ export function PatronPage({ page, source }: { page: PublicPatronPage; source: s
             </Card>
           ))}
           <label className="flex min-h-11 items-start gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="mt-1 size-4"
+            <Checkbox
+              className="mt-0.5"
               checked={namesOptIn}
-              onChange={(e) => setNamesOptIn(e.target.checked)}
+              onCheckedChange={(c) => setNamesOptIn(c === true)}
             />
             <span>
               Thank me by first name on {firstName}&apos;s page. Only your first name is ever shown.

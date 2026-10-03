@@ -17,6 +17,8 @@ import {
   TooltipContent,
   TooltipTrigger,
   cn,
+  InputGroup,
+  InputGroupInput,
 } from '@deucex/ui';
 import { listNotes, type Note, type NoteCtx } from '@deucex/db';
 import { isBandStamp, isStampChipAt } from '@deucex/agents';
@@ -204,16 +206,15 @@ export function HistorySection({
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-          <label className="ml-auto flex h-9 max-w-xs flex-[1_1_12.5rem] items-center gap-2 rounded-md border border-input bg-field px-2.5 shadow-[0_1px_2px_rgba(0,0,0,.05)] focus-within:border-ring">
-            <Search aria-hidden="true" className="size-4 text-muted-foreground" />
-            <input
+          <InputGroup className="ml-auto max-w-xs flex-[1_1_12.5rem] shadow-[0_1px_2px_rgba(0,0,0,.05)]">
+            <Search aria-hidden="true" className="size-4 shrink-0" />
+            <InputGroupInput
               placeholder="Search transcripts"
               aria-label="Search transcripts"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none"
             />
-          </label>
+          </InputGroup>
         </div>
 
         {loaded && visible.length === 0 && (

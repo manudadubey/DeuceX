@@ -3,12 +3,18 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
-import { InputGroup, InputGroupInput, cn } from '@deucex/ui';
+import {
+  InputGroup,
+  InputGroupInput,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@deucex/ui';
 
-const SELECT = cn(
-  'h-9 rounded-md border border-input bg-field px-2.5 text-sm text-foreground',
-  'shadow-[0_1px_2px_rgba(0,0,0,.05)] outline-none focus:border-ring max-[900px]:min-h-11',
-);
+// Radix Select has no empty-string item, so "All" is ALL here and '' in the URL.
+const ALL = 'all';
 
 const STATUSES = ['Active', 'Trial', 'Past due', 'Unverified', 'Minor', 'Dormant', 'Deleting'];
 
@@ -37,30 +43,30 @@ export function PlayerFilters({ q, tier, status }: { q: string; tier: string; st
           onKeyDown={(e) => e.key === 'Enter' && go({ q: query })}
         />
       </InputGroup>
-      <select
-        aria-label="Tier"
-        className={SELECT}
-        value={tier}
-        onChange={(e) => go({ tier: e.target.value })}
-      >
-        <option value="">All tiers</option>
-        <option value="free">Free</option>
-        <option value="pro">Pro</option>
-        <option value="elite">Elite</option>
-      </select>
-      <select
-        aria-label="Status"
-        className={SELECT}
-        value={status}
-        onChange={(e) => go({ status: e.target.value })}
-      >
-        <option value="">All statuses</option>
-        {STATUSES.map((s) => (
-          <option key={s} value={s}>
-            {s}
-          </option>
-        ))}
-      </select>
+      <Select value={tier || ALL} onValueChange={(v) => go({ tier: v === ALL ? '' : v })}>
+        <SelectTrigger aria-label="Tier" className="w-auto min-w-36">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>All tiers</SelectItem>
+          <SelectItem value="free">Free</SelectItem>
+          <SelectItem value="pro">Pro</SelectItem>
+          <SelectItem value="elite">Elite</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={status || ALL} onValueChange={(v) => go({ status: v === ALL ? '' : v })}>
+        <SelectTrigger aria-label="Status" className="w-auto min-w-40">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>All statuses</SelectItem>
+          {STATUSES.map((s) => (
+            <SelectItem key={s} value={s}>
+              {s}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

@@ -16,6 +16,7 @@ import {
   Input,
   Spinner,
   Textarea,
+  FieldLabel,
 } from '@deucex/ui';
 import { countLine, type RewriteVariant, type SendTimeOption } from '@deucex/agents';
 import type { PatronUpdate } from '@/lib/content/api';
@@ -362,9 +363,7 @@ export function EditorCard(props: EditorCardProps) {
       ) : null}
 
       <div className="grid gap-2">
-        <label className="text-sm font-medium" htmlFor="caSubj">
-          Subject
-        </label>
+        <FieldLabel htmlFor="caSubj">Subject</FieldLabel>
         <Input
           id="caSubj"
           value={props.subject}
@@ -376,14 +375,15 @@ export function EditorCard(props: EditorCardProps) {
           <div className="flex flex-wrap items-center gap-2 text-[0.8125rem] text-muted-foreground">
             <span>Or:</span>
             {update.altSubjects.map((alt) => (
-              <button
+              <Button
                 key={alt}
-                type="button"
-                className="min-h-8 rounded-sm px-2 underline decoration-dotted underline-offset-4 hover:text-foreground"
+                variant="link"
+                size="sm"
+                className="text-[0.8125rem] font-normal text-muted-foreground decoration-dotted hover:text-foreground"
                 onClick={() => props.onSwapSubject(alt)}
               >
                 {alt}
-              </button>
+              </Button>
             ))}
           </div>
         ) : null}

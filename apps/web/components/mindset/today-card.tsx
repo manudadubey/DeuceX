@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Check, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -14,6 +14,7 @@ import {
   CardTitle,
   Empty,
   cn,
+  Checkbox,
 } from '@deucex/ui';
 import { setInsightFeedback, setInsightFocusDone, type Insight } from '@deucex/db';
 import { createClient } from '@/lib/supabase/client';
@@ -188,22 +189,12 @@ export function TodayCard({
       </div>
 
       {current.focus && (
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={focusDone}
-          onClick={() => void handleFocusToggle()}
-          className="mx-6 grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl bg-surface px-4 py-3.5 text-left shadow-[0_0_0_1px_var(--border)]"
-        >
-          <span
-            aria-hidden="true"
-            className={cn(
-              'grid size-[1.375rem] place-items-center rounded-md border border-input bg-field',
-              focusDone && 'border-primary bg-primary text-primary-foreground',
-            )}
-          >
-            {focusDone && <Check className="size-3.5 stroke-[2.5]" />}
-          </span>
+        <label className="mx-6 grid cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl bg-surface px-4 py-3.5 text-left shadow-[0_0_0_1px_var(--border)]">
+          <Checkbox
+            className="size-[1.375rem] rounded-md [&_svg]:size-3.5"
+            checked={focusDone}
+            onCheckedChange={() => void handleFocusToggle()}
+          />
           <span>
             <span className="block text-[0.6875rem] font-medium tracking-[.06em] text-muted-foreground uppercase">
               Today&apos;s focus
@@ -220,7 +211,7 @@ export function TodayCard({
           <Badge variant={focusDone ? 'ok' : 'secondary'} className="tabular-nums">
             {focusDone ? `Done · ${doneCount} of the last ${lastFive.length}` : 'Tap when done'}
           </Badge>
-        </button>
+        </label>
       )}
 
       <CardFooter className="flex-wrap gap-2 text-[0.8125rem] text-muted-foreground">

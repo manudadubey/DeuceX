@@ -10,11 +10,11 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Spinner,
+  cn,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-  cn,
+  Spinner,
 } from '@deucex/ui';
 import {
   ALLERGEN_CONFIRM_LINE,
@@ -123,14 +123,15 @@ function PickRow({
           {logged ? 'Logged' : "I'm having this"}
         </Button>
         {logged && (
-          <button
-            type="button"
-            className="min-h-8 text-xs text-muted-foreground underline max-[900px]:min-h-11"
+          <Button
+            variant="link"
+            size="sm"
+            className="text-xs text-muted-foreground"
             onClick={onUndo}
             disabled={busy}
           >
             Undo
-          </button>
+          </Button>
         )}
       </div>
     </li>

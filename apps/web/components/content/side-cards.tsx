@@ -14,6 +14,8 @@ import {
   SelectValue,
   Switch,
   cn,
+  Checkbox,
+  FieldLabel,
 } from '@deucex/ui';
 import {
   recipientLine,
@@ -63,39 +65,30 @@ export function RecipientsCard({
         {tiers.map((t) => {
           const on = selected.includes(t.id);
           return (
-            <button
+            <label
               key={t.id}
-              type="button"
-              role="checkbox"
-              aria-checked={on}
-              disabled={disabled}
-              onClick={() => onToggleTier(t.id)}
               className={cn(
-                'grid min-h-11 grid-cols-[auto_1fr_auto] items-center gap-x-3 rounded-lg px-3 py-2 text-left',
-                'shadow-[0_0_0_1px_var(--border)] hover:bg-accent disabled:opacity-60',
+                'grid min-h-11 cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-x-3 rounded-lg px-3 py-2 text-left',
+                'shadow-[0_0_0_1px_var(--border)] hover:bg-accent has-[:disabled]:cursor-default has-[:disabled]:opacity-60',
               )}
             >
-              <span
-                className={cn(
-                  'row-span-2 flex h-4 w-4 items-center justify-center rounded-[4px] border border-input',
-                  on && 'border-primary bg-primary text-primary-foreground',
-                )}
-              >
-                {on ? <Check className="h-3 w-3" aria-hidden /> : null}
-              </span>
+              <Checkbox
+                className="row-span-2"
+                checked={on}
+                disabled={disabled}
+                onCheckedChange={() => onToggleTier(t.id)}
+              />
               <span className="text-sm font-medium">{t.name}</span>
               <span className="row-span-2 font-mono text-sm tabular-nums">{t.activeCount}</span>
               <span className="text-[0.8125rem] text-muted-foreground">
                 {reasons[t.id] ?? `${t.activeCount} ${t.activeCount === 1 ? 'person' : 'people'}`}
               </span>
-            </button>
+            </label>
           );
         })}
       </div>
       <div className="grid gap-2">
-        <label className="text-sm font-medium" htmlFor="caWhen">
-          When
-        </label>
+        <FieldLabel htmlFor="caWhen">When</FieldLabel>
         <Select
           value={sendKind}
           onValueChange={(v) => onSendTime(v as SendTimeOption['kind'])}
